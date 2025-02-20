@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -20,11 +21,27 @@ export default function AddFile() {
       return;
     }
 
-    // TODO: Implement file upload logic
-    toast({
-      title: "File upload not implemented yet",
-      description: "This feature will be available soon.",
-    });
+    try {
+      const { data, error } = await supabase.storage.from('files').upload(
+        `${Date.now()}-${file.name}`,
+        file
+      );
+
+      if (error) throw error;
+
+      toast({
+        title: "File uploaded successfully",
+        description: "Your file has been uploaded.",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Error uploading file",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

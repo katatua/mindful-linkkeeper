@@ -4,9 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AddCategory() {
   const [categoryName, setCategoryName] = useState("");
+  const [description, setDescription] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -20,11 +22,29 @@ export default function AddCategory() {
       return;
     }
 
-    // TODO: Implement category adding logic
-    toast({
-      title: "Category adding not implemented yet",
-      description: "This feature will be available soon.",
-    });
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name: categoryName,
+          description
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Category added successfully",
+        description: "Your category has been created.",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast({
+        title: "Error adding category",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -35,9 +55,17 @@ export default function AddCategory() {
           <div>
             <Input
               type="text"
-              placeholder="Enter category name"
+              placeholder="Category name"
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
+              className="w-full mb-4"
+              required
+            />
+            <Input
+              type="text"
+              placeholder="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="w-full"
             />
           </div>
