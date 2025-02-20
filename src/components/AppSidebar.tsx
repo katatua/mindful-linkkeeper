@@ -5,6 +5,7 @@ import {
   FolderPlus,
   Link as LinkIcon,
   FileUp,
+  LogIn,
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,6 +20,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from "react";
 
 const menuItems = [
   { title: "Add File", icon: FileUp, url: "/add-file" },
@@ -29,6 +31,21 @@ const menuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -45,6 +62,10 @@ export function AppSidebar() {
     }
   };
 
+  const handleLogin = () => {
+    navigate("/auth");
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -52,7 +73,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {isAuthenticated && menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a
@@ -66,13 +87,23 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Logout</span>
-                </SidebarMenuButton>
+                {isAuthenticated ? (
+                  <SidebarMenuButton 
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>Logout</span>
+                  </SidebarMenuButton>
+                ) : (
+                  <SidebarMenuButton 
+                    onClick={handleLogin}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+                  >
+                    <LogIn className="h-5 w-5" />
+                    <span>Login</span>
+                  </SidebarMenuButton>
+                )}
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
