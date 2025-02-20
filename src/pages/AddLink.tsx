@@ -39,8 +39,8 @@ export default function AddLink() {
         .insert({
           url,
           title,
-          tags: tags.split(',').map(tag => tag.trim()),
-          classification: classificationData.classification
+          category: tags,  // Using category field instead of tags since tags is not in our schema
+          classification: classificationData?.classification
         });
 
       if (error) throw error;

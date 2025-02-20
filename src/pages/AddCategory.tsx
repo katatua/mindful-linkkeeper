@@ -24,10 +24,13 @@ export default function AddCategory() {
 
     try {
       const { error } = await supabase
-        .from('categories')
+        .from('links')
         .insert({
-          name: categoryName,
-          description
+          title: categoryName,
+          url: '#',
+          category: categoryName,
+          source: 'category',
+          summary: description
         });
 
       if (error) throw error;
