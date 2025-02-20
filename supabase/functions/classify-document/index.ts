@@ -28,6 +28,8 @@ Deno.serve(async (req) => {
       fileName ? `File: ${fileName}` : ''
     ].filter(Boolean).join('\n');
 
+    console.log('Classification request:', { content });
+
     // Call OpenAI API for classification
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -36,7 +38,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o', // Using the more powerful GPT-4 model
         messages: [
           {
             role: 'system',
