@@ -115,7 +115,7 @@ const Index = () => {
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <SidebarTrigger />
+                <SidebarTrigger className="h-10 w-10 p-2 hover:bg-gray-100 rounded-lg border border-gray-200" />
                 <h1 className="text-2xl font-semibold text-gray-900">My Links</h1>
               </div>
               <div className="flex items-center gap-4">
