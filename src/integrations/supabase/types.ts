@@ -44,6 +44,7 @@ export type Database = {
       links: {
         Row: {
           category: string | null
+          classification: string | null
           created_at: string | null
           embedding: string | null
           file_metadata: Json | null
@@ -58,6 +59,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          classification?: string | null
           created_at?: string | null
           embedding?: string | null
           file_metadata?: Json | null
@@ -72,6 +74,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          classification?: string | null
           created_at?: string | null
           embedding?: string | null
           file_metadata?: Json | null

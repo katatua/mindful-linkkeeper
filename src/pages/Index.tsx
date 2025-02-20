@@ -7,6 +7,7 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { LinkCard } from "@/components/LinkCard";
 import { AddLinkDialog } from "@/components/AddLinkDialog";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Link {
   id: number;
@@ -16,6 +17,7 @@ interface Link {
   date: string;
   file?: File;
   fileName?: string;
+  classification?: string;
 }
 
 // Sample initial data
@@ -26,6 +28,7 @@ const initialLinks = [
     url: "https://react.dev",
     tags: ["react", "documentation"],
     date: "2024-03-15",
+    classification: "documentation"
   },
   {
     id: 2,
@@ -33,6 +36,7 @@ const initialLinks = [
     url: "https://tailwindcss.com",
     tags: ["css", "styling"],
     date: "2024-03-14",
+    classification: "tutorial"
   },
   {
     id: 3,
@@ -40,6 +44,7 @@ const initialLinks = [
     url: "https://www.typescriptlang.org/docs/",
     tags: ["typescript", "documentation"],
     date: "2024-03-13",
+    classification: "documentation"
   },
 ];
 
@@ -49,30 +54,57 @@ const Index = () => {
   const [links, setLinks] = useState<Link[]>(initialLinks);
   const { toast } = useToast();
 
-  const handleAddLink = (newLink: {
+  const handleAddLink = async (newLink: {
     title: string;
     url: string;
     tags: string[];
     file?: File;
   }) => {
-    const link: Link = {
-      id: links.length + 1,
-      ...newLink,
-      fileName: newLink.file?.name,
-      date: new Date().toISOString().split("T")[0],
-    };
+    try {
+      // Get classification from Edge Function
+      const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
+        'classify-document',
+        {
+          body: {
+            title: newLink.title,
+            fileName: newLink.file?.name
+          }
+        }
+      );
 
-    setLinks([link, ...links]);
-    toast({
-      title: "Link added successfully",
-      description: `${link.title} has been added to your links.`,
-    });
+      if (classificationError) {
+        console.error('Classification error:', classificationError);
+        throw new Error('Failed to classify document');
+      }
+
+      const link: Link = {
+        id: links.length + 1,
+        ...newLink,
+        fileName: newLink.file?.name,
+        date: new Date().toISOString().split("T")[0],
+        classification: classificationData.classification
+      };
+
+      setLinks([link, ...links]);
+      toast({
+        title: "Link added successfully",
+        description: `${link.title} has been added to your links.`,
+      });
+    } catch (error) {
+      console.error('Error adding link:', error);
+      toast({
+        title: "Error adding link",
+        description: "Failed to classify and add the link. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredLinks = links.filter(
     (link) =>
       link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      link.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      link.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (link.classification && link.classification.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -105,6 +137,8 @@ const Index = () => {
                   url={link.url}
                   tags={link.tags}
                   date={link.date}
+                  fileName={link.fileName}
+                  classification={link.classification}
                   isGrid={isGrid}
                 />
               ))}

@@ -7,10 +7,11 @@ interface LinkCardProps {
   tags: string[];
   date: string;
   fileName?: string;
+  classification?: string;
   isGrid: boolean;
 }
 
-export const LinkCard = ({ title, url, tags, date, fileName, isGrid }: LinkCardProps) => {
+export const LinkCard = ({ title, url, tags, date, fileName, classification, isGrid }: LinkCardProps) => {
   const hostname = new URL(url).hostname;
 
   return (
@@ -65,6 +66,13 @@ export const LinkCard = ({ title, url, tags, date, fileName, isGrid }: LinkCardP
                   {tag}
                 </span>
               ))}
+              {classification && (
+                <span
+                  className="px-2 py-1 rounded-full bg-blue-100 text-blue-600 text-xs"
+                >
+                  {classification}
+                </span>
+              )}
             </div>
           </div>
         </div>
