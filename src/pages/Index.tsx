@@ -5,10 +5,19 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SearchBar } from "@/components/SearchBar";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LinkCard } from "@/components/LinkCard";
-import { Plus } from "lucide-react";
+import { AddLinkDialog } from "@/components/AddLinkDialog";
+import { useToast } from "@/components/ui/use-toast";
 
-// Sample data
-const links = [
+interface Link {
+  id: number;
+  title: string;
+  url: string;
+  tags: string[];
+  date: string;
+}
+
+// Sample initial data
+const initialLinks = [
   {
     id: 1,
     title: "React Documentation",
@@ -35,6 +44,26 @@ const links = [
 const Index = () => {
   const [isGrid, setIsGrid] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [links, setLinks] = useState<Link[]>(initialLinks);
+  const { toast } = useToast();
+
+  const handleAddLink = (newLink: {
+    title: string;
+    url: string;
+    tags: string[];
+  }) => {
+    const link: Link = {
+      id: links.length + 1,
+      ...newLink,
+      date: new Date().toISOString().split("T")[0],
+    };
+
+    setLinks([link, ...links]);
+    toast({
+      title: "Link added successfully",
+      description: `${link.title} has been added to your links.`,
+    });
+  };
 
   const filteredLinks = links.filter(
     (link) =>
@@ -56,10 +85,7 @@ const Index = () => {
               <div className="flex items-center gap-4">
                 <SearchBar onSearch={setSearchQuery} />
                 <ViewToggle isGrid={isGrid} onToggle={() => setIsGrid(!isGrid)} />
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
-                  <Plus className="h-4 w-4" />
-                  Add Link
-                </button>
+                <AddLinkDialog onAddLink={handleAddLink} />
               </div>
             </div>
 
