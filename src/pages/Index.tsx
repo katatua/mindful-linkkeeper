@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SearchBar } from "@/components/SearchBar";
@@ -15,44 +15,53 @@ interface Link {
   url: string;
   tags: string[];
   date: string;
-  file?: File;
-  fileName?: string;
+  file_metadata?: {
+    name: string;
+    size: number;
+    type: string;
+  };
   classification?: string;
 }
-
-// Sample initial data
-const initialLinks = [
-  {
-    id: 1,
-    title: "React Documentation",
-    url: "https://react.dev",
-    tags: ["react", "documentation"],
-    date: "2024-03-15",
-    classification: "documentation"
-  },
-  {
-    id: 2,
-    title: "Tailwind CSS",
-    url: "https://tailwindcss.com",
-    tags: ["css", "styling"],
-    date: "2024-03-14",
-    classification: "tutorial"
-  },
-  {
-    id: 3,
-    title: "TypeScript Handbook",
-    url: "https://www.typescriptlang.org/docs/",
-    tags: ["typescript", "documentation"],
-    date: "2024-03-13",
-    classification: "documentation"
-  },
-];
 
 const Index = () => {
   const [isGrid, setIsGrid] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [links, setLinks] = useState<Link[]>(initialLinks);
+  const [links, setLinks] = useState<Link[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchLinks();
+  }, []);
+
+  const fetchLinks = async () => {
+    try {
+      const { data: linksData, error } = await supabase
+        .from('links')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (linksData) {
+        setLinks(linksData.map(link => ({
+          id: link.id,
+          title: link.title || '',
+          url: link.url,
+          tags: [],
+          date: new Date(link.created_at || '').toLocaleDateString(),
+          file_metadata: link.file_metadata,
+          classification: link.classification
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching links:', error);
+      toast({
+        title: "Error loading links",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleAddLink = async (newLink: {
     title: string;
@@ -80,7 +89,6 @@ const Index = () => {
       const link: Link = {
         id: links.length + 1,
         ...newLink,
-        fileName: newLink.file?.name,
         date: new Date().toISOString().split("T")[0],
         classification: classificationData.classification
       };
@@ -90,6 +98,9 @@ const Index = () => {
         title: "Link added successfully",
         description: `${link.title} has been added to your links.`,
       });
+      
+      // Refresh the links list to show new items
+      fetchLinks();
     } catch (error) {
       console.error('Error adding link:', error);
       toast({
@@ -103,7 +114,8 @@ const Index = () => {
   const filteredLinks = links.filter(
     (link) =>
       link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      link.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (link.file_metadata?.name && link.file_metadata.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (link.tags && link.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))) ||
       (link.classification && link.classification.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
@@ -137,7 +149,7 @@ const Index = () => {
                   url={link.url}
                   tags={link.tags}
                   date={link.date}
-                  fileName={link.fileName}
+                  fileName={link.file_metadata?.name}
                   classification={link.classification}
                   isGrid={isGrid}
                 />
