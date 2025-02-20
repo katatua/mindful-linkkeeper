@@ -9,7 +9,6 @@ interface LinkCardProps {
   fileName?: string;
   classification?: string;
   category?: string;
-  summary?: string;
   isGrid: boolean;
 }
 
@@ -21,7 +20,6 @@ export const LinkCard = ({
   fileName, 
   classification,
   category,
-  summary,
   isGrid 
 }: LinkCardProps) => {
   const getHostname = (url: string) => {
@@ -68,11 +66,6 @@ export const LinkCard = ({
           {category && (
             <div className="mt-2 text-sm text-gray-600">
               Category: {category}
-            </div>
-          )}
-          {summary && (
-            <div className="mt-2 text-sm text-gray-600">
-              {summary}
             </div>
           )}
         </div>

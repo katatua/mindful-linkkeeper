@@ -101,10 +101,12 @@ const Index = () => {
     url: string;
     tags: string[];
     file?: File;
-    summary?: string;
     category?: string;
   }) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
         'classify-document',
         {
@@ -126,9 +128,9 @@ const Index = () => {
         .insert({
           title: newLink.title,
           url: newLink.url,
-          summary: newLink.summary,
           category: newLink.category,
           classification: classificationData.classification,
+          user_id: user.id,
           // Add file metadata if a file was uploaded
           file_metadata: newLink.file ? {
             name: newLink.file.name,
