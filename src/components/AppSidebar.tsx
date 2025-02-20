@@ -1,11 +1,10 @@
 
 import {
-  Bookmark,
-  FolderOpen,
-  Home,
   Plus,
-  Settings,
-  Tags,
+  LogOut,
+  FolderPlus,
+  Link as LinkIcon,
+  FileUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -17,21 +16,40 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const menuItems = [
-  { title: "Home", icon: Home, url: "/" },
-  { title: "All Links", icon: Bookmark, url: "/links" },
-  { title: "Folders", icon: FolderOpen, url: "/folders" },
-  { title: "Tags", icon: Tags, url: "/tags" },
-  { title: "Settings", icon: Settings, url: "/settings" },
+  { title: "Add File", icon: FileUp, url: "/add-file" },
+  { title: "Add Link", icon: LinkIcon, url: "/add-link" },
+  { title: "Add Category", icon: FolderPlus, url: "/add-category" },
 ];
 
 export function AppSidebar() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+      });
+      navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Error logging out",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -47,6 +65,15 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
