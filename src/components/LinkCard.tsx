@@ -1,15 +1,16 @@
 
-import { Calendar, ExternalLink, Tag } from "lucide-react";
+import { Calendar, ExternalLink, Tag, FileText } from "lucide-react";
 
 interface LinkCardProps {
   title: string;
   url: string;
   tags: string[];
   date: string;
+  fileName?: string;
   isGrid: boolean;
 }
 
-export const LinkCard = ({ title, url, tags, date, isGrid }: LinkCardProps) => {
+export const LinkCard = ({ title, url, tags, date, fileName, isGrid }: LinkCardProps) => {
   const hostname = new URL(url).hostname;
 
   return (
@@ -36,6 +37,12 @@ export const LinkCard = ({ title, url, tags, date, isGrid }: LinkCardProps) => {
             {hostname}
             <ExternalLink className="h-3 w-3" />
           </a>
+          {fileName && (
+            <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
+              <FileText className="h-4 w-4" />
+              <span>{fileName}</span>
+            </div>
+          )}
         </div>
 
         <div

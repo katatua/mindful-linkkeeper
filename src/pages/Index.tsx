@@ -14,6 +14,8 @@ interface Link {
   url: string;
   tags: string[];
   date: string;
+  file?: File;
+  fileName?: string;
 }
 
 // Sample initial data
@@ -51,10 +53,12 @@ const Index = () => {
     title: string;
     url: string;
     tags: string[];
+    file?: File;
   }) => {
     const link: Link = {
       id: links.length + 1,
       ...newLink,
+      fileName: newLink.file?.name,
       date: new Date().toISOString().split("T")[0],
     };
 

@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Upload } from "lucide-react";
 
 interface AddLinkDialogProps {
   onAddLink: (link: {
     title: string;
     url: string;
     tags: string[];
+    file?: File;
   }) => void;
 }
 
@@ -19,6 +20,7 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
   const [url, setUrl] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [file, setFile] = useState<File | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +28,12 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
       title,
       url,
       tags,
+      file: file || undefined,
     });
     setTitle("");
     setUrl("");
     setTags([]);
+    setFile(null);
     setOpen(false);
   };
 
@@ -42,6 +46,12 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
 
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
   };
 
   return (
@@ -81,6 +91,38 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
               placeholder="Enter URL"
               required
             />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="file" className="text-sm font-medium">
+              Attach File
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="file"
+                type="file"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => document.getElementById("file")?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {file ? file.name : "Choose file"}
+              </Button>
+              {file && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setFile(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
           <div className="space-y-2">
             <label htmlFor="tags" className="text-sm font-medium">
