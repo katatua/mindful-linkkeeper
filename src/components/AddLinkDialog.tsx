@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, Upload } from "lucide-react";
 
 interface AddLinkDialogProps {
@@ -11,6 +12,8 @@ interface AddLinkDialogProps {
     url: string;
     tags: string[];
     file?: File;
+    summary?: string;
+    category?: string;
   }) => void;
 }
 
@@ -21,6 +24,8 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [summary, setSummary] = useState("");
+  const [category, setCategory] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,11 +34,15 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
       url,
       tags,
       file: file || undefined,
+      summary,
+      category,
     });
     setTitle("");
     setUrl("");
     setTags([]);
     setFile(null);
+    setSummary("");
+    setCategory("");
     setOpen(false);
   };
 
@@ -90,6 +99,29 @@ export const AddLinkDialog = ({ onAddLink }: AddLinkDialogProps) => {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Enter URL"
               required
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="category" className="text-sm font-medium">
+              Category
+            </label>
+            <Input
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Enter category"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="summary" className="text-sm font-medium">
+              Summary
+            </label>
+            <Textarea
+              id="summary"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="Enter a brief summary"
+              rows={3}
             />
           </div>
           <div className="space-y-2">

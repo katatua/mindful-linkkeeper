@@ -101,6 +101,8 @@ const Index = () => {
     url: string;
     tags: string[];
     file?: File;
+    summary?: string;
+    category?: string;
   }) => {
     try {
       const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
@@ -118,20 +120,28 @@ const Index = () => {
         throw new Error('Failed to classify document');
       }
 
-      // Generate a temporary ID (will be replaced by Supabase's UUID)
-      const tempId = crypto.randomUUID();
-      
-      const link: Link = {
-        id: tempId,
-        ...newLink,
-        date: new Date().toISOString().split("T")[0],
-        classification: classificationData.classification
-      };
+      // Insert the new link into Supabase
+      const { error: insertError } = await supabase
+        .from('links')
+        .insert({
+          title: newLink.title,
+          url: newLink.url,
+          summary: newLink.summary,
+          category: newLink.category,
+          classification: classificationData.classification,
+          // Add file metadata if a file was uploaded
+          file_metadata: newLink.file ? {
+            name: newLink.file.name,
+            size: newLink.file.size,
+            type: newLink.file.type
+          } : null
+        });
 
-      setLinks([link, ...links]);
+      if (insertError) throw insertError;
+
       toast({
         title: "Link added successfully",
-        description: `${link.title} has been added to your links.`,
+        description: `${newLink.title} has been added to your links.`,
       });
       
       // Refresh the links list to show new items

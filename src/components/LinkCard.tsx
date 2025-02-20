@@ -8,14 +8,24 @@ interface LinkCardProps {
   date: string;
   fileName?: string;
   classification?: string;
+  category?: string;
+  summary?: string;
   isGrid: boolean;
 }
 
-export const LinkCard = ({ title, url, tags, date, fileName, classification, isGrid }: LinkCardProps) => {
-  // Add URL validation
+export const LinkCard = ({ 
+  title, 
+  url, 
+  tags, 
+  date, 
+  fileName, 
+  classification,
+  category,
+  summary,
+  isGrid 
+}: LinkCardProps) => {
   const getHostname = (url: string) => {
     try {
-      // Add protocol if missing
       const urlWithProtocol = url.startsWith('http') ? url : `https://${url}`;
       return new URL(urlWithProtocol).hostname;
     } catch (e) {
@@ -28,12 +38,12 @@ export const LinkCard = ({ title, url, tags, date, fileName, classification, isG
   return (
     <div
       className={`group animate-fade-in bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 ${
-        isGrid ? "flex flex-col" : "flex items-center"
+        isGrid ? "flex flex-col" : "flex items-start"
       }`}
     >
       <div
         className={`flex-1 p-4 ${
-          isGrid ? "" : "flex items-center justify-between w-full"
+          isGrid ? "" : "flex items-start justify-between w-full gap-4"
         }`}
       >
         <div className={isGrid ? "mb-3" : "flex-1"}>
@@ -53,6 +63,16 @@ export const LinkCard = ({ title, url, tags, date, fileName, classification, isG
             <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
               <FileText className="h-4 w-4" />
               <span>{fileName}</span>
+            </div>
+          )}
+          {category && (
+            <div className="mt-2 text-sm text-gray-600">
+              Category: {category}
+            </div>
+          )}
+          {summary && (
+            <div className="mt-2 text-sm text-gray-600">
+              {summary}
             </div>
           )}
         </div>
