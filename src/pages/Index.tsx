@@ -79,7 +79,7 @@ const Index = () => {
           id: link.id,
           title: link.title || '',
           url: link.url || '#',
-          tags: link.tags || [],
+          tags: [], // Since we don't have tags in the database yet, initialize as empty array
           date: new Date(link.created_at || '').toLocaleDateString(),
           file_metadata: link.file_metadata as Link['file_metadata'],
           classification: link.classification || ''
