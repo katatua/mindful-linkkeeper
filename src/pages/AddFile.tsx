@@ -30,6 +30,10 @@ export default function AddFile() {
     }
 
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       // First, upload the file to storage
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
@@ -53,7 +57,7 @@ export default function AddFile() {
             size: file.size,
             type: file.type
           },
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: user.id
         });
 
       if (linkError) throw linkError;
