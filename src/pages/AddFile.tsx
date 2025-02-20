@@ -3,13 +3,21 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const sanitizeFilename = (filename: string): string => {
+    // Remove non-ASCII characters and replace spaces with underscores
+    return filename
+      .replace(/[^\x00-\x7F]/g, '')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9._-]/g, '');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +32,12 @@ export default function AddFile() {
     try {
       // First, upload the file to storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${file.name}`;
-      const filePath = `${fileName}`;
+      const sanitizedName = sanitizeFilename(file.name);
+      const fileName = `${Date.now()}-${sanitizedName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
-        .upload(filePath, file);
+        .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
@@ -37,8 +45,8 @@ export default function AddFile() {
       const { error: linkError } = await supabase
         .from('links')
         .insert({
-          title: file.name,
-          url: filePath,
+          title: file.name, // Keep original filename for display
+          url: fileName, // Use sanitized filename for storage
           source: 'file',
           file_metadata: {
             name: file.name,
