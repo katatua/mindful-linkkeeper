@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Link {
-  id: number;
+  id: string;  // Changed from number to string to match Supabase UUID
   title: string;
   url: string;
   tags: string[];
@@ -46,7 +46,7 @@ const Index = () => {
         setLinks(linksData.map(link => ({
           id: link.id,
           title: link.title || '',
-          url: link.url,
+          url: link.url || '#', // Provide a fallback URL
           tags: [],
           date: new Date(link.created_at || '').toLocaleDateString(),
           file_metadata: link.file_metadata,
@@ -70,7 +70,6 @@ const Index = () => {
     file?: File;
   }) => {
     try {
-      // Get classification from Edge Function
       const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
         'classify-document',
         {
@@ -86,8 +85,11 @@ const Index = () => {
         throw new Error('Failed to classify document');
       }
 
+      // Generate a temporary ID (will be replaced by Supabase's UUID)
+      const tempId = crypto.randomUUID();
+      
       const link: Link = {
-        id: links.length + 1,
+        id: tempId,
         ...newLink,
         date: new Date().toISOString().split("T")[0],
         classification: classificationData.classification

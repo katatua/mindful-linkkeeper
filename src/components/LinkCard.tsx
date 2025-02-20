@@ -12,7 +12,18 @@ interface LinkCardProps {
 }
 
 export const LinkCard = ({ title, url, tags, date, fileName, classification, isGrid }: LinkCardProps) => {
-  const hostname = new URL(url).hostname;
+  // Add URL validation
+  const getHostname = (url: string) => {
+    try {
+      // Add protocol if missing
+      const urlWithProtocol = url.startsWith('http') ? url : `https://${url}`;
+      return new URL(urlWithProtocol).hostname;
+    } catch (e) {
+      return 'Invalid URL';
+    }
+  };
+
+  const hostname = getHostname(url);
 
   return (
     <div
@@ -30,7 +41,7 @@ export const LinkCard = ({ title, url, tags, date, fileName, classification, isG
             {title}
           </h3>
           <a
-            href={url}
+            href={url.startsWith('http') ? url : `https://${url}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 mt-1"
