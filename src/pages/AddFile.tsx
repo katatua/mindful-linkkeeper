@@ -22,12 +22,33 @@ export default function AddFile() {
     }
 
     try {
-      const { data, error } = await supabase.storage.from('files').upload(
-        `${Date.now()}-${file.name}`,
-        file
-      );
+      // First, upload the file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${file.name}`;
+      const filePath = `${fileName}`;
 
-      if (error) throw error;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Then, create a link entry for the file
+      const { error: linkError } = await supabase
+        .from('links')
+        .insert({
+          title: file.name,
+          url: filePath,
+          source: 'file',
+          file_metadata: {
+            name: file.name,
+            size: file.size,
+            type: file.type
+          },
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      if (linkError) throw linkError;
 
       toast({
         title: "File uploaded successfully",

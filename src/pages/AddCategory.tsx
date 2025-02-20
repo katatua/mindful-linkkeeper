@@ -23,6 +23,9 @@ export default function AddCategory() {
     }
 
     try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("No user found");
+
       const { error } = await supabase
         .from('links')
         .insert({
@@ -30,7 +33,8 @@ export default function AddCategory() {
           url: '#',
           category: categoryName,
           source: 'category',
-          summary: description
+          summary: description,
+          user_id: userId
         });
 
       if (error) throw error;

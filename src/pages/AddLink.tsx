@@ -24,6 +24,9 @@ export default function AddLink() {
     }
 
     try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("No user found");
+
       // Get classification from Edge Function
       const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
         'classify-document',
@@ -39,8 +42,9 @@ export default function AddLink() {
         .insert({
           url,
           title,
-          category: tags,  // Using category field instead of tags since tags is not in our schema
-          classification: classificationData?.classification
+          category: tags,
+          classification: classificationData?.classification,
+          user_id: userId
         });
 
       if (error) throw error;
