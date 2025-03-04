@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ViewToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -35,6 +36,7 @@ export const Dashboard = () => {
   const [isGridView, setIsGridView] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const innovationMetrics = [
     {
@@ -146,6 +148,10 @@ export const Dashboard = () => {
     metric.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     metric.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleChartClick = (chartId, chartType, category = "overview") => {
+    navigate(`/visualization/${category}/${chartType}/${chartId}`);
+  };
 
   const exportToPdf = async () => {
     toast({
@@ -269,7 +275,7 @@ export const Dashboard = () => {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('project-growth', 'bar')}>
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Project Growth Trends (2023)</CardTitle>
                 </CardHeader>
@@ -289,7 +295,7 @@ export const Dashboard = () => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('innovation-investments', 'line')}>
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Innovation Investment vs Projects</CardTitle>
                 </CardHeader>
@@ -313,7 +319,7 @@ export const Dashboard = () => {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-distribution', 'pie')}>
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Innovation Sectors Distribution</CardTitle>
                 </CardHeader>
@@ -344,7 +350,7 @@ export const Dashboard = () => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-growth', 'area')}>
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Innovation Funding Growth</CardTitle>
                 </CardHeader>
