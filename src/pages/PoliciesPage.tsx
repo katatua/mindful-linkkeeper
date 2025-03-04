@@ -242,7 +242,7 @@ const PoliciesPage = () => {
             </Card>
           </div>
           
-          <PolicyList />
+          <PolicyList searchQuery={searchQuery} />
         </TabsContent>
         
         <TabsContent value="frameworks">

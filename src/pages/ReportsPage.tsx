@@ -127,7 +127,7 @@ const ReportsPage = () => {
             ))}
           </div>
           
-          <ReportsList />
+          <ReportsList searchQuery={searchQuery} />
         </TabsContent>
         
         <TabsContent value="templates">
