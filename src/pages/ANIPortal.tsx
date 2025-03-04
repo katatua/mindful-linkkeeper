@@ -62,22 +62,18 @@ const ANIPortal = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          {isAuthenticated && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => navigate("/add-file")}>
-                <FileUp className="h-4 w-4 mr-2" />
-                Upload File
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate("/add-link")}>
-                <LinkIcon className="h-4 w-4 mr-2" />
-                Add Link
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate("/add-category")}>
-                <FolderPlus className="h-4 w-4 mr-2" />
-                Add Category
-              </Button>
-            </>
-          )}
+          <Button variant="outline" size="sm" onClick={() => navigate("/add-file")}>
+            <FileUp className="h-4 w-4 mr-2" />
+            Upload File
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/add-link")}>
+            <LinkIcon className="h-4 w-4 mr-2" />
+            Add Link
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/add-category")}>
+            <FolderPlus className="h-4 w-4 mr-2" />
+            Add Category
+          </Button>
           <Button variant="ghost" size="sm">
             PT | EN
           </Button>
