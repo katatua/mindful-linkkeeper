@@ -67,14 +67,7 @@ export const AIAssistant = () => {
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden flex flex-col h-[600px] bg-white">
-      <div className="p-4 border-b bg-gray-50">
-        <h2 className="text-lg font-medium flex items-center gap-2">
-          <Bot className="h-5 w-5 text-blue-500" />
-          ANI Innovation Assistant
-        </h2>
-      </div>
-      
+    <div className="flex flex-col h-full bg-white">
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((msg) => (
@@ -85,7 +78,7 @@ export const AIAssistant = () => {
               <div 
                 className={`rounded-lg px-4 py-2 max-w-[80%] flex gap-2 ${
                   msg.role === 'user' 
-                    ? 'bg-blue-500 text-white ml-auto' 
+                    ? 'bg-primary text-white ml-auto' 
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
@@ -129,6 +122,7 @@ export const AIAssistant = () => {
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSendMessage();
           }}
+          className="flex-1"
         />
         <Button onClick={handleSendMessage} disabled={isTyping || !input.trim()}>
           <SendHorizonal className="h-5 w-5" />

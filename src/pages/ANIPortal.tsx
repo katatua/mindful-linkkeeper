@@ -99,10 +99,13 @@ const ANIPortal = () => {
         </main>
         
         {showChat && (
-          <div className="w-96 border-l flex flex-col">
-            <div className="p-2 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-medium">AI Assistant</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowChat(false)}>
+          <div className="w-96 border-l flex flex-col bg-white">
+            <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-medium flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                AI Assistant
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowChat(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -115,14 +118,13 @@ const ANIPortal = () => {
       
       {!showChat && (
         <Button 
-          className="absolute bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
+          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
           onClick={() => setShowChat(true)}
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
       )}
       
-      {/* Toast notifications */}
       <Toaster />
     </div>
   );
