@@ -1,25 +1,58 @@
 
 import { useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, X, Menu } from "lucide-react";
+import { Menu, LogOut, LogIn, FileUp, Link as LinkIcon, FolderPlus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSidebar } from "@/contexts/SidebarContext";
 import { Toaster } from "@/components/ui/toaster";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 const ANIPortal = () => {
-  const [showChat, setShowChat] = useState(false);
-  const { isOpen, toggle } = useSidebar();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+      });
+      navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Error logging out",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogin = () => {
+    navigate("/auth");
+  };
 
   return (
     <div className="h-screen flex flex-col">
       <header className="bg-white border-b py-3 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={toggle} className="mr-2">
-            <Menu className="h-5 w-5" />
-          </Button>
           <img 
             src="https://via.placeholder.com/40?text=ANI" 
             alt="ANI Logo" 
@@ -29,6 +62,22 @@ const ANIPortal = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          {isAuthenticated && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => navigate("/add-file")}>
+                <FileUp className="h-4 w-4 mr-2" />
+                Upload File
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("/add-link")}>
+                <LinkIcon className="h-4 w-4 mr-2" />
+                Add Link
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("/add-category")}>
+                <FolderPlus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
+            </>
+          )}
           <Button variant="ghost" size="sm">
             PT | EN
           </Button>
@@ -38,13 +87,22 @@ const ANIPortal = () => {
           <Button variant="outline" size="sm">
             Help
           </Button>
+          {isAuthenticated ? (
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleLogin}>
+              <LogIn className="h-4 w-4 mr-2" />
+              Login
+            </Button>
+          )}
         </div>
       </header>
       
       <div className="flex flex-1 overflow-hidden">
-        <AppSidebar />
-        
-        <main className="flex-1 overflow-auto bg-gray-50">
+        <main className="flex-grow overflow-auto bg-gray-50">
           <Tabs defaultValue="dashboard" className="h-full">
             <div className="container mx-auto py-4">
               <TabsList>
@@ -98,32 +156,17 @@ const ANIPortal = () => {
           </Tabs>
         </main>
         
-        {showChat && (
-          <div className="w-96 border-l flex flex-col bg-white">
-            <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-medium flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                AI Assistant
-              </h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowChat(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <AIAssistant />
-            </div>
+        <div className="w-96 border-l flex flex-col bg-white">
+          <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+            <h3 className="font-medium flex items-center gap-2">
+              AI Assistant
+            </h3>
           </div>
-        )}
+          <div className="flex-1 overflow-hidden">
+            <AIAssistant />
+          </div>
+        </div>
       </div>
-      
-      {!showChat && (
-        <Button 
-          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
-          onClick={() => setShowChat(true)}
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
-      )}
       
       <Toaster />
     </div>
