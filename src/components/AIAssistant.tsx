@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SendHorizonal, Bot, User } from "lucide-react";
+import { generateResponse } from "@/utils/aiUtils";
 
 interface Message {
   id: string;
@@ -20,15 +21,6 @@ const INITIAL_MESSAGES: Message[] = [
     timestamp: new Date()
   }
 ];
-
-// Sample predefined responses for demo purposes
-const AI_RESPONSES = {
-  "innovation": "Portugal's innovation ecosystem has shown significant growth in the past 5 years, with a 28% increase in R&D investment and 134 active innovation projects currently monitored by ANI.",
-  "funding": "ANI manages several funding programs including Portugal 2030 and Horizon Europe opportunities. The total available funding for the current cycle is €24.7M with 56 startups being supported.",
-  "report": "I can help generate reports on innovation metrics, funding allocation, or project performance. What specific type of report would you like to create?",
-  "policy": "Current innovation policies are aligned with the ENEI 2030 framework, focusing on digital transformation, sustainability, and knowledge transfer between academia and industry.",
-  "help": "I can assist with innovation metrics, funding information, policy insights, report generation, and connecting you with relevant stakeholders. What specific area do you need help with?",
-};
 
 export const AIAssistant = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -72,19 +64,6 @@ export const AIAssistant = () => {
       setMessages(prev => [...prev, assistantMessage]);
       setIsTyping(false);
     }, 1500);
-  };
-
-  const generateResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    // Simple keyword matching for demo purposes
-    for (const [keyword, response] of Object.entries(AI_RESPONSES)) {
-      if (input.includes(keyword)) {
-        return response;
-      }
-    }
-    
-    return "I understand you're asking about " + input + ". While I don't have specific information on that topic yet, I can connect you with an ANI expert who can help. Would you like me to do that?";
   };
 
   return (
