@@ -1,4 +1,5 @@
 
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -16,6 +17,8 @@ import {
 } from "recharts";
 
 export const PerformanceAnalytics = () => {
+  const navigate = useNavigate();
+  
   // Sample data for performance analytics
   const performanceTrends = [
     { year: 2018, success: 76, patents: 32, publications: 48, commercialization: 15 },
@@ -53,10 +56,14 @@ export const PerformanceAnalytics = () => {
     { kpi: 'On-time Completion', value: 85, target: 80 },
   ];
 
+  const handleChartClick = (chartId, chartType) => {
+    navigate(`/visualization/performance/${chartType}/${chartId}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('performance-trends', 'line')}>
           <CardHeader>
             <CardTitle className="text-lg">Performance Trends</CardTitle>
           </CardHeader>
@@ -79,7 +86,7 @@ export const PerformanceAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('project-completion', 'composed')}>
           <CardHeader>
             <CardTitle className="text-lg">Project Completion Rates (%)</CardTitle>
           </CardHeader>
@@ -102,7 +109,7 @@ export const PerformanceAnalytics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('budget-adherence', 'bar')}>
           <CardHeader>
             <CardTitle className="text-lg">Budget Adherence (%)</CardTitle>
           </CardHeader>
@@ -124,7 +131,7 @@ export const PerformanceAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('kpi-performance', 'bar')}>
           <CardHeader>
             <CardTitle className="text-lg">KPI Performance vs Target</CardTitle>
           </CardHeader>

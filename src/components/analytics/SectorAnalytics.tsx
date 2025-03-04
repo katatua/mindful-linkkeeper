@@ -1,4 +1,5 @@
 
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -25,6 +26,8 @@ import {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F', '#FFBB28'];
 
 export const SectorAnalytics = () => {
+  const navigate = useNavigate();
+  
   // Sample data for sector analytics
   const sectorDistribution = [
     { name: 'Digital Tech', projects: 42, value: 32 },
@@ -57,10 +60,14 @@ export const SectorAnalytics = () => {
     { region: 'Islands', digital: 14, health: 12, energy: 18, manufacturing: 6, agriculture: 10 },
   ];
 
+  const handleChartClick = (chartId, chartType) => {
+    navigate(`/visualization/sectors/${chartType}/${chartId}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-distribution', 'pie')}>
           <CardHeader>
             <CardTitle className="text-lg">Sector Distribution</CardTitle>
           </CardHeader>
@@ -90,7 +97,7 @@ export const SectorAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-performance', 'radar')}>
           <CardHeader>
             <CardTitle className="text-lg">Sector Performance Metrics</CardTitle>
           </CardHeader>
@@ -114,7 +121,7 @@ export const SectorAnalytics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-vs-success', 'scatter')}>
           <CardHeader>
             <CardTitle className="text-lg">Funding vs Success Rate</CardTitle>
           </CardHeader>
@@ -140,7 +147,7 @@ export const SectorAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('growth-by-region', 'bar')}>
           <CardHeader>
             <CardTitle className="text-lg">Growth by Region & Sector (%)</CardTitle>
           </CardHeader>

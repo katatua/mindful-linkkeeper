@@ -1,4 +1,5 @@
 
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -21,6 +22,8 @@ import {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
 
 export const FundingAnalytics = () => {
+  const navigate = useNavigate();
+  
   // Sample data for funding analytics
   const fundingBySource = [
     { name: 'EU Horizon Europe', value: 42 },
@@ -55,10 +58,14 @@ export const FundingAnalytics = () => {
     { quarter: 'Q2 2023', public: 6.2, private: 3.7 },
   ];
 
+  const handleChartClick = (chartId, chartType) => {
+    navigate(`/visualization/funding/${chartType}/${chartId}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-sources', 'pie')}>
           <CardHeader>
             <CardTitle className="text-lg">Funding Sources (2023)</CardTitle>
           </CardHeader>
@@ -86,7 +93,7 @@ export const FundingAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-growth', 'area')}>
           <CardHeader>
             <CardTitle className="text-lg">Funding Growth (€M)</CardTitle>
           </CardHeader>
@@ -107,7 +114,7 @@ export const FundingAnalytics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-funding', 'bar')}>
           <CardHeader>
             <CardTitle className="text-lg">Sector Funding Allocation (€M)</CardTitle>
           </CardHeader>
@@ -127,7 +134,7 @@ export const FundingAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('quarterly-funding', 'line')}>
           <CardHeader>
             <CardTitle className="text-lg">Public vs Private Funding (€M)</CardTitle>
           </CardHeader>

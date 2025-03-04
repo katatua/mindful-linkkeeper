@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,32 +15,36 @@ import ProjectsPage from "./pages/ProjectsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ReportsPage from "./pages/ReportsPage";
 import PoliciesPage from "./pages/PoliciesPage";
+import VisualizationDetailPage from "./pages/VisualizationDetailPage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ANIPortal />} />
-          <Route path="/legacy" element={<Index />} />
-          <Route path="/add-file" element={<AddFile />} />
-          <Route path="/add-link" element={<AddLink />} />
-          <Route path="/add-category" element={<AddCategory />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/funding" element={<FundingPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/policies" element={<PoliciesPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ANIPortal />} />
+            <Route path="/legacy" element={<Index />} />
+            <Route path="/add-file" element={<AddFile />} />
+            <Route path="/add-link" element={<AddLink />} />
+            <Route path="/add-category" element={<AddCategory />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/funding" element={<FundingPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/policies" element={<PoliciesPage />} />
+            <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
