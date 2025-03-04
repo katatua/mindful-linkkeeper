@@ -3,13 +3,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AddLink() {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
+  const [summary, setSummary] = useState("");
+  const [category, setCategory] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -24,6 +27,8 @@ export default function AddLink() {
     }
 
     try {
+      setIsSubmitting(true);
+      
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (!userId) throw new Error("No user found");
 
@@ -31,7 +36,10 @@ export default function AddLink() {
       const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
         'classify-document',
         {
-          body: { title }
+          body: { 
+            title,
+            summary 
+          }
         }
       );
 
@@ -42,8 +50,10 @@ export default function AddLink() {
         .insert({
           url,
           title,
-          category: tags,
+          summary: summary || null,
+          category,
           classification: classificationData?.classification,
+          source: 'web',
           user_id: userId
         });
 
@@ -51,7 +61,7 @@ export default function AddLink() {
 
       toast({
         title: "Link added successfully",
-        description: "Your link has been saved.",
+        description: "Your link has been saved and is now available for AI analysis.",
       });
       navigate("/");
     } catch (error) {
@@ -61,13 +71,15 @@ export default function AddLink() {
         description: "Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="container mx-auto p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Add Link</h1>
+        <h1 className="text-2xl font-bold mb-6">Add Link for AI Analysis</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Input
@@ -78,6 +90,7 @@ export default function AddLink() {
               className="w-full mb-4"
               required
             />
+            
             <Input
               type="url"
               placeholder="Enter URL"
@@ -86,20 +99,32 @@ export default function AddLink() {
               className="w-full mb-4"
               required
             />
+            
+            <Textarea
+              placeholder="Summary (helps the AI understand the content)"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              className="w-full mb-4"
+              rows={4}
+            />
+            
             <Input
               type="text"
-              placeholder="Tags (comma-separated)"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
+              placeholder="Category (e.g., 'funding', 'policy', 'technology')"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
               className="w-full"
             />
           </div>
           <div className="flex gap-4">
-            <Button type="submit">Add Link</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Adding Link..." : "Add Link"}
+            </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate("/")}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>

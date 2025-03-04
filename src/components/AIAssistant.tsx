@@ -36,7 +36,7 @@ export const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim()) return;
     
     // Add user message
@@ -51,9 +51,9 @@ export const AIAssistant = () => {
     setInput("");
     setIsTyping(true);
     
-    // Simulate AI response
-    setTimeout(() => {
-      const response = generateResponse(input);
+    try {
+      // Get response from the AI
+      const response = await generateResponse(input);
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -62,8 +62,19 @@ export const AIAssistant = () => {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'I apologize, but I encountered an error while processing your request. Please try again later.',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (

@@ -51,8 +51,87 @@ export const classifyDocument = async (data: ClassificationRequest): Promise<str
   }
 };
 
-// Helper to generate AI responses based on keywords or innovation topics
-export const generateResponse = (userInput: string): string => {
+// Search uploaded documents and generate an AI response
+export const generateResponse = async (userInput: string): Promise<string> => {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration is missing');
+      return getFallbackResponse(userInput);
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Search for relevant documents in the database
+    const { data: searchResults, error } = await supabase
+      .rpc('search_links_improved', { 
+        search_query: userInput,
+        similarity_threshold: 0.2
+      });
+    
+    if (error || !searchResults || searchResults.length === 0) {
+      console.log('No search results found, using fallback response');
+      return getFallbackResponse(userInput);
+    }
+    
+    // Get the top 3 most relevant documents
+    const topLinks = searchResults.slice(0, 3);
+    
+    // Fetch the full information for these documents
+    const { data: documents, error: docsError } = await supabase
+      .from('links')
+      .select('title, url, summary, category, classification')
+      .in('id', topLinks.map(result => result.id));
+    
+    if (docsError || !documents || documents.length === 0) {
+      console.log('Error fetching documents, using fallback response');
+      return getFallbackResponse(userInput);
+    }
+    
+    // Generate a response based on the found documents
+    const responseText = composeResponseFromDocuments(userInput, documents);
+    return responseText;
+  } catch (error) {
+    console.error('Error generating AI response:', error);
+    return getFallbackResponse(userInput);
+  }
+};
+
+// Compose a response based on the found documents
+const composeResponseFromDocuments = (query: string, documents: any[]): string => {
+  // Extract relevant information from documents
+  const topics = documents.map(doc => doc.title).join(', ');
+  const classifications = [...new Set(documents.map(doc => doc.classification).filter(Boolean))];
+  const categories = [...new Set(documents.map(doc => doc.category).filter(Boolean))];
+  
+  // Create a response that references the found documents
+  let response = `Based on the information in our innovation database, I found ${documents.length} relevant resources about ${topics}.`;
+  
+  // Add classification if available
+  if (classifications.length > 0) {
+    response += ` These relate to the ${classifications.join(' and ')} innovation areas.`;
+  }
+  
+  // Add categories if available
+  if (categories.length > 0) {
+    response += ` They fall under the ${categories.join(' and ')} categories.`;
+  }
+  
+  // Add specific information from the first document
+  if (documents[0].summary) {
+    response += `\n\nHere's a key insight: ${documents[0].summary}`;
+  }
+  
+  // Add a reference to the found documents
+  response += `\n\nWould you like more specific information about any of these resources?`;
+  
+  return response;
+};
+
+// Fallback to predefined responses when no relevant documents are found
+const getFallbackResponse = (userInput: string): string => {
   const input = userInput.toLowerCase();
   
   // Simple keyword matching for demo purposes
@@ -75,5 +154,5 @@ export const generateResponse = (userInput: string): string => {
   }
   
   // Default response if no keyword matches
-  return "I understand you're asking about " + input + ". While I don't have specific information on that topic yet, I can connect you with an ANI expert who can help. Would you like me to do that?";
+  return "I understand you're asking about " + input + ". While I don't have specific information on that topic yet in our database, I can connect you with an ANI expert who can help. Would you like me to do that?";
 };
