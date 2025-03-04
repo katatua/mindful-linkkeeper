@@ -77,9 +77,11 @@ const ReportsPage = () => {
       duration: 5000
     });
     
-    // Navigate to templates tab after saving
     setTimeout(() => {
-      document.querySelector('[data-state="inactive"][data-value="templates"]')?.click();
+      const tabsElement = document.querySelector('[data-state="inactive"][data-value="templates"]') as HTMLElement;
+      if (tabsElement) {
+        tabsElement.click();
+      }
     }, 500);
   };
 
