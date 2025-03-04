@@ -2,7 +2,7 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Download, Eye, Share2, FilePdf } from "lucide-react";
+import { Calendar, Download, Eye, Share2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -146,7 +146,7 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
                 <Eye className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(report)}>
-                <FilePdf className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => handleShareReport(report)}>
                 <Share2 className="h-4 w-4" />

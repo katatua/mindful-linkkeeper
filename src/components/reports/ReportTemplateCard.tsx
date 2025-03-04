@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Calendar, ArrowUpRight, Share2, FilePdf } from "lucide-react";
+import { FileText, Download, Calendar, ArrowUpRight, Share2, File } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -72,7 +72,7 @@ export const ReportTemplateCard = ({
           </Button>
           <div className="flex gap-1">
             <Button variant="ghost" size="sm" onClick={handleDownloadTemplate}>
-              <FilePdf className="h-4 w-4" />
+              <File className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={handleShareTemplate}>
               <Share2 className="h-4 w-4" />
