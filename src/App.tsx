@@ -11,6 +11,7 @@ import AddCategory from "./pages/AddCategory";
 import ANIPortal from "./pages/ANIPortal";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import FundingPage from "./pages/FundingPage";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/add-link" element={<AddLink />} />
           <Route path="/add-category" element={<AddCategory />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/funding" element={<FundingPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

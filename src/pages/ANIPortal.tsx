@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
+import FundingPage from "./FundingPage";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -103,6 +104,7 @@ const ANIPortal = () => {
             <div className="container mx-auto py-4">
               <TabsList>
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="funding">Funding</TabsTrigger>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -112,6 +114,10 @@ const ANIPortal = () => {
             
             <TabsContent value="dashboard" className="h-full">
               <Dashboard />
+            </TabsContent>
+            
+            <TabsContent value="funding" className="h-full">
+              <FundingPage />
             </TabsContent>
             
             <TabsContent value="projects">
