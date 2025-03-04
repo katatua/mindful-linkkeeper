@@ -1,12 +1,25 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Eye, FileText, Share2 } from "lucide-react";
+import { Calendar, Eye, FileText, Share2, PlusSquare, BarChart4, FileCheck } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate } from "react-router-dom";
 
 export interface ReportTemplateProps {
   title: string;
@@ -24,13 +37,54 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
   usageCount
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isConfigureDialogOpen, setIsConfigureDialogOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [configSettings, setConfigSettings] = useState({
+    includeCharts: true,
+    includeAiAnalysis: true,
+    includeSummary: true,
+    includeRecommendations: true
+  });
 
   const handleUseTemplate = () => {
+    setIsConfigureDialogOpen(true);
+  };
+
+  const handleSaveConfiguration = () => {
     toast({
-      title: "Template selected",
-      description: `Now creating a new report using the "${title}" template`,
+      title: "Template configured",
+      description: `Configuration saved for "${title}" template`,
     });
-    // In a real app, this would navigate to a report creation page with the template pre-selected
+    setIsConfigureDialogOpen(false);
+  };
+
+  const handleViewTemplate = () => {
+    setIsViewDialogOpen(true);
+  };
+
+  const handleShareTemplate = () => {
+    setIsShareDialogOpen(true);
+  };
+
+  const handleShareSubmit = () => {
+    if (!shareEmail) {
+      toast({
+        title: "Error",
+        description: "Please enter an email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Template shared",
+      description: `"${title}" template has been shared with ${shareEmail}`,
+    });
+    setIsShareDialogOpen(false);
+    setShareEmail('');
   };
 
   const handleDownloadTemplate = () => {
@@ -39,79 +93,50 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
       description: `Preparing "${title}" template for download`,
     });
 
-    const tempDiv = document.createElement('div');
-    tempDiv.className = 'p-8 bg-white';
-    tempDiv.style.width = '800px';
-    
-    tempDiv.innerHTML = `
-      <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">${title} - Template</h1>
-      <div style="margin-bottom: 16px;">
-        <span style="font-weight: 500;">Category:</span> ${category}<br>
-        <span style="font-weight: 500;">Last Updated:</span> ${lastUpdated}<br>
-        <span style="font-weight: 500;">Usage Count:</span> ${usageCount} times
-      </div>
-      <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 4px;">
-        <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 12px;">Template Description</h2>
-        <p>${description}</p>
-      </div>
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 12px;">Template Structure</h2>
-        <ul style="list-style-type: disc; margin-left: 20px;">
-          <li style="margin-bottom: 8px;"><b>Executive Summary</b> - High-level overview of key findings</li>
-          <li style="margin-bottom: 8px;"><b>Data Analysis</b> - Detailed breakdown of relevant metrics</li>
-          <li style="margin-bottom: 8px;"><b>Visualizations</b> - Charts and graphs illustrating key trends</li>
-          <li style="margin-bottom: 8px;"><b>Recommendations</b> - Strategic recommendations based on findings</li>
-          <li style="margin-bottom: 8px;"><b>Next Steps</b> - Proposed actions and implementation timeline</li>
-        </ul>
-      </div>
-      <div style="margin-top: 32px; color: #6b7280; font-size: 12px;">
-        This is an official report template from the ANI Innovation Portal.
-        Generated on: ${new Date().toLocaleString()}
-      </div>
-    `;
-    
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    document.body.appendChild(tempDiv);
-    
-    html2canvas(tempDiv, { scale: 2 }).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
+    // Use a pre-generated PDF instead of generating on the fly
+    setTimeout(() => {
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 10;
+      // Add sample content (simulating a pre-generated template)
+      pdf.setFontSize(24);
+      pdf.text(title, 20, 30);
       
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.setFontSize(12);
+      pdf.text(`Category: ${category}`, 20, 50);
+      pdf.text(`Last Updated: ${lastUpdated}`, 20, 60);
+      pdf.text(`Usage Count: ${usageCount} times`, 20, 70);
+      
+      pdf.setFontSize(16);
+      pdf.text("Template Description", 20, 90);
+      
+      pdf.setFontSize(12);
+      pdf.text(description, 20, 100);
+      
+      pdf.setFontSize(16);
+      pdf.text("Template Structure", 20, 130);
+      
+      pdf.setFontSize(12);
+      pdf.text("• Executive Summary - High-level overview of key findings", 20, 140);
+      pdf.text("• Data Analysis - Detailed breakdown of relevant metrics", 20, 150);
+      pdf.text("• Visualizations - Charts and graphs illustrating key trends", 20, 160);
+      pdf.text("• Recommendations - Strategic recommendations based on findings", 20, 170);
+      pdf.text("• Next Steps - Proposed actions and implementation timeline", 20, 180);
+      
+      pdf.setFontSize(10);
+      pdf.text(`This is an official report template from the ANI Innovation Portal.`, 20, 260);
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, 20, 270);
+      
       pdf.save(`${title.replace(/\s+/g, '-')}-Template.pdf`);
-      
-      document.body.removeChild(tempDiv);
       
       toast({
         title: "Download complete",
         description: `Template "${title}" has been downloaded.`,
       });
-    });
-  };
-
-  const handleShareTemplate = () => {
-    toast({
-      title: "Share template",
-      description: `Share link for "${title}" template has been copied to clipboard`,
-    });
-
-    // Simulate copying to clipboard
-    navigator.clipboard.writeText(`https://ani-portal.example.com/reports/templates/${title.replace(/\s+/g, '-')}`).catch(() => {
-      console.error("Failed to copy to clipboard");
-    });
+    }, 500); // Short delay to simulate pre-generated PDF
   };
 
   return (
@@ -136,7 +161,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleUseTemplate}>
+          <Button variant="ghost" size="sm" onClick={handleViewTemplate}>
             <Eye className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={handleDownloadTemplate}>
@@ -145,8 +170,190 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
           <Button variant="ghost" size="sm" onClick={handleShareTemplate}>
             <Share2 className="h-4 w-4" />
           </Button>
+          <Button variant="ghost" size="sm" onClick={handleUseTemplate}>
+            <PlusSquare className="h-4 w-4" />
+          </Button>
         </div>
       </CardFooter>
+
+      {/* View Template Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>
+              Category: {category} | Last Updated: {lastUpdated}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <h3 className="font-medium mb-2">Description</h3>
+              <p className="text-sm text-gray-600">{description}</p>
+            </div>
+            <div>
+              <h3 className="font-medium mb-2">Template Structure</h3>
+              <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
+                <li>Executive Summary - High-level overview of key findings</li>
+                <li>Data Analysis - Detailed breakdown of relevant metrics</li>
+                <li>Visualizations - Charts and graphs illustrating key trends</li>
+                <li>Recommendations - Strategic recommendations based on findings</li>
+                <li>Next Steps - Proposed actions and implementation timeline</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-medium mb-2">Usage Statistics</h3>
+              <p className="text-sm text-gray-600">This template has been used {usageCount} times.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+            <Button onClick={handleDownloadTemplate}>
+              <FileText className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Template Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Share Template</DialogTitle>
+            <DialogDescription>
+              Share this template with team members via email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label htmlFor="email" className="text-sm font-medium mb-2 block">
+              Email Address
+            </label>
+            <Input
+              id="email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              placeholder="colleague@example.com"
+              type="email"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsShareDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleShareSubmit}>Share</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Configure Template Dialog */}
+      <Dialog open={isConfigureDialogOpen} onOpenChange={setIsConfigureDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Configure Report Template</DialogTitle>
+            <DialogDescription>
+              Customize the "{title}" template to fit your needs.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Select Report Components</h3>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="charts"
+                  checked={configSettings.includeCharts}
+                  onCheckedChange={(checked) => 
+                    setConfigSettings({...configSettings, includeCharts: checked as boolean})
+                  }
+                />
+                <label
+                  htmlFor="charts"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Include Visualizations
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="ai-analysis"
+                  checked={configSettings.includeAiAnalysis}
+                  onCheckedChange={(checked) => 
+                    setConfigSettings({...configSettings, includeAiAnalysis: checked as boolean})
+                  }
+                />
+                <label
+                  htmlFor="ai-analysis"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Include AI Analysis
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="summary"
+                  checked={configSettings.includeSummary}
+                  onCheckedChange={(checked) => 
+                    setConfigSettings({...configSettings, includeSummary: checked as boolean})
+                  }
+                />
+                <label
+                  htmlFor="summary"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Include Executive Summary
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recommendations"
+                  checked={configSettings.includeRecommendations}
+                  onCheckedChange={(checked) => 
+                    setConfigSettings({...configSettings, includeRecommendations: checked as boolean})
+                  }
+                />
+                <label
+                  htmlFor="recommendations"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Include Recommendations
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Select Visualizations</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  className="justify-start text-left h-auto py-2"
+                  onClick={() => navigate('/visualization/performance/line/performance-trends')}
+                >
+                  <BarChart4 className="h-4 w-4 mr-2" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs font-medium">Performance Trends</span>
+                    <span className="text-xs text-gray-500">Line chart</span>
+                  </div>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="justify-start text-left h-auto py-2"
+                  onClick={() => navigate('/visualization/performance/bar/kpi-performance')}
+                >
+                  <BarChart4 className="h-4 w-4 mr-2" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs font-medium">KPI Performance</span>
+                    <span className="text-xs text-gray-500">Bar chart</span>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfigureDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveConfiguration}>
+              <FileCheck className="h-4 w-4 mr-2" />
+              Save Configuration
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

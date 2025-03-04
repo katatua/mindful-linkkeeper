@@ -2,10 +2,19 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Download, Eye, Share2, FileText } from "lucide-react";
+import { Calendar, Eye, Share2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { useState } from "react";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface ReportsListProps {
   searchQuery: string;
@@ -13,6 +22,9 @@ interface ReportsListProps {
 
 export const ReportsList = ({ searchQuery }: ReportsListProps) => {
   const { toast } = useToast();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [currentReport, setCurrentReport] = useState<any>(null);
   
   // Sample data for reports
   const reports = [
@@ -84,83 +96,93 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
       description: `Preparing ${report.title} for download`,
     });
     
-    // Create a temporary div to render the report
-    const tempDiv = document.createElement('div');
-    tempDiv.className = 'p-8 bg-white';
-    tempDiv.style.width = '800px';
-    
-    // Add content to the div
-    tempDiv.innerHTML = `
-      <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">${report.title}</h1>
-      <div style="margin-bottom: 16px;">
-        <span style="font-weight: 500;">Type:</span> ${report.type}<br>
-        <span style="font-weight: 500;">Author:</span> ${report.author}<br>
-        <span style="font-weight: 500;">Date:</span> ${report.date}<br>
-        <span style="font-weight: 500;">Status:</span> ${report.status}
-      </div>
-      <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 4px;">
-        ${report.content}
-      </div>
-      <div style="margin-top: 32px; color: #6b7280; font-size: 12px;">
-        This is an official report generated from the ANI Innovation Portal.
-        Document ID: ${report.id} | Generated on: ${new Date().toLocaleString()}
-      </div>
-    `;
-    
-    // Append to body but hide it
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    document.body.appendChild(tempDiv);
-    
-    // Generate PDF
-    html2canvas(tempDiv, { scale: 2 }).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
+    // Use pre-generated PDF instead of generating on the fly
+    setTimeout(() => {
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 10;
+      // Add sample content (simulating a pre-generated report)
+      pdf.setFontSize(22);
+      pdf.text(report.title, 20, 30);
       
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.setFontSize(12);
+      pdf.text(`Report ID: ${report.id}`, 20, 45);
+      pdf.text(`Type: ${report.type}`, 20, 55);
+      pdf.text(`Author: ${report.author}`, 20, 65);
+      pdf.text(`Date: ${report.date}`, 20, 75);
+      pdf.text(`Status: ${report.status}`, 20, 85);
+      
+      pdf.setFontSize(16);
+      pdf.text("Executive Summary", 20, 105);
+      
+      pdf.setFontSize(12);
+      // Break long content text into multiple lines
+      const contentLines = pdf.splitTextToSize(report.content, 170);
+      pdf.text(contentLines, 20, 115);
+      
+      // Add sample visualizations text
+      pdf.setFontSize(16);
+      pdf.text("Key Visualizations", 20, 155);
+      
+      pdf.setFontSize(12);
+      pdf.text("[Performance charts and data visualizations would appear here]", 20, 165);
+      
+      pdf.setFontSize(16);
+      pdf.text("Conclusions & Recommendations", 20, 185);
+      
+      pdf.setFontSize(12);
+      pdf.text("Based on the analysis, we recommend continuing investment in high-performing", 20, 195);
+      pdf.text("sectors and exploring new opportunities in emerging technology areas.", 20, 205);
+      
+      pdf.setFontSize(10);
+      pdf.text(`This is an official report generated from the ANI Innovation Portal.`, 20, 265);
+      pdf.text(`Document ID: ${report.id} | Generated on: ${new Date().toLocaleString()}`, 20, 275);
+      
       pdf.save(`${report.id}-${report.title.replace(/\s+/g, '-')}.pdf`);
-      
-      // Remove the temporary div
-      document.body.removeChild(tempDiv);
       
       toast({
         title: "Download complete",
         description: `Report "${report.title}" has been downloaded.`,
       });
-    });
+    }, 500); // Short delay to simulate pre-generated PDF
   };
 
   const handleViewReport = (report: any) => {
-    // In a real app, this would navigate to a detailed report view
+    // Navigate to a detailed report view
     toast({
       title: "Viewing report",
       description: `Opening report: ${report.title}`,
     });
+    
+    // In a real application, this would navigate to a dedicated report view page
+    window.open(`/reports/view/${report.id}`, '_blank');
   };
 
   const handleShareReport = (report: any) => {
-    // In a real app, this would open a share dialog or generate a shareable URL
-    toast({
-      title: "Share report",
-      description: `Share link for "${report.title}" has been generated and copied to clipboard`,
-    });
+    setCurrentReport(report);
+    setShareDialogOpen(true);
+  };
 
-    // Simulate copying to clipboard
-    navigator.clipboard.writeText(`https://ani-portal.example.com/reports/${report.id}`).catch(() => {
-      console.error("Failed to copy to clipboard");
+  const handleShareSubmit = () => {
+    if (!shareEmail || !currentReport) {
+      toast({
+        title: "Error",
+        description: "Please enter an email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Report shared",
+      description: `"${currentReport.title}" has been shared with ${shareEmail}`,
     });
+    setShareDialogOpen(false);
+    setShareEmail('');
+    setCurrentReport(null);
   };
 
   if (filteredReports.length === 0) {
@@ -213,6 +235,34 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
           </CardFooter>
         </Card>
       ))}
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Share Report</DialogTitle>
+            <DialogDescription>
+              Share this report with team members via email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label htmlFor="email" className="text-sm font-medium mb-2 block">
+              Email Address
+            </label>
+            <Input
+              id="email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              placeholder="colleague@example.com"
+              type="email"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShareDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleShareSubmit}>Share</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
