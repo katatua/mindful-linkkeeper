@@ -13,27 +13,30 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { Dashboard } from "./components/Dashboard";
 import { AIAssistant } from "./components/AIAssistant";
+import { SidebarProvider } from "./contexts/SidebarContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ANIPortal />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/assistant" element={<AIAssistant />} />
-          <Route path="/legacy" element={<Index />} />
-          <Route path="/add-file" element={<AddFile />} />
-          <Route path="/add-link" element={<AddLink />} />
-          <Route path="/add-category" element={<AddCategory />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <SidebarProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ANIPortal />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/assistant" element={<AIAssistant />} />
+            <Route path="/legacy" element={<Index />} />
+            <Route path="/add-file" element={<AddFile />} />
+            <Route path="/add-link" element={<AddLink />} />
+            <Route path="/add-category" element={<AddCategory />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </SidebarProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
