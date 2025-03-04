@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, FileText, Eye, ArrowUpRight, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 
 interface PolicyListProps {
@@ -88,10 +88,19 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
   );
 
   const handleViewPolicy = (policyId: string) => {
+    // Use navigate instead of direct location change to prevent full page reload
     navigate(`/policies/${policyId}`);
   };
 
   const handleDownloadPolicy = (policyId: string) => {
+    // Simulate PDF download
+    const link = document.createElement('a');
+    link.href = '/sample-policy.pdf'; // In real app, this would be a dynamic URL
+    link.download = `Policy-${policyId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
       title: "Policy PDF downloaded",
       description: `Policy ${policyId} has been downloaded successfully.`,
@@ -163,6 +172,7 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Download Policy PDF</DialogTitle>
+                    <DialogDescription>This will download the PDF document for this policy.</DialogDescription>
                   </DialogHeader>
                   <div className="py-4">
                     <p>Are you sure you want to download the PDF for {policy.title}?</p>

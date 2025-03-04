@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 import { Search, FileText, Calendar, ArrowUpRight, Filter, Book, Flag, BarChart2, Building2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { PolicyList } from "@/components/policies/PolicyList";
@@ -11,6 +13,7 @@ import { PolicyFrameworks } from "@/components/policies/PolicyFrameworks";
 
 const PoliciesPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   
   const keyPolicies = [
@@ -114,7 +117,11 @@ const PoliciesPage = () => {
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-1" /> Filter
           </Button>
-          <Button variant="default" size="sm">
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={() => navigate('/policy-guide')}
+          >
             <FileText className="h-4 w-4 mr-1" /> Policy Guide
           </Button>
         </div>
@@ -152,7 +159,12 @@ const PoliciesPage = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="pt-2">
-                  <Button variant="ghost" size="sm" className="text-blue-600">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-blue-600"
+                    onClick={() => navigate(`/policies/POL-2023-00${index + 1}`)}
+                  >
                     View Details
                     <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
@@ -276,7 +288,12 @@ const PoliciesPage = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="pt-2">
-                  <Button variant="ghost" size="sm" className="text-blue-600">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-blue-600"
+                    onClick={() => navigate(`/frameworks/FRAMEWORK-00${index + 1}`)}
+                  >
                     View Framework Details
                     <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
@@ -392,7 +409,7 @@ const PoliciesPage = () => {
                         ></textarea>
                       </div>
                       
-                      <div className="flex justify-end">
+                      <div className="flex justify-end space-x-2">
                         <Button variant="outline" className="mr-2">
                           Cancel
                         </Button>

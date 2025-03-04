@@ -20,6 +20,7 @@ import PolicyDetailPage from "./pages/PolicyDetailPage";
 import FrameworkDetailPage from "./pages/FrameworkDetailPage";
 import VisualizationDetailPage from "./pages/VisualizationDetailPage";
 import MetricDetailPage from "./pages/MetricDetailPage";
+import PolicyGuidePage from "./pages/PolicyGuidePage";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ function App() {
             <Route path="/frameworks/:frameworkId" element={<FrameworkDetailPage />} />
             <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
             <Route path="/metrics/:metricId" element={<MetricDetailPage />} />
+            <Route path="/policy-guide" element={<PolicyGuidePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

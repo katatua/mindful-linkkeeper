@@ -114,10 +114,9 @@ const ReportsPage = () => {
     }));
   };
 
-  const handleChartClick = () => {
-    const chartElement = document.querySelector('.chart-element');
-    if (chartElement instanceof HTMLElement) {
-      chartElement.click();
+  const handleChartElementClick = (element: SVGElement | null) => {
+    if (element) {
+      navigate(`/visualization/sector/bar/sector-performance`);
     }
   };
 

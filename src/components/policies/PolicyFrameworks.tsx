@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, ArrowUpRight, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 
 export const PolicyFrameworks = () => {
@@ -40,10 +40,19 @@ export const PolicyFrameworks = () => {
   ];
 
   const handleViewFramework = (frameworkId: string) => {
+    // Use navigate instead of location change to prevent full page reload
     navigate(`/frameworks/${frameworkId}`);
   };
 
   const handleDownloadFramework = (frameworkId: string) => {
+    // Simulate PDF download
+    const link = document.createElement('a');
+    link.href = '/sample-framework.pdf'; // In real app, this would be a dynamic URL
+    link.download = `Framework-${frameworkId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
       title: "Framework PDF downloaded",
       description: `Framework documentation has been downloaded successfully.`,
@@ -106,13 +115,14 @@ export const PolicyFrameworks = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Download Framework Documentation</DialogTitle>
+                    <DialogDescription>This will download the PDF document for this framework.</DialogDescription>
                   </DialogHeader>
                   <div className="py-4">
-                    <p>Are you sure you want to download the documentation for {framework.title}?</p>
+                    <p>Are you sure you want to download the documentation for {frameworks.find(f => f.id === selectedFramework)?.title}?</p>
                   </div>
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setSelectedFramework(null)}>Cancel</Button>
-                    <Button onClick={() => handleDownloadFramework(framework.id)}>Download</Button>
+                    <Button onClick={() => handleDownloadFramework(selectedFramework || '')}>Download</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -175,7 +185,19 @@ export const PolicyFrameworks = () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => {
+            const link = document.createElement('a');
+            link.href = '/sample-matrix.pdf';
+            link.download = 'Policy-Alignment-Matrix.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast({
+              title: "Matrix downloaded",
+              description: "Policy Alignment Matrix has been downloaded successfully.",
+            });
+          }}>
             <FileText className="h-4 w-4 mr-1" />
             Download Full Matrix
           </Button>
