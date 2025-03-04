@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download, Calendar, FileText, Share2, Clock, Filter, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import ReportsList from "@/components/reports/ReportsList";
-import ReportTemplates from "@/components/reports/ReportTemplates";
-import ScheduledReports from "@/components/reports/ScheduledReports";
+import { ReportsList } from "@/components/reports/ReportsList";
+import { ReportTemplates } from "@/components/reports/ReportTemplates";
+import { ScheduledReports } from "@/components/reports/ScheduledReports";
 
 const ReportsPage = () => {
   const { toast } = useToast();

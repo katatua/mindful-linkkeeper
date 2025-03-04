@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, FileText, Calendar, ArrowUpRight, Filter, Book, Flag, BarChart2, Building2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import PolicyList from "@/components/policies/PolicyList";
-import PolicyImpact from "@/components/policies/PolicyImpact";
-import PolicyFrameworks from "@/components/policies/PolicyFrameworks";
+import { PolicyList } from "@/components/policies/PolicyList";
+import { PolicyImpact } from "@/components/policies/PolicyImpact";
+import { PolicyFrameworks } from "@/components/policies/PolicyFrameworks";
 
 const PoliciesPage = () => {
   const { toast } = useToast();

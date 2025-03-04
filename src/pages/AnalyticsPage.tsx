@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Download, Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import FundingAnalytics from "@/components/analytics/FundingAnalytics";
-import SectorAnalytics from "@/components/analytics/SectorAnalytics";
-import PerformanceAnalytics from "@/components/analytics/PerformanceAnalytics";
-import RegionalAnalytics from "@/components/analytics/RegionalAnalytics";
+import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
+import { SectorAnalytics } from "@/components/analytics/SectorAnalytics";
+import { PerformanceAnalytics } from "@/components/analytics/PerformanceAnalytics";
+import { RegionalAnalytics } from "@/components/analytics/RegionalAnalytics";
 
 const AnalyticsPage = () => {
   const { toast } = useToast();
