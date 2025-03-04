@@ -4,16 +4,21 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, X } from "lucide-react";
+import { MessageSquare, X, Menu } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 const ANIPortal = () => {
   const [showChat, setShowChat] = useState(false);
+  const { isOpen, toggle } = useSidebar();
 
   return (
     <div className="h-screen flex flex-col">
       <header className="bg-white border-b py-3 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={toggle} className="mr-2">
+            <Menu className="h-5 w-5" />
+          </Button>
           <img 
             src="https://via.placeholder.com/40?text=ANI" 
             alt="ANI Logo" 

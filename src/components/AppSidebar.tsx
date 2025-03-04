@@ -7,20 +7,12 @@ import {
   FileUp,
   LogIn,
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 const menuItems = [
   { title: "Add File", icon: FileUp, url: "/add-file" },
@@ -32,6 +24,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isOpen, toggle } = useSidebar();
 
   useEffect(() => {
     // Check initial auth state
@@ -67,48 +60,49 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {isAuthenticated && menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a
-                      href={item.url}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                {isAuthenticated ? (
-                  <SidebarMenuButton 
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-                  >
-                    <LogOut className="h-5 w-5" />
-                    <span>Logout</span>
-                  </SidebarMenuButton>
-                ) : (
-                  <SidebarMenuButton 
-                    onClick={handleLogin}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-                  >
-                    <LogIn className="h-5 w-5" />
-                    <span>Login</span>
-                  </SidebarMenuButton>
-                )}
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+    <div className={`w-64 h-full bg-white border-r transition-all ${isOpen ? '' : 'w-0 overflow-hidden'}`}>
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">ANI Portal</h2>
+          <Button variant="ghost" size="sm" onClick={toggle}>
+            {isOpen ? "←" : "→"}
+          </Button>
+        </div>
+      </div>
+      
+      <div className="p-4">
+        <h3 className="text-sm font-medium text-gray-500 mb-3">Actions</h3>
+        <nav className="space-y-1">
+          {isAuthenticated && menuItems.map((item) => (
+            <a
+              key={item.title}
+              href={item.url}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.title}</span>
+            </a>
+          ))}
+          
+          {isAuthenticated ? (
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+          ) : (
+            <button 
+              onClick={handleLogin}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+            >
+              <LogIn className="h-5 w-5" />
+              <span>Login</span>
+            </button>
+          )}
+        </nav>
+      </div>
+    </div>
   );
 }
