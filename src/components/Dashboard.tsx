@@ -150,7 +150,13 @@ export const Dashboard = () => {
   );
 
   const handleChartClick = (chartId, chartType, category = "overview") => {
+    console.log(`Navigating to: /visualization/${category}/${chartType}/${chartId}`);
     navigate(`/visualization/${category}/${chartType}/${chartId}`);
+  };
+
+  const handleMetricDetailClick = (metricId) => {
+    console.log(`Navigating to metric detail: ${metricId}`);
+    navigate(`/metrics/${metricId}`);
   };
 
   const exportToPdf = async () => {
@@ -259,23 +265,31 @@ export const Dashboard = () => {
           <div id="dashboard-content" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredMetrics.map((metric, index) => (
-                <DataCard
-                  key={index}
-                  title={metric.title}
-                  value={metric.value}
-                  trend={metric.trend}
-                  percentChange={metric.percentChange}
-                  category={metric.category}
-                  date={metric.date}
-                  chartData={metric.chartData}
-                  isGrid={isGridView}
-                  icon={metric.icon}
-                />
+                <div 
+                  key={index} 
+                  className="cursor-pointer" 
+                  onClick={() => handleMetricDetailClick(metric.title.toLowerCase().replace(/\s+/g, '-'))}
+                >
+                  <DataCard
+                    title={metric.title}
+                    value={metric.value}
+                    trend={metric.trend}
+                    percentChange={metric.percentChange}
+                    category={metric.category}
+                    date={metric.date}
+                    chartData={metric.chartData}
+                    isGrid={isGridView}
+                    icon={metric.icon}
+                  />
+                </div>
               ))}
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('project-growth', 'bar')}>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-all" 
+                onClick={() => handleChartClick('project-growth', 'bar')}
+              >
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Project Growth Trends (2023)</CardTitle>
                 </CardHeader>
@@ -295,7 +309,10 @@ export const Dashboard = () => {
                 </CardContent>
               </Card>
               
-              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('innovation-investments', 'line')}>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-all" 
+                onClick={() => handleChartClick('innovation-investments', 'line')}
+              >
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Innovation Investment vs Projects</CardTitle>
                 </CardHeader>
@@ -319,7 +336,10 @@ export const Dashboard = () => {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-distribution', 'pie')}>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-all" 
+                onClick={() => handleChartClick('sector-distribution', 'pie')}
+              >
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Innovation Sectors Distribution</CardTitle>
                 </CardHeader>
@@ -350,7 +370,10 @@ export const Dashboard = () => {
                 </CardContent>
               </Card>
               
-              <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-growth', 'area')}>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-all" 
+                onClick={() => handleChartClick('funding-growth', 'area')}
+              >
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Innovation Funding Growth</CardTitle>
                 </CardHeader>

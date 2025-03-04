@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { FileText, Plus } from "lucide-react";
@@ -17,8 +18,7 @@ export const ReportTemplates = () => {
     description: "",
     category: "",
   });
-
-  const templates: ReportTemplateProps[] = [
+  const [templates, setTemplates] = useState<ReportTemplateProps[]>([
     {
       title: "Quarterly Performance Report",
       description: "Comprehensive analysis of quarterly funding allocation and project performance",
@@ -61,6 +61,18 @@ export const ReportTemplates = () => {
       lastUpdated: "Jun 28, 2023",
       usageCount: 11
     }
+  ]);
+
+  const categories = [
+    "Performance",
+    "Regional",
+    "Sector",
+    "Financial",
+    "Impact",
+    "Ecosystem",
+    "Policy",
+    "Collaboration",
+    "Other"
   ];
 
   const handleCreateTemplate = () => {
@@ -74,7 +86,23 @@ export const ReportTemplates = () => {
       return;
     }
 
-    // In a real app, this would call an API to save the template
+    // Create new template object
+    const newTemplateObj: ReportTemplateProps = {
+      title: newTemplate.title,
+      description: newTemplate.description,
+      category: newTemplate.category,
+      lastUpdated: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      }),
+      usageCount: 0
+    };
+
+    // Add to templates array
+    setTemplates([newTemplateObj, ...templates]);
+
+    // Show success toast
     toast({
       title: "Template created",
       description: `The template "${newTemplate.title}" has been created successfully`,
@@ -118,12 +146,21 @@ export const ReportTemplates = () => {
               </div>
               <div className="space-y-2">
                 <label htmlFor="category" className="text-sm font-medium">Category</label>
-                <Input
-                  id="category"
+                <Select
+                  onValueChange={(value) => setNewTemplate({...newTemplate, category: value})}
                   value={newTemplate.category}
-                  onChange={(e) => setNewTemplate({...newTemplate, category: e.target.value})}
-                  placeholder="e.g., Performance, Regional, Financial"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <label htmlFor="description" className="text-sm font-medium">Description</label>
