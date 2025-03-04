@@ -1,11 +1,8 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileText, Download, Calendar, ArrowUpRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ReportTemplateCard, ReportTemplateProps } from "./ReportTemplateCard";
 
 export const ReportTemplates = () => {
-  const templates = [
+  const templates: ReportTemplateProps[] = [
     {
       title: "Quarterly Performance Report",
       description: "Comprehensive analysis of quarterly funding allocation and project performance",
@@ -54,41 +51,14 @@ export const ReportTemplates = () => {
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {templates.map((template, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-base font-medium">{template.title}</CardTitle>
-                <Badge variant="outline" className="text-xs">
-                  {template.category}
-                </Badge>
-              </div>
-              <CardDescription>
-                {template.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>Updated: {template.lastUpdated}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <FileText className="h-3.5 w-3.5" />
-                <span>Used {template.usageCount} times</span>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-2">
-              <div className="flex justify-between items-center w-full">
-                <Button variant="ghost" size="sm">
-                  <ArrowUpRight className="h-4 w-4 mr-1" />
-                  Use
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4 mr-1" />
-                  Download
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
+          <ReportTemplateCard
+            key={index}
+            title={template.title}
+            description={template.description}
+            category={template.category}
+            lastUpdated={template.lastUpdated}
+            usageCount={template.usageCount}
+          />
         ))}
       </div>
     </div>

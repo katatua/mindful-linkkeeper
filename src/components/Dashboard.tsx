@@ -26,6 +26,10 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
+import { SectorAnalytics } from "@/components/analytics/SectorAnalytics";
+import { PerformanceAnalytics } from "@/components/analytics/PerformanceAnalytics";
+import { RegionalAnalytics } from "@/components/analytics/RegionalAnalytics";
 
 export const Dashboard = () => {
   const [isGridView, setIsGridView] = useState(true);
@@ -363,55 +367,19 @@ export const Dashboard = () => {
         </TabsContent>
         
         <TabsContent value="funding">
-          <Card>
-            <CardHeader>
-              <CardTitle>Funding Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Detailed funding analytics will be shown here, including source allocation, spending trends, and ROI metrics.
-              </p>
-            </CardContent>
-          </Card>
+          <FundingAnalytics />
         </TabsContent>
         
         <TabsContent value="sectors">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sectors Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Sector-specific data analysis will be displayed here, showing performance across different industry domains.
-              </p>
-            </CardContent>
-          </Card>
+          <SectorAnalytics />
         </TabsContent>
         
         <TabsContent value="performance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Metrics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Key performance indicators and success metrics will be visualized here with historical comparisons.
-              </p>
-            </CardContent>
-          </Card>
+          <PerformanceAnalytics />
         </TabsContent>
         
         <TabsContent value="regional">
-          <Card>
-            <CardHeader>
-              <CardTitle>Regional Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Geographic distribution of innovation activities across regions will be mapped here.
-              </p>
-            </CardContent>
-          </Card>
+          <RegionalAnalytics />
         </TabsContent>
       </Tabs>
     </div>
