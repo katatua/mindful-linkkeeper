@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SendHorizonal, Bot, User, Info } from "lucide-react";
-import { generateResponse } from "@/utils/aiUtils";
+import { generateResponse, genId } from "@/utils/aiUtils";
 import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
@@ -48,8 +48,9 @@ export const AIAssistant = () => {
     if (!input.trim()) return;
     
     // Add user message
+    const userMessageId = genId();
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: userMessageId,
       role: 'user',
       content: input,
       timestamp: new Date()
@@ -63,7 +64,7 @@ export const AIAssistant = () => {
       // Get response from the AI
       const response = await generateResponse(input);
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: genId(),
         role: 'assistant',
         content: response,
         timestamp: new Date()
@@ -79,7 +80,7 @@ export const AIAssistant = () => {
       });
       
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: genId(),
         role: 'assistant',
         content: 'Peço desculpa, mas encontrei um erro ao processar o seu pedido. Por favor, tente novamente mais tarde ou contacte o suporte técnico se o problema persistir.',
         timestamp: new Date()

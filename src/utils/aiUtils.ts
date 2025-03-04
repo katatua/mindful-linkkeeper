@@ -54,9 +54,9 @@ export const classifyDocument = async (data: ClassificationRequest): Promise<str
 // Search uploaded documents and generate an AI response
 export const generateResponse = async (userInput: string): Promise<string> => {
   try {
-    // Using the hardcoded values from the client.ts file as a fallback
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ncnewevucbkebrqjtufl.supabase.co';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jbmV3ZXZ1Y2JrZWJycWp0dWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3NTQ4NTgsImV4cCI6MjA1NTMzMDg1OH0.k1COvdcLYSB9C-X671zop6SdV7yaTPp49A4nJXWvmmc';
+    // Check environment variables
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase configuration is missing');
@@ -197,4 +197,9 @@ const getFallbackResponse = (userInput: string): string => {
   
   // Default response if no keyword matches
   return "Compreendo que está perguntando sobre " + input + ". Embora eu ainda não tenha informações específicas sobre esse tópico na nossa base de dados, posso conectá-lo com um especialista da ANI que pode ajudar. Gostaria que eu fizesse isso?";
+};
+
+// Helper function to generate a unique ID (for messages)
+export const genId = (): string => {
+  return Date.now().toString() + Math.random().toString(36).substring(2, 9);
 };
