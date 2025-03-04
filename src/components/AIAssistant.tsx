@@ -1,0 +1,160 @@
+
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { SendHorizonal, Bot, User } from "lucide-react";
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+const INITIAL_MESSAGES: Message[] = [
+  {
+    id: '1',
+    role: 'assistant',
+    content: 'Hello! I am ANI\'s AI Assistant. How can I help you with innovation insights today?',
+    timestamp: new Date()
+  }
+];
+
+// Sample predefined responses for demo purposes
+const AI_RESPONSES = {
+  "innovation": "Portugal's innovation ecosystem has shown significant growth in the past 5 years, with a 28% increase in R&D investment and 134 active innovation projects currently monitored by ANI.",
+  "funding": "ANI manages several funding programs including Portugal 2030 and Horizon Europe opportunities. The total available funding for the current cycle is €24.7M with 56 startups being supported.",
+  "report": "I can help generate reports on innovation metrics, funding allocation, or project performance. What specific type of report would you like to create?",
+  "policy": "Current innovation policies are aligned with the ENEI 2030 framework, focusing on digital transformation, sustainability, and knowledge transfer between academia and industry.",
+  "help": "I can assist with innovation metrics, funding information, policy insights, report generation, and connecting you with relevant stakeholders. What specific area do you need help with?",
+};
+
+export const AIAssistant = () => {
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+    
+    // Add user message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setIsTyping(true);
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const response = generateResponse(input);
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  const generateResponse = (userInput: string): string => {
+    const input = userInput.toLowerCase();
+    
+    // Simple keyword matching for demo purposes
+    for (const [keyword, response] of Object.entries(AI_RESPONSES)) {
+      if (input.includes(keyword)) {
+        return response;
+      }
+    }
+    
+    return "I understand you're asking about " + input + ". While I don't have specific information on that topic yet, I can connect you with an ANI expert who can help. Would you like me to do that?";
+  };
+
+  return (
+    <div className="border rounded-lg overflow-hidden flex flex-col h-[600px] bg-white">
+      <div className="p-4 border-b bg-gray-50">
+        <h2 className="text-lg font-medium flex items-center gap-2">
+          <Bot className="h-5 w-5 text-blue-500" />
+          ANI Innovation Assistant
+        </h2>
+      </div>
+      
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`rounded-lg px-4 py-2 max-w-[80%] flex gap-2 ${
+                  msg.role === 'user' 
+                    ? 'bg-blue-500 text-white ml-auto' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {msg.role === 'assistant' && (
+                  <Bot className="h-5 w-5 mt-1 flex-shrink-0" />
+                )}
+                <div>
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                {msg.role === 'user' && (
+                  <User className="h-5 w-5 mt-1 flex-shrink-0" />
+                )}
+              </div>
+            </div>
+          ))}
+          
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg px-4 py-2 text-gray-800">
+                <div className="flex gap-1">
+                  <span className="animate-bounce">●</span>
+                  <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>●</span>
+                  <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>●</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+      
+      <div className="p-4 border-t flex gap-2">
+        <Input
+          placeholder="Ask about innovation metrics, funding, or policies..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSendMessage();
+          }}
+        />
+        <Button onClick={handleSendMessage} disabled={isTyping || !input.trim()}>
+          <SendHorizonal className="h-5 w-5" />
+        </Button>
+      </div>
+    </div>
+  );
+};

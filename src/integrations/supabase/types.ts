@@ -49,6 +49,7 @@ export type Database = {
           embedding: string | null
           file_metadata: Json | null
           id: string
+          processing_status: string | null
           search_terms: unknown | null
           search_vector: unknown | null
           source: string | null
@@ -64,6 +65,7 @@ export type Database = {
           embedding?: string | null
           file_metadata?: Json | null
           id?: string
+          processing_status?: string | null
           search_terms?: unknown | null
           search_vector?: unknown | null
           source?: string | null
@@ -79,6 +81,7 @@ export type Database = {
           embedding?: string | null
           file_metadata?: Json | null
           id?: string
+          processing_status?: string | null
           search_terms?: unknown | null
           search_vector?: unknown | null
           source?: string | null
@@ -112,6 +115,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          link_id: string | null
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          link_id?: string | null
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          link_id?: string | null
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import AddFile from "./pages/AddFile";
 import AddLink from "./pages/AddLink";
 import AddCategory from "./pages/AddCategory";
+import ANIPortal from "./pages/ANIPortal";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 
@@ -20,7 +21,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<ANIPortal />} />
+          <Route path="/legacy" element={<Index />} />
           <Route path="/add-file" element={<AddFile />} />
           <Route path="/add-link" element={<AddLink />} />
           <Route path="/add-category" element={<AddCategory />} />
