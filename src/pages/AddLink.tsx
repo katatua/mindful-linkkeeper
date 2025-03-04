@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Header } from "@/components/Header";
 
 export default function AddLink() {
   const [url, setUrl] = useState("");
@@ -21,7 +21,6 @@ export default function AddLink() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is authenticated when component mounts
     const checkAuth = async () => {
       setIsLoading(true);
       const { data } = await supabase.auth.getSession();
@@ -31,7 +30,6 @@ export default function AddLink() {
     
     checkAuth();
     
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
     });
@@ -76,7 +74,6 @@ export default function AddLink() {
         return;
       }
 
-      // Get classification from Edge Function
       const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
         'classify-document',
         {
@@ -140,76 +137,82 @@ export default function AddLink() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 flex justify-center items-center">
-        <p>Loading...</p>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <div className="container mx-auto p-6 flex justify-center items-center flex-1">
+          <p>Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Add Link for AI Analysis</h1>
-        
-        {renderAuthWarning()}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Input
-              type="text"
-              placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full mb-4"
-              required
-              disabled={!isAuthenticated}
-            />
-            
-            <Input
-              type="url"
-              placeholder="Enter URL"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full mb-4"
-              required
-              disabled={!isAuthenticated}
-            />
-            
-            <Textarea
-              placeholder="Summary (helps the AI understand the content)"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              className="w-full mb-4"
-              rows={4}
-              disabled={!isAuthenticated}
-            />
-            
-            <Input
-              type="text"
-              placeholder="Category (e.g., 'funding', 'policy', 'technology')"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full"
-              disabled={!isAuthenticated}
-            />
-          </div>
-          <div className="flex gap-4">
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || !isAuthenticated}
-            >
-              {isSubmitting ? "Adding Link..." : "Add Link"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/")}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <div className="container mx-auto p-6 flex-1">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Add Link for AI Analysis</h1>
+          
+          {renderAuthWarning()}
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Input
+                type="text"
+                placeholder="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full mb-4"
+                required
+                disabled={!isAuthenticated}
+              />
+              
+              <Input
+                type="url"
+                placeholder="Enter URL"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full mb-4"
+                required
+                disabled={!isAuthenticated}
+              />
+              
+              <Textarea
+                placeholder="Summary (helps the AI understand the content)"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="w-full mb-4"
+                rows={4}
+                disabled={!isAuthenticated}
+              />
+              
+              <Input
+                type="text"
+                placeholder="Category (e.g., 'funding', 'policy', 'technology')"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full"
+                disabled={!isAuthenticated}
+              />
+            </div>
+            <div className="flex gap-4">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !isAuthenticated}
+              >
+                {isSubmitting ? "Adding Link..." : "Add Link"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/")}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Header } from "@/components/Header";
 
 export default function AddCategory() {
   const [categoryName, setCategoryName] = useState("");
@@ -55,38 +55,41 @@ export default function AddCategory() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Add Category</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Input
-              type="text"
-              placeholder="Category name"
-              value={categoryName}
-              onChange={(e) => setCategoryName(e.target.value)}
-              className="w-full mb-4"
-              required
-            />
-            <Input
-              type="text"
-              placeholder="Description (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <div className="flex gap-4">
-            <Button type="submit">Add Category</Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/")}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <div className="container mx-auto p-6 flex-1">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Add Category</h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Input
+                type="text"
+                placeholder="Category name"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                className="w-full mb-4"
+                required
+              />
+              <Input
+                type="text"
+                placeholder="Description (optional)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="flex gap-4">
+              <Button type="submit">Add Category</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/")}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

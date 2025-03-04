@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyDocument } from "@/utils/aiUtils";
+import { Header } from "@/components/Header";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -101,55 +101,58 @@ export default function AddFile() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Add File for AI Analysis</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Input
-              type="file"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="w-full mb-4"
-            />
-            
-            <Input
-              type="text"
-              placeholder="Title (optional - will use filename if empty)"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full mb-4"
-            />
-            
-            <Textarea
-              placeholder="Summary (optional - helps the AI understand the content)"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              className="w-full mb-4"
-              rows={4}
-            />
-            
-            <Input
-              type="text"
-              placeholder="Category (optional - e.g., 'funding', 'policy', 'technology')"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <div className="flex gap-4">
-            <Button type="submit" disabled={isUploading}>
-              {isUploading ? "Uploading..." : "Upload File"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/")}
-              disabled={isUploading}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <div className="container mx-auto p-6 flex-1">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Add File for AI Analysis</h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Input
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="w-full mb-4"
+              />
+              
+              <Input
+                type="text"
+                placeholder="Title (optional - will use filename if empty)"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full mb-4"
+              />
+              
+              <Textarea
+                placeholder="Summary (optional - helps the AI understand the content)"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="w-full mb-4"
+                rows={4}
+              />
+              
+              <Input
+                type="text"
+                placeholder="Category (optional - e.g., 'funding', 'policy', 'technology')"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="flex gap-4">
+              <Button type="submit" disabled={isUploading}>
+                {isUploading ? "Uploading..." : "Upload File"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/")}
+                disabled={isUploading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
