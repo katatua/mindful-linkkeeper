@@ -67,6 +67,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
   });
   const [selectedVisualizations, setSelectedVisualizations] = useState<typeof availableVisualizations>([]);
   const [selectedVisualization, setSelectedVisualization] = useState('');
+  const [hasConfigurationSaved, setHasConfigurationSaved] = useState(false);
 
   const handleUseTemplate = () => {
     setIsConfigureDialogOpen(true);
@@ -78,6 +79,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
       description: `Configuration saved for "${title}" template with ${selectedVisualizations.length} visualizations`,
     });
     setIsConfigureDialogOpen(false);
+    setHasConfigurationSaved(true);
   };
 
   const handleViewTemplate = () => {
@@ -192,6 +194,12 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
           <div className="mt-1">
             <span>Used {usageCount} times</span>
           </div>
+          {hasConfigurationSaved && (
+            <div className="mt-1 text-emerald-600 flex items-center gap-1">
+              <FileCheck className="h-3.5 w-3.5" />
+              <span>Configured</span>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={handleViewTemplate}>
@@ -223,16 +231,58 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
               <h3 className="font-medium mb-2">Description</h3>
               <p className="text-sm text-gray-600">{description}</p>
             </div>
-            <div>
-              <h3 className="font-medium mb-2">Template Structure</h3>
-              <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
-                <li>Executive Summary - High-level overview of key findings</li>
-                <li>Data Analysis - Detailed breakdown of relevant metrics</li>
-                <li>Visualizations - Charts and graphs illustrating key trends</li>
-                <li>Recommendations - Strategic recommendations based on findings</li>
-                <li>Next Steps - Proposed actions and implementation timeline</li>
-              </ul>
-            </div>
+            
+            {hasConfigurationSaved ? (
+              <>
+                <div>
+                  <h3 className="font-medium mb-2">Configuration Settings</h3>
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-md">
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileCheck className="h-4 w-4 text-emerald-600" />
+                      <span className="font-medium">Included Components:</span>
+                    </div>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6 text-sm">
+                      {configSettings.includeCharts && <li>Visualizations</li>}
+                      {configSettings.includeAiAnalysis && <li>AI Analysis</li>}
+                      {configSettings.includeSummary && <li>Executive Summary</li>}
+                      {configSettings.includeRecommendations && <li>Recommendations</li>}
+                    </ul>
+                  </div>
+                </div>
+                
+                {selectedVisualizations.length > 0 && (
+                  <div>
+                    <h3 className="font-medium mb-2">Selected Visualizations</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {selectedVisualizations.map((visual) => (
+                        <div 
+                          key={visual.id} 
+                          className="flex items-center gap-2 bg-gray-50 p-2 rounded-md"
+                        >
+                          <BarChart4 className="h-4 w-4 text-gray-600" />
+                          <div>
+                            <p className="text-sm font-medium">{visual.name}</p>
+                            <p className="text-xs text-gray-500">{visual.type}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                <h3 className="font-medium mb-2">Template Structure</h3>
+                <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
+                  <li>Executive Summary - High-level overview of key findings</li>
+                  <li>Data Analysis - Detailed breakdown of relevant metrics</li>
+                  <li>Visualizations - Charts and graphs illustrating key trends</li>
+                  <li>Recommendations - Strategic recommendations based on findings</li>
+                  <li>Next Steps - Proposed actions and implementation timeline</li>
+                </ul>
+              </div>
+            )}
+            
             <div>
               <h3 className="font-medium mb-2">Usage Statistics</h3>
               <p className="text-sm text-gray-600">This template has been used {usageCount} times.</p>
