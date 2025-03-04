@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, X, Menu } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { Toaster } from "@/components/ui/toaster";
 
 const ANIPortal = () => {
   const [showChat, setShowChat] = useState(false);
@@ -120,6 +121,9 @@ const ANIPortal = () => {
           <MessageSquare className="h-6 w-6" />
         </Button>
       )}
+      
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   );
 };

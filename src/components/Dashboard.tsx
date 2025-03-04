@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataCard } from "@/components/DataCard";
@@ -7,6 +6,9 @@ import { Search, Download, Filter, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ViewToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import {
   BarChart,
   Bar,
@@ -28,8 +30,8 @@ import {
 export const Dashboard = () => {
   const [isGridView, setIsGridView] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
   
-  // Sample data for demonstration
   const innovationMetrics = [
     {
       title: "Active Projects",
@@ -141,6 +143,70 @@ export const Dashboard = () => {
     metric.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const exportToPdf = async () => {
+    toast({
+      title: "Preparing PDF export...",
+      description: "This may take a few seconds.",
+    });
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const dashboardElement = document.getElementById('dashboard-content');
+      if (!dashboardElement) {
+        toast({
+          title: "Export failed",
+          description: "Could not find dashboard content to export.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const canvas = await html2canvas(dashboardElement, {
+        scale: 1.5,
+        useCORS: true,
+        logging: false,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      pdf.setFontSize(16);
+      pdf.text('ANI Innovation Analytics Dashboard Report', 20, 15);
+      
+      pdf.setFontSize(10);
+      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 22);
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, (pdfHeight - 30) / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      
+      pdf.addImage(imgData, 'PNG', imgX, 30, imgWidth * ratio, imgHeight * ratio);
+      
+      pdf.save('ANI_Innovation_Dashboard.pdf');
+      
+      toast({
+        title: "Export successful",
+        description: "Your dashboard has been exported as a PDF.",
+      });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -160,7 +226,7 @@ export const Dashboard = () => {
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-1" /> Filter
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={exportToPdf}>
             <Download className="h-4 w-4 mr-1" /> Export
           </Button>
           <Button variant="outline" size="sm">
@@ -180,117 +246,119 @@ export const Dashboard = () => {
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMetrics.map((metric, index) => (
-              <DataCard
-                key={index}
-                title={metric.title}
-                value={metric.value}
-                trend={metric.trend}
-                percentChange={metric.percentChange}
-                category={metric.category}
-                date={metric.date}
-                chartData={metric.chartData}
-                isGrid={isGridView}
-                icon={metric.icon}
-              />
-            ))}
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">Project Growth Trends (2023)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" fill="#8884d8" name="New Projects" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+          <div id="dashboard-content" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMetrics.map((metric, index) => (
+                <DataCard
+                  key={index}
+                  title={metric.title}
+                  value={metric.value}
+                  trend={metric.trend}
+                  percentChange={metric.percentChange}
+                  category={metric.category}
+                  date={metric.date}
+                  chartData={metric.chartData}
+                  isGrid={isGridView}
+                  icon={metric.icon}
+                />
+              ))}
+            </div>
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">Innovation Investment vs Projects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lineChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis yAxisId="left" />
-                      <YAxis yAxisId="right" orientation="right" />
-                      <Tooltip />
-                      <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="investment" stroke="#8884d8" name="Investment (€M)" />
-                      <Line yAxisId="right" type="monotone" dataKey="projects" stroke="#82ca9d" name="Active Projects" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">Innovation Sectors Distribution</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-center">
-                <div className="h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {pieChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium">Project Growth Trends (2023)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="value" fill="#8884d8" name="New Projects" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium">Innovation Investment vs Projects</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={lineChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis yAxisId="left" />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip />
+                        <Legend />
+                        <Line yAxisId="left" type="monotone" dataKey="investment" stroke="#8884d8" name="Investment (€M)" />
+                        <Line yAxisId="right" type="monotone" dataKey="projects" stroke="#82ca9d" name="Active Projects" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">Innovation Funding Growth</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={areaChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => [`€${value}K`, 'Funding']} />
-                      <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium">Innovation Sectors Distribution</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center">
+                  <div className="h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium">Innovation Funding Growth</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={areaChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => [`€${value}K`, 'Funding']} />
+                        <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
         
