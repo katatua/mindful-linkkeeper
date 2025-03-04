@@ -12,6 +12,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
 import FundingPage from "./FundingPage";
 import ProjectsPage from "./ProjectsPage";
+import AnalyticsPage from "./AnalyticsPage";
+import ReportsPage from "./ReportsPage";
+import PoliciesPage from "./PoliciesPage";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -125,31 +128,16 @@ const ANIPortal = () => {
               <ProjectsPage />
             </TabsContent>
             
-            <TabsContent value="analytics">
-              <div className="container mx-auto py-6">
-                <h2 className="text-2xl font-bold mb-6">Advanced Analytics</h2>
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                  <p>Analytics module will provide in-depth data analysis tools, predictive models, and scenario forecasting capabilities.</p>
-                </div>
-              </div>
+            <TabsContent value="analytics" className="h-full">
+              <AnalyticsPage />
             </TabsContent>
             
-            <TabsContent value="reports">
-              <div className="container mx-auto py-6">
-                <h2 className="text-2xl font-bold mb-6">Reports & Documentation</h2>
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                  <p>Reports module will enable automated document generation, performance reporting, and data export functionalities.</p>
-                </div>
-              </div>
+            <TabsContent value="reports" className="h-full">
+              <ReportsPage />
             </TabsContent>
             
-            <TabsContent value="policies">
-              <div className="container mx-auto py-6">
-                <h2 className="text-2xl font-bold mb-6">Innovation Policies</h2>
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                  <p>Policies module will track and analyze innovation directives, regulatory compliance, and policy impact assessments.</p>
-                </div>
-              </div>
+            <TabsContent value="policies" className="h-full">
+              <PoliciesPage />
             </TabsContent>
           </Tabs>
         </main>
