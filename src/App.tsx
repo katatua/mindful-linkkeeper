@@ -16,6 +16,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ReportsPage from "./pages/ReportsPage";
 import PoliciesPage from "./pages/PoliciesPage";
+import PolicyDetailPage from "./pages/PolicyDetailPage";
 import VisualizationDetailPage from "./pages/VisualizationDetailPage";
 import MetricDetailPage from "./pages/MetricDetailPage";
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/policies" element={<PoliciesPage />} />
+            <Route path="/policies/:policyId" element={<PolicyDetailPage />} />
             <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
             <Route path="/metrics/:metricId" element={<MetricDetailPage />} />
             <Route path="*" element={<NotFound />} />

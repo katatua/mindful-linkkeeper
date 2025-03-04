@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,10 +9,28 @@ import { useToast } from "@/components/ui/use-toast";
 import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
 import { ScheduledReports } from "@/components/reports/ScheduledReports";
+import { useNavigate } from "react-router-dom";
 
 const ReportsPage = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const [customReport, setCustomReport] = useState({
+    title: "Q4 2023 Innovation Analytics",
+    startDate: "2023-10-01",
+    endDate: "2023-12-31",
+    format: "pdf",
+    generationType: "one-time",
+    generateDate: "2023-12-31",
+    distribution: "team@ani.pt",
+    dataSources: {
+      fundingData: true,
+      projectMetrics: true,
+      regionalData: true,
+      sectorAnalysis: false,
+      performanceKPIs: false
+    }
+  });
   
   const recentReports = [
     {
@@ -47,8 +66,53 @@ const ReportsPage = () => {
   const handleGenerateReport = () => {
     toast({
       title: "Report generation initiated",
-      description: "Your custom report is being prepared.",
+      description: "Your custom report is being prepared. It will be available in a few minutes.",
+      duration: 5000
     });
+  };
+
+  const handleSaveTemplate = () => {
+    toast({
+      title: "Template saved",
+      description: `The template "${customReport.title}" has been saved successfully.`,
+      duration: 5000
+    });
+    
+    // Navigate to templates tab after saving
+    setTimeout(() => {
+      document.querySelector('[data-state="inactive"][data-value="templates"]')?.click();
+    }, 500);
+  };
+
+  const handleDataSourceChange = (source: keyof typeof customReport.dataSources) => {
+    setCustomReport(prev => ({
+      ...prev,
+      dataSources: {
+        ...prev.dataSources,
+        [source]: !prev.dataSources[source]
+      }
+    }));
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setCustomReport(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const setReportFormat = (format: string) => {
+    setCustomReport(prev => ({
+      ...prev,
+      format
+    }));
+  };
+
+  const setGenerationType = (type: string) => {
+    setCustomReport(prev => ({
+      ...prev,
+      generationType: type
+    }));
   };
 
   return (
@@ -155,23 +219,53 @@ const ReportsPage = () => {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="funding-data" className="checkbox" defaultChecked />
+                        <input 
+                          type="checkbox" 
+                          id="funding-data" 
+                          className="checkbox" 
+                          checked={customReport.dataSources.fundingData}
+                          onChange={() => handleDataSourceChange('fundingData')}
+                        />
                         <label htmlFor="funding-data" className="text-sm">Funding Data</label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="project-metrics" className="checkbox" defaultChecked />
+                        <input 
+                          type="checkbox" 
+                          id="project-metrics" 
+                          className="checkbox" 
+                          checked={customReport.dataSources.projectMetrics}
+                          onChange={() => handleDataSourceChange('projectMetrics')}
+                        />
                         <label htmlFor="project-metrics" className="text-sm">Project Metrics</label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="regional-data" className="checkbox" defaultChecked />
+                        <input 
+                          type="checkbox" 
+                          id="regional-data" 
+                          className="checkbox" 
+                          checked={customReport.dataSources.regionalData}
+                          onChange={() => handleDataSourceChange('regionalData')}
+                        />
                         <label htmlFor="regional-data" className="text-sm">Regional Data</label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="sector-analysis" className="checkbox" />
+                        <input 
+                          type="checkbox" 
+                          id="sector-analysis" 
+                          className="checkbox"
+                          checked={customReport.dataSources.sectorAnalysis}
+                          onChange={() => handleDataSourceChange('sectorAnalysis')}
+                        />
                         <label htmlFor="sector-analysis" className="text-sm">Sector Analysis</label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="performance-kpis" className="checkbox" />
+                        <input 
+                          type="checkbox" 
+                          id="performance-kpis" 
+                          className="checkbox"
+                          checked={customReport.dataSources.performanceKPIs}
+                          onChange={() => handleDataSourceChange('performanceKPIs')}
+                        />
                         <label htmlFor="performance-kpis" className="text-sm">Performance KPIs</label>
                       </div>
                     </div>
@@ -189,7 +283,8 @@ const ReportsPage = () => {
                         <Input
                           id="report-title"
                           placeholder="Enter report title"
-                          defaultValue="Q4 2023 Innovation Analytics"
+                          value={customReport.title}
+                          onChange={(e) => handleInputChange('title', e.target.value)}
                         />
                       </div>
                       
@@ -199,12 +294,14 @@ const ReportsPage = () => {
                           <Input
                             id="date-range-start"
                             type="date"
-                            defaultValue="2023-10-01"
+                            value={customReport.startDate}
+                            onChange={(e) => handleInputChange('startDate', e.target.value)}
                           />
                           <Input
                             id="date-range-end"
                             type="date"
-                            defaultValue="2023-12-31"
+                            value={customReport.endDate}
+                            onChange={(e) => handleInputChange('endDate', e.target.value)}
                           />
                         </div>
                       </div>
@@ -212,13 +309,28 @@ const ReportsPage = () => {
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Report Format</label>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button 
+                            variant={customReport.format === 'pdf' ? "default" : "outline"} 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setReportFormat('pdf')}
+                          >
                             <FileText className="h-4 w-4 mr-1" /> PDF
                           </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button 
+                            variant={customReport.format === 'excel' ? "default" : "outline"} 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setReportFormat('excel')}
+                          >
                             Excel
                           </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button 
+                            variant={customReport.format === 'web' ? "default" : "outline"} 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setReportFormat('web')}
+                          >
                             Web
                           </Button>
                         </div>
@@ -236,10 +348,20 @@ const ReportsPage = () => {
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Generation Type</label>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1 bg-blue-50">
+                          <Button 
+                            variant={customReport.generationType === 'one-time' ? "default" : "outline"} 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setGenerationType('one-time')}
+                          >
                             <Calendar className="h-4 w-4 mr-1" /> One-time
                           </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button 
+                            variant={customReport.generationType === 'recurring' ? "default" : "outline"} 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setGenerationType('recurring')}
+                          >
                             <Clock className="h-4 w-4 mr-1" /> Recurring
                           </Button>
                         </div>
@@ -250,7 +372,8 @@ const ReportsPage = () => {
                         <Input
                           id="generate-date"
                           type="date"
-                          defaultValue="2023-12-31"
+                          value={customReport.generateDate}
+                          onChange={(e) => handleInputChange('generateDate', e.target.value)}
                         />
                       </div>
                       
@@ -258,7 +381,8 @@ const ReportsPage = () => {
                         <label className="text-sm font-medium">Distribution</label>
                         <Input
                           placeholder="Enter email recipients"
-                          defaultValue="team@ani.pt"
+                          value={customReport.distribution}
+                          onChange={(e) => handleInputChange('distribution', e.target.value)}
                         />
                       </div>
                     </div>
@@ -267,7 +391,7 @@ const ReportsPage = () => {
               </div>
               
               <div className="flex justify-end">
-                <Button className="mr-2" variant="outline">
+                <Button className="mr-2" variant="outline" onClick={handleSaveTemplate}>
                   Save Template
                 </Button>
                 <Button onClick={handleGenerateReport}>

@@ -3,12 +3,15 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, FileText, Eye, ArrowUpRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface PolicyListProps {
   searchQuery: string;
 }
 
 export const PolicyList = ({ searchQuery }: PolicyListProps) => {
+  const navigate = useNavigate();
+  
   // Sample data for policies
   const policies = [
     {
@@ -79,6 +82,10 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
     policy.framework.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleViewPolicy = (policyId: string) => {
+    navigate(`/policies/${policyId}`);
+  };
+
   if (filteredPolicies.length === 0) {
     return (
       <Card>
@@ -125,10 +132,10 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
           <CardFooter className="border-t pt-4 flex justify-between items-center">
             <span className="text-xs text-gray-500">Framework: {policy.framework}</span>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => handleViewPolicy(policy.id)}>
                 <Eye className="h-4 w-4 mr-1" /> View
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => handleViewPolicy(policy.id)}>
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
             </div>
