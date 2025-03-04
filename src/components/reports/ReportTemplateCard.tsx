@@ -1,8 +1,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Calendar, ArrowUpRight } from "lucide-react";
+import { FileText, Download, Calendar, ArrowUpRight, Share2, FilePdf } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 
 export interface ReportTemplateProps {
   title: string;
@@ -19,6 +20,27 @@ export const ReportTemplateCard = ({
   lastUpdated, 
   usageCount 
 }: ReportTemplateProps) => {
+  const { toast } = useToast();
+
+  const handleDownloadTemplate = () => {
+    toast({
+      title: "Template download started",
+      description: `The "${title}" template is being downloaded`,
+    });
+    // In a real app, this would download the template
+  };
+
+  const handleShareTemplate = () => {
+    toast({
+      title: "Template shared",
+      description: `Share link for "${title}" template has been copied to clipboard`,
+    });
+    // In a real app, this would generate a shareable link
+    navigator.clipboard.writeText(`https://ani-portal.example.com/templates/${title.replace(/\s+/g, '-').toLowerCase()}`).catch(() => {
+      console.error("Failed to copy to clipboard");
+    });
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
@@ -48,10 +70,14 @@ export const ReportTemplateCard = ({
             <ArrowUpRight className="h-4 w-4 mr-1" />
             Use
           </Button>
-          <Button variant="ghost" size="sm">
-            <Download className="h-4 w-4 mr-1" />
-            Download
-          </Button>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={handleDownloadTemplate}>
+              <FilePdf className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleShareTemplate}>
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardFooter>
     </Card>

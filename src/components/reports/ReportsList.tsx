@@ -2,13 +2,18 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Download, Eye, Share2 } from "lucide-react";
+import { Calendar, Download, Eye, Share2, FilePdf } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 interface ReportsListProps {
   searchQuery: string;
 }
 
 export const ReportsList = ({ searchQuery }: ReportsListProps) => {
+  const { toast } = useToast();
+  
   // Sample data for reports
   const reports = [
     {
@@ -67,6 +72,39 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
     report.author.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleDownloadPDF = (report: any) => {
+    toast({
+      title: "Downloading report",
+      description: `Preparing ${report.title} for download`,
+    });
+    
+    // In a real app, this would call an API to generate a PDF
+    // For demo purposes, we'll create a simple PDF
+    const pdf = new jsPDF();
+    pdf.setFontSize(22);
+    pdf.text(report.title, 20, 20);
+    pdf.setFontSize(12);
+    pdf.text(`Type: ${report.type}`, 20, 30);
+    pdf.text(`Author: ${report.author}`, 20, 40);
+    pdf.text(`Date: ${report.date}`, 20, 50);
+    pdf.text(`Status: ${report.status}`, 20, 60);
+    pdf.text("This is a demonstration PDF of the report content.", 20, 80);
+    pdf.save(`${report.id}-${report.title.replace(/\s+/g, '-')}.pdf`);
+  };
+
+  const handleShareReport = (report: any) => {
+    // In a real app, this would open a share dialog or generate a shareable URL
+    toast({
+      title: "Share report",
+      description: `Share link for "${report.title}" has been generated and copied to clipboard`,
+    });
+
+    // Simulate copying to clipboard
+    navigator.clipboard.writeText(`https://ani-portal.example.com/reports/${report.id}`).catch(() => {
+      console.error("Failed to copy to clipboard");
+    });
+  };
+
   if (filteredReports.length === 0) {
     return (
       <Card>
@@ -107,10 +145,10 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
               <Button variant="ghost" size="sm">
                 <Eye className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
-                <Download className="h-4 w-4" />
+              <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(report)}>
+                <FilePdf className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => handleShareReport(report)}>
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
