@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Eye, FileText, Share2, PlusSquare, BarChart4, FileCheck } from "lucide-react";
+import { Calendar, Eye, FileText, Share2, PlusSquare, BarChart4, FileCheck, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
@@ -20,6 +20,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface ReportTemplateProps {
   title: string;
@@ -28,6 +35,16 @@ export interface ReportTemplateProps {
   lastUpdated: string;
   usageCount: number;
 }
+
+// Sample visualizations available for selection
+const availableVisualizations = [
+  { id: "performance-trends", name: "Performance Trends", type: "Line Chart", category: "performance" },
+  { id: "kpi-performance", name: "KPI Performance", type: "Bar Chart", category: "performance" },
+  { id: "regional-comparison", name: "Regional Comparison", type: "Bar Chart", category: "regional" },
+  { id: "funding-allocation", name: "Funding Allocation", type: "Pie Chart", category: "funding" },
+  { id: "sector-growth", name: "Sector Growth", type: "Area Chart", category: "sector" },
+  { id: "project-status", name: "Project Status", type: "Gauge Chart", category: "projects" },
+];
 
 export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
   title,
@@ -48,6 +65,8 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
     includeSummary: true,
     includeRecommendations: true
   });
+  const [selectedVisualizations, setSelectedVisualizations] = useState<typeof availableVisualizations>([]);
+  const [selectedVisualization, setSelectedVisualization] = useState('');
 
   const handleUseTemplate = () => {
     setIsConfigureDialogOpen(true);
@@ -56,7 +75,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
   const handleSaveConfiguration = () => {
     toast({
       title: "Template configured",
-      description: `Configuration saved for "${title}" template`,
+      description: `Configuration saved for "${title}" template with ${selectedVisualizations.length} visualizations`,
     });
     setIsConfigureDialogOpen(false);
   };
@@ -137,6 +156,20 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
         description: `Template "${title}" has been downloaded.`,
       });
     }, 500); // Short delay to simulate pre-generated PDF
+  };
+
+  const handleAddVisualization = () => {
+    if (!selectedVisualization) return;
+    
+    const visualToAdd = availableVisualizations.find(v => v.id === selectedVisualization);
+    if (visualToAdd && !selectedVisualizations.some(v => v.id === visualToAdd.id)) {
+      setSelectedVisualizations([...selectedVisualizations, visualToAdd]);
+      setSelectedVisualization('');
+    }
+  };
+
+  const handleRemoveVisualization = (id: string) => {
+    setSelectedVisualizations(selectedVisualizations.filter(v => v.id !== id));
   };
 
   return (
@@ -317,31 +350,69 @@ export const ReportTemplateCard: React.FC<ReportTemplateProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h3 className="text-sm font-medium">Select Visualizations</h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Select 
+                    value={selectedVisualization} 
+                    onValueChange={setSelectedVisualization}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a visualization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableVisualizations.map((visual) => (
+                        <SelectItem 
+                          key={visual.id} 
+                          value={visual.id}
+                          disabled={selectedVisualizations.some(v => v.id === visual.id)}
+                        >
+                          {visual.name} ({visual.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button 
-                  variant="outline" 
-                  className="justify-start text-left h-auto py-2"
-                  onClick={() => navigate('/visualization/performance/line/performance-trends')}
+                  type="button" 
+                  onClick={handleAddVisualization}
+                  disabled={!selectedVisualization}
                 >
-                  <BarChart4 className="h-4 w-4 mr-2" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-xs font-medium">Performance Trends</span>
-                    <span className="text-xs text-gray-500">Line chart</span>
-                  </div>
+                  Add
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="justify-start text-left h-auto py-2"
-                  onClick={() => navigate('/visualization/performance/bar/kpi-performance')}
-                >
-                  <BarChart4 className="h-4 w-4 mr-2" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-xs font-medium">KPI Performance</span>
-                    <span className="text-xs text-gray-500">Bar chart</span>
+              </div>
+
+              <div className="space-y-2 mt-2">
+                <h4 className="text-sm font-medium">Selected Visualizations:</h4>
+                {selectedVisualizations.length === 0 ? (
+                  <p className="text-sm text-gray-500">No visualizations selected</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {selectedVisualizations.map((visual) => (
+                      <div 
+                        key={visual.id} 
+                        className="flex items-center justify-between bg-gray-100 p-2 rounded-md"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BarChart4 className="h-4 w-4 text-gray-600" />
+                          <div>
+                            <p className="text-sm font-medium">{visual.name}</p>
+                            <p className="text-xs text-gray-500">{visual.type}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0"
+                          onClick={() => handleRemoveVisualization(visual.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                </Button>
+                )}
               </div>
             </div>
           </div>
