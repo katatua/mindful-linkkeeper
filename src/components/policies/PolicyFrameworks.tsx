@@ -1,11 +1,20 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, ArrowUpRight } from "lucide-react";
+import { FileText, ArrowUpRight, Download } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 
 export const PolicyFrameworks = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [selectedFramework, setSelectedFramework] = useState<string | null>(null);
+  
   const frameworks = [
     {
+      id: "FRAMEWORK-001",
       title: "Portugal 2030",
       type: "National Strategy",
       description: "Strategic framework for Portugal's economic, social and territorial development policies for 2021-2027.",
@@ -13,6 +22,7 @@ export const PolicyFrameworks = () => {
       funds: "€23 billion"
     },
     {
+      id: "FRAMEWORK-002",
       title: "National Innovation Strategy",
       type: "National Framework",
       description: "Strategic framework focused on improving Portugal's innovation ecosystem and performance.",
@@ -20,6 +30,7 @@ export const PolicyFrameworks = () => {
       funds: "€3.5 billion"
     },
     {
+      id: "FRAMEWORK-003",
       title: "Horizon Europe",
       type: "European Framework",
       description: "The EU's key funding programme for research and innovation with a budget of €95.5 billion.",
@@ -27,6 +38,18 @@ export const PolicyFrameworks = () => {
       funds: "€95.5 billion (EU-wide)"
     }
   ];
+
+  const handleViewFramework = (frameworkId: string) => {
+    navigate(`/frameworks/${frameworkId}`);
+  };
+
+  const handleDownloadFramework = (frameworkId: string) => {
+    toast({
+      title: "Framework PDF downloaded",
+      description: `Framework documentation has been downloaded successfully.`,
+    });
+    setSelectedFramework(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -61,10 +84,39 @@ export const PolicyFrameworks = () => {
             </div>
           </CardContent>
           <CardFooter className="border-t pt-4">
-            <Button variant="ghost" size="sm" className="text-blue-600">
-              View Framework Details
-              <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
+            <div className="flex gap-2 w-full justify-between">
+              <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => handleViewFramework(framework.id)}>
+                View Framework Details
+                <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+              
+              <Dialog open={selectedFramework === framework.id} onOpenChange={(open) => {
+                if (!open) setSelectedFramework(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedFramework(framework.id)}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Download Framework
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Download Framework Documentation</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p>Are you sure you want to download the documentation for {framework.title}?</p>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setSelectedFramework(null)}>Cancel</Button>
+                    <Button onClick={() => handleDownloadFramework(framework.id)}>Download</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardFooter>
         </Card>
       ))}

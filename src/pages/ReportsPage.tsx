@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -113,6 +112,13 @@ const ReportsPage = () => {
       ...prev,
       generationType: type
     }));
+  };
+
+  const handleChartClick = () => {
+    const chartElement = document.querySelector('.chart-element');
+    if (chartElement instanceof HTMLElement) {
+      chartElement.click();
+    }
   };
 
   return (

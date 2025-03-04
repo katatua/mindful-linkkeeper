@@ -2,8 +2,11 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, FileText, Eye, ArrowUpRight } from "lucide-react";
+import { Calendar, FileText, Eye, ArrowUpRight, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 
 interface PolicyListProps {
   searchQuery: string;
@@ -11,6 +14,8 @@ interface PolicyListProps {
 
 export const PolicyList = ({ searchQuery }: PolicyListProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [policyToDownload, setPolicyToDownload] = useState<string | null>(null);
   
   // Sample data for policies
   const policies = [
@@ -86,6 +91,14 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
     navigate(`/policies/${policyId}`);
   };
 
+  const handleDownloadPolicy = (policyId: string) => {
+    toast({
+      title: "Policy PDF downloaded",
+      description: `Policy ${policyId} has been downloaded successfully.`,
+    });
+    setPolicyToDownload(null);
+  };
+
   if (filteredPolicies.length === 0) {
     return (
       <Card>
@@ -135,6 +148,31 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
               <Button variant="ghost" size="sm" onClick={() => handleViewPolicy(policy.id)}>
                 <Eye className="h-4 w-4 mr-1" /> View
               </Button>
+              <Dialog open={policyToDownload === policy.id} onOpenChange={(open) => {
+                if (!open) setPolicyToDownload(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setPolicyToDownload(policy.id)}
+                  >
+                    <Download className="h-4 w-4 mr-1" /> PDF
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Download Policy PDF</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p>Are you sure you want to download the PDF for {policy.title}?</p>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setPolicyToDownload(null)}>Cancel</Button>
+                    <Button onClick={() => handleDownloadPolicy(policy.id)}>Download</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Button variant="ghost" size="sm" onClick={() => handleViewPolicy(policy.id)}>
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
