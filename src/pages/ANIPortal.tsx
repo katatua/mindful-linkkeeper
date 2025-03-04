@@ -59,8 +59,8 @@ const ANIPortal = () => {
       <header className="bg-white border-b py-3 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img 
-            src="https://via.placeholder.com/40?text=GenAI" 
-            alt="GenAI Logo" 
+            src="https://via.placeholder.com/40?text=ANI" 
+            alt="ANI Logo" 
             className="h-10 w-10 rounded" 
           />
           <h1 className="text-xl font-bold">GenAI Innovation Data Space</h1>
