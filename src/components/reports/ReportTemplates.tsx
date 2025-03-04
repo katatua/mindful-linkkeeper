@@ -1,92 +1,90 @@
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, Copy } from "lucide-react";
+import { FileText, Download, Calendar, ArrowUpRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export const ReportTemplates = () => {
-  // Sample data for report templates
   const templates = [
     {
-      id: "TEMP-001",
-      title: "Project Performance Report",
-      description: "A comprehensive template for analyzing project performance, milestones, and outcomes.",
-      sections: ["Executive Summary", "Key Metrics", "Timeline Analysis", "Budget Review", "Risk Assessment", "Recommendations"],
-      lastUsed: "Jul 10, 2023"
+      title: "Quarterly Performance Report",
+      description: "Comprehensive analysis of quarterly funding allocation and project performance",
+      category: "Performance",
+      lastUpdated: "Jul 5, 2023",
+      usageCount: 28
     },
     {
-      id: "TEMP-002",
-      title: "Quarterly Innovation Review",
-      description: "Standard quarterly report template for innovation metrics across all sectors.",
-      sections: ["Quarter Highlights", "Project Updates", "Funding Allocation", "Success Stories", "Challenges", "Next Quarter Outlook"],
-      lastUsed: "Jun 30, 2023"
+      title: "Regional Innovation Distribution",
+      description: "Geographic analysis of innovation activities and funding across regions",
+      category: "Regional",
+      lastUpdated: "Jun 20, 2023",
+      usageCount: 15
     },
     {
-      id: "TEMP-003",
-      title: "Funding Allocation Report",
-      description: "Financial reporting template for tracking and analyzing innovation funding distribution.",
-      sections: ["Summary", "Funding Sources", "Allocation by Sector", "ROI Analysis", "Budget Adherence", "Future Funding"],
-      lastUsed: "Jul 5, 2023"
-    },
-    {
-      id: "TEMP-004",
       title: "Sector Analysis Report",
-      description: "Detailed template for analyzing innovation trends and performance within specific sectors.",
-      sections: ["Sector Overview", "Key Projects", "Performance Metrics", "Competitive Analysis", "Opportunities", "Recommendations"],
-      lastUsed: "Jul 2, 2023"
+      description: "In-depth analysis of innovation activities by industry sector",
+      category: "Sector",
+      lastUpdated: "Jul 2, 2023",
+      usageCount: 22
     },
     {
-      id: "TEMP-005",
-      title: "Executive Dashboard Report",
-      description: "Concise, visual template designed for executive-level reporting and decision making.",
-      sections: ["KPI Summary", "Strategic Highlights", "Risk Overview", "Key Decisions", "Strategic Recommendations"],
-      lastUsed: "Jun 28, 2023"
+      title: "Funding Impact Assessment",
+      description: "Evaluation of economic and innovation impact of funding programs",
+      category: "Impact",
+      lastUpdated: "Jun 15, 2023",
+      usageCount: 17
     },
     {
-      id: "TEMP-006",
-      title: "Patent Activity Report",
-      description: "Template for tracking and analyzing patent applications, approvals, and intellectual property.",
-      sections: ["Patent Summary", "New Applications", "Granted Patents", "Technology Areas", "Competitive Landscape", "IP Strategy"],
-      lastUsed: "Jun 15, 2023"
+      title: "Program Effectiveness Review",
+      description: "Assessment of program KPIs against strategic objectives",
+      category: "Performance",
+      lastUpdated: "Jul 10, 2023",
+      usageCount: 9
+    },
+    {
+      title: "Innovation Ecosystem Mapping",
+      description: "Comprehensive map of key innovation stakeholders and relationships",
+      category: "Ecosystem",
+      lastUpdated: "Jun 28, 2023",
+      usageCount: 11
     }
   ];
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium">Available Templates</h3>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Create Template
-        </Button>
-      </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {templates.map((template) => (
-          <Card key={template.id} className="hover:shadow-md transition-all">
+        {templates.map((template, index) => (
+          <Card key={index} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-start">
                 <CardTitle className="text-base font-medium">{template.title}</CardTitle>
-                <FileText className="h-5 w-5 text-blue-500" />
+                <Badge variant="outline" className="text-xs">
+                  {template.category}
+                </Badge>
               </div>
-              <CardDescription className="text-sm">{template.description}</CardDescription>
+              <CardDescription>
+                {template.description}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div className="font-medium">Sections:</div>
-                <ul className="list-disc pl-4 space-y-0.5">
-                  {template.sections.slice(0, 4).map((section, index) => (
-                    <li key={index}>{section}</li>
-                  ))}
-                  {template.sections.length > 4 && (
-                    <li>+{template.sections.length - 4} more</li>
-                  )}
-                </ul>
+            <CardContent className="pb-2">
+              <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>Updated: {template.lastUpdated}</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <FileText className="h-3.5 w-3.5" />
+                <span>Used {template.usageCount} times</span>
               </div>
             </CardContent>
-            <CardFooter className="border-t pt-4 flex justify-between">
-              <span className="text-xs text-gray-500">Last used: {template.lastUsed}</span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Copy className="h-4 w-4 mr-1" /> Use
+            <CardFooter className="pt-2">
+              <div className="flex justify-between items-center w-full">
+                <Button variant="ghost" size="sm">
+                  <ArrowUpRight className="h-4 w-4 mr-1" />
+                  Use
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
                 </Button>
               </div>
             </CardFooter>

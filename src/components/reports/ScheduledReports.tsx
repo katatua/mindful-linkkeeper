@@ -1,145 +1,113 @@
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Settings, Play, Pause } from "lucide-react";
+import { Calendar, Clock, FileText, RefreshCw, Trash2, PauseCircle, PlayCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export const ScheduledReports = () => {
-  // Sample data for scheduled reports
   const scheduledReports = [
     {
-      id: "SCHED-001",
-      title: "Weekly Project Status Report",
-      description: "Summary of all active projects and their current status",
-      frequency: "Weekly",
-      nextRun: "Jul 24, 2023",
-      time: "09:00",
-      recipients: ["Project Managers", "Executive Team"],
-      active: true
-    },
-    {
-      id: "SCHED-002",
-      title: "Monthly Innovation Metrics",
-      description: "Key innovation metrics and KPIs from the past month",
+      title: "Monthly Funding Overview",
+      description: "Automated monthly report on funding allocation and utilization",
       frequency: "Monthly",
-      nextRun: "Aug 1, 2023",
-      time: "08:00",
-      recipients: ["All Department Heads", "Executive Team"],
-      active: true
+      nextGeneration: "Aug 1, 2023",
+      status: "Active",
+      recipients: ["innovation-team@ani.pt", "management@ani.pt"]
     },
     {
-      id: "SCHED-003",
-      title: "Quarterly Funding Report",
-      description: "Detailed analysis of funding allocation and budget adherence",
+      title: "Quarterly Performance Metrics",
+      description: "Quarterly analysis of innovation program performance metrics",
       frequency: "Quarterly",
-      nextRun: "Sep 30, 2023",
-      time: "10:00",
-      recipients: ["Finance Department", "Executive Team", "Board of Directors"],
-      active: true
+      nextGeneration: "Oct 1, 2023",
+      status: "Active",
+      recipients: ["executive-board@ani.pt", "program-leads@ani.pt"]
     },
     {
-      id: "SCHED-004",
-      title: "Monthly Patent Activity Report",
-      description: "Summary of new patent applications and granted patents",
+      title: "Weekly Project Updates",
+      description: "Weekly summary of project status changes and milestones",
+      frequency: "Weekly",
+      nextGeneration: "Jul 24, 2023",
+      status: "Active",
+      recipients: ["project-managers@ani.pt"]
+    },
+    {
+      title: "Regional Innovation Dashboard",
+      description: "Monthly dashboard of regional innovation metrics and changes",
       frequency: "Monthly",
-      nextRun: "Aug 1, 2023",
-      time: "14:00",
-      recipients: ["Legal Department", "R&D Teams"],
-      active: false
-    },
-    {
-      id: "SCHED-005",
-      title: "Bi-weekly Sector Performance",
-      description: "Comparison of performance metrics across different innovation sectors",
-      frequency: "Bi-weekly",
-      nextRun: "Jul 28, 2023",
-      time: "11:00",
-      recipients: ["Sector Managers", "Strategy Team"],
-      active: true
-    },
-    {
-      id: "SCHED-006",
-      title: "Annual Innovation Review",
-      description: "Comprehensive review of annual innovation activities and outcomes",
-      frequency: "Annually",
-      nextRun: "Dec 31, 2023",
-      time: "09:00",
-      recipients: ["All Staff", "Board of Directors", "External Stakeholders"],
-      active: true
+      nextGeneration: "Aug 5, 2023",
+      status: "Paused",
+      recipients: ["regional-team@ani.pt", "analytics@ani.pt"]
     }
   ];
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Scheduled Reports</CardTitle>
-          <CardDescription>Reports that are automatically generated and distributed on a schedule</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {scheduledReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-sm transition-all">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-base font-medium">{report.title}</CardTitle>
-                    <CardDescription className="text-sm">{report.description}</CardDescription>
+      {scheduledReports.map((report, index) => (
+        <Card key={index} className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <CardTitle className="text-base font-medium">{report.title}</CardTitle>
+              <Badge variant={report.status === 'Active' ? 'default' : 'outline'}>
+                {report.status}
+              </Badge>
+            </div>
+            <CardDescription>
+              {report.description}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pb-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-2">
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Frequency: {report.frequency}</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>Next generation: {report.nextGeneration}</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Clock className="h-3.5 w-3.5" />
+                <span>Generated at 08:00 AM</span>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 p-2 rounded text-xs">
+              <div className="text-gray-600 mb-1">Recipients:</div>
+              <div className="flex flex-wrap gap-2">
+                {report.recipients.map((recipient, i) => (
+                  <div key={i} className="bg-white px-2 py-1 rounded border text-xs">
+                    {recipient}
                   </div>
-                  <Badge variant={report.active ? 'default' : 'outline'}>
-                    {report.active ? 'Active' : 'Paused'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>
-                      <span className="font-medium">Frequency:</span> {report.frequency}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>
-                      <span className="font-medium">Next run:</span> {report.nextRun}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span>
-                      <span className="font-medium">Time:</span> {report.time}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="mt-3 text-sm">
-                  <span className="font-medium">Recipients:</span>{' '}
-                  {report.recipients.join(', ')}
-                </div>
-              </CardContent>
-              <CardFooter className="border-t pt-4 flex justify-between">
-                <span className="text-xs text-gray-500">ID: {report.id}</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-1" /> Edit
+                ))}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="pt-2 border-t">
+            <div className="flex justify-between items-center w-full">
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm">
+                  <FileText className="h-4 w-4 mr-1" />
+                  Preview
+                </Button>
+                {report.status === 'Active' ? (
+                  <Button variant="ghost" size="sm">
+                    <PauseCircle className="h-4 w-4 mr-1" />
+                    Pause
                   </Button>
-                  <Button variant="outline" size="sm">
-                    {report.active ? (
-                      <>
-                        <Pause className="h-4 w-4 mr-1" /> Pause
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-1" /> Activate
-                      </>
-                    )}
+                ) : (
+                  <Button variant="ghost" size="sm">
+                    <PlayCircle className="h-4 w-4 mr-1" />
+                    Resume
                   </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </CardContent>
-      </Card>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      ))}
     </div>
   );
 };
