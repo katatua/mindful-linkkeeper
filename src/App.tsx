@@ -11,6 +11,8 @@ import AddCategory from "./pages/AddCategory";
 import ANIPortal from "./pages/ANIPortal";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import { Dashboard } from "./components/Dashboard";
+import { AIAssistant } from "./components/AIAssistant";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<ANIPortal />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/assistant" element={<AIAssistant />} />
           <Route path="/legacy" element={<Index />} />
           <Route path="/add-file" element={<AddFile />} />
           <Route path="/add-link" element={<AddLink />} />
