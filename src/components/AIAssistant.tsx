@@ -3,12 +3,13 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SendHorizonal, Bot, User } from "lucide-react";
+import { SendHorizonal, Bot, User, Info } from "lucide-react";
 import { generateResponse } from "@/utils/aiUtils";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
 }
@@ -17,7 +18,13 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: '1',
     role: 'assistant',
-    content: 'Hello! I am ANI\'s AI Assistant. How can I help you with innovation insights today?',
+    content: 'Olá! Sou o Assistente de IA da ANI. Como posso ajudá-lo com informações sobre inovação hoje?',
+    timestamp: new Date()
+  },
+  {
+    id: '2',
+    role: 'system',
+    content: 'Pode fazer perguntas sobre os documentos, links ou ficheiros que carregou na plataforma. Também posso fornecer informações gerais sobre inovação, financiamento, políticas e métricas.',
     timestamp: new Date()
   }
 ];
@@ -27,6 +34,7 @@ export const AIAssistant = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     scrollToBottom();
@@ -64,10 +72,16 @@ export const AIAssistant = () => {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error getting AI response:', error);
+      toast({
+        title: "Erro ao processar a resposta",
+        description: "Ocorreu um problema ao consultar a base de conhecimento. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'I apologize, but I encountered an error while processing your request. Please try again later.',
+        content: 'Peço desculpa, mas encontrei um erro ao processar o seu pedido. Por favor, tente novamente mais tarde ou contacte o suporte técnico se o problema persistir.',
         timestamp: new Date()
       };
       
@@ -78,7 +92,12 @@ export const AIAssistant = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
+      <div className="border-b px-4 py-3 flex items-center gap-2">
+        <Bot className="h-5 w-5 text-primary" />
+        <h3 className="font-medium">Assistente ANI</h3>
+      </div>
+      
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((msg) => (
@@ -86,26 +105,35 @@ export const AIAssistant = () => {
               key={msg.id} 
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div 
-                className={`rounded-lg px-4 py-2 max-w-[80%] flex gap-2 ${
-                  msg.role === 'user' 
-                    ? 'bg-primary text-white ml-auto' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {msg.role === 'assistant' && (
-                  <Bot className="h-5 w-5 mt-1 flex-shrink-0" />
-                )}
-                <div>
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+              {msg.role === 'system' ? (
+                <div className="bg-blue-50 rounded-lg px-4 py-2 max-w-[90%] border border-blue-100 flex gap-2">
+                  <Info className="h-5 w-5 mt-1 text-blue-500 flex-shrink-0" />
+                  <div>
+                    <p className="whitespace-pre-wrap text-sm text-blue-700">{msg.content}</p>
+                  </div>
                 </div>
-                {msg.role === 'user' && (
-                  <User className="h-5 w-5 mt-1 flex-shrink-0" />
-                )}
-              </div>
+              ) : (
+                <div 
+                  className={`rounded-lg px-4 py-2 max-w-[80%] flex gap-2 ${
+                    msg.role === 'user' 
+                      ? 'bg-primary text-white ml-auto' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {msg.role === 'assistant' && (
+                    <Bot className="h-5 w-5 mt-1 flex-shrink-0" />
+                  )}
+                  <div>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  {msg.role === 'user' && (
+                    <User className="h-5 w-5 mt-1 flex-shrink-0" />
+                  )}
+                </div>
+              )}
             </div>
           ))}
           
@@ -127,7 +155,7 @@ export const AIAssistant = () => {
       
       <div className="p-4 border-t flex gap-2">
         <Input
-          placeholder="Ask about innovation metrics, funding, or policies..."
+          placeholder="Pergunte sobre métricas de inovação, financiamento ou políticas..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

@@ -54,8 +54,9 @@ export const classifyDocument = async (data: ClassificationRequest): Promise<str
 // Search uploaded documents and generate an AI response
 export const generateResponse = async (userInput: string): Promise<string> => {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+    // Using the hardcoded values from the client.ts file as a fallback
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ncnewevucbkebrqjtufl.supabase.co';
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jbmV3ZXZ1Y2JrZWJycWp0dWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3NTQ4NTgsImV4cCI6MjA1NTMzMDg1OH0.k1COvdcLYSB9C-X671zop6SdV7yaTPp49A4nJXWvmmc';
     
     if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase configuration is missing');
@@ -64,17 +65,40 @@ export const generateResponse = async (userInput: string): Promise<string> => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Search for relevant documents in the database
+    // Normalize search query to improve matching
+    const normalizedInput = userInput.toLowerCase().trim();
+    
+    // Search for relevant documents in the database with improved search
     const { data: searchResults, error } = await supabase
       .rpc('search_links_improved', { 
-        search_query: userInput,
-        similarity_threshold: 0.2
+        search_query: normalizedInput,
+        similarity_threshold: 0.1  // Lower threshold to catch more potential matches
       });
     
-    if (error || !searchResults || searchResults.length === 0) {
-      console.log('No search results found, using fallback response');
+    if (error) {
+      console.error('Search error:', error);
       return getFallbackResponse(userInput);
     }
+    
+    if (!searchResults || searchResults.length === 0) {
+      console.log('No search results found for:', normalizedInput);
+      
+      // Try a more direct query approach as fallback
+      const { data: directResults, error: directError } = await supabase
+        .from('links')
+        .select('title, url, summary, category, classification, file_metadata, source')
+        .limit(5);
+      
+      if (directError || !directResults || directResults.length === 0) {
+        console.log('No direct results found either');
+        return getFallbackResponse(userInput);
+      }
+      
+      console.log('Found some general results instead');
+      return composeResponseFromDocuments(normalizedInput, directResults, false);
+    }
+    
+    console.log(`Found ${searchResults.length} search results for: "${normalizedInput}"`);
     
     // Get the top 3 most relevant documents
     const topLinks = searchResults.slice(0, 3);
@@ -82,17 +106,16 @@ export const generateResponse = async (userInput: string): Promise<string> => {
     // Fetch the full information for these documents
     const { data: documents, error: docsError } = await supabase
       .from('links')
-      .select('title, url, summary, category, classification')
+      .select('title, url, summary, category, classification, file_metadata, source')
       .in('id', topLinks.map(result => result.id));
     
     if (docsError || !documents || documents.length === 0) {
-      console.log('Error fetching documents, using fallback response');
+      console.log('Error fetching documents:', docsError);
       return getFallbackResponse(userInput);
     }
     
     // Generate a response based on the found documents
-    const responseText = composeResponseFromDocuments(userInput, documents);
-    return responseText;
+    return composeResponseFromDocuments(normalizedInput, documents, true);
   } catch (error) {
     console.error('Error generating AI response:', error);
     return getFallbackResponse(userInput);
@@ -100,32 +123,49 @@ export const generateResponse = async (userInput: string): Promise<string> => {
 };
 
 // Compose a response based on the found documents
-const composeResponseFromDocuments = (query: string, documents: any[]): string => {
+const composeResponseFromDocuments = (query: string, documents: any[], isDirectMatch: boolean): string => {
   // Extract relevant information from documents
-  const topics = documents.map(doc => doc.title).join(', ');
+  const topics = documents.map(doc => doc.title || 'Untitled document').join(', ');
   const classifications = [...new Set(documents.map(doc => doc.classification).filter(Boolean))];
   const categories = [...new Set(documents.map(doc => doc.category).filter(Boolean))];
   
-  // Create a response that references the found documents
-  let response = `Based on the information in our innovation database, I found ${documents.length} relevant resources about ${topics}.`;
+  // Log documents for debugging
+  console.log('Documents found:', documents);
+  
+  let response = '';
+  
+  if (isDirectMatch) {
+    response = `Com base nos dados da ANI, encontrei ${documents.length} recursos relevantes relacionados com "${query}": ${topics}.`;
+  } else {
+    response = `Não encontrei documentos que correspondam exatamente à sua consulta, mas posso partilhar informações gerais da base de dados ANI.`;
+  }
   
   // Add classification if available
   if (classifications.length > 0) {
-    response += ` These relate to the ${classifications.join(' and ')} innovation areas.`;
+    response += ` Estes relacionam-se com as áreas de inovação ${classifications.join(' e ')}.`;
   }
   
   // Add categories if available
   if (categories.length > 0) {
-    response += ` They fall under the ${categories.join(' and ')} categories.`;
+    response += ` Pertencem às categorias ${categories.join(' e ')}.`;
   }
   
-  // Add specific information from the first document
-  if (documents[0].summary) {
-    response += `\n\nHere's a key insight: ${documents[0].summary}`;
+  // Add specific information from the documents
+  for (const doc of documents) {
+    if (doc.summary) {
+      response += `\n\nInformação do documento "${doc.title || 'Documento sem título'}": ${doc.summary}`;
+    } else if (doc.file_metadata && doc.file_metadata.name) {
+      response += `\n\nO documento "${doc.file_metadata.name}" foi carregado e está disponível para consulta.`;
+    }
+    
+    // Add source information for links
+    if (doc.source === 'web' && doc.url) {
+      response += `\nFonte: ${doc.url}`;
+    }
   }
   
   // Add a reference to the found documents
-  response += `\n\nWould you like more specific information about any of these resources?`;
+  response += `\n\nPosso fornecer mais informações específicas sobre algum destes recursos? Ou prefere explorar outro tópico?`;
   
   return response;
 };
@@ -136,14 +176,16 @@ const getFallbackResponse = (userInput: string): string => {
   
   // Simple keyword matching for demo purposes
   const responses: Record<string, string> = {
-    "innovation": "Portugal's innovation ecosystem has shown significant growth in the past 5 years, with a 28% increase in R&D investment and 134 active innovation projects currently monitored by ANI.",
-    "funding": "ANI manages several funding programs including Portugal 2030 and Horizon Europe opportunities. The total available funding for the current cycle is €24.7M with 56 startups being supported.",
-    "report": "I can help generate reports on innovation metrics, funding allocation, or project performance. What specific type of report would you like to create?",
-    "policy": "Current innovation policies are aligned with the ENEI 2030 framework, focusing on digital transformation, sustainability, and knowledge transfer between academia and industry.",
-    "help": "I can assist with innovation metrics, funding information, policy insights, report generation, and connecting you with relevant stakeholders. What specific area do you need help with?",
-    "projects": "There are currently 134 active innovation projects across various sectors, with technology and healthcare leading in both number and funding allocation.",
-    "analytics": "Our analytics tools can provide insights on funding allocation, project performance, regional distribution, and sectoral trends. What specific analytics are you interested in?",
-    "sectors": "The leading innovation sectors are: Digital Technologies (32%), Health & Biotech (24%), Sustainable Energy (18%), Advanced Manufacturing (14%), and Agri-food (12%).",
+    "inovação": "O ecossistema de inovação de Portugal tem mostrado um crescimento significativo nos últimos 5 anos, com um aumento de 28% no investimento em I&D e 134 projetos de inovação atualmente monitorados pela ANI.",
+    "financiamento": "A ANI gere vários programas de financiamento, incluindo oportunidades do Portugal 2030 e Horizonte Europa. O financiamento total disponível para o ciclo atual é de 24,7 milhões de euros, apoiando 56 startups.",
+    "relatório": "Posso ajudar a gerar relatórios sobre métricas de inovação, alocação de fundos ou desempenho de projetos. Que tipo específico de relatório gostaria de criar?",
+    "política": "As políticas de inovação atuais estão alinhadas com o quadro ENEI 2030, focando na transformação digital, sustentabilidade e transferência de conhecimento entre academia e indústria.",
+    "ajuda": "Posso ajudar com métricas de inovação, informações sobre financiamento, insights sobre políticas, geração de relatórios e conectá-lo com stakeholders relevantes. Em que área específica precisa de ajuda?",
+    "projetos": "Existem atualmente 134 projetos de inovação ativos em vários setores, com tecnologia e saúde liderando tanto em número quanto em alocação de financiamento.",
+    "analítica": "Nossas ferramentas analíticas podem fornecer insights sobre alocação de fundos, desempenho de projetos, distribuição regional e tendências setoriais. Em que análises específicas está interessado?",
+    "setores": "Os principais setores de inovação são: Tecnologias Digitais (32%), Saúde e Biotecnologia (24%), Energia Sustentável (18%), Manufatura Avançada (14%) e Agroalimentar (12%).",
+    "ani": "A ANI (Agência Nacional de Inovação) é responsável por promover a colaboração entre entidades do sistema científico e tecnológico nacional e o tecido empresarial. Gerimos vários programas de financiamento e oferecemos suporte técnico para projetos inovadores em Portugal.",
+    "informação": "A ANI mantém uma base de conhecimento abrangente sobre projetos de inovação, incluindo detalhes sobre financiamento, resultados, parcerias e impacto. Que tipo específico de informação está procurando?",
   };
   
   // Check for keyword matches
@@ -154,5 +196,5 @@ const getFallbackResponse = (userInput: string): string => {
   }
   
   // Default response if no keyword matches
-  return "I understand you're asking about " + input + ". While I don't have specific information on that topic yet in our database, I can connect you with an ANI expert who can help. Would you like me to do that?";
+  return "Compreendo que está perguntando sobre " + input + ". Embora eu ainda não tenha informações específicas sobre esse tópico na nossa base de dados, posso conectá-lo com um especialista da ANI que pode ajudar. Gostaria que eu fizesse isso?";
 };
