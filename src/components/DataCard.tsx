@@ -1,5 +1,6 @@
 
-import { Calendar, BarChart2, FileText, Activity, TrendingUp } from "lucide-react";
+import { Calendar, BarChart2, FileText, Activity, TrendingUp, TrendingDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 
 interface DataCardProps {
   title: string;
@@ -10,6 +11,9 @@ interface DataCardProps {
   percentChange?: number;
   chartData?: number[];
   isGrid: boolean;
+  icon?: string;
+  description?: string;
+  footer?: string;
 }
 
 export const DataCard = ({ 
@@ -20,7 +24,10 @@ export const DataCard = ({
   trend,
   percentChange,
   chartData,
-  isGrid 
+  isGrid,
+  icon,
+  description,
+  footer
 }: DataCardProps) => {
   const getTrendColor = (trend?: 'up' | 'down' | 'neutral') => {
     switch(trend) {
@@ -39,13 +46,13 @@ export const DataCard = ({
     const range = max - min;
     
     return (
-      <div className="flex items-end h-10 gap-0.5 mt-2">
+      <div className="flex items-end h-12 gap-0.5 mt-3">
         {data.map((value, index) => {
           const height = range > 0 ? ((value - min) / range) * 100 : 50;
           return (
             <div 
               key={index}
-              className="w-1.5 bg-blue-500 rounded-sm"
+              className={`w-1.5 ${index === data.length - 1 ? 'bg-blue-600' : 'bg-blue-400'} rounded-sm transition-all duration-200 hover:bg-blue-700`}
               style={{ height: `${height}%` }}
             />
           );
@@ -54,58 +61,62 @@ export const DataCard = ({
     );
   };
 
+  const renderIcon = () => {
+    if (!icon) return null;
+    
+    const iconMap: Record<string, JSX.Element> = {
+      'chart': <BarChart2 className="h-5 w-5 text-blue-500" />,
+      'calendar': <Calendar className="h-5 w-5 text-indigo-500" />,
+      'file': <FileText className="h-5 w-5 text-emerald-500" />,
+      'activity': <Activity className="h-5 w-5 text-purple-500" />
+    };
+    
+    return iconMap[icon] || null;
+  };
+
   return (
-    <div
-      className={`group animate-fade-in bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 ${
-        isGrid ? "flex flex-col" : "flex items-start"
-      }`}
-    >
-      <div
-        className={`flex-1 p-4 ${
-          isGrid ? "" : "flex items-start justify-between w-full gap-4"
-        }`}
-      >
-        <div className={isGrid ? "mb-3" : "flex-1"}>
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900 group-hover:text-gray-700 transition-colors">
-              {title}
-            </h3>
-            {trend && (
-              <div className={`flex items-center gap-1 ${getTrendColor(trend)}`}>
-                {trend === 'up' ? <TrendingUp className="h-4 w-4" /> : 
-                 trend === 'down' ? <Activity className="h-4 w-4 transform rotate-180" /> : 
-                 <Activity className="h-4 w-4" />}
-                {percentChange !== undefined && <span>{percentChange}%</span>}
-              </div>
-            )}
+    <Card className="group animate-fade-in overflow-hidden hover:shadow-md transition-all duration-300">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {renderIcon()}
+            <CardTitle className="text-base font-medium">{title}</CardTitle>
           </div>
-          
-          <div className="mt-2 text-2xl font-semibold">
-            {value}
-          </div>
-          
-          {category && (
-            <div className="mt-2 text-sm text-gray-600">
-              {category}
+          {trend && (
+            <div className={`flex items-center gap-1 ${getTrendColor(trend)}`}>
+              {trend === 'up' ? <TrendingUp className="h-4 w-4" /> : 
+               trend === 'down' ? <TrendingDown className="h-4 w-4" /> : 
+               <Activity className="h-4 w-4" />}
+              {percentChange !== undefined && <span className="text-sm font-medium">{percentChange}%</span>}
             </div>
           )}
-          
-          {chartData && renderMiniChart(chartData)}
         </div>
-
-        <div
-          className={`flex items-center gap-4 text-sm text-gray-500 ${
-            isGrid ? "mt-2" : ""
-          }`}
-        >
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      
+      <CardContent>
+        <div className="mt-1 text-2xl font-bold">{value}</div>
+        
+        {category && (
+          <div className="mt-1 text-sm text-gray-600">
+            {category}
+          </div>
+        )}
+        
+        {chartData && renderMiniChart(chartData)}
+      </CardContent>
+      
+      {(date || footer) && (
+        <CardFooter className="pt-0 text-sm text-gray-500">
           {date && (
             <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="h-3.5 w-3.5" />
               <span>{date}</span>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+          {footer && <div className="ml-auto">{footer}</div>}
+        </CardFooter>
+      )}
+    </Card>
   );
 };
