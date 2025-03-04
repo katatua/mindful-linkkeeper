@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
 import FundingPage from "./FundingPage";
+import ProjectsPage from "./ProjectsPage";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -120,13 +121,8 @@ const ANIPortal = () => {
               <FundingPage />
             </TabsContent>
             
-            <TabsContent value="projects">
-              <div className="container mx-auto py-6">
-                <h2 className="text-2xl font-bold mb-6">Innovation Projects</h2>
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                  <p>Projects module will display detailed information about active innovation initiatives, including timelines, stakeholders, and progress metrics.</p>
-                </div>
-              </div>
+            <TabsContent value="projects" className="h-full">
+              <ProjectsPage />
             </TabsContent>
             
             <TabsContent value="analytics">
