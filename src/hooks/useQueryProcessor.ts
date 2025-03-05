@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const useQueryProcessor = () => {
@@ -9,7 +10,8 @@ export const useQueryProcessor = () => {
       'r&d investment', 'investment in r&d', 'patent', 'innovation', 
       'metric', 'performance', 'percentage', 'value', 'number of',
       'how many', 'statistic', 'success rate', 'funding', 'deadline', 
-      'international', 'collaboration', 'program', 'sector', 'application'
+      'international', 'collaboration', 'program', 'sector', 'application',
+      'investment by sector', 'sectoral investment', 'sector funding'
     ];
     
     const portuguesePatterns = [
@@ -17,7 +19,8 @@ export const useQueryProcessor = () => {
       'investimento em p&d', 'investimento em r&d', 'patente', 'inovação',
       'métrica', 'desempenho', 'percentagem', 'porcentagem', 'valor', 'número de',
       'estatística', 'taxa de sucesso', 'financiamento', 'prazo', 'internacional',
-      'colaboração', 'programa', 'setor', 'aplicação', 'candidatura'
+      'colaboração', 'programa', 'setor', 'aplicação', 'candidatura',
+      'investimento por setor', 'investimento setorial', 'financiamento por setor'
     ];
     
     return englishPatterns.some(pattern => lowerMsg.includes(pattern)) || 
@@ -44,6 +47,23 @@ export const useQueryProcessor = () => {
                 AND measurement_date >= CURRENT_DATE - INTERVAL '${numYears} years'
                 GROUP BY region, EXTRACT(YEAR FROM measurement_date)
                 ORDER BY region, year DESC`;
+      }
+      
+      if ((lowerQuery.includes('investimento por setor') || lowerQuery.includes('investment by sector')) ||
+          ((lowerQuery.includes('investimento') || lowerQuery.includes('investment')) && 
+           (lowerQuery.includes('setor') || lowerQuery.includes('sector')))) {
+        return `SELECT 
+                  sector, 
+                  name, 
+                  value, 
+                  unit, 
+                  measurement_date
+                FROM 
+                  ani_metrics
+                WHERE 
+                  category = 'Sectoral Funding'
+                ORDER BY 
+                  value DESC`;
       }
       
       if ((lowerQuery.includes('success rate') || lowerQuery.includes('taxa de sucesso')) &&

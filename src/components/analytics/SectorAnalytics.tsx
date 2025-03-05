@@ -59,6 +59,17 @@ export const SectorAnalytics = () => {
     { region: 'South', digital: 18, health: 22, energy: 26, manufacturing: 10, agriculture: 14 },
     { region: 'Islands', digital: 14, health: 12, energy: 18, manufacturing: 6, agriculture: 10 },
   ];
+  
+  // New data for investment by sector
+  const investmentBySector = [
+    { sector: 'Digital Tech', investment: 35.7, projects: 156, averageSize: 0.23 },
+    { sector: 'Healthcare', investment: 24.3, projects: 98, averageSize: 0.25 },
+    { sector: 'Energy', investment: 28.9, projects: 112, averageSize: 0.26 },
+    { sector: 'Manufacturing', investment: 19.2, projects: 87, averageSize: 0.22 },
+    { sector: 'Agriculture', investment: 15.8, projects: 72, averageSize: 0.22 },
+    { sector: 'Space', investment: 12.5, projects: 42, averageSize: 0.30 },
+    { sector: 'Ocean', investment: 14.3, projects: 63, averageSize: 0.23 },
+  ];
 
   const handleChartClick = (chartId, chartType) => {
     navigate(`/visualization/sectors/${chartType}/${chartId}`);
@@ -121,6 +132,32 @@ export const SectorAnalytics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('investment-by-sector', 'bar')}>
+          <CardHeader>
+            <CardTitle className="text-lg">Investment by Sector (€M)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={investmentBySector}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="sector" />
+                  <YAxis />
+                  <Tooltip formatter={(value, name) => {
+                    if (name === 'investment') return [`€${value}M`, 'Investment'];
+                    if (name === 'projects') return [value, 'Projects'];
+                    if (name === 'averageSize') return [`€${value}M`, 'Avg Project Size'];
+                    return [value, name];
+                  }} />
+                  <Legend />
+                  <Bar dataKey="investment" name="Total Investment (€M)" fill="#8884d8" />
+                  <Bar dataKey="projects" name="Number of Projects" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-vs-success', 'scatter')}>
           <CardHeader>
             <CardTitle className="text-lg">Funding vs Success Rate</CardTitle>
@@ -146,31 +183,31 @@ export const SectorAnalytics = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('growth-by-region', 'bar')}>
-          <CardHeader>
-            <CardTitle className="text-lg">Growth by Region & Sector (%)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={growthByRegion}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="region" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Growth']} />
-                  <Legend />
-                  <Bar dataKey="digital" name="Digital Tech" fill="#8884d8" />
-                  <Bar dataKey="health" name="Healthcare" fill="#82ca9d" />
-                  <Bar dataKey="energy" name="Energy" fill="#ffc658" />
-                  <Bar dataKey="manufacturing" name="Manufacturing" fill="#ff8042" />
-                  <Bar dataKey="agriculture" name="Agriculture" fill="#0088fe" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('growth-by-region', 'bar')}>
+        <CardHeader>
+          <CardTitle className="text-lg">Growth by Region & Sector (%)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={growthByRegion}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="region" />
+                <YAxis />
+                <Tooltip formatter={(value) => [`${value}%`, 'Growth']} />
+                <Legend />
+                <Bar dataKey="digital" name="Digital Tech" fill="#8884d8" />
+                <Bar dataKey="health" name="Healthcare" fill="#82ca9d" />
+                <Bar dataKey="energy" name="Energy" fill="#ffc658" />
+                <Bar dataKey="manufacturing" name="Manufacturing" fill="#ff8042" />
+                <Bar dataKey="agriculture" name="Agriculture" fill="#0088fe" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
