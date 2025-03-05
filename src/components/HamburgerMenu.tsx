@@ -144,7 +144,7 @@ export const HamburgerMenu = () => {
               onClick={() => handleNavigation("/database-info")}
             >
               <Database className="h-4 w-4 mr-2" />
-              Database Info
+              {t('nav.database') || 'Database Info'}
             </Button>
             
             <div className="border-t pt-3 mt-3">
