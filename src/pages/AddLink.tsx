@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Header } from "@/components/Header";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AddLink() {
   const [url, setUrl] = useState("");
@@ -19,6 +21,7 @@ export default function AddLink() {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,8 +45,8 @@ export default function AddLink() {
     
     if (!isAuthenticated) {
       toast({
-        title: "Authentication required",
-        description: "Please log in to add links",
+        title: t('link.auth.required'),
+        description: t('link.auth.description'),
         variant: "destructive",
       });
       navigate("/auth");
@@ -52,7 +55,7 @@ export default function AddLink() {
     
     if (!url || !title) {
       toast({
-        title: "Please fill in all required fields",
+        title: t('link.fill'),
         variant: "destructive",
       });
       return;
@@ -66,7 +69,7 @@ export default function AddLink() {
       
       if (!userId) {
         toast({
-          title: "Authentication error",
+          title: t('link.auth.required'),
           description: "Your session may have expired. Please log in again.",
           variant: "destructive",
         });
@@ -101,14 +104,14 @@ export default function AddLink() {
       if (error) throw error;
 
       toast({
-        title: "Link added successfully",
+        title: t('link.success'),
         description: "Your link has been saved and is now available for AI analysis.",
       });
       navigate("/");
     } catch (error) {
       console.error('Error adding link:', error);
       toast({
-        title: "Error adding link",
+        title: t('link.error'),
         description: "Please try again later.",
         variant: "destructive",
       });
@@ -122,11 +125,11 @@ export default function AddLink() {
       return (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Authentication Required</AlertTitle>
+          <AlertTitle>{t('link.auth.required')}</AlertTitle>
           <AlertDescription>
-            You must be logged in to add links.
+            {t('link.auth.description')}
             <Button variant="link" className="p-0 ml-2" onClick={() => navigate("/auth")}>
-              Login now
+              {t('link.auth.login')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -140,7 +143,7 @@ export default function AddLink() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <div className="container mx-auto p-6 flex justify-center items-center flex-1">
-          <p>Loading...</p>
+          <p>{t('link.loading')}</p>
         </div>
       </div>
     );
@@ -151,7 +154,7 @@ export default function AddLink() {
       <Header />
       <div className="container mx-auto p-6 flex-1">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Add Link for AI Analysis</h1>
+          <h1 className="text-2xl font-bold mb-6">{t('link.title')}</h1>
           
           {renderAuthWarning()}
           
@@ -159,7 +162,7 @@ export default function AddLink() {
             <div>
               <Input
                 type="text"
-                placeholder="Title"
+                placeholder={t('link.name')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full mb-4"
@@ -169,7 +172,7 @@ export default function AddLink() {
               
               <Input
                 type="url"
-                placeholder="Enter URL"
+                placeholder={t('link.url')}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="w-full mb-4"
@@ -178,7 +181,7 @@ export default function AddLink() {
               />
               
               <Textarea
-                placeholder="Summary (helps the AI understand the content)"
+                placeholder={t('link.summary')}
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 className="w-full mb-4"
@@ -188,7 +191,7 @@ export default function AddLink() {
               
               <Input
                 type="text"
-                placeholder="Category (e.g., 'funding', 'policy', 'technology')"
+                placeholder={t('link.category')}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full"
@@ -200,7 +203,7 @@ export default function AddLink() {
                 type="submit" 
                 disabled={isSubmitting || !isAuthenticated}
               >
-                {isSubmitting ? "Adding Link..." : "Add Link"}
+                {isSubmitting ? t('link.adding') : t('link.add')}
               </Button>
               <Button
                 type="button"
@@ -208,7 +211,7 @@ export default function AddLink() {
                 onClick={() => navigate("/")}
                 disabled={isSubmitting}
               >
-                Cancel
+                {t('link.cancel')}
               </Button>
             </div>
           </form>

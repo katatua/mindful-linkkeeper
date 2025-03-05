@@ -1,10 +1,12 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, FileText, RefreshCw, Trash2, PauseCircle, PlayCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const ScheduledReports = () => {
+  const { t, language } = useLanguage();
+  
   const scheduledReports = [
     {
       title: "Monthly Funding Overview",

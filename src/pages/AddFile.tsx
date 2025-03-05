@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyDocument } from "@/utils/aiUtils";
 import { Header } from "@/components/Header";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -16,6 +18,7 @@ export default function AddFile() {
   const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const sanitizeFilename = (filename: string): string => {
     // Remove non-ASCII characters and replace spaces with underscores
@@ -29,7 +32,7 @@ export default function AddFile() {
     e.preventDefault();
     if (!file) {
       toast({
-        title: "Please select a file",
+        title: t('file.select'),
         variant: "destructive",
       });
       return;
@@ -84,14 +87,14 @@ export default function AddFile() {
       if (linkError) throw linkError;
 
       toast({
-        title: "File uploaded successfully",
+        title: t('file.success'),
         description: "Your file has been uploaded and is now available for AI analysis.",
       });
       navigate("/");
     } catch (error) {
       console.error('Error uploading file:', error);
       toast({
-        title: "Error uploading file",
+        title: t('file.error'),
         description: "Please try again later.",
         variant: "destructive",
       });
@@ -105,7 +108,7 @@ export default function AddFile() {
       <Header />
       <div className="container mx-auto p-6 flex-1">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Add File for AI Analysis</h1>
+          <h1 className="text-2xl font-bold mb-6">{t('file.title')}</h1>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Input
@@ -116,14 +119,14 @@ export default function AddFile() {
               
               <Input
                 type="text"
-                placeholder="Title (optional - will use filename if empty)"
+                placeholder={t('file.name')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full mb-4"
               />
               
               <Textarea
-                placeholder="Summary (optional - helps the AI understand the content)"
+                placeholder={t('file.summary')}
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 className="w-full mb-4"
@@ -132,7 +135,7 @@ export default function AddFile() {
               
               <Input
                 type="text"
-                placeholder="Category (optional - e.g., 'funding', 'policy', 'technology')"
+                placeholder={t('file.category')}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full"
@@ -140,7 +143,7 @@ export default function AddFile() {
             </div>
             <div className="flex gap-4">
               <Button type="submit" disabled={isUploading}>
-                {isUploading ? "Uploading..." : "Upload File"}
+                {isUploading ? t('file.uploading') : t('file.upload')}
               </Button>
               <Button
                 type="button"
@@ -148,7 +151,7 @@ export default function AddFile() {
                 onClick={() => navigate("/")}
                 disabled={isUploading}
               >
-                Cancel
+                {t('file.cancel')}
               </Button>
             </div>
           </form>

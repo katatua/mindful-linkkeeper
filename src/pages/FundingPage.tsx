@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Download, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   BarChart,
   Bar,
@@ -23,12 +23,13 @@ import {
 
 const FundingPage = () => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeYear, setActiveYear] = useState<"2023" | "2022" | "all">("2023");
 
   const handleDownload = () => {
     toast({
-      title: "Download Started",
-      description: "The funding report is being downloaded.",
+      title: t('funding.download'),
+      description: t('funding.download.description'),
     });
   };
 
@@ -104,21 +105,21 @@ const FundingPage = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Funding Analytics</h1>
+        <h1 className="text-2xl font-bold">{t('funding.title')}</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleDownload}>
             <Download className="h-4 w-4 mr-2" />
-            Export Report
+            {t('funding.export')}
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="programs">Programs</TabsTrigger>
-          <TabsTrigger value="sectors">Sectors</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsTrigger value="overview">{t('funding.tab.overview')}</TabsTrigger>
+          <TabsTrigger value="programs">{t('funding.tab.programs')}</TabsTrigger>
+          <TabsTrigger value="sectors">{t('funding.tab.sectors')}</TabsTrigger>
+          <TabsTrigger value="trends">{t('funding.tab.trends')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
