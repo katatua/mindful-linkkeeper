@@ -6,12 +6,14 @@ import { Menu, LogOut, LogIn, User, HelpCircle, Languages } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const HamburgerMenu = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     // Check initial auth state
@@ -36,13 +38,13 @@ export const HamburgerMenu = () => {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "Logged out successfully",
+        title: t('logout.success'),
       });
       navigate("/auth");
       setOpen(false);
     } catch (error) {
       toast({
-        title: "Error logging out",
+        title: t('logout.error'),
         variant: "destructive",
       });
     }
@@ -51,6 +53,10 @@ export const HamburgerMenu = () => {
   const handleLogin = () => {
     navigate("/auth");
     setOpen(false);
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'pt' : 'en');
   };
 
   return (
@@ -72,7 +78,7 @@ export const HamburgerMenu = () => {
               alt="ANI Logo" 
               className="h-8 w-8 rounded" 
             />
-            <span className="font-medium">GenAI Innovation Data Space</span>
+            <span className="font-medium">{t('app.title')}</span>
           </div>
           
           <div className="space-y-3 pt-2">
@@ -81,66 +87,66 @@ export const HamburgerMenu = () => {
               className="w-full justify-start" 
               onClick={() => handleNavigation("/funding")}
             >
-              Funding
+              {t('nav.funding')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/projects")}
             >
-              Projects
+              {t('nav.projects')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/analytics")}
             >
-              Analytics
+              {t('nav.analytics')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/reports")}
             >
-              Reports
+              {t('nav.reports')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/policies")}
             >
-              Policies
+              {t('nav.policies')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/add-file")}
             >
-              Upload File
+              {t('nav.upload')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/add-link")}
             >
-              Add Link
+              {t('nav.link')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
               onClick={() => handleNavigation("/add-category")}
             >
-              Add Category
+              {t('nav.category')}
             </Button>
             
             <div className="border-t pt-3 mt-3">
               <Button 
                 variant="ghost" 
                 className="w-full justify-start" 
-                onClick={() => {}}
+                onClick={toggleLanguage}
               >
                 <Languages className="h-4 w-4 mr-2" />
-                PT | EN
+                {t('language.toggle')}
               </Button>
               <Button 
                 variant="ghost" 
@@ -148,7 +154,7 @@ export const HamburgerMenu = () => {
                 onClick={() => {}}
               >
                 <User className="h-4 w-4 mr-2" />
-                User Settings
+                {t('user.settings')}
               </Button>
               <Button 
                 variant="ghost" 
@@ -156,7 +162,7 @@ export const HamburgerMenu = () => {
                 onClick={() => {}}
               >
                 <HelpCircle className="h-4 w-4 mr-2" />
-                Help
+                {t('help')}
               </Button>
               {isAuthenticated ? (
                 <Button 
@@ -165,7 +171,7 @@ export const HamburgerMenu = () => {
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
-                  Logout
+                  {t('logout')}
                 </Button>
               ) : (
                 <Button 
@@ -174,7 +180,7 @@ export const HamburgerMenu = () => {
                   onClick={handleLogin}
                 >
                   <LogIn className="h-4 w-4 mr-2" />
-                  Login
+                  {t('login')}
                 </Button>
               )}
             </div>
