@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { DataVisualization } from "@/components/DataVisualization";
 import { useVisualization } from "@/hooks/useVisualization";
 import DatabaseQuery from "@/components/DatabaseQuery";
+import SyntheticDataPage from "./SyntheticDataPage";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -59,6 +60,7 @@ const ANIPortal = () => {
                 <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
                 <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
                 <TabsTrigger value="database">Consulta BD</TabsTrigger>
+                <TabsTrigger value="synthetic">Synthetic Data</TabsTrigger>
               </TabsList>
             </div>
             
@@ -97,6 +99,10 @@ const ANIPortal = () => {
             
             <TabsContent value="database" className="h-full">
               <DatabaseQuery />
+            </TabsContent>
+            
+            <TabsContent value="synthetic" className="h-full">
+              <SyntheticDataPage />
             </TabsContent>
           </Tabs>
         </main>

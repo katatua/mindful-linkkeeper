@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +23,7 @@ import VisualizationDetailPage from "./pages/VisualizationDetailPage";
 import MetricDetailPage from "./pages/MetricDetailPage";
 import PolicyGuidePage from "./pages/PolicyGuidePage";
 import DatabaseQuery from '@/components/DatabaseQuery';
+import SyntheticDataPage from '@/pages/SyntheticDataPage';
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,7 @@ function App() {
               <Route path="/metrics/:metricId" element={<MetricDetailPage />} />
               <Route path="/policy-guide" element={<PolicyGuidePage />} />
               <Route path="/database-info" element={<DatabaseQuery />} />
+              <Route path="/synthetic-data" element={<SyntheticDataPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
