@@ -13,28 +13,28 @@ const DatabaseQuery: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sqlQuery, setSqlQuery] = useState<string>(`SELECT
-    'links' AS table_name,
+    'ani_projects' AS table_name,
     COUNT(*) AS record_count
 FROM
-    links
+    ani_projects
 UNION ALL
 SELECT
-    'document_notes',
+    'ani_funding_programs',
     COUNT(*)
 FROM
-    document_notes
+    ani_funding_programs
 UNION ALL
 SELECT
-    'notes',
+    'ani_policy_frameworks',
     COUNT(*)
 FROM
-    notes
+    ani_policy_frameworks
 UNION ALL
 SELECT
-    'tasks',
+    'ani_metrics',
     COUNT(*)
 FROM
-    tasks`);
+    ani_metrics`);
   const { toast } = useToast();
 
   const executeQuery = async () => {
@@ -95,9 +95,9 @@ FROM
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
-          Consulta SQL do Banco de Dados
+          Consulta SQL do Banco de Dados ANI
         </CardTitle>
-        <CardDescription>Execute consultas SQL personalizadas no banco de dados</CardDescription>
+        <CardDescription>Execute consultas SQL personalizadas no banco de dados da Agência Nacional de Inovação</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>

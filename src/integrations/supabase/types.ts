@@ -9,6 +9,183 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ani_funding_programs: {
+        Row: {
+          application_process: string | null
+          created_at: string
+          description: string | null
+          eligibility_criteria: string | null
+          end_date: string | null
+          id: string
+          name: string
+          sector_focus: string[] | null
+          start_date: string | null
+          total_budget: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_process?: string | null
+          created_at?: string
+          description?: string | null
+          eligibility_criteria?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          sector_focus?: string[] | null
+          start_date?: string | null
+          total_budget?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_process?: string | null
+          created_at?: string
+          description?: string | null
+          eligibility_criteria?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          sector_focus?: string[] | null
+          start_date?: string | null
+          total_budget?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ani_metrics: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          measurement_date: string | null
+          name: string
+          region: string | null
+          sector: string | null
+          source: string | null
+          unit: string | null
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          measurement_date?: string | null
+          name: string
+          region?: string | null
+          sector?: string | null
+          source?: string | null
+          unit?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          measurement_date?: string | null
+          name?: string
+          region?: string | null
+          sector?: string | null
+          source?: string | null
+          unit?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
+      ani_policy_frameworks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          implementation_date: string | null
+          key_objectives: string[] | null
+          related_legislation: string | null
+          scope: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          implementation_date?: string | null
+          key_objectives?: string[] | null
+          related_legislation?: string | null
+          scope?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          implementation_date?: string | null
+          key_objectives?: string[] | null
+          related_legislation?: string | null
+          scope?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ani_projects: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          funding_amount: number | null
+          id: string
+          organization: string | null
+          region: string | null
+          sector: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          funding_amount?: number | null
+          id?: string
+          organization?: string | null
+          region?: string | null
+          sector?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          funding_amount?: number | null
+          id?: string
+          organization?: string | null
+          region?: string | null
+          sector?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_notes: {
         Row: {
           content: string
