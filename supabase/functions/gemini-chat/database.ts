@@ -10,35 +10,53 @@ export async function handleDatabaseQuery(sqlQuery: string, originalResponse: st
     // Initialize Supabase client with service role key for database access
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
-    // Execute the SQL query directly
-    const { data, error } = await supabase.rpc('execute_sql_query', { sql_query: sqlQuery });
+    // First try using the execute_sql_query function
+    let { data, error } = await supabase.rpc('execute_sql_query', { 
+      sql_query: sqlQuery 
+    });
     
     if (error) {
       console.error("SQL query execution error:", error);
       
-      // If the function doesn't exist, try direct query instead
+      // If the SQL function doesn't exist, try executing a direct query
       if (error.message.includes("Could not find the function")) {
-        console.log("Function not found, trying direct query...");
+        console.log("Function not found, trying alternative approach...");
         
-        // Execute the query directly if it's only a SELECT statement
+        // Make sure query is SELECT only for security
         if (!sqlQuery.trim().toLowerCase().startsWith('select')) {
           return `Erro: Por razões de segurança, apenas consultas SELECT são permitidas.\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
         }
         
-        // Execute raw query using rpc instead of .execute() which was causing the error
-        const { data: rawData, error: rawError } = await supabase.rpc('execute_raw_query', { 
-          sql_query: sqlQuery 
-        });
-        
-        if (rawError) {
-          console.error("Raw SQL query error:", rawError);
-          return `Erro ao executar a consulta SQL: ${rawError.message}\n\nTente fazer uma consulta mais simples ou contate o administrador do sistema.\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+        // Try a direct query approach - using the PostgreSQL REST API
+        try {
+          const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/rpc/execute_sql_query`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                'apikey': SUPABASE_SERVICE_ROLE_KEY
+              },
+              body: JSON.stringify({ sql_query: sqlQuery })
+            }
+          );
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Database query failed: ${errorText}`);
+          }
+          
+          data = await response.json();
+        } catch (fetchError) {
+          console.error("Direct fetch error:", fetchError);
+          
+          // If everything fails, return a detailed error message
+          return `Erro ao executar a consulta SQL: ${fetchError.message}\n\nTente fazer uma consulta mais simples ou contate o administrador do sistema.\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
         }
-        
-        return formatQueryResults(rawData || [], sqlQuery);
+      } else {
+        return `Erro ao executar a consulta SQL: ${error.message}\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
       }
-      
-      return `Erro ao executar a consulta SQL: ${error.message}\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
     }
     
     return formatQueryResults(data || [], sqlQuery);

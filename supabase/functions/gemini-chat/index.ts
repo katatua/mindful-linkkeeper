@@ -26,6 +26,8 @@ serve(async (req) => {
                                .replace(/execute\s+this\s+sql\s+query\s*:?\s*/i, '')
                                .trim();
       
+      console.log("Detected direct SQL query execution request:", sqlQuery);
+      
       // Execute the SQL query directly
       const queryResult = await handleDatabaseQuery(sqlQuery, "");
       
@@ -55,6 +57,7 @@ serve(async (req) => {
     
     if (sqlMatch && sqlMatch[1]) {
       const sqlQuery = sqlMatch[1].trim();
+      console.log("Extracted SQL query from assistant response:", sqlQuery);
       assistantResponse = await handleDatabaseQuery(sqlQuery, assistantResponse);
     }
     
