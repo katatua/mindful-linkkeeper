@@ -198,6 +198,12 @@ export type Database = {
         }
         Returns: string
       }
+      execute_sql_query: {
+        Args: {
+          sql_query: string
+        }
+        Returns: Json
+      }
       generate_search_terms: {
         Args: {
           title: string
