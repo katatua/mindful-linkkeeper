@@ -2,34 +2,27 @@
 import { GEMINI_API_KEY, GEMINI_API_URL, getDatabaseSystemPrompt, getGeneralSystemPrompt } from "./utils.ts";
 
 // Function to generate a response from Gemini API
-export async function generateGeminiResponse(
-  messages: Array<{role: string, parts: Array<{text: string}>}>, 
-  isDatabaseQuery: boolean
-): Promise<string> {
-  // Add system prompt with database schema knowledge if this is a database query
-  const systemPrompt = {
-    role: 'model',
-    parts: [{ 
-      text: isDatabaseQuery ? getDatabaseSystemPrompt() : getGeneralSystemPrompt()
-    }]
-  };
-  
-  // Insert system prompt at the beginning
-  messages.unshift(systemPrompt);
-
-  // Make request to Gemini API
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: messages,
+export async function generateGeminiResponse(messages: any[], isDatabaseQuery: boolean): Promise<string> {
+  try {
+    // Create a copy of the messages to avoid modifying the original
+    const geminiMessages = [...messages];
+    
+    // Add system prompt as the first message
+    const systemPrompt = isDatabaseQuery ? getDatabaseSystemPrompt() : getGeneralSystemPrompt();
+    
+    geminiMessages.unshift({
+      role: 'model',
+      parts: [{ text: systemPrompt }]
+    });
+    
+    // Prepare the request body for Gemini API
+    const requestBody = {
+      contents: geminiMessages,
       generationConfig: {
-        temperature: isDatabaseQuery ? 0.2 : 0.7, // Lower temperature for SQL generation
+        temperature: 0.2,  // Lower temperature for more factual responses
+        topK: 32,
         topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 8192,  // Allow for longer responses
       },
       safetySettings: [
         {
@@ -49,26 +42,40 @@ export async function generateGeminiResponse(
           threshold: "BLOCK_MEDIUM_AND_ABOVE"
         }
       ]
-    }),
-  });
-
-  const data = await response.json();
-  
-  if (!response.ok) {
-    console.error('Gemini API error:', data);
-    throw new Error(`Gemini API Error: ${JSON.stringify(data)}`);
+    };
+    
+    console.log("Calling Gemini API...");
+    
+    // Call the Gemini API
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API error:", errorText);
+      throw new Error(`Gemini API returned ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Extract the response text
+    if (data.candidates && data.candidates.length > 0 && 
+        data.candidates[0].content && 
+        data.candidates[0].content.parts && 
+        data.candidates[0].content.parts.length > 0) {
+      
+      console.log("Gemini response received successfully");
+      return data.candidates[0].content.parts[0].text;
+    }
+    
+    throw new Error("Unexpected API response format");
+  } catch (error) {
+    console.error("Error generating Gemini response:", error);
+    return "Desculpe, encontrei um erro ao gerar uma resposta. Por favor, tente novamente mais tarde.";
   }
-  
-  // Extract response text
-  let assistantResponse = "Desculpe, não consegui processar sua solicitação.";
-  
-  if (data.candidates && 
-      data.candidates[0] && 
-      data.candidates[0].content && 
-      data.candidates[0].content.parts && 
-      data.candidates[0].content.parts[0]) {
-    assistantResponse = data.candidates[0].content.parts[0].text;
-  }
-  
-  return assistantResponse;
 }

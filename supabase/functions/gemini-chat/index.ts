@@ -37,9 +37,17 @@ serve(async (req) => {
       );
     }
 
-    // Log database query detection
+    // Check for regional investment query in Portuguese
+    const isRegionalInvestmentQuery = userMessage.toLowerCase().includes('investimento') && 
+                                    (userMessage.toLowerCase().includes('região') || userMessage.toLowerCase().includes('regiao')) &&
+                                    (userMessage.toLowerCase().includes('últimos') || userMessage.toLowerCase().includes('ultimos'));
+    
+    // Log query detection
     if (isDatabaseQuery) {
       console.log("Detected database query in message:", userMessage);
+      if (isRegionalInvestmentQuery) {
+        console.log("Specifically detected regional investment query");
+      }
     } else {
       console.log("Not a database query, using general prompt");
     }
@@ -57,7 +65,7 @@ serve(async (req) => {
     });
 
     // Generate response using Gemini API
-    let assistantResponse = await generateGeminiResponse(messages, isDatabaseQuery);
+    let assistantResponse = await generateGeminiResponse(messages, isDatabaseQuery || isRegionalInvestmentQuery);
     
     // Check if response contains SQL query and execute if needed
     const sqlMatch = assistantResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);

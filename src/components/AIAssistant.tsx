@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +54,6 @@ const AIAssistant = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Update initial messages when language changes
   useEffect(() => {
     setMessages(INITIAL_MESSAGES);
   }, [language]);
@@ -64,11 +62,9 @@ const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Detect if query is about metrics
   const isMetricsQuery = (message: string): boolean => {
     const lowerMsg = message.toLowerCase();
     
-    // Patterns for English and Portuguese covering R&D investment, patents, etc.
     const englishPatterns = [
       'how much is', 'what is the', 'tell me about', 'show me', 
       'r&d investment', 'investment in r&d', 'patent', 'innovation', 
@@ -87,19 +83,34 @@ const AIAssistant = () => {
            portuguesePatterns.some(pattern => lowerMsg.includes(pattern));
   };
 
-  // Function to generate SQL from natural language
   const generateSqlFromNaturalLanguage = async (query: string): Promise<string> => {
     try {
       const lowerQuery = query.toLowerCase();
       
-      // For "active projects" type questions
+      if ((lowerQuery.includes('investimento') || lowerQuery.includes('investment')) && 
+          (lowerQuery.includes('região') || lowerQuery.includes('regiao') || lowerQuery.includes('region')) &&
+          (lowerQuery.includes('últimos') || lowerQuery.includes('ultimos') || lowerQuery.includes('last'))) {
+        
+        const yearMatch = lowerQuery.match(/(\d+)\s*(ano|anos|year|years)/);
+        const numYears = yearMatch ? parseInt(yearMatch[1]) : 3;
+        
+        return `SELECT region, 
+                  EXTRACT(YEAR FROM measurement_date) as year, 
+                  SUM(value) as value, 
+                  FIRST_VALUE(unit) OVER (PARTITION BY region ORDER BY measurement_date DESC) as unit
+                FROM ani_metrics 
+                WHERE category = 'Regional Growth'
+                AND measurement_date >= CURRENT_DATE - INTERVAL '${numYears} years'
+                GROUP BY region, EXTRACT(YEAR FROM measurement_date)
+                ORDER BY region, year DESC`;
+      }
+      
       if (lowerQuery.includes('project') || lowerQuery.includes('projeto')) {
         if (lowerQuery.includes('active') || lowerQuery.includes('ativo')) {
           return `SELECT COUNT(*) AS total_active_projects FROM ani_projects WHERE status = 'active'`;
         }
       }
       
-      // For R&D investment questions
       if (lowerQuery.includes('r&d') || lowerQuery.includes('p&d') || 
           lowerQuery.includes('research') || lowerQuery.includes('pesquisa') ||
           lowerQuery.includes('investment') || lowerQuery.includes('investimento')) {
@@ -108,9 +119,8 @@ const AIAssistant = () => {
             lowerQuery.includes('years') || lowerQuery.includes('anos') ||
             lowerQuery.includes('last') || lowerQuery.includes('últimos')) {
           
-          // Check if asking for data from multiple years
           const yearMatch = lowerQuery.match(/(\d+)\s*(year|ano|years|anos)/);
-          const numYears = yearMatch ? parseInt(yearMatch[1]) : 3; // Default to 3 years if not specified
+          const numYears = yearMatch ? parseInt(yearMatch[1]) : 3;
           
           return `SELECT name, value, unit, measurement_date, source 
                  FROM ani_metrics 
@@ -128,7 +138,6 @@ const AIAssistant = () => {
                LIMIT 1`;
       }
       
-      // For patent questions
       if (lowerQuery.includes('patent') || lowerQuery.includes('patente')) {
         if (lowerQuery.includes('year') || lowerQuery.includes('ano') || 
             lowerQuery.includes('years') || lowerQuery.includes('anos') ||
@@ -153,7 +162,6 @@ const AIAssistant = () => {
                LIMIT 1`;
       }
       
-      // For metric/statistic general questions
       if (lowerQuery.includes('metric') || lowerQuery.includes('métrica') ||
           lowerQuery.includes('statistic') || lowerQuery.includes('estatística')) {
         return `SELECT name, category, value, unit, measurement_date, source 
@@ -162,7 +170,6 @@ const AIAssistant = () => {
                LIMIT 5`;
       }
       
-      // For funding programs
       if (lowerQuery.includes('funding') || lowerQuery.includes('financiamento') ||
           lowerQuery.includes('program') || lowerQuery.includes('programa')) {
         return `SELECT name, description, total_budget, start_date, end_date 
@@ -171,7 +178,6 @@ const AIAssistant = () => {
                LIMIT 5`;
       }
       
-      // For sector questions
       if (lowerQuery.includes('sector') || lowerQuery.includes('setor')) {
         return `SELECT sector, COUNT(*) as count 
                FROM ani_projects 
@@ -180,7 +186,6 @@ const AIAssistant = () => {
                ORDER BY count DESC`;
       }
       
-      // For regional questions
       if (lowerQuery.includes('region') || lowerQuery.includes('região')) {
         return `SELECT region, COUNT(*) as count 
                FROM ani_projects 
@@ -189,7 +194,6 @@ const AIAssistant = () => {
                ORDER BY count DESC`;
       }
       
-      // Use Gemini to generate SQL for more complex queries
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
           userMessage: `Generate a SQL query for the ANI database to answer this question: "${query}"`,
@@ -202,13 +206,11 @@ const AIAssistant = () => {
         throw new Error("Failed to generate SQL query");
       }
       
-      // Extract SQL from Gemini response
       const sqlMatch = data.response.match(/<SQL>([\s\S]*?)<\/SQL>/);
       if (sqlMatch && sqlMatch[1]) {
         return sqlMatch[1].trim();
       }
       
-      // Fallback to a generic query if no specific SQL could be generated
       return `SELECT * FROM ani_metrics ORDER BY measurement_date DESC LIMIT 5`;
     } catch (error) {
       console.error("Error in SQL generation:", error);
@@ -216,7 +218,6 @@ const AIAssistant = () => {
     }
   };
 
-  // Execute the SQL query and format results
   const executeQuery = async (sqlQuery: string): Promise<{ response: string, visualizationData?: any[] }> => {
     try {
       console.log("Executing query:", sqlQuery);
@@ -233,17 +234,15 @@ const AIAssistant = () => {
         throw new Error("Failed to execute SQL query");
       }
       
-      // Check if response contains visualization data marker
       const visualizationRegex = /<data-visualization>([\s\S]*?)<\/data-visualization>/;
-      const vizMatch = data.response.match(visualizationRegex);
-      
       let visualizationData;
       let cleanResponse = data.response;
+      
+      const vizMatch = data.response.match(visualizationRegex);
       
       if (vizMatch && vizMatch[1]) {
         try {
           visualizationData = JSON.parse(vizMatch[1]);
-          // Remove the visualization marker from the response
           cleanResponse = data.response.replace(visualizationRegex, '');
         } catch (e) {
           console.error("Error parsing visualization data:", e);
@@ -267,7 +266,6 @@ const AIAssistant = () => {
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     
-    // Add user message
     const userMessageId = genId();
     const userMessage: Message = {
       id: userMessageId,
@@ -284,27 +282,22 @@ const AIAssistant = () => {
       let response: string;
       let vizData: any[] | undefined;
       
-      // Check if this is a query about data in the ANI database
       if (isMetricsQuery(input)) {
         console.log("Detected metrics query");
-        // 1. Generate SQL from natural language
         const sqlQuery = await generateSqlFromNaturalLanguage(input);
         console.log("Generated SQL query:", sqlQuery);
         
-        // 2. Execute the SQL query
         const queryResult = await executeQuery(sqlQuery);
         console.log("Query result:", queryResult);
         
         response = queryResult.response;
         vizData = queryResult.visualizationData;
         
-        // If we have visualization data, update state
         if (vizData && vizData.length > 0) {
           setVisualizationData(vizData);
           setShowVisualization(true);
         }
       } else {
-        // Get regular response from the AI
         response = await generateResponse(input);
       }
       

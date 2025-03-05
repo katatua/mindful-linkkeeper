@@ -1,4 +1,3 @@
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "./utils.ts";
 
@@ -90,8 +89,59 @@ function formatQueryResults(data: any[], sqlQuery: string, originalResponse: str
   // Generate natural language response based on the data type
   let naturalLanguageResponse = "";
   
+  // Check if this is a regional investment query
+  if (sqlQuery.toLowerCase().includes("region") && 
+      (sqlQuery.toLowerCase().includes("investment") || sqlQuery.toLowerCase().includes("growth"))) {
+    
+    // Organize data by region
+    const regionData: Record<string, any[]> = {};
+    data.forEach(item => {
+      const region = item.region || 'Não especificada';
+      if (!regionData[region]) {
+        regionData[region] = [];
+      }
+      regionData[region].push(item);
+    });
+    
+    // Format result by region
+    let totalInvestment = 0;
+    const regionBreakdown: string[] = [];
+    
+    Object.entries(regionData).forEach(([region, items]) => {
+      // Sort by year if available
+      items.sort((a, b) => {
+        const yearA = a.year || (a.measurement_date ? new Date(a.measurement_date).getFullYear() : 0);
+        const yearB = b.year || (b.measurement_date ? new Date(b.measurement_date).getFullYear() : 0);
+        return yearB - yearA; // Most recent first
+      });
+      
+      const regionTotal = items.reduce((sum, item) => sum + parseFloat(item.value || 0), 0);
+      totalInvestment += regionTotal;
+      
+      const unit = items[0].unit || 'Million Euros';
+      
+      // Get individual years
+      const yearlyData = items.map(item => {
+        const year = item.year || (item.measurement_date ? new Date(item.measurement_date).getFullYear() : 'N/A');
+        return `${year}: ${parseFloat(item.value).toFixed(1)} ${unit}`;
+      }).join(', ');
+      
+      regionBreakdown.push(`${region}: ${regionTotal.toFixed(1)} ${unit} (${yearlyData})`);
+    });
+    
+    const unit = data[0].unit || 'Million Euros';
+    const years = [...new Set(data.map(item => 
+      item.year || (item.measurement_date ? new Date(item.measurement_date).getFullYear() : null)
+    ))].filter(Boolean).sort((a, b) => b - a); // Sort years descending
+    
+    const yearRange = years.length > 0 ? 
+      `${Math.min(...years)} a ${Math.max(...years)}` : 
+      'últimos anos';
+    
+    naturalLanguageResponse = `O investimento total por região de ${yearRange} foi de ${totalInvestment.toFixed(1)} ${unit}, distribuído da seguinte forma: ${regionBreakdown.join('; ')}.`;
+  }
   // Check the query to determine what kind of data we're dealing with
-  if (sqlQuery.toLowerCase().includes("r&d") || sqlQuery.toLowerCase().includes("p&d")) {
+  else if (sqlQuery.toLowerCase().includes("r&d") || sqlQuery.toLowerCase().includes("p&d")) {
     // R&D Investment query
     if (isDateBasedData(data)) {
       naturalLanguageResponse = generateTimeSeriesResponse(data, "investimento em P&D", "valor");

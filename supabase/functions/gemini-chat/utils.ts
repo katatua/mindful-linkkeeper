@@ -36,10 +36,11 @@ export function isDatabaseQueryRequest(message: string): boolean {
   // R&D and Innovation keywords
   const innovationKeywords = [
     "r&d", "p&d", "research", "pesquisa", "development", "desenvolvimento",
-    "innovation", "inovação", "investment", "investimento",
+    "innovation", "inovação", "investment", "investimento", "investimentos",
     "patent", "patente", "projects", "projetos", "funding", "financiamento",
     "program", "programa", "policy", "política", "framework", "quadro",
-    "sector", "setor", "region", "região", "success rate", "taxa de sucesso"
+    "sector", "setor", "region", "região", "regiao", "success rate", "taxa de sucesso",
+    "north", "norte", "central", "south", "sul", "islands", "ilhas", "ultimos", "últimos", "anos"
   ];
   
   // Question patterns
@@ -47,7 +48,8 @@ export function isDatabaseQueryRequest(message: string): boolean {
     "how many", "how much", "what is", "what are", "tell me about",
     "quantos", "quanto", "qual", "quais", "me diga sobre",
     "show me", "mostre-me", "can you tell", "pode me dizer",
-    "i want to know", "eu quero saber", "give me info", "me dê informações"
+    "i want to know", "eu quero saber", "give me info", "me dê informações",
+    "por regiao", "por região", "by region", "nos ultimos", "nos últimos"
   ];
   
   // Check for database explicit keywords
@@ -70,7 +72,10 @@ export function isDatabaseQueryRequest(message: string): boolean {
     "success rate", "taxa de sucesso",
     "funding amount", "valor de financiamento",
     "sector distribution", "distribuição por setor",
-    "regional data", "dados regionais"
+    "regional data", "dados regionais",
+    "por região", "por regiao", "por region", 
+    "últimos anos", "ultimos anos", "last years",
+    "investimento nos últimos", "investimento nos ultimos"
   ];
   
   const hasSpecificMetricsPattern = specificMetricsPatterns.some(pattern => 
@@ -94,6 +99,13 @@ export function isDatabaseQueryRequest(message: string): boolean {
   
   // If we explicitly mention database or use SQL, it's a query
   if (hasDatabaseKeyword) {
+    return true;
+  }
+  
+  // For Portuguese queries about investment by region in recent years
+  if (message_lower.includes("investimento") && 
+     (message_lower.includes("região") || message_lower.includes("regiao") || message_lower.includes("regional")) &&
+     (message_lower.includes("últimos") || message_lower.includes("ultimos") || message_lower.includes("recentes"))) {
     return true;
   }
   
@@ -171,6 +183,15 @@ export function getDatabaseSystemPrompt(): string {
   WHERE (category = 'Investment' AND (name LIKE '%R&D%' OR name LIKE '%P&D%'))
   OR name = 'R&D Investment'
   ORDER BY measurement_date DESC LIMIT 1;
+  </SQL>
+  
+  Para investimento por região nos últimos anos, você pode usar:
+  <SQL>
+  SELECT region, name, value, unit, measurement_date
+  FROM ani_metrics
+  WHERE category = 'Regional Investment' 
+  AND measurement_date >= CURRENT_DATE - INTERVAL '3 years'
+  ORDER BY region, measurement_date DESC;
   </SQL>
   
   Para a contagem de projetos ativos, use:
