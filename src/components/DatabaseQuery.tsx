@@ -2,40 +2,93 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Database, AlertTriangle } from 'lucide-react';
+import { Loader2, Database, AlertTriangle, BookOpen } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Markdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const EXAMPLE_QUERIES = {
+  projectsCount: `SELECT
+  'ani_projects' AS table_name,
+  COUNT(*) AS record_count
+FROM
+  ani_projects
+UNION ALL
+SELECT
+  'ani_funding_programs',
+  COUNT(*)
+FROM
+  ani_funding_programs
+UNION ALL
+SELECT
+  'ani_policy_frameworks',
+  COUNT(*)
+FROM
+  ani_policy_frameworks
+UNION ALL
+SELECT
+  'ani_metrics',
+  COUNT(*)
+FROM
+  ani_metrics`,
+  activeProjects: `SELECT 
+  title, 
+  description, 
+  funding_amount, 
+  sector, 
+  region, 
+  organization,
+  start_date,
+  end_date
+FROM 
+  ani_projects 
+WHERE 
+  status = 'active'`,
+  metricsPerCategory: `SELECT 
+  category, 
+  COUNT(*) as metric_count, 
+  AVG(value) as average_value 
+FROM 
+  ani_metrics 
+GROUP BY 
+  category 
+ORDER BY 
+  metric_count DESC`,
+  projectsByRegion: `SELECT 
+  region, 
+  COUNT(*) as project_count, 
+  SUM(funding_amount) as total_funding 
+FROM 
+  ani_projects 
+GROUP BY 
+  region 
+ORDER BY 
+  total_funding DESC`,
+  fundingPrograms: `SELECT 
+  name, 
+  description, 
+  total_budget, 
+  start_date, 
+  end_date, 
+  sector_focus 
+FROM 
+  ani_funding_programs`
+};
 
 const DatabaseQuery: React.FC = () => {
   const [results, setResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sqlQuery, setSqlQuery] = useState<string>(`SELECT
-    'ani_projects' AS table_name,
-    COUNT(*) AS record_count
-FROM
-    ani_projects
-UNION ALL
-SELECT
-    'ani_funding_programs',
-    COUNT(*)
-FROM
-    ani_funding_programs
-UNION ALL
-SELECT
-    'ani_policy_frameworks',
-    COUNT(*)
-FROM
-    ani_policy_frameworks
-UNION ALL
-SELECT
-    'ani_metrics',
-    COUNT(*)
-FROM
-    ani_metrics`);
+  const [sqlQuery, setSqlQuery] = useState<string>(EXAMPLE_QUERIES.projectsCount);
   const { toast } = useToast();
+
+  const handleSelectQuery = (queryKey: string) => {
+    if (queryKey in EXAMPLE_QUERIES) {
+      setSqlQuery(EXAMPLE_QUERIES[queryKey as keyof typeof EXAMPLE_QUERIES]);
+    }
+  };
 
   const executeQuery = async () => {
     if (!sqlQuery.trim()) {
@@ -101,9 +154,36 @@ FROM
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <label htmlFor="sql-query" className="block text-sm font-medium mb-2">
-            Consulta SQL
+          <label htmlFor="query-template" className="block text-sm font-medium mb-2">
+            Consultas de Exemplo
           </label>
+          <Select onValueChange={handleSelectQuery}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecione uma consulta de exemplo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Consultas ANI</SelectLabel>
+                <SelectItem value="projectsCount">Contagem de Registros nas Tabelas</SelectItem>
+                <SelectItem value="activeProjects">Projetos Ativos</SelectItem>
+                <SelectItem value="metricsPerCategory">Métricas por Categoria</SelectItem>
+                <SelectItem value="projectsByRegion">Projetos por Região</SelectItem>
+                <SelectItem value="fundingPrograms">Programas de Financiamento</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <label htmlFor="sql-query" className="block text-sm font-medium">
+              Consulta SQL
+            </label>
+            <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1 h-7">
+              <BookOpen className="h-3 w-3" />
+              Ajuda SQL
+            </Button>
+          </div>
           <Textarea
             id="sql-query"
             value={sqlQuery}

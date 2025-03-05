@@ -3,10 +3,11 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SendHorizonal, Bot, User, Info } from "lucide-react";
+import { SendHorizonal, Bot, User, Info, Database } from "lucide-react";
 import { generateResponse, genId } from "@/utils/aiUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -22,8 +23,8 @@ const AIAssistant = () => {
     : "Olá! Sou o Assistente de IA da ANI. Como posso ajudá-lo com informações sobre inovação hoje?";
   
   const systemInfo = language === 'en'
-    ? "You can ask questions about documents, links or files you've uploaded to the platform. I can also provide general information about innovation, funding, policies, and metrics."
-    : "Pode fazer perguntas sobre os documentos, links ou ficheiros que carregou na plataforma. Também posso fornecer informações gerais sobre inovação, financiamento, políticas e métricas.";
+    ? "You can ask questions about documents, links or files you've uploaded to the platform. I can also provide general information about innovation, funding, policies, and metrics or query the ANI database for you."
+    : "Pode fazer perguntas sobre os documentos, links ou ficheiros que carregou na plataforma. Também posso fornecer informações gerais sobre inovação, financiamento, políticas e métricas, ou consultar o banco de dados da ANI para você.";
 
   const INITIAL_MESSAGES: Message[] = [
     {
@@ -59,6 +60,61 @@ const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Check if a message is about querying active projects
+  const isActiveProjectsQuery = (message: string): boolean => {
+    const lowerMsg = message.toLowerCase();
+    
+    // English patterns
+    if (lowerMsg.includes("how many active projects") || 
+        lowerMsg.includes("number of active projects") ||
+        lowerMsg.includes("active projects count")) {
+      return true;
+    }
+    
+    // Portuguese patterns
+    if (lowerMsg.includes("quantos projetos ativos") || 
+        lowerMsg.includes("quantos projetos estão ativos") ||
+        lowerMsg.includes("número de projetos ativos") ||
+        lowerMsg.includes("contagem de projetos ativos")) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Query the database for active projects
+  const queryActiveProjects = async (): Promise<string> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { 
+          userMessage: `Execute esta consulta SQL: SELECT COUNT(*) FROM ani_projects WHERE status = 'active'`,
+          chatHistory: [] 
+        }
+      });
+      
+      if (error) {
+        console.error("Error querying database:", error);
+        return language === 'en'
+          ? "I'm sorry, I encountered an error when trying to query the database."
+          : "Desculpe, encontrei um erro ao tentar consultar o banco de dados.";
+      }
+      
+      // Parse the response to extract the count
+      const responseText = data.response;
+      const match = responseText.match(/(\d+)/);
+      const count = match ? match[1] : "unknown";
+      
+      return language === 'en'
+        ? `There are currently ${count} active projects in the ANI database.`
+        : `Existem atualmente ${count} projetos ativos no banco de dados da ANI.`;
+    } catch (error) {
+      console.error("Error in queryActiveProjects:", error);
+      return language === 'en'
+        ? "I'm sorry, I couldn't retrieve the active projects count due to a technical issue."
+        : "Desculpe, não consegui obter a contagem de projetos ativos devido a um problema técnico.";
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     
@@ -76,8 +132,16 @@ const AIAssistant = () => {
     setIsTyping(true);
     
     try {
-      // Get response from the AI
-      const response = await generateResponse(input);
+      let response: string;
+      
+      // Check if this is a query about active projects
+      if (isActiveProjectsQuery(input)) {
+        response = await queryActiveProjects();
+      } else {
+        // Get regular response from the AI
+        response = await generateResponse(input);
+      }
+      
       const assistantMessage: Message = {
         id: genId(),
         role: 'assistant',
