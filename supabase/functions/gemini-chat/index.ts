@@ -71,7 +71,7 @@ serve(async (req) => {
       
       // Replace the SQL section with the query results
       assistantResponse = assistantResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, 
-        "Aqui estão os resultados da consulta ao banco de dados:\n\n" + queryResults);
+        queryResults);
     }
     
     return new Response(

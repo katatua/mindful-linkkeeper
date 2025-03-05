@@ -8,12 +8,14 @@ import { generateResponse, genId } from "@/utils/aiUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
+import DataVisualization from "./DataVisualization";
 
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  visualizationData?: any[];
 }
 
 const AIAssistant = () => {
@@ -44,6 +46,8 @@ const AIAssistant = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showVisualization, setShowVisualization] = useState(false);
+  const [visualizationData, setVisualizationData] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -91,7 +95,7 @@ const AIAssistant = () => {
       // For "active projects" type questions
       if (lowerQuery.includes('project') || lowerQuery.includes('projeto')) {
         if (lowerQuery.includes('active') || lowerQuery.includes('ativo')) {
-          return `SELECT COUNT(*) FROM ani_projects WHERE status = 'active'`;
+          return `SELECT COUNT(*) AS total_active_projects FROM ani_projects WHERE status = 'active'`;
         }
       }
       
@@ -99,28 +103,93 @@ const AIAssistant = () => {
       if (lowerQuery.includes('r&d') || lowerQuery.includes('p&d') || 
           lowerQuery.includes('research') || lowerQuery.includes('pesquisa') ||
           lowerQuery.includes('investment') || lowerQuery.includes('investimento')) {
-        return `SELECT name, value, unit, measurement_date FROM ani_metrics WHERE category = 'Investment' AND name LIKE '%R&D%' OR name LIKE '%P&D%' ORDER BY measurement_date DESC LIMIT 1`;
+        
+        if (lowerQuery.includes('year') || lowerQuery.includes('ano') || 
+            lowerQuery.includes('years') || lowerQuery.includes('anos') ||
+            lowerQuery.includes('last') || lowerQuery.includes('últimos')) {
+          
+          // Check if asking for data from multiple years
+          const yearMatch = lowerQuery.match(/(\d+)\s*(year|ano|years|anos)/);
+          const numYears = yearMatch ? parseInt(yearMatch[1]) : 3; // Default to 3 years if not specified
+          
+          return `SELECT name, value, unit, measurement_date, source 
+                 FROM ani_metrics 
+                 WHERE (category = 'Investment' OR category = 'Annual Funding') 
+                 AND (name LIKE '%R&D%' OR name LIKE '%P&D%' OR name LIKE '%Investment%') 
+                 ORDER BY measurement_date DESC 
+                 LIMIT ${numYears}`;
+        }
+        
+        return `SELECT name, value, unit, measurement_date, source 
+               FROM ani_metrics 
+               WHERE category = 'Investment' 
+               AND (name LIKE '%R&D%' OR name LIKE '%P&D%') 
+               ORDER BY measurement_date DESC 
+               LIMIT 1`;
       }
       
       // For patent questions
       if (lowerQuery.includes('patent') || lowerQuery.includes('patente')) {
-        return `SELECT name, value, unit, measurement_date FROM ani_metrics WHERE category = 'Intellectual Property' AND name LIKE '%Patent%' OR name LIKE '%Patente%' ORDER BY measurement_date DESC LIMIT 1`;
+        if (lowerQuery.includes('year') || lowerQuery.includes('ano') || 
+            lowerQuery.includes('years') || lowerQuery.includes('anos') ||
+            lowerQuery.includes('last') || lowerQuery.includes('últimos')) {
+          
+          const yearMatch = lowerQuery.match(/(\d+)\s*(year|ano|years|anos)/);
+          const numYears = yearMatch ? parseInt(yearMatch[1]) : 3;
+          
+          return `SELECT name, value, unit, measurement_date, source 
+                 FROM ani_metrics 
+                 WHERE category = 'Intellectual Property' 
+                 AND (name LIKE '%Patent%' OR name LIKE '%Patente%') 
+                 ORDER BY measurement_date DESC 
+                 LIMIT ${numYears}`;
+        }
+        
+        return `SELECT name, value, unit, measurement_date, source 
+               FROM ani_metrics 
+               WHERE category = 'Intellectual Property' 
+               AND (name LIKE '%Patent%' OR name LIKE '%Patente%') 
+               ORDER BY measurement_date DESC 
+               LIMIT 1`;
       }
       
       // For metric/statistic general questions
       if (lowerQuery.includes('metric') || lowerQuery.includes('métrica') ||
           lowerQuery.includes('statistic') || lowerQuery.includes('estatística')) {
-        return `SELECT name, category, value, unit, measurement_date FROM ani_metrics ORDER BY measurement_date DESC LIMIT 5`;
+        return `SELECT name, category, value, unit, measurement_date, source 
+               FROM ani_metrics 
+               ORDER BY measurement_date DESC 
+               LIMIT 5`;
       }
       
       // For funding programs
       if (lowerQuery.includes('funding') || lowerQuery.includes('financiamento') ||
           lowerQuery.includes('program') || lowerQuery.includes('programa')) {
-        return `SELECT name, total_budget FROM ani_funding_programs ORDER BY total_budget DESC LIMIT 5`;
+        return `SELECT name, description, total_budget, start_date, end_date 
+               FROM ani_funding_programs 
+               ORDER BY total_budget DESC 
+               LIMIT 5`;
+      }
+      
+      // For sector questions
+      if (lowerQuery.includes('sector') || lowerQuery.includes('setor')) {
+        return `SELECT sector, COUNT(*) as count 
+               FROM ani_projects 
+               WHERE sector IS NOT NULL 
+               GROUP BY sector 
+               ORDER BY count DESC`;
+      }
+      
+      // For regional questions
+      if (lowerQuery.includes('region') || lowerQuery.includes('região')) {
+        return `SELECT region, COUNT(*) as count 
+               FROM ani_projects 
+               WHERE region IS NOT NULL 
+               GROUP BY region 
+               ORDER BY count DESC`;
       }
       
       // Use Gemini to generate SQL for more complex queries
-      // Pass the message to the edge function to generate SQL based on the query
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
           userMessage: `Generate a SQL query for the ANI database to answer this question: "${query}"`,
@@ -148,7 +217,7 @@ const AIAssistant = () => {
   };
 
   // Execute the SQL query and format results
-  const executeQuery = async (sqlQuery: string): Promise<string> => {
+  const executeQuery = async (sqlQuery: string): Promise<{ response: string, visualizationData?: any[] }> => {
     try {
       console.log("Executing query:", sqlQuery);
       
@@ -164,19 +233,35 @@ const AIAssistant = () => {
         throw new Error("Failed to execute SQL query");
       }
       
-      return data.response;
+      // Check if response contains visualization data marker
+      const visualizationRegex = /<data-visualization>([\s\S]*?)<\/data-visualization>/;
+      const vizMatch = data.response.match(visualizationRegex);
+      
+      let visualizationData;
+      let cleanResponse = data.response;
+      
+      if (vizMatch && vizMatch[1]) {
+        try {
+          visualizationData = JSON.parse(vizMatch[1]);
+          // Remove the visualization marker from the response
+          cleanResponse = data.response.replace(visualizationRegex, '');
+        } catch (e) {
+          console.error("Error parsing visualization data:", e);
+        }
+      }
+      
+      return { 
+        response: cleanResponse,
+        visualizationData: visualizationData
+      };
     } catch (error) {
       console.error("Error in query execution:", error);
-      return language === 'en' 
-        ? "I'm sorry, I couldn't retrieve the data due to a technical issue."
-        : "Desculpe, não consegui recuperar os dados devido a um problema técnico.";
+      return { 
+        response: language === 'en' 
+          ? "I'm sorry, I couldn't retrieve the data due to a technical issue."
+          : "Desculpe, não consegui recuperar os dados devido a um problema técnico."
+      };
     }
-  };
-
-  // Format the SQL result into a natural language response
-  const formatResultToNaturalLanguage = (result: string, originalQuery: string): string => {
-    // Already formatted by the Gemini edge function
-    return result;
   };
 
   const handleSendMessage = async () => {
@@ -197,6 +282,7 @@ const AIAssistant = () => {
     
     try {
       let response: string;
+      let vizData: any[] | undefined;
       
       // Check if this is a query about data in the ANI database
       if (isMetricsQuery(input)) {
@@ -209,8 +295,14 @@ const AIAssistant = () => {
         const queryResult = await executeQuery(sqlQuery);
         console.log("Query result:", queryResult);
         
-        // 3. Format the result into natural language
-        response = formatResultToNaturalLanguage(queryResult, input);
+        response = queryResult.response;
+        vizData = queryResult.visualizationData;
+        
+        // If we have visualization data, update state
+        if (vizData && vizData.length > 0) {
+          setVisualizationData(vizData);
+          setShowVisualization(true);
+        }
       } else {
         // Get regular response from the AI
         response = await generateResponse(input);
@@ -220,7 +312,8 @@ const AIAssistant = () => {
         id: genId(),
         role: 'assistant',
         content: response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        visualizationData: vizData
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -249,12 +342,25 @@ const AIAssistant = () => {
     }
   };
 
+  const handleCloseVisualization = () => {
+    setShowVisualization(false);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
       <div className="border-b px-4 py-3 flex items-center gap-2">
         <Bot className="h-5 w-5 text-primary" />
         <h3 className="font-medium">{language === 'en' ? 'ANI Assistant' : 'Assistente ANI'}</h3>
       </div>
+      
+      {showVisualization && visualizationData.length > 0 && (
+        <div className="px-4 py-3">
+          <DataVisualization 
+            data={visualizationData} 
+            onClose={handleCloseVisualization} 
+          />
+        </div>
+      )}
       
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
