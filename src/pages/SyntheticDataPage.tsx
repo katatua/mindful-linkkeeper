@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,7 +107,6 @@ const SyntheticDataPage = () => {
     setGeneratingData(true);
     
     try {
-      // Construct a prompt based on the selected parameters
       const currentParams = parameters[dataType];
       let prompt = `Generate synthetic data in SQL INSERT format for ${rowCount} rows of ANI ${dataType} data with the following parameters:\n`;
       
@@ -116,7 +114,6 @@ const SyntheticDataPage = () => {
         prompt += `- ${key}: ${Array.isArray(value) ? value.join(", ") : value}\n`;
       });
       
-      // Add information about the data source if requested
       if (includeSourceInfo) {
         prompt += `\nThis data should simulate real data from these sources:\n`;
         dataSources[dataType as keyof typeof dataSources].forEach(source => {
@@ -124,7 +121,6 @@ const SyntheticDataPage = () => {
         });
       }
       
-      // Determine the correct table name
       let tableName = dataType;
       if (dataType === 'funding') tableName = 'ani_funding_programs';
       else if (dataType === 'projects') tableName = 'ani_projects';
@@ -146,7 +142,6 @@ const SyntheticDataPage = () => {
         prompt += `\n\nUse this example structure for a new ani_institutions table: id (UUID), institution_name (text), type (text), region (text), specialization_areas (text array), founding_date (date), collaboration_count (integer), project_history (text array)`;
       }
       
-      // Call AI to generate the data
       const response = await generateResponse(prompt);
       setGeneratedData(response);
       
@@ -559,24 +554,27 @@ const SyntheticDataPage = () => {
                 </TabsContent>
               </Tabs>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col space-y-4">
               <Button 
-                className="w-full" 
+                className="w-full bg-green-600 hover:bg-green-700 text-lg py-6"
                 onClick={generateSyntheticData}
                 disabled={generatingData}
               >
                 {generatingData ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    <RefreshCw className="h-6 w-6 mr-2 animate-spin" />
                     Gerando...
                   </>
                 ) : (
                   <>
-                    <Database className="h-4 w-4 mr-2" />
-                    Gerar Dados Sintéticos
+                    <Database className="h-6 w-6 mr-2" />
+                    Gerar Dados Sintéticos SQL
                   </>
                 )}
               </Button>
+              <p className="text-sm text-center text-muted-foreground">
+                Clique no botão acima para gerar os dados SQL com base nos parâmetros selecionados
+              </p>
             </CardFooter>
           </Card>
 
@@ -637,13 +635,33 @@ const SyntheticDataPage = () => {
             <CardContent className="flex-grow">
               <Textarea
                 value={generatedData}
-                placeholder="O SQL gerado aparecerá aqui..."
+                placeholder="O SQL gerado aparecerá aqui após clicar no botão 'Gerar Dados Sintéticos SQL'"
                 className="h-[500px] font-mono text-sm"
                 readOnly
               />
             </CardContent>
           </Card>
         </div>
+      </div>
+      
+      <div className="md:hidden fixed bottom-6 right-6 left-6 z-10">
+        <Button 
+          className="w-full bg-green-600 hover:bg-green-700 text-lg py-6 shadow-lg rounded-xl"
+          onClick={generateSyntheticData}
+          disabled={generatingData}
+        >
+          {generatingData ? (
+            <>
+              <RefreshCw className="h-6 w-6 mr-2 animate-spin" />
+              Gerando...
+            </>
+          ) : (
+            <>
+              <Database className="h-6 w-6 mr-2" />
+              Gerar Dados Sintéticos
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
