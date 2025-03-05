@@ -17,7 +17,7 @@ export const extractDataKeys = (data: any[]): string[] => {
 };
 
 export const determineDataStructure = (data: any[]) => {
-  if (!data || data.length === 0) return { processedData: [], dataKeys: [], type: 'bar', title: 'Visualização de Dados' };
+  if (!data || data.length === 0) return { processedData: [], dataKeys: [], type: 'bar' as const, title: 'Visualização de Dados' };
 
   // Discover keys and determine best visualization type
   const sampleItem = data[0];
