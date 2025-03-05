@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Message } from "@/types/chatTypes";
 import { generateResponse, genId } from "@/utils/aiUtils";
@@ -56,15 +55,14 @@ export const useChatCore = (language: string) => {
     setSuggestionLinks,
     getInitialSuggestions,
     generateContextualSuggestions,
+    generateRandomSuggestions
   } = useChatSuggestions(language);
 
-  // Reset messages when language changes
   useEffect(() => {
     setMessages(INITIAL_MESSAGES);
     setSuggestionLinks(getInitialSuggestions());
   }, [language]);
 
-  // Update suggestions based on last user message
   useEffect(() => {
     if (messages.length > 2) {
       const userMessages = messages.filter(msg => msg.role === 'user');
@@ -183,6 +181,19 @@ export const useChatCore = (language: string) => {
     await processAndRespondToMessage(input);
   };
 
+  const refreshSuggestions = () => {
+    const userMessages = messages.filter(msg => msg.role === 'user');
+    const lastUserMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1] : null;
+    
+    if (lastUserMessage) {
+      const newSuggestions = generateRandomSuggestions(lastUserMessage.content);
+      setSuggestionLinks(newSuggestions);
+    } else {
+      const newSuggestions = generateRandomSuggestions("");
+      setSuggestionLinks(newSuggestions);
+    }
+  };
+
   return {
     messages,
     input,
@@ -193,6 +204,7 @@ export const useChatCore = (language: string) => {
     visualizationData,
     suggestionLinks,
     handleSuggestionClick,
-    handleSendMessage
+    handleSendMessage,
+    refreshSuggestions
   };
 };

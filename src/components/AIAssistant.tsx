@@ -17,7 +17,8 @@ const AIAssistant = () => {
     isTyping,
     suggestionLinks,
     handleSuggestionClick,
-    handleSendMessage
+    handleSendMessage,
+    handleRefreshSuggestions
   } = useChat(language);
 
   return (
@@ -37,6 +38,7 @@ const AIAssistant = () => {
           suggestionLinks={suggestionLinks}
           language={language}
           onSuggestionClick={handleSuggestionClick}
+          onRefreshSuggestions={handleRefreshSuggestions}
         />
         
         <ChatInput 
