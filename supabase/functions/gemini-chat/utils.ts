@@ -16,7 +16,8 @@ export function isDatabaseQueryRequest(message: string): boolean {
   const databaseKeywords = [
     "database", "sql", "query", "data", "find", 
     "show", "list", "get", "search", "count",
-    "records", "tables", "in the database"
+    "records", "tables", "in the database",
+    "banco de dados", "consulta", "dados", "registros", "tabelas", "no banco de dados"
   ];
   
   const message_lower = message.toLowerCase();
@@ -27,63 +28,75 @@ export function isDatabaseQueryRequest(message: string): boolean {
 
 // System prompts
 export function getDatabaseSystemPrompt(): string {
-  return `You are the database assistant for ANI (Agência Nacional de Inovação) of Portugal.
+  return `Você é o assistente de banco de dados para ANI (Agência Nacional de Inovação) de Portugal.
           
-  You have access to the following tables in the database:
+  Você tem acesso às seguintes tabelas no banco de dados:
   
-  1. links - Documents and links uploaded by users
-     - id (uuid): Unique identifier
-     - url (text): Document URL
-     - title (text): Document title
-     - summary (text): Content summary
-     - category (text): Document category
-     - classification (text): Document classification
-     - source (text): Document source
-     - created_at (timestamp): Creation date
-     - user_id (uuid): User ID who uploaded
-     - file_metadata (jsonb): File metadata
+  1. links - Documentos e links enviados pelos usuários
+     - id (uuid): Identificador único
+     - url (text): URL do documento
+     - title (text): Título do documento
+     - summary (text): Resumo do conteúdo
+     - category (text): Categoria do documento
+     - classification (text): Classificação do documento
+     - source (text): Fonte do documento
+     - created_at (timestamp): Data de criação
+     - user_id (uuid): ID do usuário que enviou
+     - file_metadata (jsonb): Metadados do arquivo
   
-  2. document_notes - Notes associated with documents
-     - id (uuid): Unique identifier
-     - link_id (uuid): Related document ID
-     - user_id (uuid): User ID who created the note
-     - content (text): Note content
-     - created_at (timestamp): Creation date
+  2. document_notes - Notas associadas a documentos
+     - id (uuid): Identificador único
+     - link_id (uuid): ID do documento relacionado
+     - user_id (uuid): ID do usuário que criou a nota
+     - content (text): Conteúdo da nota
+     - created_at (timestamp): Data de criação
   
-  3. notes - General user notes
-     - id (uuid): Unique identifier
-     - user_id (uuid): User ID
-     - content (text): Note content
-     - created_at (timestamp): Creation date
-     - updated_at (timestamp): Update date
+  3. notes - Notas gerais dos usuários
+     - id (uuid): Identificador único
+     - user_id (uuid): ID do usuário
+     - content (text): Conteúdo da nota
+     - created_at (timestamp): Data de criação
+     - updated_at (timestamp): Data de atualização
   
-  4. tasks - User tasks
-     - id (uuid): Unique identifier
-     - title (text): Task title
-     - description (text): Task description
-     - status (text): Task status (pending, in_progress, completed)
-     - priority (text): Priority (low, medium, high)
-     - category (text): Task category
-     - due_date (timestamp): Due date
-     - link_id (uuid): Related document ID (optional)
-     - user_id (uuid): User ID
-     - created_at (timestamp): Creation date
-     - updated_at (timestamp): Update date
+  4. tasks - Tarefas dos usuários
+     - id (uuid): Identificador único
+     - title (text): Título da tarefa
+     - description (text): Descrição da tarefa
+     - status (text): Status da tarefa (pending, in_progress, completed)
+     - priority (text): Prioridade (low, medium, high)
+     - category (text): Categoria da tarefa
+     - due_date (timestamp): Data de vencimento
+     - link_id (uuid): ID do documento relacionado (opcional)
+     - user_id (uuid): ID do usuário
+     - created_at (timestamp): Data de criação
+     - updated_at (timestamp): Data de atualização
   
-  When asked about database data, generate an SQL query that counts records in each table and presents this in a clear format.
+  Quando perguntado sobre dados do banco de dados, gere uma consulta SQL que conte registros em cada tabela e apresente isso em um formato claro.
   
-  For table counts, use the following query:
+  Para contagens de tabelas, use exatamente a seguinte consulta SQL:
   <SQL>
-  SELECT 'links' AS table_name, COUNT(*) AS num_records FROM links
+  SELECT
+    'links' AS table_name,
+    COUNT(*) AS record_count
+  FROM links
   UNION ALL
-  SELECT 'document_notes', COUNT(*) FROM document_notes
+  SELECT
+    'document_notes' AS table_name,
+    COUNT(*) AS record_count
+  FROM document_notes
   UNION ALL
-  SELECT 'notes', COUNT(*) FROM notes
+  SELECT
+    'notes' AS table_name,
+    COUNT(*) AS record_count
+  FROM notes
   UNION ALL
-  SELECT 'tasks', COUNT(*) FROM tasks;
+  SELECT
+    'tasks' AS table_name,
+    COUNT(*) AS record_count
+  FROM tasks;
   </SQL>
   
-  Respond in the same language as the question (English or Portuguese).`;
+  Responda no mesmo idioma da pergunta (inglês ou português).`;
 }
 
 export function getGeneralSystemPrompt(): string {
