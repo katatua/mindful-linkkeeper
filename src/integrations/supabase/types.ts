@@ -209,6 +209,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ani_patent_holders: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          id: string
+          innovation_index: number | null
+          organization_name: string
+          patent_count: number
+          sector: string | null
+          year: number
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          innovation_index?: number | null
+          organization_name: string
+          patent_count: number
+          sector?: string | null
+          year: number
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          innovation_index?: number | null
+          organization_name?: string
+          patent_count?: number
+          sector?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       ani_policy_frameworks: {
         Row: {
           created_at: string

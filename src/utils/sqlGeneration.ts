@@ -160,7 +160,95 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
              LIMIT 1`;
     }
     
-    // Patent-related pattern
+    // NEWLY ADDED: Patents by technology area pattern
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
+        (lowerQuery.includes('technology') || lowerQuery.includes('tecnologia') || 
+         lowerQuery.includes('area') || lowerQuery.includes('área') || 
+         lowerQuery.includes('sector') || lowerQuery.includes('setor'))) {
+      
+      return `SELECT 
+                sector, 
+                name, 
+                value, 
+                unit, 
+                measurement_date, 
+                source 
+              FROM 
+                ani_metrics 
+              WHERE 
+                category = 'Intellectual Property' 
+                AND name LIKE '%Patent%' 
+                AND sector IS NOT NULL
+              ORDER BY 
+                value DESC`;
+    }
+    
+    // NEWLY ADDED: Patent growth rate pattern
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
+        (lowerQuery.includes('growth') || lowerQuery.includes('crescimento') ||
+         lowerQuery.includes('rate') || lowerQuery.includes('taxa'))) {
+      
+      return `SELECT 
+                name, 
+                value, 
+                unit, 
+                measurement_date, 
+                description, 
+                source 
+              FROM 
+                ani_metrics 
+              WHERE 
+                category = 'Intellectual Property' 
+                AND name LIKE '%Growth Rate%'
+              ORDER BY 
+                measurement_date DESC`;
+    }
+    
+    // NEWLY ADDED: International patents pattern
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
+        (lowerQuery.includes('international') || lowerQuery.includes('internacional') ||
+         lowerQuery.includes('country') || lowerQuery.includes('país') ||
+         lowerQuery.includes('region') || lowerQuery.includes('região'))) {
+      
+      return `SELECT 
+                region, 
+                name, 
+                value, 
+                unit, 
+                measurement_date, 
+                source 
+              FROM 
+                ani_metrics 
+              WHERE 
+                category = 'Intellectual Property' 
+                AND name LIKE '%International Patent%' 
+                AND region IS NOT NULL
+              ORDER BY 
+                value DESC`;
+    }
+    
+    // NEWLY ADDED: Top patent holders pattern
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
+        (lowerQuery.includes('holder') || lowerQuery.includes('detentor') ||
+         lowerQuery.includes('organization') || lowerQuery.includes('organização') ||
+         lowerQuery.includes('company') || lowerQuery.includes('empresa') ||
+         lowerQuery.includes('top'))) {
+      
+      return `SELECT 
+                organization_name, 
+                sector, 
+                patent_count, 
+                innovation_index, 
+                year, 
+                country 
+              FROM 
+                ani_patent_holders 
+              ORDER BY 
+                patent_count DESC 
+              LIMIT 10`;
+    }
+    
+    // Patent-related pattern (general)
     if (lowerQuery.includes('patent') || lowerQuery.includes('patente')) {
       if (lowerQuery.includes('year') || lowerQuery.includes('ano') || 
           lowerQuery.includes('years') || lowerQuery.includes('anos') ||

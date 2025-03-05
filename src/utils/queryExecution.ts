@@ -37,6 +37,56 @@ export const executeQuery = async (
       try {
         visualizationData = JSON.parse(vizMatch[1]);
         cleanResponse = data.response.replace(visualizationRegex, '');
+        
+        // Additional processing for patent-related data to enhance visualization
+        if (sqlQuery.toLowerCase().includes('patent') && visualizationData.length > 0) {
+          // Check if this is a technology area query
+          if (sqlQuery.toLowerCase().includes('sector') && 
+              visualizationData[0].sector && 
+              visualizationData[0].value) {
+            
+            // Transform data for better visualization
+            visualizationData = visualizationData.map((item: any) => ({
+              name: item.sector || 'Unknown',
+              value: parseFloat(item.value),
+              unit: item.unit || 'count',
+              description: item.name || 'Patent count'
+            }));
+          }
+          
+          // Check if this is a growth rate query
+          else if (sqlQuery.toLowerCase().includes('growth rate')) {
+            visualizationData = visualizationData.map((item: any) => ({
+              name: item.name.replace('Patent Growth Rate ', '') || item.measurement_date,
+              value: parseFloat(item.value),
+              unit: item.unit || '%',
+              description: 'Growth rate'
+            }));
+          }
+          
+          // Check if this is international patents query
+          else if (sqlQuery.toLowerCase().includes('international') && 
+                   visualizationData[0].region) {
+            
+            visualizationData = visualizationData.map((item: any) => ({
+              name: item.region || 'Unknown',
+              value: parseFloat(item.value),
+              unit: item.unit || 'count',
+              description: item.name || 'Patent count'
+            }));
+          }
+          
+          // Check if this is patent holders query
+          else if (sqlQuery.toLowerCase().includes('ani_patent_holders')) {
+            visualizationData = visualizationData.map((item: any) => ({
+              name: item.organization_name || 'Unknown',
+              value: parseInt(item.patent_count),
+              sector: item.sector || 'Unknown',
+              innovationIndex: parseFloat(item.innovation_index) || 0,
+              description: 'Patent holder'
+            }));
+          }
+        }
       } catch (e) {
         console.error("Error parsing visualization data:", e);
       }
