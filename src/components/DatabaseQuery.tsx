@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const EXAMPLE_QUERIES = {
-  projectsCount: `SELECT
+  tablesCount: `SELECT
   'ani_projects' AS table_name,
   COUNT(*) AS record_count
 FROM
@@ -46,26 +46,32 @@ FROM
   ani_projects 
 WHERE 
   status = 'active'`,
-  metricsPerCategory: `SELECT 
-  category, 
-  COUNT(*) as metric_count, 
-  AVG(value) as average_value 
+  rdInvestment: `SELECT 
+  name, 
+  value, 
+  unit, 
+  measurement_date, 
+  source
 FROM 
   ani_metrics 
-GROUP BY 
-  category 
+WHERE 
+  category = 'Investment' 
+  AND name LIKE '%R&D%'
 ORDER BY 
-  metric_count DESC`,
-  projectsByRegion: `SELECT 
-  region, 
-  COUNT(*) as project_count, 
-  SUM(funding_amount) as total_funding 
+  measurement_date DESC`,
+  patentMetrics: `SELECT 
+  name, 
+  value, 
+  unit, 
+  measurement_date, 
+  source
 FROM 
-  ani_projects 
-GROUP BY 
-  region 
+  ani_metrics 
+WHERE 
+  category = 'Intellectual Property' 
+  AND name LIKE '%Patent%'
 ORDER BY 
-  total_funding DESC`,
+  measurement_date DESC`,
   fundingPrograms: `SELECT 
   name, 
   description, 
@@ -74,14 +80,41 @@ ORDER BY
   end_date, 
   sector_focus 
 FROM 
-  ani_funding_programs`
+  ani_funding_programs
+ORDER BY
+  total_budget DESC`,
+  regionalMetrics: `SELECT
+  region,
+  name,
+  value,
+  unit,
+  measurement_date
+FROM
+  ani_metrics
+WHERE
+  region IS NOT NULL
+ORDER BY
+  region, measurement_date DESC`,
+  innovationPerformance: `SELECT
+  name,
+  category,
+  value,
+  unit,
+  region
+FROM
+  ani_metrics
+WHERE
+  name LIKE '%Performance%'
+  OR name LIKE '%Innovation%'
+ORDER BY
+  region, name`
 };
 
 const DatabaseQuery: React.FC = () => {
   const [results, setResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sqlQuery, setSqlQuery] = useState<string>(EXAMPLE_QUERIES.projectsCount);
+  const [sqlQuery, setSqlQuery] = useState<string>(EXAMPLE_QUERIES.tablesCount);
   const { toast } = useToast();
 
   const handleSelectQuery = (queryKey: string) => {
@@ -163,12 +196,17 @@ const DatabaseQuery: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Consultas ANI</SelectLabel>
-                <SelectItem value="projectsCount">Contagem de Registros nas Tabelas</SelectItem>
+                <SelectLabel>Consultas Gerais</SelectLabel>
+                <SelectItem value="tablesCount">Contagem de Registros nas Tabelas</SelectItem>
                 <SelectItem value="activeProjects">Projetos Ativos</SelectItem>
-                <SelectItem value="metricsPerCategory">Métricas por Categoria</SelectItem>
-                <SelectItem value="projectsByRegion">Projetos por Região</SelectItem>
                 <SelectItem value="fundingPrograms">Programas de Financiamento</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel>Métricas</SelectLabel>
+                <SelectItem value="rdInvestment">Investimento em P&D</SelectItem>
+                <SelectItem value="patentMetrics">Métricas de Patentes</SelectItem>
+                <SelectItem value="regionalMetrics">Métricas por Região</SelectItem>
+                <SelectItem value="innovationPerformance">Desempenho de Inovação</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

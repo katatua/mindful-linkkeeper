@@ -23,8 +23,8 @@ const AIAssistant = () => {
     : "Olá! Sou o Assistente de IA da ANI. Como posso ajudá-lo com informações sobre inovação hoje?";
   
   const systemInfo = language === 'en'
-    ? "You can ask questions about documents, links or files you've uploaded to the platform. I can also provide general information about innovation, funding, policies, and metrics or query the ANI database for you."
-    : "Pode fazer perguntas sobre os documentos, links ou ficheiros que carregou na plataforma. Também posso fornecer informações gerais sobre inovação, financiamento, políticas e métricas, ou consultar o banco de dados da ANI para você.";
+    ? "You can ask me about innovation metrics, funding programs, active projects, and other ANI database information. Just ask in natural language and I'll provide the data."
+    : "Você pode me perguntar sobre métricas de inovação, programas de financiamento, projetos ativos e outras informações do banco de dados da ANI. Basta perguntar em linguagem natural e eu fornecerei os dados.";
 
   const INITIAL_MESSAGES: Message[] = [
     {
@@ -60,59 +60,123 @@ const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Check if a message is about querying active projects
-  const isActiveProjectsQuery = (message: string): boolean => {
+  // Detect if query is about metrics
+  const isMetricsQuery = (message: string): boolean => {
     const lowerMsg = message.toLowerCase();
     
-    // English patterns
-    if (lowerMsg.includes("how many active projects") || 
-        lowerMsg.includes("number of active projects") ||
-        lowerMsg.includes("active projects count")) {
-      return true;
-    }
+    // Patterns for English and Portuguese covering R&D investment, patents, etc.
+    const englishPatterns = [
+      'how much is', 'what is the', 'tell me about', 'show me', 
+      'r&d investment', 'investment in r&d', 'patent', 'innovation', 
+      'metric', 'performance', 'percentage', 'value', 'number of',
+      'how many', 'statistic'
+    ];
     
-    // Portuguese patterns
-    if (lowerMsg.includes("quantos projetos ativos") || 
-        lowerMsg.includes("quantos projetos estão ativos") ||
-        lowerMsg.includes("número de projetos ativos") ||
-        lowerMsg.includes("contagem de projetos ativos")) {
-      return true;
-    }
+    const portuguesePatterns = [
+      'qual', 'quanto', 'quantos', 'mostre', 'diga-me', 'apresente',
+      'investimento em p&d', 'investimento em r&d', 'patente', 'inovação',
+      'métrica', 'desempenho', 'percentagem', 'porcentagem', 'valor', 'número de',
+      'estatística'
+    ];
     
-    return false;
+    return englishPatterns.some(pattern => lowerMsg.includes(pattern)) || 
+           portuguesePatterns.some(pattern => lowerMsg.includes(pattern));
   };
 
-  // Query the database for active projects
-  const queryActiveProjects = async (): Promise<string> => {
+  // Function to generate SQL from natural language
+  const generateSqlFromNaturalLanguage = async (query: string): Promise<string> => {
     try {
+      const lowerQuery = query.toLowerCase();
+      
+      // For "active projects" type questions
+      if (lowerQuery.includes('project') || lowerQuery.includes('projeto')) {
+        if (lowerQuery.includes('active') || lowerQuery.includes('ativo')) {
+          return `SELECT COUNT(*) FROM ani_projects WHERE status = 'active'`;
+        }
+      }
+      
+      // For R&D investment questions
+      if (lowerQuery.includes('r&d') || lowerQuery.includes('p&d') || 
+          lowerQuery.includes('research') || lowerQuery.includes('pesquisa') ||
+          lowerQuery.includes('investment') || lowerQuery.includes('investimento')) {
+        return `SELECT name, value, unit, measurement_date FROM ani_metrics WHERE category = 'Investment' AND name LIKE '%R&D%' OR name LIKE '%P&D%' ORDER BY measurement_date DESC LIMIT 1`;
+      }
+      
+      // For patent questions
+      if (lowerQuery.includes('patent') || lowerQuery.includes('patente')) {
+        return `SELECT name, value, unit, measurement_date FROM ani_metrics WHERE category = 'Intellectual Property' AND name LIKE '%Patent%' OR name LIKE '%Patente%' ORDER BY measurement_date DESC LIMIT 1`;
+      }
+      
+      // For metric/statistic general questions
+      if (lowerQuery.includes('metric') || lowerQuery.includes('métrica') ||
+          lowerQuery.includes('statistic') || lowerQuery.includes('estatística')) {
+        return `SELECT name, category, value, unit, measurement_date FROM ani_metrics ORDER BY measurement_date DESC LIMIT 5`;
+      }
+      
+      // For funding programs
+      if (lowerQuery.includes('funding') || lowerQuery.includes('financiamento') ||
+          lowerQuery.includes('program') || lowerQuery.includes('programa')) {
+        return `SELECT name, total_budget FROM ani_funding_programs ORDER BY total_budget DESC LIMIT 5`;
+      }
+      
+      // Use Gemini to generate SQL for more complex queries
+      // Pass the message to the edge function to generate SQL based on the query
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
-          userMessage: `Execute esta consulta SQL: SELECT COUNT(*) FROM ani_projects WHERE status = 'active'`,
+          userMessage: `Generate a SQL query for the ANI database to answer this question: "${query}"`,
           chatHistory: [] 
         }
       });
       
       if (error) {
-        console.error("Error querying database:", error);
-        return language === 'en'
-          ? "I'm sorry, I encountered an error when trying to query the database."
-          : "Desculpe, encontrei um erro ao tentar consultar o banco de dados.";
+        console.error("Error generating SQL:", error);
+        throw new Error("Failed to generate SQL query");
       }
       
-      // Parse the response to extract the count
-      const responseText = data.response;
-      const match = responseText.match(/(\d+)/);
-      const count = match ? match[1] : "unknown";
+      // Extract SQL from Gemini response
+      const sqlMatch = data.response.match(/<SQL>([\s\S]*?)<\/SQL>/);
+      if (sqlMatch && sqlMatch[1]) {
+        return sqlMatch[1].trim();
+      }
       
-      return language === 'en'
-        ? `There are currently ${count} active projects in the ANI database.`
-        : `Existem atualmente ${count} projetos ativos no banco de dados da ANI.`;
+      // Fallback to a generic query if no specific SQL could be generated
+      return `SELECT * FROM ani_metrics ORDER BY measurement_date DESC LIMIT 5`;
     } catch (error) {
-      console.error("Error in queryActiveProjects:", error);
-      return language === 'en'
-        ? "I'm sorry, I couldn't retrieve the active projects count due to a technical issue."
-        : "Desculpe, não consegui obter a contagem de projetos ativos devido a um problema técnico.";
+      console.error("Error in SQL generation:", error);
+      return `SELECT * FROM ani_metrics ORDER BY measurement_date DESC LIMIT 5`;
     }
+  };
+
+  // Execute the SQL query and format results
+  const executeQuery = async (sqlQuery: string): Promise<string> => {
+    try {
+      console.log("Executing query:", sqlQuery);
+      
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { 
+          userMessage: `Execute esta consulta SQL: ${sqlQuery}`,
+          chatHistory: [] 
+        }
+      });
+      
+      if (error) {
+        console.error("Error executing SQL:", error);
+        throw new Error("Failed to execute SQL query");
+      }
+      
+      return data.response;
+    } catch (error) {
+      console.error("Error in query execution:", error);
+      return language === 'en' 
+        ? "I'm sorry, I couldn't retrieve the data due to a technical issue."
+        : "Desculpe, não consegui recuperar os dados devido a um problema técnico.";
+    }
+  };
+
+  // Format the SQL result into a natural language response
+  const formatResultToNaturalLanguage = (result: string, originalQuery: string): string => {
+    // Already formatted by the Gemini edge function
+    return result;
   };
 
   const handleSendMessage = async () => {
@@ -134,9 +198,19 @@ const AIAssistant = () => {
     try {
       let response: string;
       
-      // Check if this is a query about active projects
-      if (isActiveProjectsQuery(input)) {
-        response = await queryActiveProjects();
+      // Check if this is a query about data in the ANI database
+      if (isMetricsQuery(input)) {
+        console.log("Detected metrics query");
+        // 1. Generate SQL from natural language
+        const sqlQuery = await generateSqlFromNaturalLanguage(input);
+        console.log("Generated SQL query:", sqlQuery);
+        
+        // 2. Execute the SQL query
+        const queryResult = await executeQuery(sqlQuery);
+        console.log("Query result:", queryResult);
+        
+        // 3. Format the result into natural language
+        response = formatResultToNaturalLanguage(queryResult, input);
       } else {
         // Get regular response from the AI
         response = await generateResponse(input);
