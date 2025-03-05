@@ -68,7 +68,7 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
                 success_rate DESC`;
     }
     
-    // Application deadlines pattern
+    // NEWLY ADDED: Application deadlines pattern
     if ((lowerQuery.includes('deadline') || lowerQuery.includes('prazo')) &&
         (lowerQuery.includes('application') || lowerQuery.includes('aplicação') || 
          lowerQuery.includes('candidatura') || lowerQuery.includes('próximo') || 
@@ -79,7 +79,8 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
                 total_budget,
                 application_deadline,
                 next_call_date,
-                funding_type
+                funding_type,
+                sector_focus
               FROM 
                 ani_funding_programs
               WHERE 
@@ -87,6 +88,46 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
               ORDER BY 
                 application_deadline ASC
               LIMIT 10`;
+    }
+    
+    // NEWLY ADDED: All funding programs pattern
+    if ((lowerQuery.includes('funding program') || lowerQuery.includes('programa de financiamento') ||
+         lowerQuery.includes('all program') || lowerQuery.includes('todos os programa')) &&
+        !(lowerQuery.includes('deadline') || lowerQuery.includes('prazo'))) {
+      return `SELECT 
+                name, 
+                description,
+                total_budget,
+                start_date,
+                end_date,
+                application_deadline,
+                sector_focus,
+                eligibility_criteria,
+                success_rate
+              FROM 
+                ani_funding_programs
+              ORDER BY 
+                (CASE WHEN application_deadline >= CURRENT_DATE THEN 0 ELSE 1 END),
+                application_deadline ASC,
+                total_budget DESC
+              LIMIT 15`;
+    }
+    
+    // NEWLY ADDED: Funding by sector focus pattern
+    if ((lowerQuery.includes('funding') || lowerQuery.includes('financiamento')) &&
+        (lowerQuery.includes('sector focus') || lowerQuery.includes('foco setorial'))) {
+      return `SELECT 
+                name,
+                sector_focus,
+                total_budget,
+                application_deadline,
+                success_rate
+              FROM 
+                ani_funding_programs
+              WHERE 
+                sector_focus IS NOT NULL
+              ORDER BY 
+                total_budget DESC`;
     }
     
     // Funding by sector pattern
@@ -160,7 +201,7 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
              LIMIT 1`;
     }
     
-    // NEWLY ADDED: Patents by technology area pattern
+    // Patents by technology area pattern
     if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
         (lowerQuery.includes('technology') || lowerQuery.includes('tecnologia') || 
          lowerQuery.includes('area') || lowerQuery.includes('área') || 
@@ -183,7 +224,7 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
                 value DESC`;
     }
     
-    // NEWLY ADDED: Patent growth rate pattern
+    // Patent growth rate pattern
     if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
         (lowerQuery.includes('growth') || lowerQuery.includes('crescimento') ||
          lowerQuery.includes('rate') || lowerQuery.includes('taxa'))) {
@@ -204,7 +245,7 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
                 measurement_date DESC`;
     }
     
-    // NEWLY ADDED: International patents pattern
+    // International patents pattern
     if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
         (lowerQuery.includes('international') || lowerQuery.includes('internacional') ||
          lowerQuery.includes('country') || lowerQuery.includes('país') ||
@@ -227,7 +268,7 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
                 value DESC`;
     }
     
-    // NEWLY ADDED: Top patent holders pattern
+    // Top patent holders pattern
     if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) &&
         (lowerQuery.includes('holder') || lowerQuery.includes('detentor') ||
          lowerQuery.includes('organization') || lowerQuery.includes('organização') ||

@@ -6,8 +6,8 @@ import { Loader2, Database, AlertTriangle, BookOpen } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Markdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useQueryProcessor } from '@/hooks/useQueryProcessor';
 
 const EXAMPLE_QUERIES = {
   tablesCount: `SELECT
@@ -83,6 +83,20 @@ FROM
   ani_funding_programs
 ORDER BY
   total_budget DESC`,
+  upcomingDeadlines: `SELECT 
+  name, 
+  description,
+  total_budget,
+  application_deadline,
+  next_call_date,
+  sector_focus
+FROM 
+  ani_funding_programs
+WHERE 
+  application_deadline >= CURRENT_DATE
+ORDER BY 
+  application_deadline ASC
+LIMIT 10`,
   regionalMetrics: `SELECT
   region,
   name,
@@ -116,14 +130,18 @@ const DatabaseQuery: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sqlQuery, setSqlQuery] = useState<string>(EXAMPLE_QUERIES.tablesCount);
   const { toast } = useToast();
+  
+  // Use the query processor hook for better query handling
+  const { executeQuery } = useQueryProcessor();
 
+  // Handle selection of predefined queries
   const handleSelectQuery = (queryKey: string) => {
     if (queryKey in EXAMPLE_QUERIES) {
       setSqlQuery(EXAMPLE_QUERIES[queryKey as keyof typeof EXAMPLE_QUERIES]);
     }
   };
 
-  const executeQuery = async () => {
+  const handleExecuteQuery = async () => {
     if (!sqlQuery.trim()) {
       toast({
         variant: "destructive",
@@ -137,31 +155,26 @@ const DatabaseQuery: React.FC = () => {
     setError(null);
     
     try {
-      // Remove trailing semicolons before sending to prevent SQL syntax errors
-      const cleanQuery = sqlQuery.trim().replace(/;+$/, '');
+      // Use the executeQuery function from the hook
+      const { response, visualizationData } = await executeQuery(sqlQuery.trim());
       
-      // Call the Supabase Edge Function directly with the SQL query
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: { 
-          userMessage: `Execute esta consulta SQL: ${cleanQuery}`,
-          chatHistory: [] // No chat history needed for direct SQL execution
+      if (response) {
+        setResults(response);
+        
+        // Show toast for visualization data
+        if (visualizationData && visualizationData.length > 0) {
+          toast({
+            title: "Visualização Disponível",
+            description: "Os dados podem ser visualizados em um gráfico. Verifique as opções de visualização."
+          });
+        } else {
+          toast({
+            title: "Consulta Executada",
+            description: "A consulta SQL foi executada com sucesso."
+          });
         }
-      });
-      
-      if (error) {
-        console.error("SQL execution error:", error);
-        setError(`Erro ao executar a consulta SQL: ${error.message}`);
-        toast({
-          variant: "destructive",
-          title: "Erro na Consulta do Banco de Dados",
-          description: "Houve um erro ao executar a consulta SQL."
-        });
       } else {
-        setResults(data.response);
-        toast({
-          title: "Consulta Executada",
-          description: "A consulta SQL foi executada com sucesso."
-        });
+        throw new Error("Resposta vazia do servidor");
       }
     } catch (error) {
       console.error("Error querying database:", error);
@@ -200,6 +213,7 @@ const DatabaseQuery: React.FC = () => {
                 <SelectItem value="tablesCount">Contagem de Registros nas Tabelas</SelectItem>
                 <SelectItem value="activeProjects">Projetos Ativos</SelectItem>
                 <SelectItem value="fundingPrograms">Programas de Financiamento</SelectItem>
+                <SelectItem value="upcomingDeadlines">Prazos de Candidatura</SelectItem>
               </SelectGroup>
               <SelectGroup>
                 <SelectLabel>Métricas</SelectLabel>
@@ -259,7 +273,7 @@ const DatabaseQuery: React.FC = () => {
       </CardContent>
       <CardFooter>
         <Button 
-          onClick={executeQuery} 
+          onClick={handleExecuteQuery} 
           disabled={loading || !sqlQuery.trim()}
           className="w-full"
         >

@@ -87,6 +87,69 @@ export const executeQuery = async (
             }));
           }
         }
+        
+        // NEW: Additional processing for funding program applications
+        else if (sqlQuery.toLowerCase().includes('ani_funding_programs') && visualizationData.length > 0) {
+          // Check if this is a program deadlines query
+          if (sqlQuery.toLowerCase().includes('deadline') || 
+              sqlQuery.toLowerCase().includes('application_deadline')) {
+            
+            // Transform data for timeline visualization
+            visualizationData = visualizationData.map((item: any) => ({
+              name: item.name || 'Unknown Program',
+              value: item.total_budget ? parseFloat(item.total_budget) : 0,
+              date: item.application_deadline || item.next_call_date || 'No date',
+              unit: '€',
+              description: item.description || 'Funding program',
+              status: new Date(item.application_deadline) > new Date() ? 'upcoming' : 'past',
+              sectors: Array.isArray(item.sector_focus) ? item.sector_focus : []
+            }));
+            
+            // Sort by deadline date
+            visualizationData.sort((a: any, b: any) => 
+              new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+          }
+          
+          // Check if this is a sector focus query
+          else if (sqlQuery.toLowerCase().includes('sector_focus')) {
+            // Flatten sector focus arrays into countable items
+            const sectorCounts: Record<string, number> = {};
+            
+            visualizationData.forEach((item: any) => {
+              if (Array.isArray(item.sector_focus)) {
+                item.sector_focus.forEach((sector: string) => {
+                  sectorCounts[sector] = (sectorCounts[sector] || 0) + 1;
+                });
+              }
+            });
+            
+            // Transform for visualization
+            visualizationData = Object.entries(sectorCounts).map(([sector, count]) => ({
+              name: sector,
+              value: count,
+              unit: 'programs',
+              description: 'Programs by sector'
+            }));
+            
+            // Sort by count descending
+            visualizationData.sort((a: any, b: any) => b.value - a.value);
+          }
+          
+          // Default program visualization
+          else {
+            visualizationData = visualizationData.map((item: any) => ({
+              name: item.name || 'Unknown Program',
+              value: item.total_budget ? parseFloat(item.total_budget) : 0,
+              unit: '€',
+              description: item.description || 'Funding program',
+              startDate: item.start_date || null,
+              endDate: item.end_date || null,
+              applicationDeadline: item.application_deadline || null,
+              sectors: Array.isArray(item.sector_focus) ? item.sector_focus : []
+            }));
+          }
+        }
       } catch (e) {
         console.error("Error parsing visualization data:", e);
       }
