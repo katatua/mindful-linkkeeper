@@ -47,13 +47,17 @@ export const Header = () => {
     navigate("/auth");
   };
 
+  const goToDashboard = () => {
+    navigate("/portal");
+  };
+
   return (
     <header className="bg-white border-b py-3 px-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <HamburgerMenu />
         <div 
           className="flex items-center gap-2 cursor-pointer"
-          onClick={() => navigate("/")}
+          onClick={goToDashboard}
         >
           <img 
             src="https://via.placeholder.com/40?text=ANI" 

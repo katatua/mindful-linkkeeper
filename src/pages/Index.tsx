@@ -9,11 +9,15 @@ const Index = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   
+  const goToDashboard = () => {
+    navigate("/portal");  // Navigate to the ANIPortal page
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div 
         className="flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity"
-        onClick={() => navigate("/")}
+        onClick={goToDashboard}
       >
         <img 
           src="https://via.placeholder.com/50?text=ANI" 
@@ -32,9 +36,7 @@ const Index = () => {
             {t('index.welcome')}. {t('index.choose')}
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Link to="/">
-              <Button className="w-full">{t('index.view.dashboard')}</Button>
-            </Link>
+            <Button onClick={goToDashboard} className="w-full">{t('index.view.dashboard')}</Button>
             <Link to="/assistant">
               <Button className="w-full" variant="outline">{t('index.ai.assistant')}</Button>
             </Link>
