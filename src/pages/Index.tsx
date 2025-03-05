@@ -37,7 +37,7 @@ const Index = () => {
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Button onClick={goToDashboard} className="w-full">{t('index.view.dashboard')}</Button>
-            <Link to="/assistant">
+            <Link to="/portal">
               <Button className="w-full" variant="outline">{t('index.ai.assistant')}</Button>
             </Link>
           </div>
