@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateResponse } from '@/utils/aiUtils';
 import { Loader2, Database, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Markdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 
 const DatabaseQuery: React.FC = () => {
   const [results, setResults] = useState<string | null>(null);
@@ -51,19 +51,24 @@ FROM
     setError(null);
     
     try {
-      // Use the SQL query directly to execute
-      const response = await generateResponse(`Execute esta consulta SQL específica: ${sqlQuery}`);
+      // Call the Supabase Edge Function directly with the SQL query
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { 
+          userMessage: `Execute esta consulta SQL: ${sqlQuery}`,
+          chatHistory: [] // No chat history needed for direct SQL execution
+        }
+      });
       
-      // Check if the response contains an error message
-      if (response.toLowerCase().includes("erro") || response.toLowerCase().includes("error")) {
-        setError(response);
+      if (error) {
+        console.error("SQL execution error:", error);
+        setError(`Erro ao executar a consulta SQL: ${error.message}`);
         toast({
           variant: "destructive",
           title: "Erro na Consulta do Banco de Dados",
-          description: "Houve um erro ao executar a consulta SQL. Verifique os detalhes do erro."
+          description: "Houve um erro ao executar a consulta SQL."
         });
       } else {
-        setResults(response);
+        setResults(data.response);
         toast({
           title: "Consulta Executada",
           description: "A consulta SQL foi executada com sucesso."
@@ -71,7 +76,7 @@ FROM
       }
     } catch (error) {
       console.error("Error querying database:", error);
-      setError("Erro ao consultar o banco de dados. Por favor, tente novamente mais tarde.");
+      setError(`Erro ao consultar o banco de dados. Por favor, tente novamente mais tarde. Detalhes: ${error instanceof Error ? error.message : String(error)}`);
       toast({
         variant: "destructive",
         title: "Falha na Consulta do Banco de Dados",

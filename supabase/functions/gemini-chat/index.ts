@@ -16,6 +16,25 @@ serve(async (req) => {
     // Check if this is a database query request
     const isDatabaseQuery = isDatabaseQueryRequest(userMessage);
 
+    // Check if this is a direct SQL execution request
+    const isDirectSql = userMessage.toLowerCase().includes('execute esta consulta sql') || 
+                        userMessage.toLowerCase().includes('execute this sql query');
+    
+    if (isDirectSql) {
+      // Extract SQL query from the message
+      const sqlQuery = userMessage.replace(/execute\s+esta\s+consulta\s+sql\s*:?\s*/i, '')
+                               .replace(/execute\s+this\s+sql\s+query\s*:?\s*/i, '')
+                               .trim();
+      
+      // Execute the SQL query directly
+      const queryResult = await handleDatabaseQuery(sqlQuery, "");
+      
+      return new Response(
+        JSON.stringify({ response: queryResult }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Prepare chat history for Gemini
     const messages = chatHistory.map((msg: any) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
