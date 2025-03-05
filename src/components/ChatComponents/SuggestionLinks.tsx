@@ -15,6 +15,11 @@ export const SuggestionLinks: React.FC<SuggestionLinksProps> = ({
   language, 
   onSuggestionClick 
 }) => {
+  // If there are no suggestion links, don't render anything
+  if (!suggestionLinks || suggestionLinks.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-wrap gap-2 mb-3">
       <div className="flex items-center text-sm text-muted-foreground mr-2">
