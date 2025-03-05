@@ -21,8 +21,8 @@ const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
-  const { showVisualization, visualizationData, setShowVisualization } = useChat();
+  const { t, language } = useLanguage();
+  const { showVisualization, visualizationData, setShowVisualization } = useChat(language);
 
   useEffect(() => {
     // Check initial auth state
