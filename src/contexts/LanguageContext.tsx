@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'pt';
@@ -105,7 +104,9 @@ const translations: Record<Language, Record<string, string>> = {
     'file.upload': 'Upload File',
     'file.uploading': 'Uploading...',
     'file.success': 'File uploaded successfully',
+    'file.success.description': 'Your file has been uploaded and is now available for AI analysis.',
     'file.error': 'Error uploading file',
+    'file.error.description': 'Please try again later.',
     'file.name': 'Title (optional - will use filename if empty)',
     'file.summary': 'Summary (optional - helps the AI understand the content)',
     'file.category': 'Category (optional - e.g., \'funding\', \'policy\', \'technology\')',
@@ -281,9 +282,9 @@ const translations: Record<Language, Record<string, string>> = {
     // Reports
     'reports.scheduled': 'Monthly Funding Overview',
     'reports.scheduled.description': 'Automated monthly report on funding allocation and utilization',
-    'reports.frequency': 'Frequency: ',
-    'reports.next': 'Next generation: ',
-    'reports.generated': 'Generated at ',
+    'reports.frequency': 'Frequency:',
+    'reports.next': 'Next generation:',
+    'reports.generated': 'Generated at',
     'reports.recipients': 'Recipients:',
     'reports.preview': 'Preview',
     'reports.pause': 'Pause',
@@ -384,7 +385,9 @@ const translations: Record<Language, Record<string, string>> = {
     'file.upload': 'Carregar Ficheiro',
     'file.uploading': 'A carregar...',
     'file.success': 'Ficheiro carregado com sucesso',
+    'file.success.description': 'O seu ficheiro foi carregado e está agora disponível para análise por IA.',
     'file.error': 'Erro ao carregar ficheiro',
+    'file.error.description': 'Por favor tente novamente mais tarde.',
     'file.name': 'Título (opcional - usará o nome do ficheiro se vazio)',
     'file.summary': 'Resumo (opcional - ajuda a IA a entender o conteúdo)',
     'file.category': 'Categoria (opcional - ex., \'financiamento\', \'política\', \'tecnologia\')',
@@ -560,9 +563,9 @@ const translations: Record<Language, Record<string, string>> = {
     // Reports
     'reports.scheduled': 'Visão Geral Mensal de Financiamento',
     'reports.scheduled.description': 'Relatório mensal automatizado sobre alocação e utilização de financiamento',
-    'reports.frequency': 'Frequência: ',
-    'reports.next': 'Próxima geração: ',
-    'reports.generated': 'Gerado às ',
+    'reports.frequency': 'Frequência:',
+    'reports.next': 'Próxima geração:',
+    'reports.generated': 'Gerado às',
     'reports.recipients': 'Destinatários:',
     'reports.preview': 'Visualizar',
     'reports.pause': 'Pausar',

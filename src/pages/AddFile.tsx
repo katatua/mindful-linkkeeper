@@ -88,14 +88,14 @@ export default function AddFile() {
 
       toast({
         title: t('file.success'),
-        description: "Your file has been uploaded and is now available for AI analysis.",
+        description: t('file.success.description'),
       });
       navigate("/");
     } catch (error) {
       console.error('Error uploading file:', error);
       toast({
         title: t('file.error'),
-        description: "Please try again later.",
+        description: t('file.error.description'),
         variant: "destructive",
       });
     } finally {
@@ -159,4 +159,4 @@ export default function AddFile() {
       </div>
     </div>
   );
-}
+};

@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, FileText, RefreshCw, Trash2, PauseCircle, PlayCircle } from "lucide-react";
@@ -7,7 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 export const ScheduledReports = () => {
   const { t, language } = useLanguage();
   
-  const scheduledReports = [
+  const scheduledReportsEN = [
     {
       title: "Monthly Funding Overview",
       description: "Automated monthly report on funding allocation and utilization",
@@ -41,6 +42,44 @@ export const ScheduledReports = () => {
       recipients: ["regional-team@ani.pt", "analytics@ani.pt"]
     }
   ];
+  
+  const scheduledReportsPT = [
+    {
+      title: "Visão Geral Mensal de Financiamento",
+      description: "Relatório mensal automatizado sobre alocação e utilização de financiamento",
+      frequency: "Mensal",
+      nextGeneration: "1 Ago, 2023",
+      status: "Ativo",
+      recipients: ["innovation-team@ani.pt", "management@ani.pt"]
+    },
+    {
+      title: "Métricas de Desempenho Trimestrais",
+      description: "Análise trimestral de métricas de desempenho do programa de inovação",
+      frequency: "Trimestral",
+      nextGeneration: "1 Out, 2023",
+      status: "Ativo",
+      recipients: ["executive-board@ani.pt", "program-leads@ani.pt"]
+    },
+    {
+      title: "Atualizações Semanais de Projetos",
+      description: "Resumo semanal de alterações de status e marcos de projetos",
+      frequency: "Semanal",
+      nextGeneration: "24 Jul, 2023",
+      status: "Ativo",
+      recipients: ["project-managers@ani.pt"]
+    },
+    {
+      title: "Painel de Inovação Regional",
+      description: "Painel mensal de métricas de inovação regional e mudanças",
+      frequency: "Mensal",
+      nextGeneration: "5 Ago, 2023",
+      status: "Pausado",
+      recipients: ["regional-team@ani.pt", "analytics@ani.pt"]
+    }
+  ];
+  
+  // Select reports based on current language
+  const scheduledReports = language === 'en' ? scheduledReportsEN : scheduledReportsPT;
 
   return (
     <div className="space-y-4">
@@ -49,7 +88,7 @@ export const ScheduledReports = () => {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <CardTitle className="text-base font-medium">{report.title}</CardTitle>
-              <Badge variant={report.status === 'Active' ? 'default' : 'outline'}>
+              <Badge variant={report.status === 'Active' || report.status === 'Ativo' ? 'default' : 'outline'}>
                 {report.status}
               </Badge>
             </div>
@@ -61,20 +100,20 @@ export const ScheduledReports = () => {
             <div className="flex flex-wrap gap-x-4 gap-y-2 mb-2">
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <RefreshCw className="h-3.5 w-3.5" />
-                <span>Frequency: {report.frequency}</span>
+                <span>{t('reports.frequency')} {report.frequency}</span>
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>Next generation: {report.nextGeneration}</span>
+                <span>{t('reports.next')} {report.nextGeneration}</span>
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Clock className="h-3.5 w-3.5" />
-                <span>Generated at 08:00 AM</span>
+                <span>{t('reports.generated')} 08:00 AM</span>
               </div>
             </div>
             
             <div className="bg-gray-50 p-2 rounded text-xs">
-              <div className="text-gray-600 mb-1">Recipients:</div>
+              <div className="text-gray-600 mb-1">{t('reports.recipients')}</div>
               <div className="flex flex-wrap gap-2">
                 {report.recipients.map((recipient, i) => (
                   <div key={i} className="bg-white px-2 py-1 rounded border text-xs">
@@ -89,17 +128,17 @@ export const ScheduledReports = () => {
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm">
                   <FileText className="h-4 w-4 mr-1" />
-                  Preview
+                  {t('reports.preview')}
                 </Button>
-                {report.status === 'Active' ? (
+                {(report.status === 'Active' || report.status === 'Ativo') ? (
                   <Button variant="ghost" size="sm">
                     <PauseCircle className="h-4 w-4 mr-1" />
-                    Pause
+                    {t('reports.pause')}
                   </Button>
                 ) : (
                   <Button variant="ghost" size="sm">
                     <PlayCircle className="h-4 w-4 mr-1" />
-                    Resume
+                    {t('reports.resume')}
                   </Button>
                 )}
               </div>
