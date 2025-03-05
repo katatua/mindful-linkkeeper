@@ -47,7 +47,8 @@ export const useChatCore = (language: string) => {
     showVisualization,
     setShowVisualization,
     visualizationData,
-    setVisualizationData
+    setVisualizationData,
+    handleVisualizationData
   } = useVisualization();
   
   const {
@@ -91,11 +92,15 @@ export const useChatCore = (language: string) => {
         console.log("Query result:", queryResult);
         
         response = queryResult.response;
+        
+        // Remove SQL query from the response
+        const sqlRegex = /\n\*\*Consulta executada:\*\*\n```sql[\s\S]*?```/;
+        response = response.replace(sqlRegex, '');
+        
         vizData = queryResult.visualizationData;
         
         if (vizData && vizData.length > 0) {
-          setVisualizationData(vizData);
-          setShowVisualization(true);
+          handleVisualizationData(vizData);
         }
       } else {
         response = await generateResponse(messageContent);
@@ -111,8 +116,7 @@ export const useChatCore = (language: string) => {
         id: genId(),
         role: 'assistant',
         content: response,
-        timestamp: new Date(),
-        visualizationData: vizData
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);

@@ -14,15 +14,15 @@ import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
-import DataVisualization from "@/components/DataVisualization";
-import { useChat } from "@/hooks/useChat";
+import { DataVisualization } from "@/components/DataVisualization";
+import { useVisualization } from "@/hooks/useVisualization";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
-  const { showVisualization, visualizationData, setShowVisualization } = useChat(language);
+  const { showVisualization, visualizationData, setShowVisualization } = useVisualization();
 
   useEffect(() => {
     // Check initial auth state
@@ -60,7 +60,7 @@ const ANIPortal = () => {
               </TabsList>
             </div>
             
-            {showVisualization && visualizationData.length > 0 && (
+            {showVisualization && visualizationData && visualizationData.length > 0 && (
               <div className="container mx-auto px-4 pt-4">
                 <DataVisualization 
                   data={visualizationData} 
