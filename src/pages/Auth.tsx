@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,14 +58,14 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{isSignUp ? "Create Account" : "Login"}</CardTitle>
+          <CardTitle>{isSignUp ? t('auth.signup') : t('auth.login')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-2">
               <Input
                 type="email"
-                placeholder="Email"
+                placeholder={t('auth.email')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -72,7 +74,7 @@ export default function Auth() {
             <div className="space-y-2">
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -80,10 +82,10 @@ export default function Auth() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading
-                ? "Loading..."
+                ? t('auth.loading')
                 : isSignUp
-                ? "Create Account"
-                : "Login"}
+                ? t('auth.account.create')
+                : t('auth.account.login')}
             </Button>
             <Button
               type="button"
@@ -92,8 +94,8 @@ export default function Auth() {
               onClick={() => setIsSignUp(!isSignUp)}
             >
               {isSignUp
-                ? "Already have an account? Login"
-                : "Need an account? Sign Up"}
+                ? t('auth.account.existing')
+                : t('auth.account.need')}
             </Button>
           </form>
         </CardContent>

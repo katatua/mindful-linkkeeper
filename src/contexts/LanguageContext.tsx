@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'pt';
@@ -21,6 +20,8 @@ const translations: Record<Language, Record<string, string>> = {
     'help': 'Help',
     'login': 'Login',
     'logout': 'Logout',
+    'logout.success': 'Logged out successfully',
+    'logout.error': 'Error logging out',
     
     // Navigation
     'nav.funding': 'Funding',
@@ -48,6 +49,48 @@ const translations: Record<Language, Record<string, string>> = {
     'policy.download.confirm': 'Download',
     'policy.download.success': 'Policy PDF downloaded',
     'policy.download.description.success': 'has been downloaded successfully.',
+    
+    // Policy Page
+    'policy.back': 'Back',
+    'policy.status': 'Status',
+    'policy.details': 'Policy Details',
+    'policy.implementation': 'Implementation Guidelines',
+    'policy.objectives': 'Objectives',
+    'policy.metrics': 'Metrics & Measurements',
+    'policies.title': 'Innovation Policies',
+    'policies.subtitle': 'Browse and access policy documents and frameworks',
+    
+    // NotFound
+    'notfound.title': '404',
+    'notfound.message': 'Oops! Page not found',
+    'notfound.button': 'Return to Home',
+    
+    // AuthPage
+    'auth.login': 'Login',
+    'auth.signup': 'Create Account',
+    'auth.email': 'Email',
+    'auth.password': 'Password',
+    'auth.loading': 'Loading...',
+    'auth.account.create': 'Create Account',
+    'auth.account.login': 'Login',
+    'auth.account.existing': 'Already have an account? Login',
+    'auth.account.need': 'Need an account? Sign Up',
+    
+    // AddCategory
+    'category.title': 'Add Category',
+    'category.name': 'Category name',
+    'category.description': 'Description (optional)',
+    'category.add': 'Add Category',
+    'category.cancel': 'Cancel',
+    
+    // Dashboard tabs
+    'dashboard.tab': 'Dashboard',
+    'funding.tab': 'Funding',
+    'projects.tab': 'Projects',
+    'analytics.tab': 'Analytics',
+    'reports.tab': 'Reports',
+    'policies.tab': 'Policies',
+    'assistant.title': 'AI Assistant'
   },
   pt: {
     // Header
@@ -57,6 +100,8 @@ const translations: Record<Language, Record<string, string>> = {
     'help': 'Ajuda',
     'login': 'Entrar',
     'logout': 'Sair',
+    'logout.success': 'Sessão terminada com sucesso',
+    'logout.error': 'Erro ao terminar sessão',
     
     // Navigation
     'nav.funding': 'Financiamento',
@@ -84,6 +129,48 @@ const translations: Record<Language, Record<string, string>> = {
     'policy.download.confirm': 'Transferir',
     'policy.download.success': 'PDF da Política transferido',
     'policy.download.description.success': 'foi transferido com sucesso.',
+    
+    // Policy Page
+    'policy.back': 'Voltar',
+    'policy.status': 'Estado',
+    'policy.details': 'Detalhes da Política',
+    'policy.implementation': 'Diretrizes de Implementação',
+    'policy.objectives': 'Objetivos',
+    'policy.metrics': 'Métricas e Medições',
+    'policies.title': 'Políticas de Inovação',
+    'policies.subtitle': 'Navegue e acesse documentos e estruturas de políticas',
+    
+    // NotFound
+    'notfound.title': '404',
+    'notfound.message': 'Ops! Página não encontrada',
+    'notfound.button': 'Voltar para a Página Inicial',
+    
+    // AuthPage
+    'auth.login': 'Entrar',
+    'auth.signup': 'Criar Conta',
+    'auth.email': 'Email',
+    'auth.password': 'Senha',
+    'auth.loading': 'Carregando...',
+    'auth.account.create': 'Criar Conta',
+    'auth.account.login': 'Entrar',
+    'auth.account.existing': 'Já tem uma conta? Entre',
+    'auth.account.need': 'Precisa de uma conta? Registe-se',
+    
+    // AddCategory
+    'category.title': 'Adicionar Categoria',
+    'category.name': 'Nome da categoria',
+    'category.description': 'Descrição (opcional)',
+    'category.add': 'Adicionar Categoria',
+    'category.cancel': 'Cancelar',
+    
+    // Dashboard tabs
+    'dashboard.tab': 'Painel',
+    'funding.tab': 'Financiamento',
+    'projects.tab': 'Projetos',
+    'analytics.tab': 'Análises',
+    'reports.tab': 'Relatórios',
+    'policies.tab': 'Políticas',
+    'assistant.title': 'Assistente IA'
   }
 };
 

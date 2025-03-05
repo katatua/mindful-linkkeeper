@@ -13,11 +13,13 @@ import AnalyticsPage from "./AnalyticsPage";
 import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Check initial auth state
@@ -42,12 +44,12 @@ const ANIPortal = () => {
           <Tabs defaultValue="dashboard" className="h-full">
             <div className="container mx-auto py-4">
               <TabsList>
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="funding">Funding</TabsTrigger>
-                <TabsTrigger value="projects">Projects</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
-                <TabsTrigger value="policies">Policies</TabsTrigger>
+                <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
+                <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
+                <TabsTrigger value="projects">{t('projects.tab')}</TabsTrigger>
+                <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>
+                <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
+                <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
               </TabsList>
             </div>
             
@@ -80,7 +82,7 @@ const ANIPortal = () => {
         <div className="w-96 border-l flex flex-col bg-white">
           <div className="p-3 border-b flex justify-between items-center bg-gray-50">
             <h3 className="font-medium flex items-center gap-2">
-              AI Assistant
+              {t('assistant.title')}
             </h3>
           </div>
           <div className="flex-1 overflow-hidden">
