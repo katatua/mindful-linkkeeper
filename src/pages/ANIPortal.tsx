@@ -14,12 +14,15 @@ import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
+import DataVisualization from "@/components/DataVisualization";
+import { useChat } from "@/hooks/useChat";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { showVisualization, visualizationData, setShowVisualization } = useChat();
 
   useEffect(() => {
     // Check initial auth state
@@ -34,6 +37,10 @@ const ANIPortal = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleCloseVisualization = () => {
+    setShowVisualization(false);
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -52,6 +59,15 @@ const ANIPortal = () => {
                 <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
               </TabsList>
             </div>
+            
+            {showVisualization && visualizationData.length > 0 && (
+              <div className="container mx-auto px-4 pt-4">
+                <DataVisualization 
+                  data={visualizationData} 
+                  onClose={handleCloseVisualization}
+                />
+              </div>
+            )}
             
             <TabsContent value="dashboard" className="h-full">
               <Dashboard />

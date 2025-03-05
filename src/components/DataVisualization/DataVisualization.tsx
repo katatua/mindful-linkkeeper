@@ -23,9 +23,9 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data, onCl
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full mb-6 shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium">Data Visualization</CardTitle>
+        <CardTitle className="text-lg font-medium">Data Visualization Results</CardTitle>
         <div className="flex items-center gap-2">
           <Button 
             variant={chartType === 'bar' ? "default" : "outline"} 

@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Bot } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import DataVisualization from "./DataVisualization";
 import { MessageList } from "./ChatComponents/MessageList";
 import { ChatInput } from "./ChatComponents/ChatInput";
 import { SuggestionLinks } from "./ChatComponents/SuggestionLinks";
@@ -16,17 +15,11 @@ const AIAssistant = () => {
     input,
     setInput,
     isTyping,
-    showVisualization,
-    setShowVisualization,
     visualizationData,
     suggestionLinks,
     handleSuggestionClick,
     handleSendMessage
   } = useChat(language);
-
-  const handleCloseVisualization = () => {
-    setShowVisualization(false);
-  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
@@ -34,15 +27,6 @@ const AIAssistant = () => {
         <Bot className="h-5 w-5 text-primary" />
         <h3 className="font-medium">{language === 'en' ? 'ANI Assistant' : 'Assistente ANI'}</h3>
       </div>
-      
-      {showVisualization && visualizationData.length > 0 && (
-        <div className="px-4 py-3">
-          <DataVisualization 
-            data={visualizationData} 
-            onClose={handleCloseVisualization} 
-          />
-        </div>
-      )}
       
       <MessageList 
         messages={messages}
