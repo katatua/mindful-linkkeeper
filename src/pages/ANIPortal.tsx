@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
@@ -46,7 +47,7 @@ const ANIPortal = () => {
       <Header />
       
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex-grow overflow-auto bg-gray-50">
+        <main className="flex-grow max-w-[calc(100%-36rem)] overflow-auto bg-gray-50">
           <Tabs defaultValue="dashboard" className="h-full">
             <div className="container mx-auto py-4">
               <TabsList>
