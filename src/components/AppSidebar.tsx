@@ -1,108 +1,62 @@
-
 import {
-  Plus,
-  LogOut,
-  FolderPlus,
-  Link as LinkIcon,
-  FileUp,
-  LogIn,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { useEffect, useState } from "react";
-import { useSidebar } from "@/contexts/SidebarContext";
+  LayoutDashboard,
+  File,
+  Settings,
+  HelpCircle,
+  Database,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu"
 
-const menuItems = [
-  { title: "Add File", icon: FileUp, url: "/add-file" },
-  { title: "Add Link", icon: LinkIcon, url: "/add-link" },
-  { title: "Add Category", icon: FolderPlus, url: "/add-category" },
-];
+interface AppSidebarProps {
+  isCollapsed: boolean;
+}
 
-export function AppSidebar() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { isOpen, toggle } = useSidebar();
-
-  useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Logged out successfully",
-      });
-      navigate("/auth");
-    } catch (error) {
-      toast({
-        title: "Error logging out",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLogin = () => {
-    navigate("/auth");
-  };
-
+const AppSidebar: React.FC<AppSidebarProps> = ({ isCollapsed }) => {
   return (
-    <div className={`w-64 h-full bg-white border-r transition-all ${isOpen ? '' : 'w-0 overflow-hidden'}`}>
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">ANI Portal</h2>
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            {isOpen ? "←" : "→"}
-          </Button>
+    <div className={`w-64 flex-shrink-0 border-r bg-secondary ${isCollapsed ? 'collapsed' : ''}`}>
+      <div className="h-full p-3 flex flex-col">
+        <div className="px-2 mb-4">
+          <Link to="/" className="flex items-center gap-2 px-2 py-1.5 text-sm">
+            <LayoutDashboard size={18} />
+            <span>Dashboard</span>
+          </Link>
         </div>
-      </div>
-      
-      <div className="p-4">
-        <h3 className="text-sm font-medium text-gray-500 mb-3">Actions</h3>
-        <nav className="space-y-1">
-          {isAuthenticated && menuItems.map((item) => (
-            <a
-              key={item.title}
-              href={item.url}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.title}</span>
-            </a>
-          ))}
-          
-          {isAuthenticated ? (
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Logout</span>
-            </button>
-          ) : (
-            <button 
-              onClick={handleLogin}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-            >
-              <LogIn className="h-5 w-5" />
-              <span>Login</span>
-            </button>
-          )}
-        </nav>
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <Link to="/documents" className="flex items-center gap-2 px-2 py-1.5 text-sm">
+                <File size={18} />
+                <span>Documents</span>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/database-info" className="flex items-center gap-2 px-2 py-1.5 text-sm">
+                <Database size={18} />
+                <span>Database Info</span>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/settings" className="flex items-center gap-2 px-2 py-1.5 text-sm">
+                <Settings size={18} />
+                <span>Settings</span>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/help" className="flex items-center gap-2 px-2 py-1.5 text-sm">
+                <HelpCircle size={18} />
+                <span>Help & Support</span>
+              </Link>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
       </div>
     </div>
   );
-}
+};
+
+export default AppSidebar;
