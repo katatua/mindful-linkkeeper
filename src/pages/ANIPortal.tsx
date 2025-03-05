@@ -2,8 +2,6 @@
 import { useState, useEffect } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
-import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, User, HelpCircle, Languages } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/toaster";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +12,7 @@ import ProjectsPage from "./ProjectsPage";
 import AnalyticsPage from "./AnalyticsPage";
 import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
-import { HamburgerMenu } from "@/components/HamburgerMenu";
+import { Header } from "@/components/Header";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,69 +33,9 @@ const ANIPortal = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Logged out successfully",
-      });
-      navigate("/auth");
-    } catch (error) {
-      toast({
-        title: "Error logging out",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLogin = () => {
-    navigate("/auth");
-  };
-
   return (
     <div className="h-screen flex flex-col">
-      <header className="bg-white border-b py-3 px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <HamburgerMenu />
-          <div 
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            <img 
-              src="https://via.placeholder.com/40?text=ANI" 
-              alt="ANI Logo" 
-              className="h-10 w-10 rounded" 
-            />
-            <h1 className="text-xl font-bold hidden sm:block">GenAI Innovation Data Space</h1>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="hidden sm:flex">
-            <Languages className="h-4 w-4 mr-2" />
-            PT | EN
-          </Button>
-          <Button variant="ghost" size="sm" className="hidden sm:flex">
-            <User className="h-4 w-4 mr-2" />
-            User Settings
-          </Button>
-          <Button variant="ghost" size="sm" className="hidden sm:flex">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Help
-          </Button>
-          {isAuthenticated ? (
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={handleLogin}>
-              <LogIn className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Login</span>
-            </Button>
-          )}
-        </div>
-      </header>
+      <Header />
       
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-grow overflow-auto bg-gray-50">

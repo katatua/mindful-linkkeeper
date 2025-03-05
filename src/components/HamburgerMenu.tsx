@@ -1,16 +1,55 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, LogOut, LogIn, User, HelpCircle, Languages } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 export const HamburgerMenu = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    setOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+      });
+      navigate("/auth");
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error logging out",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogin = () => {
+    navigate("/auth");
     setOpen(false);
   };
 
@@ -93,6 +132,52 @@ export const HamburgerMenu = () => {
             >
               Add Category
             </Button>
+            
+            <div className="border-t pt-3 mt-3">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start" 
+                onClick={() => {}}
+              >
+                <Languages className="h-4 w-4 mr-2" />
+                PT | EN
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start" 
+                onClick={() => {}}
+              >
+                <User className="h-4 w-4 mr-2" />
+                User Settings
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start" 
+                onClick={() => {}}
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Help
+              </Button>
+              {isAuthenticated ? (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start" 
+                  onClick={handleLogin}
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Login
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </SheetContent>
