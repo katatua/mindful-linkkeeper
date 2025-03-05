@@ -1,5 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 // Types for AI operations
 export interface ClassificationResponse {
@@ -57,16 +58,7 @@ let chatHistory: any[] = [];
 // Generate an AI response using Gemini via Supabase Edge Function
 export const generateResponse = async (userInput: string): Promise<string> => {
   try {
-    // Check environment variables
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase configuration is missing');
-      return "A configuração do Supabase está ausente. Por favor, verifique suas variáveis de ambiente.";
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Calling Gemini API with message:', userInput);
     
     // Add user message to chat history (limited to last 20 messages for context)
     chatHistory.push({
@@ -78,9 +70,7 @@ export const generateResponse = async (userInput: string): Promise<string> => {
       chatHistory = chatHistory.slice(chatHistory.length - 20);
     }
     
-    console.log('Calling Gemini API with message:', userInput);
-    
-    // Call the Gemini edge function
+    // Call the Gemini edge function using the imported Supabase client
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
       body: { 
         userMessage: userInput,
@@ -110,3 +100,4 @@ export const generateResponse = async (userInput: string): Promise<string> => {
 export const genId = (): string => {
   return Date.now().toString() + Math.random().toString(36).substring(2, 9);
 };
+
