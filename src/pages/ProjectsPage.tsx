@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Search, Filter, Download, Plus, Users, CalendarClock, BarChart2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import CreateProjectForm from "@/components/CreateProjectForm";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Project type definition
 interface Project {
@@ -24,6 +26,7 @@ interface Project {
 
 const ProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const { toast } = useToast();
   
   // Sample projects data based on ANI's real projects
@@ -160,10 +163,7 @@ const ProjectsPage = () => {
   };
 
   const handleNewProject = () => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "Project creation functionality will be available in the next update.",
-    });
+    setShowCreateForm(true);
   };
 
   // Status badge color mapping
@@ -503,6 +503,13 @@ const ProjectsPage = () => {
             ))}
         </TabsContent>
       </Tabs>
+      
+      {/* Create Project Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-3xl p-0">
+          <CreateProjectForm onClose={() => setShowCreateForm(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
