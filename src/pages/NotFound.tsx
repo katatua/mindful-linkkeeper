@@ -18,14 +18,14 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">
-        <div className="flex justify-center items-center gap-2 mb-8">
+        <Link to="/" className="inline-flex justify-center items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
           <img 
             src="https://via.placeholder.com/50?text=ANI" 
             alt="ANI Logo" 
             className="h-12 w-12 rounded" 
           />
           <h1 className="text-2xl font-bold">{t('app.title')}</h1>
-        </div>
+        </Link>
         <h2 className="text-4xl font-bold mb-4">{t('notfound.title')}</h2>
         <p className="text-xl text-gray-600 mb-4">{t('notfound.message')}</p>
         <Link to="/" className="text-blue-500 hover:text-blue-700 underline">
