@@ -1,3 +1,4 @@
+
 /**
  * Query execution utilities
  * Responsible for executing SQL queries and formatting results
