@@ -55,7 +55,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate("/")}>
+        <img 
+          src="https://via.placeholder.com/50?text=ANI" 
+          alt="ANI Logo" 
+          className="h-12 w-12 rounded" 
+        />
+        <h1 className="text-2xl font-bold">{t('app.title')}</h1>
+      </div>
+      
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{isSignUp ? t('auth.signup') : t('auth.login')}</CardTitle>

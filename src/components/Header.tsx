@@ -60,7 +60,7 @@ export const Header = () => {
             alt="ANI Logo" 
             className="h-10 w-10 rounded" 
           />
-          <h1 className="text-xl font-bold hidden sm:block">{t('app.title')}</h1>
+          <h1 className="text-xl font-bold sm:block">{t('app.title')}</h1>
         </div>
       </div>
       
