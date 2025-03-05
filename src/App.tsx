@@ -36,7 +36,8 @@ function App() {
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<ANIPortal />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/portal" element={<ANIPortal />} />
               <Route path="/legacy" element={<Index />} />
               <Route path="/add-file" element={<AddFile />} />
               <Route path="/add-link" element={<AddLink />} />
