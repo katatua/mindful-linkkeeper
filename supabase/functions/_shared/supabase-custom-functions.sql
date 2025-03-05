@@ -30,7 +30,8 @@ AS $$
 DECLARE
   result JSONB;
 BEGIN
-  -- Validate that the query is a SELECT statement
+  -- For security in this demo, still restrict to SELECT statements
+  -- In a production environment with proper security, this could be modified to handle write operations
   IF NOT (lower(btrim(sql_query)) LIKE 'select%') THEN
     RAISE EXCEPTION 'Only SELECT queries are allowed for security reasons';
   END IF;

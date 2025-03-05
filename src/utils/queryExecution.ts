@@ -177,10 +177,10 @@ export const executeSqlWrite = async (
   try {
     console.log("Executing SQL write operation:", sqlStatements);
     
-    // Call the raw_execute_sql edge function to perform the write operation
+    // Call the execute-sql edge function with the SQL statements
     const { data, error } = await supabase.functions.invoke('execute-sql', {
       body: { 
-        sqlStatements: sqlStatements,
+        sqlStatements,
         operation: 'write'
       }
     });

@@ -41,26 +41,33 @@ serve(async (req) => {
       // For write operations (INSERT, UPDATE, DELETE)
       console.log("Executing SQL write operation:", sqlStatements);
       
-      // Use the service role to execute raw SQL - note that this requires proper validation
-      // and should only be used with trusted inputs
-      const { data, error } = await supabase.rpc(
-        'execute_raw_query',
-        { sql_query: sqlStatements }
-      );
+      // Split the SQL statements if there are multiple statements
+      const statements = sqlStatements.split(';').filter(stmt => stmt.trim().length > 0);
+      const results = [];
       
-      if (error) {
-        console.error("Error executing SQL:", error);
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      for (const statement of statements) {
+        // Execute each statement separately
+        const { data, error } = await supabase.rpc(
+          'execute_raw_query',
+          { sql_query: statement + ';' }
         );
+        
+        if (error) {
+          console.error("Error executing SQL statement:", error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+          );
+        }
+        
+        results.push(data);
       }
       
       return new Response(
         JSON.stringify({ 
           message: "SQL executed successfully", 
-          affectedRows: Array.isArray(data) ? data.length : 0,
-          result: data 
+          affectedRows: results.reduce((sum, r) => sum + (Array.isArray(r) ? r.length : 0), 0),
+          result: results 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
