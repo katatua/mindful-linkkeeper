@@ -15,7 +15,6 @@ const AIAssistant = () => {
     input,
     setInput,
     isTyping,
-    visualizationData,
     suggestionLinks,
     handleSuggestionClick,
     handleSendMessage
