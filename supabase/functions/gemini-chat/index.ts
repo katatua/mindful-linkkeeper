@@ -1,8 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,7 +26,10 @@ serve(async (req) => {
                             userMessage.toLowerCase().includes("sql") ||
                             userMessage.toLowerCase().includes("query") ||
                             userMessage.toLowerCase().includes("data") ||
-                            userMessage.toLowerCase().includes("find");
+                            userMessage.toLowerCase().includes("find") ||
+                            userMessage.toLowerCase().includes("show") ||
+                            userMessage.toLowerCase().includes("list") ||
+                            userMessage.toLowerCase().includes("get");
 
     // Prepare chat history for Gemini
     const messages = chatHistory.map((msg: any) => ({
@@ -89,9 +95,10 @@ serve(async (req) => {
           
           Quando o usuário fizer uma pergunta sobre dados, você deve:
           1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-          2. Gerar o SQL adequado
-          3. Explicar como esse SQL responderia à pergunta do usuário
-          4. Explicar quais informações o SQL retornaria
+          2. Gerar o SQL adequado que pode ser executado diretamente na banco de dados PostgreSQL
+          3. Fazer a consulta retornar apenas os campos relevantes para a pergunta
+          4. Fornecer o SQL no seguinte formato exato: <SQL>SELECT * FROM tabela WHERE condição</SQL>
+          5. Não forneça explicações adicionais sobre o SQL, apenas gere-o dentro das tags <SQL></SQL>
           
           Responda sempre no mesmo idioma da pergunta (Português ou Inglês).`
         }]
@@ -163,6 +170,44 @@ serve(async (req) => {
         data.candidates[0].content.parts && 
         data.candidates[0].content.parts[0]) {
       assistantResponse = data.candidates[0].content.parts[0].text;
+    }
+    
+    // Check if response contains SQL query
+    const sqlMatch = assistantResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
+    
+    if (sqlMatch && sqlMatch[1] && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const sqlQuery = sqlMatch[1].trim();
+        console.log("Executing SQL query:", sqlQuery);
+        
+        // Initialize Supabase client with service role key for database access
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        // Execute the SQL query
+        const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+          sql_query: sqlQuery
+        });
+        
+        if (queryError) {
+          console.error("SQL query execution error:", queryError);
+          assistantResponse = `Encontrei um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta que tentei executar foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+        } else {
+          // Format the results nicely
+          const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
+          const resultSummary = resultCount === 1 ? "1 resultado encontrado" : `${resultCount} resultados encontrados`;
+          
+          // Generate response with results
+          if (resultCount > 0) {
+            const formattedResults = JSON.stringify(queryResults, null, 2);
+            assistantResponse = `Aqui estão os resultados da sua consulta (${resultSummary}):\n\n\`\`\`json\n${formattedResults}\n\`\`\`\n\nA consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+          } else {
+            assistantResponse = `Não encontrei resultados para sua consulta. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+          }
+        }
+      } catch (sqlExecError) {
+        console.error("Error in SQL execution:", sqlExecError);
+        assistantResponse = `Ocorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
+      }
     }
     
     return new Response(
