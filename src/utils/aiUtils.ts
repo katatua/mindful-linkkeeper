@@ -21,18 +21,7 @@ export interface AIResponse {
 // Function to classify documents via Supabase Edge Function
 export const classifyDocument = async (data: ClassificationRequest): Promise<string> => {
   try {
-    // Create a Supabase client - using public URLs and keys which is fine for edge functions
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase configuration is missing');
-      return 'unknown';
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // Call the edge function
+    // Use the imported Supabase client instead of creating a new one
     const { data: responseData, error } = await supabase.functions.invoke<ClassificationResponse>(
       'classify-document',
       {
@@ -100,4 +89,3 @@ export const generateResponse = async (userInput: string): Promise<string> => {
 export const genId = (): string => {
   return Date.now().toString() + Math.random().toString(36).substring(2, 9);
 };
-
