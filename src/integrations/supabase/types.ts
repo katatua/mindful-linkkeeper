@@ -521,6 +521,12 @@ export type Database = {
         }
         Returns: string
       }
+      execute_raw_query: {
+        Args: {
+          sql_query: string
+        }
+        Returns: Json
+      }
       execute_sql_query: {
         Args: {
           sql_query: string
