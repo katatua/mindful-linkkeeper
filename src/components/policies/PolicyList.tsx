@@ -121,7 +121,11 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
   return (
     <div className="space-y-4">
       {filteredPolicies.map((policy) => (
-        <Card key={policy.id} className="hover:shadow-md transition-all">
+        <Card 
+          key={policy.id} 
+          className="hover:shadow-md transition-all cursor-pointer"
+          onClick={() => handleViewPolicy(policy.id)}
+        >
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <CardTitle className="text-base font-medium">{policy.title}</CardTitle>
@@ -153,8 +157,11 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
           </CardContent>
           <CardFooter className="border-t pt-4 flex justify-between items-center">
             <span className="text-xs text-gray-500">Framework: {policy.framework}</span>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => handleViewPolicy(policy.id)}>
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="sm" onClick={(e) => {
+                e.stopPropagation();
+                handleViewPolicy(policy.id);
+              }}>
                 <Eye className="h-4 w-4 mr-1" /> View
               </Button>
               <Dialog open={policyToDownload === policy.id} onOpenChange={(open) => {
@@ -164,12 +171,15 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => setPolicyToDownload(policy.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPolicyToDownload(policy.id);
+                    }}
                   >
                     <Download className="h-4 w-4 mr-1" /> PDF
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent onClick={(e) => e.stopPropagation()}>
                   <DialogHeader>
                     <DialogTitle>Download Policy PDF</DialogTitle>
                     <DialogDescription>This will download the PDF document for this policy.</DialogDescription>
@@ -183,7 +193,14 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button variant="ghost" size="sm" onClick={() => handleViewPolicy(policy.id)}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewPolicy(policy.id);
+                }}
+              >
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
             </div>
