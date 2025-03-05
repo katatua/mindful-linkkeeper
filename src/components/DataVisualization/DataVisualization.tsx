@@ -1,11 +1,12 @@
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { X, BarChart, LineChart, PieChart } from "lucide-react";
 import { BarChartComponent } from './BarChartComponent';
 import { LineChartComponent } from './LineChartComponent';
 import { PieChartComponent } from './PieChartComponent';
-import { determineDataStructure } from './visualizationUtils';
+import { determineChartType, extractDataKeys } from './visualizationUtils';
 
 interface DataVisualizationProps {
   data: any[];
@@ -13,47 +14,52 @@ interface DataVisualizationProps {
 }
 
 export const DataVisualization: React.FC<DataVisualizationProps> = ({ data, onClose }) => {
-  const [visualizationType, setVisualizationType] = useState<'bar' | 'line' | 'pie'>('bar');
-  const [processedData, setProcessedData] = useState<any[]>([]);
-  const [dataKeys, setDataKeys] = useState<string[]>([]);
-  const [title, setTitle] = useState<string>('Visualização de Dados');
+  const initialChartType = determineChartType(data);
+  const [chartType, setChartType] = useState<'bar' | 'line' | 'pie'>(initialChartType);
+  const dataKeys = extractDataKeys(data);
 
-  useEffect(() => {
-    const { processedData, dataKeys, type, title } = determineDataStructure(data);
-    setProcessedData(processedData);
-    setDataKeys(dataKeys);
-    setVisualizationType(type);
-    setTitle(title);
-  }, [data]);
-
-  const renderVisualization = () => {
-    switch (visualizationType) {
-      case 'bar':
-        return <BarChartComponent data={processedData} dataKeys={dataKeys} />;
-      case 'line':
-        return <LineChartComponent data={processedData} dataKeys={dataKeys} />;
-      case 'pie':
-        return <PieChartComponent data={processedData} />;
-      default:
-        return <div>Não foi possível gerar uma visualização para os dados.</div>;
-    }
+  const handleChartTypeChange = (type: 'bar' | 'line' | 'pie') => {
+    setChartType(type);
   };
 
   return (
-    <Card className="w-full shadow-lg">
+    <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>
-            Visualização baseada em {data.length} registro{data.length !== 1 ? 's' : ''}
-          </CardDescription>
+        <CardTitle className="text-lg font-medium">Data Visualization</CardTitle>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant={chartType === 'bar' ? "default" : "outline"} 
+            size="sm"
+            onClick={() => handleChartTypeChange('bar')}
+          >
+            <BarChart className="h-4 w-4 mr-1" />
+            Bar
+          </Button>
+          <Button 
+            variant={chartType === 'line' ? "default" : "outline"} 
+            size="sm"
+            onClick={() => handleChartTypeChange('line')}
+          >
+            <LineChart className="h-4 w-4 mr-1" />
+            Line
+          </Button>
+          <Button 
+            variant={chartType === 'pie' ? "default" : "outline"} 
+            size="sm"
+            onClick={() => handleChartTypeChange('pie')}
+          >
+            <PieChart className="h-4 w-4 mr-1" />
+            Pie
+          </Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-        <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-100">
-          <X className="h-4 w-4" />
-        </button>
       </CardHeader>
       <CardContent>
-        {renderVisualization()}
+        {chartType === 'bar' && <BarChartComponent data={data} dataKeys={dataKeys} />}
+        {chartType === 'line' && <LineChartComponent data={data} dataKeys={dataKeys} />}
+        {chartType === 'pie' && <PieChartComponent data={data} />}
       </CardContent>
     </Card>
   );

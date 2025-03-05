@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SendHorizonal, Bot, User, Info, Database } from "lucide-react";
+import { SendHorizonal, Bot, User, Info, Database, HelpCircle } from "lucide-react";
 import { generateResponse, genId } from "@/utils/aiUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,6 +15,12 @@ interface Message {
   content: string;
   timestamp: Date;
   visualizationData?: any[];
+}
+
+interface SuggestionLink {
+  id: string;
+  text: string;
+  query: string;
 }
 
 const AIAssistant = () => {
@@ -42,11 +48,62 @@ const AIAssistant = () => {
     }
   ];
 
+  const getSuggestionLinks = (): SuggestionLink[] => {
+    if (language === 'en') {
+      return [
+        { 
+          id: genId(), 
+          text: "Investment in R&D over the last 3 years",
+          query: "What was the investment in R&D over the last 3 years?"
+        },
+        { 
+          id: genId(), 
+          text: "Regional investment distribution",
+          query: "Show me the investment distribution by region over the last 3 years"
+        },
+        { 
+          id: genId(), 
+          text: "Number of patents filed last year",
+          query: "How many patents were filed last year?"
+        },
+        { 
+          id: genId(), 
+          text: "Active funding programs",
+          query: "What are the current active funding programs?"
+        }
+      ];
+    } else {
+      return [
+        { 
+          id: genId(), 
+          text: "Investimento em P&D nos últimos 3 anos",
+          query: "Qual foi o investimento em P&D nos últimos 3 anos?"
+        },
+        { 
+          id: genId(), 
+          text: "Distribuição de investimento por região",
+          query: "Mostre-me a distribuição de investimento por região nos últimos 3 anos"
+        },
+        { 
+          id: genId(), 
+          text: "Número de patentes registradas no último ano",
+          query: "Quantas patentes foram registradas no último ano?"
+        },
+        { 
+          id: genId(), 
+          text: "Programas de financiamento ativos",
+          query: "Quais são os programas de financiamento ativos atualmente?"
+        }
+      ];
+    }
+  };
+
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showVisualization, setShowVisualization] = useState(false);
   const [visualizationData, setVisualizationData] = useState<any[]>([]);
+  const [suggestionLinks, setSuggestionLinks] = useState<SuggestionLink[]>(getSuggestionLinks());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -56,6 +113,7 @@ const AIAssistant = () => {
 
   useEffect(() => {
     setMessages(INITIAL_MESSAGES);
+    setSuggestionLinks(getSuggestionLinks());
   }, [language]);
 
   const scrollToBottom = () => {
@@ -263,6 +321,75 @@ const AIAssistant = () => {
     }
   };
 
+  const handleSuggestionClick = async (query: string) => {
+    const userMessageId = genId();
+    const userMessage: Message = {
+      id: userMessageId,
+      role: 'user',
+      content: query,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setIsTyping(true);
+    
+    try {
+      let response: string;
+      let vizData: any[] | undefined;
+      
+      if (isMetricsQuery(query)) {
+        console.log("Detected metrics query from suggestion");
+        const sqlQuery = await generateSqlFromNaturalLanguage(query);
+        console.log("Generated SQL query:", sqlQuery);
+        
+        const queryResult = await executeQuery(sqlQuery);
+        console.log("Query result:", queryResult);
+        
+        response = queryResult.response;
+        vizData = queryResult.visualizationData;
+        
+        if (vizData && vizData.length > 0) {
+          setVisualizationData(vizData);
+          setShowVisualization(true);
+        }
+      } else {
+        response = await generateResponse(query);
+      }
+      
+      const assistantMessage: Message = {
+        id: genId(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+        visualizationData: vizData
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast({
+        title: language === 'en' ? "Error processing response" : "Erro ao processar a resposta",
+        description: language === 'en' 
+          ? "There was a problem querying the knowledge base. Please try again." 
+          : "Ocorreu um problema ao consultar a base de conhecimento. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+      
+      const errorMessage: Message = {
+        id: genId(),
+        role: 'assistant',
+        content: language === 'en'
+          ? "I'm sorry, but I encountered an error processing your request. Please try again later or contact technical support if the problem persists."
+          : "Peço desculpa, mas encontrei um erro ao processar o seu pedido. Por favor, tente novamente mais tarde ou contacte o suporte técnico se o problema persistir.",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     
@@ -410,21 +537,41 @@ const AIAssistant = () => {
         </div>
       </ScrollArea>
       
-      <div className="p-4 border-t flex gap-2">
-        <Input
-          placeholder={language === 'en' 
-            ? "Ask about innovation metrics, funding, or policies..." 
-            : "Pergunte sobre métricas de inovação, financiamento ou políticas..."}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSendMessage();
-          }}
-          className="flex-1"
-        />
-        <Button onClick={handleSendMessage} disabled={isTyping || !input.trim()}>
-          <SendHorizonal className="h-5 w-5" />
-        </Button>
+      <div className="border-t pt-3 px-4">
+        <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex items-center text-sm text-muted-foreground mr-2">
+            <HelpCircle className="h-4 w-4 mr-1" />
+            <span>{language === 'en' ? 'Try asking:' : 'Experimente perguntar:'}</span>
+          </div>
+          {suggestionLinks.map((link) => (
+            <Button 
+              key={link.id} 
+              variant="outline" 
+              size="sm" 
+              className="text-xs"
+              onClick={() => handleSuggestionClick(link.query)}
+            >
+              {link.text}
+            </Button>
+          ))}
+        </div>
+        
+        <div className="flex gap-2 pb-4">
+          <Input
+            placeholder={language === 'en' 
+              ? "Ask about innovation metrics, funding, or policies..." 
+              : "Pergunte sobre métricas de inovação, financiamento ou políticas..."}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSendMessage();
+            }}
+            className="flex-1"
+          />
+          <Button onClick={handleSendMessage} disabled={isTyping || !input.trim()}>
+            <SendHorizonal className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
