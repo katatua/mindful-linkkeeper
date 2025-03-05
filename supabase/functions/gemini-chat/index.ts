@@ -183,7 +183,7 @@ serve(async (req) => {
         // Initialize Supabase client with service role key for database access
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         
-        // Execute the SQL query
+        // Execute the SQL query using the custom function
         const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
           sql_query: sqlQuery
         });
