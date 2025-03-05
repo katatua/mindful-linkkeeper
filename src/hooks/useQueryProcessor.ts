@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const useQueryProcessor = () => {
@@ -9,14 +8,16 @@ export const useQueryProcessor = () => {
       'how much is', 'what is the', 'tell me about', 'show me', 
       'r&d investment', 'investment in r&d', 'patent', 'innovation', 
       'metric', 'performance', 'percentage', 'value', 'number of',
-      'how many', 'statistic'
+      'how many', 'statistic', 'success rate', 'funding', 'deadline', 
+      'international', 'collaboration', 'program', 'sector', 'application'
     ];
     
     const portuguesePatterns = [
       'qual', 'quanto', 'quantos', 'mostre', 'diga-me', 'apresente',
       'investimento em p&d', 'investimento em r&d', 'patente', 'inovação',
       'métrica', 'desempenho', 'percentagem', 'porcentagem', 'valor', 'número de',
-      'estatística'
+      'estatística', 'taxa de sucesso', 'financiamento', 'prazo', 'internacional',
+      'colaboração', 'programa', 'setor', 'aplicação', 'candidatura'
     ];
     
     return englishPatterns.some(pattern => lowerMsg.includes(pattern)) || 
@@ -43,6 +44,77 @@ export const useQueryProcessor = () => {
                 AND measurement_date >= CURRENT_DATE - INTERVAL '${numYears} years'
                 GROUP BY region, EXTRACT(YEAR FROM measurement_date)
                 ORDER BY region, year DESC`;
+      }
+      
+      if ((lowerQuery.includes('success rate') || lowerQuery.includes('taxa de sucesso')) &&
+          (lowerQuery.includes('sector') || lowerQuery.includes('setor'))) {
+        return `SELECT 
+                  sector, 
+                  COUNT(*) as total_applications,
+                  COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                  ROUND((COUNT(CASE WHEN status = 'approved' THEN 1 END)::numeric / COUNT(*)::numeric) * 100, 2) as success_rate
+                FROM 
+                  ani_funding_applications
+                WHERE 
+                  status != 'pending'
+                GROUP BY 
+                  sector
+                ORDER BY 
+                  success_rate DESC`;
+      }
+      
+      if ((lowerQuery.includes('deadline') || lowerQuery.includes('prazo')) &&
+          (lowerQuery.includes('application') || lowerQuery.includes('aplicação') || 
+           lowerQuery.includes('candidatura') || lowerQuery.includes('próximo') || 
+           lowerQuery.includes('next'))) {
+        return `SELECT 
+                  name, 
+                  description,
+                  total_budget,
+                  application_deadline,
+                  next_call_date,
+                  funding_type
+                FROM 
+                  ani_funding_programs
+                WHERE 
+                  application_deadline >= CURRENT_DATE
+                ORDER BY 
+                  application_deadline ASC
+                LIMIT 10`;
+      }
+      
+      if ((lowerQuery.includes('funding') || lowerQuery.includes('financiamento')) &&
+          (lowerQuery.includes('sector') || lowerQuery.includes('setor'))) {
+        return `SELECT 
+                  sector, 
+                  name, 
+                  value, 
+                  unit, 
+                  measurement_date
+                FROM 
+                  ani_metrics
+                WHERE 
+                  category = 'Sectoral Funding'
+                ORDER BY 
+                  value DESC`;
+      }
+      
+      if ((lowerQuery.includes('international') || lowerQuery.includes('internacional')) &&
+          (lowerQuery.includes('funding') || lowerQuery.includes('financiamento') || 
+           lowerQuery.includes('collaboration') || lowerQuery.includes('colaboração'))) {
+        return `SELECT 
+                  country, 
+                  program_name, 
+                  partnership_type,
+                  start_date,
+                  end_date,
+                  total_budget,
+                  portuguese_contribution,
+                  focus_areas
+                FROM 
+                  ani_international_collaborations
+                ORDER BY 
+                  total_budget DESC`;
       }
       
       if (lowerQuery.includes('project') || lowerQuery.includes('projeto')) {

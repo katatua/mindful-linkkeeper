@@ -9,45 +9,158 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ani_funding_applications: {
+        Row: {
+          application_date: string
+          approved_amount: number | null
+          created_at: string | null
+          decision_date: string | null
+          id: string
+          organization: string | null
+          program_id: string | null
+          region: string | null
+          requested_amount: number | null
+          sector: string | null
+          status: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          application_date: string
+          approved_amount?: number | null
+          created_at?: string | null
+          decision_date?: string | null
+          id?: string
+          organization?: string | null
+          program_id?: string | null
+          region?: string | null
+          requested_amount?: number | null
+          sector?: string | null
+          status: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          application_date?: string
+          approved_amount?: number | null
+          created_at?: string | null
+          decision_date?: string | null
+          id?: string
+          organization?: string | null
+          program_id?: string | null
+          region?: string | null
+          requested_amount?: number | null
+          sector?: string | null
+          status?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ani_funding_applications_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "ani_funding_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ani_funding_programs: {
         Row: {
+          application_deadline: string | null
           application_process: string | null
           created_at: string
           description: string | null
           eligibility_criteria: string | null
           end_date: string | null
+          funding_type: string | null
           id: string
           name: string
+          next_call_date: string | null
+          review_time_days: number | null
           sector_focus: string[] | null
           start_date: string | null
+          success_rate: number | null
           total_budget: number | null
           updated_at: string
         }
         Insert: {
+          application_deadline?: string | null
           application_process?: string | null
           created_at?: string
           description?: string | null
           eligibility_criteria?: string | null
           end_date?: string | null
+          funding_type?: string | null
           id?: string
           name: string
+          next_call_date?: string | null
+          review_time_days?: number | null
           sector_focus?: string[] | null
           start_date?: string | null
+          success_rate?: number | null
           total_budget?: number | null
           updated_at?: string
         }
         Update: {
+          application_deadline?: string | null
           application_process?: string | null
           created_at?: string
           description?: string | null
           eligibility_criteria?: string | null
           end_date?: string | null
+          funding_type?: string | null
           id?: string
           name?: string
+          next_call_date?: string | null
+          review_time_days?: number | null
           sector_focus?: string[] | null
           start_date?: string | null
+          success_rate?: number | null
           total_budget?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ani_international_collaborations: {
+        Row: {
+          country: string
+          created_at: string | null
+          end_date: string | null
+          focus_areas: string[] | null
+          id: string
+          partnership_type: string | null
+          portuguese_contribution: number | null
+          program_name: string
+          start_date: string | null
+          total_budget: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          country: string
+          created_at?: string | null
+          end_date?: string | null
+          focus_areas?: string[] | null
+          id?: string
+          partnership_type?: string | null
+          portuguese_contribution?: number | null
+          program_name: string
+          start_date?: string | null
+          total_budget?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          country?: string
+          created_at?: string | null
+          end_date?: string | null
+          focus_areas?: string[] | null
+          id?: string
+          partnership_type?: string | null
+          portuguese_contribution?: number | null
+          program_name?: string
+          start_date?: string | null
+          total_budget?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
