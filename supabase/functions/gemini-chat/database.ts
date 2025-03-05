@@ -25,14 +25,7 @@ export async function handleDatabaseQuery(sqlQuery: string, originalResponse: st
           return `Erro: Por razões de segurança, apenas consultas SELECT são permitidas.\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
         }
         
-        const { data: directData, error: directError } = await supabase.from('_temp_query_results').select().or(`id.eq.0`).execute();
-        
-        if (directError) {
-          console.error("Direct query error:", directError);
-          return `Erro ao executar a consulta SQL diretamente: ${directError.message}\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
-        }
-        
-        // Execute raw query
+        // Execute raw query using rpc instead of .execute() which was causing the error
         const { data: rawData, error: rawError } = await supabase.rpc('execute_raw_query', { 
           sql_query: sqlQuery 
         });
