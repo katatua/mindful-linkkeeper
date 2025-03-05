@@ -2,6 +2,20 @@
 // Colors for charts
 export const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
 
+export const determineChartType = (data: any[]): 'bar' | 'line' | 'pie' => {
+  if (!data || data.length === 0) return 'bar';
+  
+  const result = determineDataStructure(data);
+  return result.type;
+};
+
+export const extractDataKeys = (data: any[]): string[] => {
+  if (!data || data.length === 0) return [];
+  
+  const result = determineDataStructure(data);
+  return result.dataKeys;
+};
+
 export const determineDataStructure = (data: any[]) => {
   if (!data || data.length === 0) return { processedData: [], dataKeys: [], type: 'bar', title: 'Visualização de Dados' };
 
