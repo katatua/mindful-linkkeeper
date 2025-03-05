@@ -19,6 +19,17 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+/**
+ * Helper function to clean SQL statements from markdown formatting
+ */
+function cleanSqlFromMarkdown(sqlText: string): string {
+  // Remove markdown code blocks if present
+  sqlText = sqlText.replace(/```sql\n|\n```|```/g, '');
+  
+  // Trim whitespace
+  return sqlText.trim();
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -37,19 +48,29 @@ serve(async (req) => {
       );
     }
 
+    // Clean the SQL statements from markdown formatting
+    const cleanedSql = cleanSqlFromMarkdown(sqlStatements);
+    console.log("Cleaned SQL:", cleanedSql);
+
     if (operation === 'write') {
       // For write operations (INSERT, UPDATE, DELETE)
-      console.log("Executing SQL write operation:", sqlStatements);
+      console.log("Executing SQL write operation:", cleanedSql);
       
       // Split the SQL statements if there are multiple statements
-      const statements = sqlStatements.split(';').filter(stmt => stmt.trim().length > 0);
+      // Only consider non-empty statements after splitting by semicolon
+      const statements = cleanedSql.split(';').filter(stmt => stmt.trim().length > 0);
+      console.log(`Found ${statements.length} SQL statements to execute`);
+      
       const results = [];
       
       for (const statement of statements) {
+        const trimmedStatement = statement.trim();
+        console.log("Executing statement:", trimmedStatement);
+        
         // Execute each statement separately
         const { data, error } = await supabase.rpc(
           'execute_raw_query',
-          { sql_query: statement + ';' }
+          { sql_query: trimmedStatement }
         );
         
         if (error) {
@@ -60,13 +81,22 @@ serve(async (req) => {
           );
         }
         
+        console.log("Statement result:", data);
         results.push(data);
       }
       
       return new Response(
         JSON.stringify({ 
           message: "SQL executed successfully", 
-          affectedRows: results.reduce((sum, r) => sum + (Array.isArray(r) ? r.length : 0), 0),
+          affectedRows: results.reduce((sum, r) => {
+            // Handle both array results and affected_rows object
+            if (r && r.affected_rows !== undefined) {
+              return sum + r.affected_rows;
+            } else if (Array.isArray(r)) {
+              return sum + r.length;
+            }
+            return sum;
+          }, 0),
           result: results 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

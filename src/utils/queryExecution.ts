@@ -1,4 +1,3 @@
-
 /**
  * Query execution utilities
  * Responsible for executing SQL queries and formatting results
@@ -177,10 +176,13 @@ export const executeSqlWrite = async (
   try {
     console.log("Executing SQL write operation:", sqlStatements);
     
+    // Remove any markdown formatting from the SQL if it's present
+    const cleanedSql = sqlStatements.replace(/```sql\n|\n```|```/g, '').trim();
+    
     // Call the execute-sql edge function with the SQL statements
     const { data, error } = await supabase.functions.invoke('execute-sql', {
       body: { 
-        sqlStatements,
+        sqlStatements: cleanedSql,
         operation: 'write'
       }
     });
