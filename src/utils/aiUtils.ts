@@ -68,7 +68,7 @@ export const generateResponse = async (userInput: string): Promise<string> => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Add user message to chat history (limited to last 10 messages for context)
+    // Add user message to chat history (limited to last 20 messages for context)
     chatHistory.push({
       role: 'user',
       content: userInput
