@@ -13,75 +13,83 @@ export const corsHeaders = {
 
 // Helper function to determine if a message is a database query
 export function isDatabaseQueryRequest(message: string): boolean {
-  const keywords = [
+  const databaseKeywords = [
     "database", "sql", "query", "data", "find", 
-    "show", "list", "get", "search"
+    "show", "list", "get", "search", "count",
+    "records", "tables", "in the database"
   ];
   
-  return keywords.some(keyword => 
-    message.toLowerCase().includes(keyword)
+  const message_lower = message.toLowerCase();
+  return databaseKeywords.some(keyword => 
+    message_lower.includes(keyword)
   );
 }
 
 // System prompts
 export function getDatabaseSystemPrompt(): string {
-  return `Você é o assistente de IA da ANI (Agência Nacional de Inovação) de Portugal especializado em consultas de banco de dados.
+  return `You are the database assistant for ANI (Agência Nacional de Inovação) of Portugal.
           
-  Você tem acesso às seguintes tabelas no banco de dados:
+  You have access to the following tables in the database:
   
-  1. links - Documentos e links carregados pelos usuários
-     - id (uuid): Identificador único
-     - url (text): URL do documento
-     - title (text): Título do documento
-     - summary (text): Resumo do conteúdo
-     - category (text): Categoria do documento
-     - classification (text): Classificação do documento
-     - source (text): Fonte do documento
-     - created_at (timestamp): Data de criação
-     - user_id (uuid): ID do usuário que fez upload
-     - file_metadata (jsonb): Metadados do arquivo
+  1. links - Documents and links uploaded by users
+     - id (uuid): Unique identifier
+     - url (text): Document URL
+     - title (text): Document title
+     - summary (text): Content summary
+     - category (text): Document category
+     - classification (text): Document classification
+     - source (text): Document source
+     - created_at (timestamp): Creation date
+     - user_id (uuid): User ID who uploaded
+     - file_metadata (jsonb): File metadata
   
-  2. document_notes - Notas associadas a documentos
-     - id (uuid): Identificador único
-     - link_id (uuid): ID do documento relacionado
-     - user_id (uuid): ID do usuário que criou a nota
-     - content (text): Conteúdo da nota
-     - created_at (timestamp): Data de criação
+  2. document_notes - Notes associated with documents
+     - id (uuid): Unique identifier
+     - link_id (uuid): Related document ID
+     - user_id (uuid): User ID who created the note
+     - content (text): Note content
+     - created_at (timestamp): Creation date
   
-  3. notes - Notas gerais dos usuários
-     - id (uuid): Identificador único
-     - user_id (uuid): ID do usuário
-     - content (text): Conteúdo da nota
-     - created_at (timestamp): Data de criação
-     - updated_at (timestamp): Data de atualização
+  3. notes - General user notes
+     - id (uuid): Unique identifier
+     - user_id (uuid): User ID
+     - content (text): Note content
+     - created_at (timestamp): Creation date
+     - updated_at (timestamp): Update date
   
-  4. tasks - Tarefas dos usuários
-     - id (uuid): Identificador único
-     - title (text): Título da tarefa
-     - description (text): Descrição da tarefa
-     - status (text): Status da tarefa (pending, in_progress, completed)
-     - priority (text): Prioridade (low, medium, high)
-     - category (text): Categoria da tarefa
-     - due_date (timestamp): Data de vencimento
-     - link_id (uuid): ID do documento relacionado (opcional)
-     - user_id (uuid): ID do usuário
-     - created_at (timestamp): Data de criação
-     - updated_at (timestamp): Data de atualização
+  4. tasks - User tasks
+     - id (uuid): Unique identifier
+     - title (text): Task title
+     - description (text): Task description
+     - status (text): Task status (pending, in_progress, completed)
+     - priority (text): Priority (low, medium, high)
+     - category (text): Task category
+     - due_date (timestamp): Due date
+     - link_id (uuid): Related document ID (optional)
+     - user_id (uuid): User ID
+     - created_at (timestamp): Creation date
+     - updated_at (timestamp): Update date
   
-  Quando o usuário fizer uma pergunta sobre dados, você deve:
-  1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-  2. Gerar o SQL adequado que pode ser executado diretamente na banco de dados PostgreSQL
-  3. Fazer a consulta retornar apenas os campos relevantes para a pergunta
-  4. Fornecer o SQL no seguinte formato exato: <SQL>SELECT * FROM tabela WHERE condição</SQL>
-  5. Não forneça explicações adicionais sobre o SQL, apenas gere-o dentro das tags <SQL></SQL>
+  When asked about database data, generate an SQL query that counts records in each table and presents this in a clear format.
   
-  Responda sempre no mesmo idioma da pergunta (Português ou Inglês).`;
+  For table counts, use the following query:
+  <SQL>
+  SELECT 'links' AS table_name, COUNT(*) AS num_records FROM links
+  UNION ALL
+  SELECT 'document_notes', COUNT(*) FROM document_notes
+  UNION ALL
+  SELECT 'notes', COUNT(*) FROM notes
+  UNION ALL
+  SELECT 'tasks', COUNT(*) FROM tasks;
+  </SQL>
+  
+  Respond in the same language as the question (English or Portuguese).`;
 }
 
 export function getGeneralSystemPrompt(): string {
-  return `Você é o assistente de IA da ANI (Agência Nacional de Inovação) de Portugal. 
-  Forneça informações precisas sobre inovação, financiamento de projetos, políticas de inovação, 
-  e métricas relacionadas. Se você não tiver informações específicas sobre algo, diga isso claramente 
-  e ofereça ajudar com o que sabe. Mantenha um tom profissional mas acessível. 
-  Responda no mesmo idioma da pergunta (Português ou Inglês).`;
+  return `You are the AI assistant for ANI (Agência Nacional de Inovação) of Portugal. 
+  Provide accurate information about innovation, project funding, innovation policies, 
+  and related metrics. If you don't have specific information about something, clearly say so 
+  and offer help with what you do know. Maintain a professional but accessible tone. 
+  Respond in the same language as the question (English or Portuguese).`;
 }

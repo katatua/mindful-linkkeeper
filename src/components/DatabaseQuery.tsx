@@ -4,21 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateResponse } from '@/utils/aiUtils';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const DatabaseQuery: React.FC = () => {
   const [results, setResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const checkDatabaseContent = async () => {
     setLoading(true);
     try {
       const response = await generateResponse(
-        "Show me what data is in the database. Run a query to check all tables (links, document_notes, notes, and tasks) and show me how many records are in each."
+        "Show me what data is in the database. Run a query that counts records in each table (links, document_notes, notes, and tasks) and format the results in a clear table."
       );
       setResults(response);
     } catch (error) {
       console.error("Error querying database:", error);
       setResults("Error querying database. Please try again later.");
+      toast({
+        variant: "destructive",
+        title: "Database Query Failed",
+        description: "There was an error fetching data from the database."
+      });
     } finally {
       setLoading(false);
     }

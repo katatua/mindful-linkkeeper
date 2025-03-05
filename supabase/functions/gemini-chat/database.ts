@@ -17,22 +17,37 @@ export async function handleDatabaseQuery(sqlQuery: string, originalResponse: st
     
     if (queryError) {
       console.error("SQL query execution error:", queryError);
-      return `Encontrei um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta que tentei executar foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
-    } else {
-      // Format the results nicely
-      const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
-      const resultSummary = resultCount === 1 ? "1 resultado encontrado" : `${resultCount} resultados encontrados`;
+      return `There was an error executing the SQL query: ${queryError.message}\n\nThe query that was attempted:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+    }
+    
+    // Format the results nicely
+    const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
+    const resultSummary = resultCount === 1 ? "1 result found" : `${resultCount} results found`;
+    
+    // Generate response with results
+    if (resultCount > 0) {
+      let formattedResponse = `# Database Content (${resultSummary})\n\n`;
       
-      // Generate response with results
-      if (resultCount > 0) {
-        const formattedResults = JSON.stringify(queryResults, null, 2);
-        return `Aqui estão os resultados da sua consulta (${resultSummary}):\n\n\`\`\`json\n${formattedResults}\n\`\`\`\n\nA consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+      // Check if this is a table count query
+      if (queryResults[0].table_name) {
+        formattedResponse += "| Table | Record Count |\n";
+        formattedResponse += "|-------|-------------:|\n";
+        
+        queryResults.forEach((result: any) => {
+          formattedResponse += `| ${result.table_name} | ${result.num_records} |\n`;
+        });
       } else {
-        return `Não encontrei resultados para sua consulta. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+        // Generic JSON format for other queries
+        formattedResponse += "```json\n" + JSON.stringify(queryResults, null, 2) + "\n```\n\n";
       }
+      
+      formattedResponse += `\nQuery executed:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+      return formattedResponse;
+    } else {
+      return `No data found in the database. The tables appear to be empty.\n\nQuery executed:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
     }
   } catch (sqlExecError) {
     console.error("Error in SQL execution:", sqlExecError);
-    return `Ocorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
+    return `An error occurred while processing your query: ${sqlExecError.message}`;
   }
 }
