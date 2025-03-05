@@ -62,26 +62,27 @@ export const Header = () => {
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="hidden md:flex">
+      {/* These buttons are now completely hidden as they're in the hamburger menu */}
+      <div className="flex items-center gap-2 hidden">
+        <Button variant="ghost" size="sm">
           <Languages className="h-4 w-4 mr-2" />
           PT | EN
         </Button>
-        <Button variant="ghost" size="sm" className="hidden md:flex">
+        <Button variant="ghost" size="sm">
           <User className="h-4 w-4 mr-2" />
           User Settings
         </Button>
-        <Button variant="ghost" size="sm" className="hidden md:flex">
+        <Button variant="ghost" size="sm">
           <HelpCircle className="h-4 w-4 mr-2" />
           Help
         </Button>
         {isAuthenticated ? (
-          <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:flex">
+          <Button variant="outline" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Logout</span>
           </Button>
         ) : (
-          <Button variant="outline" size="sm" onClick={handleLogin} className="hidden md:flex">
+          <Button variant="outline" size="sm" onClick={handleLogin}>
             <LogIn className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Login</span>
           </Button>
