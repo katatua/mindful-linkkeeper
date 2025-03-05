@@ -34,7 +34,7 @@ SELECT
     'tasks',
     COUNT(*)
 FROM
-    tasks;`);
+    tasks`);
   const { toast } = useToast();
 
   const executeQuery = async () => {
@@ -51,10 +51,13 @@ FROM
     setError(null);
     
     try {
+      // Remove trailing semicolons before sending to prevent SQL syntax errors
+      const cleanQuery = sqlQuery.trim().replace(/;+$/, '');
+      
       // Call the Supabase Edge Function directly with the SQL query
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
-          userMessage: `Execute esta consulta SQL: ${sqlQuery}`,
+          userMessage: `Execute esta consulta SQL: ${cleanQuery}`,
           chatHistory: [] // No chat history needed for direct SQL execution
         }
       });

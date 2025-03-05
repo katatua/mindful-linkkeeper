@@ -5,20 +5,23 @@ import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "./utils.ts";
 // Function to handle database queries
 export async function handleDatabaseQuery(sqlQuery: string, originalResponse: string): Promise<string> {
   try {
-    console.log("Executing SQL query:", sqlQuery);
+    // Clean up the SQL query by removing trailing semicolons which can cause syntax errors
+    const cleanedQuery = sqlQuery.trim().replace(/;+$/, '');
+    
+    console.log("Executing SQL query:", cleanedQuery);
     
     // Initialize Supabase client with service role key for database access
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
     // Make sure query is SELECT only for security
-    if (!sqlQuery.trim().toLowerCase().startsWith('select')) {
+    if (!cleanedQuery.toLowerCase().startsWith('select')) {
       return `Erro: Por razões de segurança, apenas consultas SELECT são permitidas.\n\nA consulta que foi tentada:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
     }
     
     // Try using the execute_sql_query function
     try {
       const { data, error } = await supabase.rpc('execute_sql_query', { 
-        sql_query: sqlQuery 
+        sql_query: cleanedQuery 
       });
       
       if (error) {
@@ -41,7 +44,7 @@ export async function handleDatabaseQuery(sqlQuery: string, originalResponse: st
               'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
               'apikey': SUPABASE_SERVICE_ROLE_KEY
             },
-            body: JSON.stringify({ sql_query: sqlQuery })
+            body: JSON.stringify({ sql_query: cleanedQuery })
           }
         );
         
