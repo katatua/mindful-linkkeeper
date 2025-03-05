@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
@@ -95,7 +94,7 @@ const ANIPortal = () => {
           </Tabs>
         </main>
         
-        <div className="w-96 border-l flex flex-col bg-white">
+        <div className="w-144 border-l flex flex-col bg-white">
           <div className="p-3 border-b flex justify-between items-center bg-gray-50">
             <h3 className="font-medium flex items-center gap-2">
               {t('assistant.title')}
