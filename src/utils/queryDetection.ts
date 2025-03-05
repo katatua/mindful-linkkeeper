@@ -1,33 +1,58 @@
 
 /**
- * Query detection utility functions
- * Responsible for determining if a message contains a metrics-related query
+ * Utility functions for detecting query types
  */
 
-/**
- * Checks if a message contains patterns that indicate it's a metrics query
- */
-export const isMetricsQuery = (message: string): boolean => {
-  const lowerMsg = message.toLowerCase();
+// Function to check if a query is related to metrics
+export const isMetricsQuery = (query: string): boolean => {
+  const lowerQuery = query.toLowerCase();
   
-  const englishPatterns = [
-    'how much is', 'what is the', 'tell me about', 'show me', 
-    'r&d investment', 'investment in r&d', 'patent', 'innovation', 
-    'metric', 'performance', 'percentage', 'value', 'number of',
-    'how many', 'statistic', 'success rate', 'funding', 'deadline', 
-    'international', 'collaboration', 'program', 'sector', 'application',
-    'investment by sector', 'sectoral investment', 'sector funding'
-  ];
-  
-  const portuguesePatterns = [
-    'qual', 'quanto', 'quantos', 'mostre', 'diga-me', 'apresente',
-    'investimento em p&d', 'investimento em r&d', 'patente', 'inovação',
-    'métrica', 'desempenho', 'percentagem', 'porcentagem', 'valor', 'número de',
-    'estatística', 'taxa de sucesso', 'financiamento', 'prazo', 'internacional',
-    'colaboração', 'programa', 'setor', 'aplicação', 'candidatura',
-    'investimento por setor', 'investimento setorial', 'financiamento por setor'
-  ];
-  
-  return englishPatterns.some(pattern => lowerMsg.includes(pattern)) || 
-         portuguesePatterns.some(pattern => lowerMsg.includes(pattern));
+  // Check if query contains keywords related to metrics
+  return (
+    lowerQuery.includes("métrica") ||
+    lowerQuery.includes("metric") ||
+    lowerQuery.includes("estatística") ||
+    lowerQuery.includes("statistic") ||
+    lowerQuery.includes("indicador") ||
+    lowerQuery.includes("indicator") ||
+    lowerQuery.includes("medida") ||
+    lowerQuery.includes("measure") ||
+    lowerQuery.includes("percentagem") ||
+    lowerQuery.includes("percentage") ||
+    lowerQuery.includes("investimento") ||
+    lowerQuery.includes("investment") ||
+    lowerQuery.includes("patente") ||
+    lowerQuery.includes("patent") ||
+    lowerQuery.includes("inovação") ||
+    lowerQuery.includes("innovation") ||
+    lowerQuery.includes("emprego") ||
+    lowerQuery.includes("employment") ||
+    lowerQuery.includes("financiamento") ||
+    lowerQuery.includes("funding") ||
+    lowerQuery.includes("comércio") ||
+    lowerQuery.includes("commerce") ||
+    lowerQuery.includes("exportação") ||
+    lowerQuery.includes("export") ||
+    lowerQuery.includes("importação") ||
+    lowerQuery.includes("import") ||
+    lowerQuery.includes("programa") ||
+    lowerQuery.includes("program") ||
+    lowerQuery.includes("projeto") ||
+    lowerQuery.includes("project") ||
+    lowerQuery.includes("investigação") ||
+    lowerQuery.includes("research") ||
+    lowerQuery.includes("desenvolvimento") ||
+    lowerQuery.includes("development") ||
+    lowerQuery.includes("instituição") ||
+    lowerQuery.includes("institution") ||
+    lowerQuery.includes("universidade") ||
+    lowerQuery.includes("university") ||
+    lowerQuery.includes("centro") ||
+    lowerQuery.includes("center") ||
+    lowerQuery.includes("laboratório") ||
+    lowerQuery.includes("laboratory") ||
+    lowerQuery.includes("colab") ||
+    lowerQuery.includes("colaborativo") ||
+    lowerQuery.includes("collaborative")
+  );
 };

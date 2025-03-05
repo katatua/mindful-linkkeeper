@@ -13,6 +13,7 @@ import AnalyticsPage from "./AnalyticsPage";
 import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DataVisualization } from "@/components/DataVisualization";
 import { useVisualization } from "@/hooks/useVisualization";
@@ -51,7 +52,7 @@ const ANIPortal = () => {
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-grow max-w-[calc(100%-36rem)] overflow-auto bg-gray-50">
           <Tabs defaultValue="dashboard" className="h-full">
-            <div className="container mx-auto py-4">
+            <div className="container mx-auto py-4 flex justify-between items-center">
               <TabsList>
                 <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
                 <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
@@ -60,8 +61,12 @@ const ANIPortal = () => {
                 <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
                 <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
                 <TabsTrigger value="database">Consulta BD</TabsTrigger>
-                <TabsTrigger value="synthetic">Synthetic Data</TabsTrigger>
+                <TabsTrigger value="synthetic">Dados Sintéticos</TabsTrigger>
               </TabsList>
+              
+              <div className="md:hidden">
+                <HamburgerMenu />
+              </div>
             </div>
             
             {showVisualization && visualizationData && visualizationData.length > 0 && (
