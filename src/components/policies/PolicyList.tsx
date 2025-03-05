@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { downloadAsPdf } from "@/utils/shareUtils";
+import { ShareEmailDialog } from "@/components/ShareEmailDialog";
 
 interface PolicyListProps {
   searchQuery: string;
@@ -17,6 +19,8 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [policyToDownload, setPolicyToDownload] = useState<string | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [policyToShare, setPolicyToShare] = useState<any>(null);
   const { t, language } = useLanguage();
   
   // Sample data for policies with translations
@@ -161,19 +165,49 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
   };
 
   const handleDownloadPolicy = (policyId: string) => {
-    // Simulate PDF download
-    const link = document.createElement('a');
-    link.href = '/sample-policy.pdf'; // In real app, this would be a dynamic URL
-    link.download = `Policy-${policyId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Find the policy
+    const policy = language === 'en' 
+      ? policiesEN.find(p => p.id === policyId)
+      : policiesPT.find(p => p.id === policyId);
+    
+    if (!policy) return;
+    
+    // Create temporary element for PDF generation
+    const tempEl = document.createElement('div');
+    tempEl.id = 'temp-policy-pdf';
+    tempEl.innerHTML = `
+      <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="font-size: 24px; margin-bottom: 10px;">${policy.title}</h1>
+        <h2 style="font-size: 18px; color: #666; margin-bottom: 20px;">${policy.category}</h2>
+        <p style="margin-bottom: 20px;">${policy.description}</p>
+        <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+          <p><strong>Status:</strong> ${policy.status}</p>
+          <p><strong>Effective Date:</strong> ${policy.effectiveDate}</p>
+          <p><strong>Review Date:</strong> ${policy.reviewDate}</p>
+          <p><strong>Framework:</strong> ${policy.framework}</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(tempEl);
+    
+    // Download as PDF
+    downloadAsPdf('temp-policy-pdf', `Policy-${policyId}.pdf`, toast);
+    
+    // Remove temporary element
+    setTimeout(() => {
+      document.body.removeChild(tempEl);
+    }, 1000);
     
     toast({
       title: t('policy.download.success'),
       description: `${policyId} ${t('policy.download.description.success')}`,
     });
     setPolicyToDownload(null);
+  };
+  
+  const handleSharePolicy = (policy: any) => {
+    setPolicyToShare(policy);
+    setShareDialogOpen(true);
   };
 
   if (filteredPolicies.length === 0) {
@@ -240,6 +274,18 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
               }}>
                 <Eye className="h-4 w-4 mr-1" /> {t('policy.view')}
               </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSharePolicy(policy);
+                }}
+              >
+                <FileText className="h-4 w-4 mr-1" /> {t('policy.share')}
+              </Button>
+              
               <Dialog open={policyToDownload === policy.id} onOpenChange={(open) => {
                 if (!open) setPolicyToDownload(null);
               }}>
@@ -269,20 +315,17 @@ export const PolicyList = ({ searchQuery }: PolicyListProps) => {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleViewPolicy(policy.id);
-                }}
-              >
-                <ArrowUpRight className="h-4 w-4" />
-              </Button>
             </div>
           </CardFooter>
         </Card>
       ))}
+      
+      <ShareEmailDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={policyToShare?.title || ""}
+        contentType="Policy"
+      />
     </div>
   );
 };

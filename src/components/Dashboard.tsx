@@ -2,14 +2,14 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataCard } from "@/components/DataCard";
 import { Button } from "@/components/ui/button";
-import { Search, Download, Filter, RefreshCw } from "lucide-react";
+import { Search, Download, Filter, RefreshCw, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ViewToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { downloadAsPdf } from "@/utils/shareUtils";
+import { ShareEmailDialog } from "@/components/ShareEmailDialog";
 import {
   BarChart,
   Bar,
@@ -37,6 +37,7 @@ export const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   
   const innovationMetrics = [
     {
@@ -159,68 +160,12 @@ export const Dashboard = () => {
     navigate(`/metrics/${metricId}`);
   };
 
-  const exportToPdf = async () => {
-    toast({
-      title: "Preparing PDF export...",
-      description: "This may take a few seconds.",
-    });
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const dashboardElement = document.getElementById('dashboard-content');
-      if (!dashboardElement) {
-        toast({
-          title: "Export failed",
-          description: "Could not find dashboard content to export.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const canvas = await html2canvas(dashboardElement, {
-        scale: 1.5,
-        useCORS: true,
-        logging: false,
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
-      pdf.setFontSize(16);
-      pdf.text('ANI Innovation Analytics Dashboard Report', 20, 15);
-      
-      pdf.setFontSize(10);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 22);
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, (pdfHeight - 30) / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      
-      pdf.addImage(imgData, 'PNG', imgX, 30, imgWidth * ratio, imgHeight * ratio);
-      
-      pdf.save('ANI_Innovation_Dashboard.pdf');
-      
-      toast({
-        title: "Export successful",
-        description: "Your dashboard has been exported as a PDF.",
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        title: "Export failed",
-        description: "There was an error generating the PDF. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const exportToPdf = () => {
+    downloadAsPdf('dashboard-content', 'ANI_Innovation_Dashboard.pdf', toast);
+  };
+  
+  const handleShare = () => {
+    setShareDialogOpen(true);
   };
 
   return (
@@ -244,6 +189,9 @@ export const Dashboard = () => {
           </Button>
           <Button variant="outline" size="sm" onClick={exportToPdf}>
             <Download className="h-4 w-4 mr-1" /> Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleShare}>
+            <Mail className="h-4 w-4 mr-1" /> Share
           </Button>
           <Button variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-1" /> Refresh
@@ -411,6 +359,13 @@ export const Dashboard = () => {
           <RegionalAnalytics />
         </TabsContent>
       </Tabs>
+      
+      <ShareEmailDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title="ANI Innovation Dashboard"
+        contentType="Dashboard"
+      />
     </div>
   );
 };

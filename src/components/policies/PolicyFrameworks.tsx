@@ -6,11 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
+import { downloadAsPdf } from "@/utils/shareUtils";
+import { ShareEmailDialog } from "@/components/ShareEmailDialog";
 
 export const PolicyFrameworks = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedFramework, setSelectedFramework] = useState<string | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [frameworkToShare, setFrameworkToShare] = useState<any>(null);
   
   const frameworks = [
     {
@@ -45,19 +49,43 @@ export const PolicyFrameworks = () => {
   };
 
   const handleDownloadFramework = (frameworkId: string) => {
-    // Simulate PDF download
-    const link = document.createElement('a');
-    link.href = '/sample-framework.pdf'; // In real app, this would be a dynamic URL
-    link.download = `Framework-${frameworkId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Find the framework details
+    const framework = frameworks.find(f => f.id === frameworkId);
+    if (!framework) return;
     
-    toast({
-      title: "Framework PDF downloaded",
-      description: `Framework documentation has been downloaded successfully.`,
-    });
+    // Create a temporary element for PDF generation
+    const tempEl = document.createElement('div');
+    tempEl.id = 'temp-framework-pdf';
+    tempEl.innerHTML = `
+      <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="font-size: 24px; margin-bottom: 10px;">${framework.title}</h1>
+        <h2 style="font-size: 18px; color: #666; margin-bottom: 20px;">${framework.type}</h2>
+        <p style="margin-bottom: 20px;">${framework.description}</p>
+        <h3 style="font-size: 16px; margin-bottom: 10px;">Key Focus Areas:</h3>
+        <ul>
+          ${framework.keyAreas.map(area => `<li>${area}</li>`).join('')}
+        </ul>
+        <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+          <p>Total Funding: ${framework.funds}</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(tempEl);
+    
+    // Download as PDF
+    downloadAsPdf('temp-framework-pdf', `Framework-${frameworkId}.pdf`, toast);
+    
+    // Remove temporary element
+    setTimeout(() => {
+      document.body.removeChild(tempEl);
+    }, 1000);
+    
     setSelectedFramework(null);
+  };
+  
+  const handleShareFramework = (framework: any) => {
+    setFrameworkToShare(framework);
+    setShareDialogOpen(true);
   };
 
   return (
@@ -99,33 +127,44 @@ export const PolicyFrameworks = () => {
                 <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
               </Button>
               
-              <Dialog open={selectedFramework === framework.id} onOpenChange={(open) => {
-                if (!open) setSelectedFramework(null);
-              }}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setSelectedFramework(framework.id)}
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Download Framework
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Download Framework Documentation</DialogTitle>
-                    <DialogDescription>This will download the PDF document for this framework.</DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <p>Are you sure you want to download the documentation for {frameworks.find(f => f.id === selectedFramework)?.title}?</p>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setSelectedFramework(null)}>Cancel</Button>
-                    <Button onClick={() => handleDownloadFramework(selectedFramework || '')}>Download</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleShareFramework(framework)}
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Share
+                </Button>
+                
+                <Dialog open={selectedFramework === framework.id} onOpenChange={(open) => {
+                  if (!open) setSelectedFramework(null);
+                }}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setSelectedFramework(framework.id)}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download Framework
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Download Framework Documentation</DialogTitle>
+                      <DialogDescription>This will download the PDF document for this framework.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <p>Are you sure you want to download the documentation for {frameworks.find(f => f.id === selectedFramework)?.title}?</p>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setSelectedFramework(null)}>Cancel</Button>
+                      <Button onClick={() => handleDownloadFramework(selectedFramework || '')}>Download</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </CardFooter>
         </Card>
@@ -203,6 +242,13 @@ export const PolicyFrameworks = () => {
           </Button>
         </CardFooter>
       </Card>
+      
+      <ShareEmailDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={frameworkToShare?.title || "Framework"}
+        contentType="Framework"
+      />
     </div>
   );
 };

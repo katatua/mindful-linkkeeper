@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,15 +5,7 @@ import { Calendar, Eye, Share2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { jsPDF } from "jspdf";
 import { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { ShareEmailDialog } from "@/components/ShareEmailDialog";
 
 interface ReportsListProps {
   searchQuery: string;
@@ -23,10 +14,8 @@ interface ReportsListProps {
 export const ReportsList = ({ searchQuery }: ReportsListProps) => {
   const { toast } = useToast();
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [shareEmail, setShareEmail] = useState('');
   const [currentReport, setCurrentReport] = useState<any>(null);
   
-  // Sample data for reports
   const reports = [
     {
       id: "REP-2023-001",
@@ -166,25 +155,6 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
     setShareDialogOpen(true);
   };
 
-  const handleShareSubmit = () => {
-    if (!shareEmail || !currentReport) {
-      toast({
-        title: "Error",
-        description: "Please enter an email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    toast({
-      title: "Report shared",
-      description: `"${currentReport.title}" has been shared with ${shareEmail}`,
-    });
-    setShareDialogOpen(false);
-    setShareEmail('');
-    setCurrentReport(null);
-  };
-
   if (filteredReports.length === 0) {
     return (
       <Card>
@@ -236,33 +206,12 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
         </Card>
       ))}
 
-      {/* Share Dialog */}
-      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Share Report</DialogTitle>
-            <DialogDescription>
-              Share this report with team members via email.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <label htmlFor="email" className="text-sm font-medium mb-2 block">
-              Email Address
-            </label>
-            <Input
-              id="email"
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              placeholder="colleague@example.com"
-              type="email"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShareDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleShareSubmit}>Share</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ShareEmailDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={currentReport?.title || ""}
+        contentType="Report"
+      />
     </div>
   );
 };

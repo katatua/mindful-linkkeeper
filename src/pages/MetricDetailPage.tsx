@@ -1,15 +1,18 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Download, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { downloadAsPdf } from '@/utils/shareUtils';
+import { ShareEmailDialog } from '@/components/ShareEmailDialog';
 
 const MetricDetailPage: React.FC = () => {
   const { metricId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   
   // Mock data for metrics
   const metricDetails = {
@@ -38,20 +41,11 @@ const MetricDetailPage: React.FC = () => {
   };
 
   const handleDownload = () => {
-    toast({
-      title: "Download started",
-      description: "Metric details are being downloaded as PDF"
-    });
-    // In a real application, this would generate and download a PDF
+    downloadAsPdf('metric-detail-content', `Metric-${metricId}.pdf`, toast);
   };
 
   const handleShare = () => {
-    toast({
-      title: "Share link copied",
-      description: "Link to this metric has been copied to clipboard"
-    });
-    // Simulate copying to clipboard
-    navigator.clipboard.writeText(window.location.href);
+    setShareDialogOpen(true);
   };
 
   return (
@@ -74,60 +68,69 @@ const MetricDetailPage: React.FC = () => {
         </div>
       </div>
       
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-2xl">{metricDetails.title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 mb-6">{metricDetails.description}</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-gray-50 p-4 rounded-md">
-              <p className="text-sm text-gray-500">Current Value</p>
-              <p className="text-3xl font-bold text-blue-600">{metricDetails.currentValue}</p>
+      <div id="metric-detail-content">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-2xl">{metricDetails.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-6">{metricDetails.description}</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-sm text-gray-500">Current Value</p>
+                <p className="text-3xl font-bold text-blue-600">{metricDetails.currentValue}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-sm text-gray-500">Previous Value</p>
+                <p className="text-3xl font-bold">{metricDetails.previousValue}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-sm text-gray-500">Change</p>
+                <p className={`text-3xl font-bold ${metricDetails.trend === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
+                  {metricDetails.changePercentage}
+                </p>
+              </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <p className="text-sm text-gray-500">Previous Value</p>
-              <p className="text-3xl font-bold">{metricDetails.previousValue}</p>
+            
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-3">Key Insights</h3>
+              <ul className="list-disc pl-5 space-y-2">
+                {metricDetails.insights.map((insight, index) => (
+                  <li key={index} className="text-gray-700">{insight}</li>
+                ))}
+              </ul>
             </div>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <p className="text-sm text-gray-500">Change</p>
-              <p className={`text-3xl font-bold ${metricDetails.trend === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
-                {metricDetails.changePercentage}
-              </p>
+            
+            <div>
+              <h3 className="text-lg font-medium mb-3">Recommendations</h3>
+              <ul className="list-disc pl-5 space-y-2">
+                {metricDetails.recommendations.map((recommendation, index) => (
+                  <li key={index} className="text-gray-700">{recommendation}</li>
+                ))}
+              </ul>
             </div>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-3">Key Insights</h3>
-            <ul className="list-disc pl-5 space-y-2">
-              {metricDetails.insights.map((insight, index) => (
-                <li key={index} className="text-gray-700">{insight}</li>
-              ))}
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-medium mb-3">Recommendations</h3>
-            <ul className="list-disc pl-5 space-y-2">
-              {metricDetails.recommendations.map((recommendation, index) => (
-                <li key={index} className="text-gray-700">{recommendation}</li>
-              ))}
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Historical Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80 flex items-center justify-center bg-gray-50 rounded-md">
+              <p className="text-gray-500">Historical trend chart would appear here</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Historical Trend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center bg-gray-50 rounded-md">
-            <p className="text-gray-500">Historical trend chart would appear here</p>
-          </div>
-        </CardContent>
-      </Card>
+      <ShareEmailDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={metricDetails.title}
+        contentType="Metric"
+      />
     </div>
   );
 };
