@@ -56,3 +56,17 @@ export const isMetricsQuery = (query: string): boolean => {
     lowerQuery.includes("collaborative")
   );
 };
+
+// Function to check if a query is a write operation (INSERT, UPDATE, DELETE)
+export const isSqlWriteOperation = (query: string): boolean => {
+  const lowerQuery = query.toLowerCase().trim();
+  
+  return (
+    lowerQuery.startsWith("insert ") ||
+    lowerQuery.startsWith("update ") ||
+    lowerQuery.startsWith("delete ") ||
+    lowerQuery.includes("insert into") ||
+    lowerQuery.includes("update ") ||
+    lowerQuery.includes("delete from")
+  );
+};

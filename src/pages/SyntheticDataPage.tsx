@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { FileCode, Download, RefreshCw, Database, Info, BarChart, FileText, Briefcase, Award } from "lucide-react";
+import { FileCode, Download, RefreshCw, Database, Info, BarChart, FileText, Briefcase, Award, Play, AlertCircle } from "lucide-react";
 import { generateResponse } from "@/utils/aiUtils";
+import { executeSqlWrite } from "@/utils/queryExecution";
 import { Header } from "@/components/Header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const SyntheticDataPage = () => {
   const [dataType, setDataType] = useState("funding");
@@ -21,6 +24,12 @@ const SyntheticDataPage = () => {
   const [generatingData, setGeneratingData] = useState(false);
   const [generatedData, setGeneratedData] = useState("");
   const [includeSourceInfo, setIncludeSourceInfo] = useState(false);
+  const [executingSql, setExecutingSql] = useState(false);
+  const [executionResult, setExecutionResult] = useState<{
+    success: boolean;
+    message: string;
+    affectedRows?: number;
+  } | null>(null);
   const [parameters, setParameters] = useState<Record<string, any>>({
     funding: {
       minBudget: 50000,
@@ -105,6 +114,7 @@ const SyntheticDataPage = () => {
 
   const generateSyntheticData = async () => {
     setGeneratingData(true);
+    setExecutionResult(null);
     
     try {
       const currentParams = parameters[dataType];
@@ -130,6 +140,7 @@ const SyntheticDataPage = () => {
       
       prompt += `\nThe SQL should be valid for the '${tableName}' table. Only return valid SQL INSERT statements.`;
       
+      // Add table structure information based on data type
       if (dataType === 'funding') {
         prompt += `\n\nThe ani_funding_programs table has the following columns: id (UUID), name (text), description (text), total_budget (numeric), start_date (date), end_date (date), application_deadline (date), next_call_date (date), funding_type (text), sector_focus (text array), eligibility_criteria (text), application_process (text), review_time_days (integer), success_rate (numeric)`;
       } else if (dataType === 'projects') {
@@ -173,6 +184,45 @@ const SyntheticDataPage = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const executeSQL = async () => {
+    if (!generatedData) return;
+    
+    setExecutingSql(true);
+    setExecutionResult(null);
+    
+    try {
+      const result = await executeSqlWrite(generatedData);
+      setExecutionResult(result);
+      
+      if (result.success) {
+        toast({
+          title: "SQL Executado com Sucesso",
+          description: `Foram inseridos ${result.affectedRows || 0} registos na base de dados.`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Falha na Execução SQL",
+          description: result.message || "Ocorreu um erro ao executar o SQL na base de dados."
+        });
+      }
+    } catch (error) {
+      console.error("Error executing SQL:", error);
+      setExecutionResult({
+        success: false,
+        message: `Erro: ${error instanceof Error ? error.message : String(error)}`
+      });
+      
+      toast({
+        variant: "destructive",
+        title: "Falha na Execução SQL",
+        description: "Ocorreu um erro ao executar o SQL na base de dados."
+      });
+    } finally {
+      setExecutingSql(false);
+    }
   };
 
   return (
@@ -621,25 +671,88 @@ const SyntheticDataPage = () => {
                   <FileCode className="h-5 w-5" />
                   SQL Gerado
                 </span>
-                {generatedData && (
-                  <Button variant="outline" size="sm" onClick={downloadSQL}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download SQL
-                  </Button>
-                )}
+                <div className="flex space-x-2">
+                  {generatedData && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={downloadSQL}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download SQL
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={executeSQL} 
+                        disabled={executingSql || !generatedData}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {executingSql ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Executando...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Executar SQL
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </CardTitle>
               <CardDescription>
                 Comandos SQL para geração de dados sintéticos
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow flex flex-col space-y-4">
+              {executionResult && (
+                <Alert variant={executionResult.success ? "default" : "destructive"}>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>
+                    {executionResult.success 
+                      ? "SQL executado com sucesso" 
+                      : "Erro ao executar SQL"}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {executionResult.message}
+                    {executionResult.success && executionResult.affectedRows !== undefined && (
+                      <p className="mt-1">Registos afetados: {executionResult.affectedRows}</p>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <Textarea
                 value={generatedData}
                 placeholder="O SQL gerado aparecerá aqui após clicar no botão 'Gerar Dados Sintéticos SQL'"
-                className="h-[500px] font-mono text-sm"
+                className="h-[500px] font-mono text-sm flex-grow"
                 readOnly
               />
             </CardContent>
+            
+            {generatedData && (
+              <CardFooter className="border-t pt-4">
+                <Button 
+                  className="w-full" 
+                  onClick={executeSQL}
+                  disabled={executingSql}
+                  variant="default"
+                >
+                  {executingSql ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                      Executando SQL...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-5 w-5 mr-2" />
+                      Executar SQL na Base de Dados
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            )}
           </Card>
         </div>
       </div>

@@ -166,3 +166,43 @@ export const executeQuery = async (
     };
   }
 };
+
+/**
+ * Executes a SQL write operation (INSERT, UPDATE, DELETE)
+ * This is used for executing SQL statements that modify data
+ */
+export const executeSqlWrite = async (
+  sqlStatements: string
+): Promise<{ success: boolean; message: string; affectedRows?: number }> => {
+  try {
+    console.log("Executing SQL write operation:", sqlStatements);
+    
+    // Call the raw_execute_sql edge function to perform the write operation
+    const { data, error } = await supabase.functions.invoke('execute-sql', {
+      body: { 
+        sqlStatements: sqlStatements,
+        operation: 'write'
+      }
+    });
+    
+    if (error) {
+      console.error("Error executing SQL write operation:", error);
+      return { 
+        success: false, 
+        message: `Failed to execute SQL: ${error.message}` 
+      };
+    }
+    
+    return { 
+      success: true, 
+      message: data.message || "SQL executed successfully",
+      affectedRows: data.affectedRows 
+    };
+  } catch (error) {
+    console.error("Error in SQL write execution:", error);
+    return { 
+      success: false, 
+      message: `Error: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+};
