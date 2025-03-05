@@ -37,6 +37,13 @@ serve(async (req) => {
       );
     }
 
+    // Log database query detection
+    if (isDatabaseQuery) {
+      console.log("Detected database query in message:", userMessage);
+    } else {
+      console.log("Not a database query, using general prompt");
+    }
+
     // Prepare chat history for Gemini
     const messages = chatHistory.map((msg: any) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
@@ -58,7 +65,13 @@ serve(async (req) => {
     if (sqlMatch && sqlMatch[1]) {
       const sqlQuery = sqlMatch[1].trim();
       console.log("Extracted SQL query from assistant response:", sqlQuery);
-      assistantResponse = await handleDatabaseQuery(sqlQuery, assistantResponse);
+      
+      // Execute the query and get the results
+      const queryResults = await handleDatabaseQuery(sqlQuery, assistantResponse);
+      
+      // Replace the SQL section with the query results
+      assistantResponse = assistantResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, 
+        "Aqui estão os resultados da consulta ao banco de dados:\n\n" + queryResults);
     }
     
     return new Response(
