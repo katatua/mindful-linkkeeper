@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, LogIn, User, HelpCircle, Languages } from "lucide-react";
+import { Menu, LogOut, LogIn, User, HelpCircle, Languages, Database } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -137,6 +137,14 @@ export const HamburgerMenu = () => {
               onClick={() => handleNavigation("/add-category")}
             >
               {t('nav.category')}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => handleNavigation("/database-info")}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Database Info
             </Button>
             
             <div className="border-t pt-3 mt-3">
