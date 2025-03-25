@@ -64,7 +64,7 @@ serve(async (req) => {
       parts: [{ text: userMessage }]
     });
 
-    // Generate response using Gemini API
+    // Generate response using Gemini API with the new model
     let assistantResponse = await generateGeminiResponse(messages, isDatabaseQuery || isRegionalInvestmentQuery);
     
     // Check if response contains SQL query and execute if needed
@@ -80,6 +80,12 @@ serve(async (req) => {
       // Replace the SQL section with the query results
       assistantResponse = assistantResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, 
         queryResults);
+    }
+    
+    // Add model information to the response
+    if (!assistantResponse.includes("gemini-2.0-pro-exp-02-05")) {
+      const modelInfo = "\n\n---\n*Powered by gemini-2.0-pro-exp-02-05*";
+      assistantResponse += modelInfo;
     }
     
     return new Response(

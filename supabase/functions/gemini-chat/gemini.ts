@@ -15,6 +15,9 @@ export async function generateGeminiResponse(messages: any[], isDatabaseQuery: b
       parts: [{ text: systemPrompt }]
     });
     
+    // Use the newer gemini-2.0-pro-exp-02-05 model
+    const MODEL_NAME = "gemini-2.0-pro-exp-02-05";
+    
     // Prepare the request body for Gemini API
     const requestBody = {
       contents: geminiMessages,
@@ -44,10 +47,10 @@ export async function generateGeminiResponse(messages: any[], isDatabaseQuery: b
       ]
     };
     
-    console.log("Calling Gemini API...");
+    console.log(`Calling Gemini API with model: ${MODEL_NAME}...`);
     
-    // Call the Gemini API
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    // Call the Gemini API with the specified model
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

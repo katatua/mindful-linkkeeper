@@ -47,7 +47,7 @@ let chatHistory: any[] = [];
 // Generate an AI response using Gemini via Supabase Edge Function
 export const generateResponse = async (userInput: string): Promise<string> => {
   try {
-    console.log('Calling Gemini API with message:', userInput);
+    console.log('Calling Gemini 2.0 Pro Experimental with message:', userInput);
     
     // Add user message to chat history (limited to last 20 messages for context)
     chatHistory.push({

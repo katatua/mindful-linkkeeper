@@ -43,8 +43,8 @@ export const useChat = (language: string) => {
         
         // Mensagem inicial sobre o upload
         const messageContent = language === 'en'
-          ? `I've uploaded a PDF file: [${file.name}](${fileUrl}). Starting extraction...`
-          : `Carreguei um ficheiro PDF: [${file.name}](${fileUrl}). Iniciando extração...`;
+          ? `I've uploaded a PDF file: [${file.name}](${fileUrl}). Starting extraction... I'm using the Gemini 2.0 Pro Experimental model for analysis.`
+          : `Carreguei um ficheiro PDF: [${file.name}](${fileUrl}). Iniciando extração... Estou usando o modelo Gemini 2.0 Pro Experimental para análise.`;
         
         const message = await chatCore.handleSendCustomMessage(messageContent);
         
@@ -58,8 +58,8 @@ export const useChat = (language: string) => {
           
           // Informar que o processamento começou
           const processingMessage = language === 'en'
-            ? "Processing PDF... This may take a moment."
-            : "Processando PDF... Isso pode levar um momento.";
+            ? "Processing PDF with Gemini 2.0 Pro Experimental... This may take a moment."
+            : "Processando PDF com Gemini 2.0 Pro Experimental... Isso pode levar um momento.";
           
           await chatCore.handleSendCustomMessage(processingMessage, true);
           
@@ -76,8 +76,8 @@ export const useChat = (language: string) => {
           // Criar uma mensagem rica com os resultados da extração e um link para o relatório na página de relatórios
           const reportPath = `/reports?reportId=${extractionData.report.id}`;
           const successMessage = language === 'en'
-            ? `✅ PDF processed successfully!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} numerical data points extracted\n- ${extractionData.extraction.extracted_images.length} images identified\n\n**Report created:** [${extractionData.report.report_title}](${reportPath})`
-            : `✅ PDF processado com sucesso!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} dados numéricos extraídos\n- ${extractionData.extraction.extracted_images.length} imagens identificadas\n\n**Relatório criado:** [${extractionData.report.report_title}](${reportPath})`;
+            ? `✅ PDF processed successfully with Gemini 2.0 Pro Experimental!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} numerical data points extracted\n- ${extractionData.extraction.extracted_images.length} images identified\n\n**Report created:** [${extractionData.report.report_title}](${reportPath})`
+            : `✅ PDF processado com sucesso usando Gemini 2.0 Pro Experimental!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} dados numéricos extraídos\n- ${extractionData.extraction.extracted_images.length} imagens identificadas\n\n**Relatório criado:** [${extractionData.report.report_title}](${reportPath})`;
           
           await chatCore.handleSendCustomMessage(successMessage);
           
