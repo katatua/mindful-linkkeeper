@@ -4,7 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Database, AlertTriangle, Check, RefreshCw, Table, Server, BookOpen, School, User, Link, Network } from "lucide-react";
+import { 
+  Loader2, 
+  Database, 
+  AlertTriangle, 
+  Check, 
+  RefreshCw, 
+  Table, 
+  Server, 
+  BookOpen, 
+  School, 
+  User, 
+  Link, 
+  Network,
+  BarChart as BarChartIcon,
+  Briefcase
+} from "lucide-react";
 import { toast } from "sonner";
 import { DATABASE_TABLES, populateDatabase, checkDatabaseStatus } from "@/utils/databaseUtils";
 
@@ -90,7 +105,7 @@ const DatabaseManagementPage = () => {
   
   // Helper to get table icon
   const getTableIcon = (table: string) => {
-    if (table.includes('metrics')) return <BarChart className="h-5 w-5 text-blue-500" />;
+    if (table.includes('metrics')) return <BarChartIcon className="h-5 w-5 text-blue-500" />;
     if (table.includes('projects')) return <Briefcase className="h-5 w-5 text-indigo-500" />;
     if (table.includes('funding')) return <Database className="h-5 w-5 text-green-500" />;
     if (table.includes('patent')) return <BookOpen className="h-5 w-5 text-amber-500" />;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ProjectData, ProjectMetricsData } from "@/types/projectTypes";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,17 +48,29 @@ export const useProjectData = () => {
         
         if (projectsError) throw projectsError;
         
-        const formattedProjects: ProjectData[] = projectsData.map(project => ({
-          id: project.id,
-          title: project.title,
-          description: project.description || "",
-          status: project.status || "Pending",
-          progress: getProjectProgress(project.start_date, project.end_date, project.status),
-          deadline: project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "TBD",
-          team: project.ani_institutions?.institution_name || project.organization || "Unknown",
-          budget: formatCurrency(project.funding_amount || 0),
-          category: project.sector || "Other",
-        }));
+        const formattedProjects: ProjectData[] = projectsData.map(project => {
+          // Map the database status to one of the allowed ProjectData status values
+          let mappedStatus: 'Active' | 'Completed' | 'Pending' = 'Pending';
+          
+          if (project.status) {
+            const status = project.status.toLowerCase();
+            if (status === 'active') mappedStatus = 'Active';
+            else if (status === 'completed') mappedStatus = 'Completed';
+            else mappedStatus = 'Pending';
+          }
+          
+          return {
+            id: project.id,
+            title: project.title,
+            description: project.description || "",
+            status: mappedStatus,
+            progress: getProjectProgress(project.start_date, project.end_date, project.status),
+            deadline: project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "TBD",
+            team: project.ani_institutions?.institution_name || project.organization || "Unknown",
+            budget: formatCurrency(project.funding_amount || 0),
+            category: project.sector || "Other",
+          };
+        });
         
         setProjects(formattedProjects);
         
