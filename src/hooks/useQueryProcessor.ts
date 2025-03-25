@@ -85,7 +85,7 @@ export const useQueryProcessor = () => {
   /**
    * Process a question using the dynamic query service
    */
-  const processQuestion = async (question: string, language: 'en' | 'pt'): Promise<QueryResult> => {
+  const processQuestion = async (question: string, language: 'en' | 'pt' = 'en'): Promise<QueryResult> => {
     try {
       setIsProcessing(true);
       
@@ -117,7 +117,7 @@ export const useQueryProcessor = () => {
     lastResult,
     executeQuery: executeQueryDirectly,
     processNaturalLanguageQuery,
-    // Add the missing functions that are being used in useChatCore.ts
+    // Also expose these functions that are being used in useChatCore.ts
     isMetricsQuery,
     generateSqlFromNaturalLanguage,
     processQuestion

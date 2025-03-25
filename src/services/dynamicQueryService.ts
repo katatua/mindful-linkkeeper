@@ -26,7 +26,7 @@ export const dynamicQueryService = {
     try {
       console.log('Generating SQL for question:', request.question);
       
-      // Generate SQL using Gemini model which is better at code generation
+      // Generate SQL using the edge function which uses Claude or GPT
       const { data, error } = await supabase.functions.invoke('generate-sql', {
         body: { 
           question: request.question,
@@ -99,8 +99,7 @@ export const dynamicQueryService = {
     try {
       console.log("Processing question:", question);
       
-      // Always assume it's a database query to fix the classification issue
-      // This solves the current bug and ensures valid queries are processed
+      // Always treat the input as a database query
       const isDbQuery = true;
       
       if (!isDbQuery) {
@@ -110,7 +109,7 @@ export const dynamicQueryService = {
         };
       }
       
-      // Generate SQL from the natural language question
+      // Generate SQL from the natural language question using AI
       const sqlQuery = await dynamicQueryService.generateSqlFromQuestion({
         question,
         language
@@ -187,25 +186,8 @@ export const dynamicQueryService = {
         }
       }
       
-      // Fall back to the existing classification logic as a secondary check
-      const data: ClassificationRequest = {
-        title: question,
-        summary: question
-      };
-      
-      // This uses the existing classify-document edge function 
-      const classification = await supabase.functions.invoke('classify-document', {
-        body: data
-      });
-      
-      // Consider database related classifications
-      const dbRelatedClassifications = ['database', 'metrics', 'statistics', 'data', 'query'];
-      const result = classification?.data?.classification || '';
-      
-      const isDbRelated = dbRelatedClassifications.some(cls => result.toLowerCase().includes(cls));
-      
-      // Default to true for ambiguous cases, to ensure queries are attempted
-      return isDbRelated || true;
+      // For safety, always return true to attempt the database query
+      return true;
     } catch (error) {
       console.error("Error classifying question:", error);
       // Default to true to attempt the query anyway

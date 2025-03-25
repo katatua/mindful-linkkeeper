@@ -18,7 +18,8 @@ export const isMetricsQuery = async (question: string): Promise<boolean> => {
     'annual', 'quarterly', 'monthly', 'yearly',
     'increase', 'decrease', 'compare', 'comparison',
     'project', 'program', 'patent', 'innovation',
-    'performance', 'effectiveness', 'impact', 'outcome'
+    'performance', 'effectiveness', 'impact', 'outcome',
+    'ani', 'database', 'data', 'portugal', 'show', 'find', 'list'
   ];
   
   // Check if the question contains metrics-related keywords
