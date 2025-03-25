@@ -26,7 +26,7 @@ export const useChat = (language: string) => {
       const fileName = `${Date.now()}-${file.name}`;
       
       // Upload file to Supabase Storage with better error handling
-      const { data, error } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from('chat-files')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -34,34 +34,27 @@ export const useChat = (language: string) => {
           contentType: file.type
         });
       
-      if (error) {
-        console.error("Storage upload error:", error);
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
         
         // Handle specific storage errors
-        if (error.message.includes('JWT')) {
+        if (uploadError.message.includes('JWT')) {
           throw new Error(language === 'en' 
             ? "Authentication error. Please refresh the page and try again." 
             : "Erro de autenticação. Por favor, atualize a página e tente novamente.");
-        } else if (error.message.includes('network')) {
+        } else if (uploadError.message.includes('network')) {
           throw new Error(language === 'en' 
             ? "Network connection error. Please check your internet connection and try again." 
             : "Erro de conexão de rede. Por favor, verifique sua conexão com a internet e tente novamente.");
         } else {
-          throw new Error(`Upload error: ${error.message}`);
+          throw new Error(`Upload error: ${uploadError.message}`);
         }
       }
       
       // Get public URL for the file with error handling
-      const { data: urlData, error: urlError } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('chat-files')
         .getPublicUrl(fileName);
-      
-      if (urlError) {
-        console.error("Error getting public URL:", urlError);
-        throw new Error(language === 'en' 
-          ? "Error getting file URL. Please try again." 
-          : "Erro ao obter URL do arquivo. Por favor, tente novamente.");
-      }
       
       // Add system message with file link
       if (urlData) {
@@ -95,12 +88,11 @@ export const useChat = (language: string) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
           
-          // Call Supabase Edge Function with abort controller
+          // Call Supabase Edge Function without passing the signal to FunctionInvokeOptions
           const { data: extractionData, error: extractionError } = await supabase.functions.invoke(
             'pdf-extractor',
             {
-              body: { fileUrl, fileName: file.name },
-              signal: controller.signal
+              body: { fileUrl, fileName: file.name }
             }
           );
           
@@ -109,7 +101,7 @@ export const useChat = (language: string) => {
           if (extractionError) {
             console.error("PDF extraction error:", extractionError);
             
-            if (extractionError.message.includes('aborted')) {
+            if (controller.signal.aborted) {
               throw new Error(language === 'en' 
                 ? "Request timed out. The PDF processing took too long. Please try with a smaller file." 
                 : "A solicitação expirou. O processamento do PDF demorou muito. Por favor, tente com um arquivo menor.");

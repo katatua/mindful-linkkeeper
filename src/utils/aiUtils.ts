@@ -30,8 +30,7 @@ export const classifyDocument = async (data: ClassificationRequest): Promise<str
       const { data: responseData, error } = await supabase.functions.invoke<ClassificationResponse>(
         'classify-document',
         {
-          body: data,
-          signal: controller.signal
+          body: data
         }
       );
       
@@ -91,8 +90,7 @@ export const generateResponse = async (userInput: string): Promise<string> => {
         body: { 
           userMessage: userInput,
           chatHistory: chatHistory.slice(0, -1) // Send previous messages as context
-        },
-        signal: controller.signal
+        }
       });
       
       clearTimeout(timeoutId);
