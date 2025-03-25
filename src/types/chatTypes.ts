@@ -5,6 +5,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   visualizationData?: any[];
+  thinking?: string;
 }
 
 export interface SuggestionLink {
