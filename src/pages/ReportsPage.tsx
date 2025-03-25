@@ -25,7 +25,6 @@ const ReportsPage = () => {
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   
-  // Get reportId from URL query parameters
   const queryParams = new URLSearchParams(location.search);
   const reportId = queryParams.get('reportId');
   
@@ -52,13 +51,18 @@ const ReportsPage = () => {
         setLoadingReports(true);
         setLoadError(null);
         
+        console.log('Fetching PDF reports...');
         const { data, error } = await supabase
           .from('pdf_reports')
           .select('*')
           .order('created_at', { ascending: false });
           
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error fetching reports:', error);
+          throw error;
+        }
         
+        console.log('PDF reports fetched:', data);
         setPdfReports(data || []);
       } catch (err) {
         console.error('Error fetching PDF reports:', err);
@@ -174,11 +178,12 @@ const ReportsPage = () => {
   };
   
   const handlePDFReportClick = (reportId: string) => {
+    console.log('Opening report with ID:', reportId);
     navigate(`/reports?reportId=${reportId}`);
   };
 
-  // If reportId is present, show the detailed report view
   if (reportId) {
+    console.log('Showing detailed report view for ID:', reportId);
     return (
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
