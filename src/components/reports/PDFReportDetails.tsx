@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,12 +16,34 @@ interface PDFReportDetailsProps {
   reportId: string;
 }
 
+// Sample fallback data to use when connection fails
+const FALLBACK_REPORT = {
+  id: "offline-report",
+  report_title: "Sample Report (Offline Mode)",
+  created_at: new Date().toISOString(),
+  report_content: `# Sample Report Content
+
+This is sample content shown when the database connection is unavailable.
+The actual report will be displayed when connectivity is restored.
+
+## Key Points
+- Network connection issue detected
+- This is temporary placeholder content
+- Try refreshing when your connection improves`,
+  report_data: {
+    key_metrics: [
+      { type: "Info", value: "Offline", context: "connection status", unit: "" }
+    ]
+  }
+};
+
 export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [offlineMode, setOfflineMode] = useState(false);
   const { toast } = useToast();
   const { language } = useLanguage();
 
@@ -36,7 +59,7 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
           reject(new Error(language === 'en' 
             ? "Request timed out. Please try again." 
             : "A solicitação expirou. Por favor, tente novamente."));
-        }, 10000); // 10-second timeout
+        }, 15000); // Increased timeout to 15 seconds
       });
       
       const fetchPromise = supabase
@@ -61,6 +84,7 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
       
       console.log('Report details fetched:', data);
       setReport(data);
+      setOfflineMode(false);
       
       if (retryCount > 0) {
         setRetryCount(0);
@@ -85,6 +109,13 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
             : `Falha ao carregar detalhes do relatório: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
       
       setError(errorMessage);
+      
+      // If it's a network error, switch to offline mode with fallback data
+      if (isNetworkError && retryCount >= 2) {
+        console.log('Switching to offline mode with fallback data');
+        setOfflineMode(true);
+        setReport(FALLBACK_REPORT);
+      }
       
       toast({
         title: language === 'en' ? "Error loading report" : "Erro ao carregar relatório",
@@ -121,6 +152,7 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
 
   const handleManualRetry = () => {
     setRetryCount(0);
+    setOfflineMode(false);
     fetchReportDetails();
   };
 
@@ -201,7 +233,7 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
     );
   }
 
-  if (error) {
+  if (error && !offlineMode) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
@@ -236,6 +268,11 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle>{report.report_title}</CardTitle>
+          {offlineMode && (
+            <p className="text-xs text-amber-500 font-medium">
+              {language === 'en' ? "Offline Mode - Limited functionality" : "Modo Offline - Funcionalidade limitada"}
+            </p>
+          )}
           <p className="text-sm text-gray-500">
             {language === 'en' ? "Generated on: " : "Gerado em: "}
             {new Date(report.created_at).toLocaleString()}
@@ -247,7 +284,12 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
               <Download className="h-4 w-4 mr-2" />
               {language === 'en' ? "Download PDF" : "Baixar PDF"}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleShareReport}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleShareReport} 
+              disabled={offlineMode}
+            >
               <Share2 className="h-4 w-4 mr-2" />
               {language === 'en' ? "Share Report" : "Compartilhar"}
             </Button>
@@ -297,7 +339,7 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
                 )}
               </div>
               
-              {report.pdf_extraction && (
+              {!offlineMode && report.pdf_extraction && (
                 <>
                   <Separator />
                   
@@ -319,6 +361,20 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
                 </>
               )}
             </>
+          )}
+          
+          {offlineMode && (
+            <div className="mt-4 flex justify-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleManualRetry}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                {language === 'en' ? "Retry Connection" : "Tentar Reconexão"}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
