@@ -153,8 +153,9 @@ const SyntheticDataPage = () => {
         prompt += `\n\nUse this example structure for a new ani_institutions table: id (UUID), institution_name (text), type (text), region (text), specialization_areas (text array), founding_date (date), collaboration_count (integer), project_history (text array)`;
       }
       
-      const response = await generateResponse(prompt);
-      setGeneratedData(response);
+      const aiResponse = await generateResponse(prompt);
+      // Fix: Extract the response string from the AIResponse object
+      setGeneratedData(aiResponse.response);
       
       toast({
         title: "Dados Sintéticos Gerados",
