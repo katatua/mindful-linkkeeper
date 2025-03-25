@@ -1,4 +1,3 @@
-
 import { ANTHROPIC_API_KEY } from "./utils.ts";
 
 // Helper function to send chunk to the stream
@@ -18,7 +17,7 @@ export async function handleClaudeStream(
     // Format messages for Claude API
     const messages = formatMessages(chatHistory, userMessage);
     
-    // Prepare the request to Claude API
+    // Prepare the request to Claude API with extended thinking
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {

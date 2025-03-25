@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,6 +16,7 @@ export interface AIResponse {
   response: string;
   timestamp: Date;
   thinking?: string;
+  toString(): string;
 }
 
 // Function to classify documents via Supabase Edge Function
@@ -55,7 +55,7 @@ export const generateResponse = async (userInput: string, useModel: 'gemini' | '
       const { data, error } = await supabase.functions.invoke('claude-chat', {
         body: { 
           userMessage: userInput,
-          chatHistory: chatHistory.slice(0, -1), // Send previous messages as context
+          chatHistory: [], // Reset chat history for synthetic data generation
           thinkingEnabled: true
         }
       });
@@ -63,21 +63,17 @@ export const generateResponse = async (userInput: string, useModel: 'gemini' | '
       if (error) {
         console.error('Error calling Claude API:', error);
         return {
-          response: "Desculpe, encontrei um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.",
-          timestamp: new Date()
+          response: "Error generating response",
+          timestamp: new Date(),
+          toString() { return this.response; }
         };
       }
-      
-      // Add assistant response to chat history
-      chatHistory.push({
-        role: 'assistant',
-        content: data.response
-      });
       
       return {
         response: data.response,
         thinking: data.thinking,
-        timestamp: new Date()
+        timestamp: new Date(),
+        toString() { return this.response; }
       };
     } else {
       console.log('Calling Gemini 2.0 Pro Experimental with message:', userInput);
@@ -103,27 +99,24 @@ export const generateResponse = async (userInput: string, useModel: 'gemini' | '
       if (error) {
         console.error('Error calling Gemini API:', error);
         return {
-          response: "Desculpe, encontrei um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.",
-          timestamp: new Date()
+          response: "Error generating response",
+          timestamp: new Date(),
+          toString() { return this.response; }
         };
       }
       
-      // Add assistant response to chat history
-      chatHistory.push({
-        role: 'assistant',
-        content: data.response
-      });
-      
       return {
         response: data.response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        toString() { return this.response; }
       };
     }
   } catch (error) {
     console.error('Error generating AI response:', error);
     return {
-      response: "Ocorreu um erro ao gerar a resposta. Por favor, tente novamente mais tarde.",
-      timestamp: new Date()
+      response: "Unexpected error occurred",
+      timestamp: new Date(),
+      toString() { return this.response; }
     };
   }
 };
