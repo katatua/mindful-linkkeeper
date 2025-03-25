@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +12,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { PDFReportDetails } from "@/components/reports/PDFReportDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Badge } from "@/components/ui/badge";
 
 const ReportsPage = () => {
   const { toast } = useToast();
@@ -23,7 +23,6 @@ const ReportsPage = () => {
   const [pdfReports, setPdfReports] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
   
-  // Get reportId from URL query parameters
   const queryParams = new URLSearchParams(location.search);
   const reportId = queryParams.get('reportId');
   
@@ -169,7 +168,6 @@ const ReportsPage = () => {
     navigate(`/reports?reportId=${reportId}`);
   };
 
-  // If reportId is present, show the detailed report view
   if (reportId) {
     return (
       <div className="container mx-auto py-6 space-y-6">

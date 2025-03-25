@@ -19,9 +19,12 @@ import { DataVisualization } from "@/components/DataVisualization";
 import { useVisualization } from "@/hooks/useVisualization";
 import DatabaseQuery from "@/components/DatabaseQuery";
 import SyntheticDataPage from "./SyntheticDataPage";
+import { Button } from "@/components/ui/button";
+import { X, MessageCircle } from "lucide-react";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
@@ -44,13 +47,17 @@ const ANIPortal = () => {
   const handleCloseVisualization = () => {
     setShowVisualization(false);
   };
+  
+  const toggleAssistant = () => {
+    setShowAssistant(prev => !prev);
+  };
 
   return (
     <div className="h-screen flex flex-col">
       <Header />
       
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex-grow max-w-[calc(100%-36rem)] overflow-auto bg-gray-50">
+        <main className={`flex-grow ${showAssistant ? 'max-w-[calc(100%-36rem)]' : 'max-w-full'} overflow-auto bg-gray-50 transition-all duration-300`}>
           <Tabs defaultValue="dashboard" className="h-full">
             <div className="container mx-auto py-4 flex justify-between items-center">
               <TabsList>
@@ -64,8 +71,21 @@ const ANIPortal = () => {
                 <TabsTrigger value="synthetic">Dados Sintéticos</TabsTrigger>
               </TabsList>
               
-              <div className="md:hidden">
-                <HamburgerMenu />
+              <div className="flex items-center gap-2">
+                {!showAssistant && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1" 
+                    onClick={toggleAssistant}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span>{t('assistant.show')}</span>
+                  </Button>
+                )}
+                <div className="md:hidden">
+                  <HamburgerMenu />
+                </div>
               </div>
             </div>
             
@@ -112,16 +132,27 @@ const ANIPortal = () => {
           </Tabs>
         </main>
         
-        <div className="w-144 border-l flex flex-col bg-white">
-          <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-            <h3 className="font-medium flex items-center gap-2">
-              {t('assistant.title')}
-            </h3>
+        {showAssistant && (
+          <div className="w-144 border-l flex flex-col bg-white transition-all duration-300">
+            <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-medium flex items-center gap-2">
+                {t('assistant.title')}
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={toggleAssistant}
+                aria-label={language === 'en' ? 'Close assistant' : 'Fechar assistente'}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <AIAssistant />
+            </div>
           </div>
-          <div className="flex-1 overflow-hidden">
-            <AIAssistant />
-          </div>
-        </div>
+        )}
       </div>
       
       <Toaster />
