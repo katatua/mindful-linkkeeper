@@ -21,10 +21,14 @@ export const useChat = (language: string) => {
         .from('chat-files')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Storage upload error:", error);
+        throw new Error(`Upload error: ${error.message}`);
+      }
       
       // Obter a URL pública para o arquivo
       const { data: urlData } = supabase.storage
@@ -93,8 +97,8 @@ export const useChat = (language: string) => {
     } catch (error) {
       console.error('Error uploading file:', error);
       toast.error(language === 'en' 
-        ? "Error uploading file" 
-        : "Erro ao carregar o ficheiro");
+        ? `Error uploading file: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        : `Erro ao carregar o ficheiro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setIsUploading(false);
     }

@@ -55,13 +55,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
-    if (handleFileUpload) {
-      await handleFileUpload(file);
-    }
-    
-    // Limpar o input para permitir enviar o mesmo arquivo novamente
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    try {
+      if (handleFileUpload) {
+        await handleFileUpload(file);
+      }
+    } catch (error) {
+      console.error("Error in handleFileChange:", error);
+      toast.error(language === 'en'
+        ? `File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        : `Falha no upload do arquivo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      // Limpar o input para permitir enviar o mesmo arquivo novamente
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
