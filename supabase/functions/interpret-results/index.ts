@@ -18,47 +18,59 @@ serve(async (req) => {
   try {
     const { question, sqlQuery, results } = await req.json();
 
-    if (!results || !Array.isArray(results)) {
+    if (!results) {
       return new Response(
-        JSON.stringify({ error: "Results must be provided as an array" }),
+        JSON.stringify({ error: "Results data is required" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // If the results are empty, return a simple message
-    if (results.length === 0) {
-      return new Response(
-        JSON.stringify({ response: "I couldn't find any data matching your query." }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Convert results to a formatted string for the AI to summarize
+    let resultsText = '';
+    if (Array.isArray(results) && results.length > 0) {
+      // Create a readable representation of the results
+      const keys = Object.keys(results[0]);
+      resultsText = `Results (${results.length} rows):\n`;
+      
+      // Add a header row
+      resultsText += keys.join('\t') + '\n';
+      
+      // Add each row of data (limit to 50 rows to avoid token limits)
+      const limitedResults = results.slice(0, 50);
+      limitedResults.forEach(row => {
+        resultsText += keys.map(key => {
+          const value = row[key];
+          if (value === null) return 'NULL';
+          if (typeof value === 'object') return JSON.stringify(value);
+          return String(value);
+        }).join('\t') + '\n';
+      });
+      
+      if (results.length > 50) {
+        resultsText += `... and ${results.length - 50} more rows\n`;
+      }
+    } else {
+      resultsText = "No results returned from the query.";
     }
 
-    // Create a system prompt for interpreting the results
-    const systemPrompt = `You are an expert data analyst for the National Innovation Agency (ANI).
-    Your task is to explain SQL query results in natural language.
+    // System prompt for result interpretation
+    const systemPrompt = `You are an AI assistant for the National Innovation Agency (ANI) database. 
+    Your task is to interpret and explain SQL query results in natural language.
+    Given a question, the SQL query used, and the results returned, provide a clear, insightful explanation of the data.
     
-    Guidelines:
-    1. Provide a concise, clear explanation of what the data shows.
-    2. Highlight key insights, patterns, or trends in the data.
-    3. Mention specific numbers and metrics when relevant.
-    4. If the data spans multiple years, mention changes over time.
-    5. Keep explanations conversational but informative.
-    6. If the data is from a specific region or sector, mention this context.
-    7. Limit your response to 1-3 paragraphs at most.
-    8. Don't just list all values - synthesize and interpret the information.
-    9. If there are outliers or unusual patterns, point them out.`;
+    IMPORTANT GUIDELINES:
+    1. Be concise but comprehensive in your explanation.
+    2. Highlight key trends, patterns, or insights in the data.
+    3. Provide specific numbers from the results when relevant.
+    4. If the results contain values in Euros, specify the currency in your explanation.
+    5. Ensure your explanation directly answers the original question.
+    6. If relevant, mention any limitations in the data or results.
+    7. Use a friendly, professional tone appropriate for a government agency.
+    8. Never mention that you're an AI or refer to yourself at all.
+    9. When appropriate, describe the time period the data covers.`;
 
-    // Prepare the user prompt with the query and results
-    const userPrompt = `
-    Original question: ${question}
-    
-    SQL query executed: 
-    ${sqlQuery}
-    
-    Query results (${results.length} rows):
-    ${JSON.stringify(results, null, 2)}
-    
-    Please provide a natural language explanation of these results.`;
+    // User prompt combines the question, query, and results
+    const userPrompt = `Question: ${question || "What does this data show?"}\n\nSQL Query Used:\n${sqlQuery}\n\n${resultsText}\n\nPlease interpret these results.`;
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -68,13 +80,13 @@ serve(async (req) => {
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Using a smaller model for cost efficiency
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3,
-        max_tokens: 500
+        temperature: 0.5,
+        max_tokens: 1000
       })
     });
 
@@ -85,16 +97,21 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const explanation = data.choices[0].message.content.trim();
+    const interpretation = data.choices[0].message.content.trim();
+
+    console.log("Generated interpretation:", interpretation.substring(0, 100) + "...");
 
     return new Response(
-      JSON.stringify({ response: explanation }),
+      JSON.stringify({ response: interpretation }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error("Error interpreting results:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        response: "I'm sorry, but I couldn't generate an explanation for these results due to a technical issue."
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

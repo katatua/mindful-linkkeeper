@@ -136,18 +136,18 @@ serve(async (req) => {
 
   try {
     // Parse request
-    const { sqlStatements, operation } = await req.json();
+    const { sqlQuery, operation } = await req.json();
     
     // Validate input
-    if (!sqlStatements || typeof sqlStatements !== 'string') {
+    if (!sqlQuery || typeof sqlQuery !== 'string') {
       return new Response(
-        JSON.stringify({ error: "SQL statements must be provided as a string" }),
+        JSON.stringify({ error: "SQL query must be provided as a string" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
     // Clean the SQL statements from markdown formatting
-    const cleanedSql = cleanSqlFromMarkdown(sqlStatements);
+    const cleanedSql = cleanSqlFromMarkdown(sqlQuery);
     console.log("Cleaned SQL:", cleanedSql);
 
     if (operation === 'write') {
@@ -223,10 +223,26 @@ serve(async (req) => {
       );
     } 
     else {
-      // For other operations, return an error
+      // For query operations (SELECT)
+      console.log("Executing SQL query operation:", cleanedSql);
+      
+      // Execute the SQL query
+      const { data, error } = await supabase.rpc(
+        'execute_raw_query',
+        { sql_query: cleanedSql }
+      );
+      
+      if (error) {
+        console.error("Error executing SQL query:", error);
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: "Unsupported operation type" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        JSON.stringify({ result: data }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   } catch (error) {
