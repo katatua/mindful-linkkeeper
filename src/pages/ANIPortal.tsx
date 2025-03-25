@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import FundingPage from "./FundingPage";
 import ProjectsPage from "./ProjectsPage";
 import AnalyticsPage from "./AnalyticsPage";
@@ -19,44 +19,6 @@ import { DataVisualization } from "@/components/DataVisualization";
 import { useVisualization } from "@/hooks/useVisualization";
 import DatabaseQuery from "@/components/DatabaseQuery";
 import SyntheticDataPage from "./SyntheticDataPage";
-
-// Error boundary component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("ANIPortal error boundary caught error:", error);
-    console.error("Component stack:", errorInfo.componentStack);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-8 bg-red-50 text-red-900 rounded-lg">
-          <h1 className="text-2xl font-bold mb-4">Portal Error</h1>
-          <p>Something went wrong with the ANI Portal.</p>
-          <pre className="bg-white p-4 rounded mt-4 overflow-auto text-sm">
-            {this.state.error?.toString()}
-          </pre>
-          <button 
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-            onClick={() => window.location.reload()}
-          >
-            Reload
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const ANIPortal = () => {
   console.log("ANIPortal component rendering");
@@ -71,7 +33,6 @@ const ANIPortal = () => {
   useEffect(() => {
     console.log("ANIPortal component mounted, checking auth state");
     
-    // Check initial auth state with error handling
     const checkAuth = async () => {
       try {
         setIsLoading(true);
@@ -86,7 +47,6 @@ const ANIPortal = () => {
             description: "Failed to check authentication state. Using default.",
             variant: "destructive",
           });
-          // Still allow access even with auth error
           setIsAuthenticated(false);
         } else {
           console.log("Session data received:", data ? "Session exists" : "No session");
@@ -95,7 +55,6 @@ const ANIPortal = () => {
       } catch (err) {
         console.error("Unexpected auth error:", err);
         setAuthError(err?.message || "Unknown auth error");
-        // Still allow access even with auth error
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
@@ -105,7 +64,6 @@ const ANIPortal = () => {
     
     checkAuth();
 
-    // Subscribe to auth changes with error handling
     let subscription;
     try {
       console.log("Setting up auth state change listener");
@@ -136,7 +94,6 @@ const ANIPortal = () => {
   };
 
   if (isLoading) {
-    console.log("ANIPortal rendering loading state");
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">

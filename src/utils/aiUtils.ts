@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,12 +32,9 @@ export const classifyDocument = async (data: ClassificationRequest): Promise<str
     
     try {
       // Call the edge function with a timeout
-      const functionPromise = supabase.functions.invoke<ClassificationResponse>(
-        'classify-document',
-        {
-          body: data
-        }
-      );
+      const functionPromise = supabase.functions.invoke('classify-document', {
+        body: data
+      });
       
       // Race between the function call and the timeout
       const result = await Promise.race([

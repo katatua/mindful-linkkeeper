@@ -3,50 +3,13 @@ import { createRoot } from 'react-dom/client'
 import React from 'react'
 import App from './App.tsx'
 import './index.css'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Enhanced error tracking
 console.log("=== Application bootstrap starting ===");
 window.addEventListener('error', (event) => {
   console.error('Global error caught:', event.error);
 });
-
-// Create error boundary component for catching render errors
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("React error boundary caught error:", error);
-    console.error("Component stack:", errorInfo.componentStack);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-8 bg-red-50 text-red-900 rounded-lg shadow-lg">
-          <h1 className="text-2xl font-bold mb-4">Application Error</h1>
-          <p className="mb-4">Something went wrong with the application.</p>
-          <pre className="bg-white p-4 rounded overflow-auto text-sm">
-            {this.state.error?.toString()}
-          </pre>
-          <button 
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => window.location.reload()}
-          >
-            Reload Application
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const rootElement = document.getElementById("root");
 
