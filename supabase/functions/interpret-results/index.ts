@@ -53,6 +53,8 @@ serve(async (req) => {
       resultsText = "No results returned from the query.";
     }
 
+    console.log("ResultsText sample:", resultsText.substring(0, 200) + "...");
+
     // System prompt for result interpretation
     const systemPrompt = `You are an AI assistant for the National Innovation Agency (ANI) database. 
     Your task is to interpret and explain SQL query results in natural language.
@@ -67,10 +69,13 @@ serve(async (req) => {
     6. If relevant, mention any limitations in the data or results.
     7. Use a friendly, professional tone appropriate for a government agency.
     8. Never mention that you're an AI or refer to yourself at all.
-    9. When appropriate, describe the time period the data covers.`;
+    9. When appropriate, describe the time period the data covers.
+    10. If the results are related to R&D investment, make sure to highlight this focus in your explanation.`;
 
     // User prompt combines the question, query, and results
     const userPrompt = `Question: ${question || "What does this data show?"}\n\nSQL Query Used:\n${sqlQuery}\n\n${resultsText}\n\nPlease interpret these results.`;
+
+    console.log("Sending interpretation request to OpenAI");
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

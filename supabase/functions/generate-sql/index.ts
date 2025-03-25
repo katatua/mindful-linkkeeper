@@ -49,6 +49,15 @@ serve(async (req) => {
     
     6. ani_patent_holders - Organizations with patents
     Columns: id, organization_name, sector, patent_count, innovation_index, year, country, created_at
+    
+    7. ani_institutions - Research and innovation institutions
+    Columns: id, institution_name, type, region, specialization_areas, collaboration_count, founding_date, project_history, created_at, updated_at
+    
+    8. ani_researchers - Researchers information
+    Columns: id, name, email, specialization, institution_id, h_index, publication_count, patent_count, created_at, updated_at
+    
+    9. ani_projects_researchers - Many-to-many relationship between projects and researchers
+    Columns: project_id, researcher_id, role
     `;
 
     // System prompt for SQL generation
@@ -68,10 +77,15 @@ serve(async (req) => {
     7. Only output a valid SQL statement, nothing else.
     8. Return your response as a plain SQL query with no markdown formatting.
     9. For questions about trends or comparisons over time, use appropriate date functions and ordering.
-    10. Respond with ERROR if the question cannot be answered using the available tables.`;
+    10. Respond with ERROR if the question cannot be answered using the available tables.
+    11. For R&D investment questions, use the ani_metrics table with category = 'Investment' or name containing 'R&D'.
+    12. Make sure to handle language consistency whether the question is in English or Portuguese.`;
 
     // User prompt is the question itself
     const userPrompt = `${language === 'pt' ? 'Traduzir para SQL: ' : 'Translate to SQL: '}${question}`;
+
+    console.log("Sending to OpenAI with system prompt:", systemPrompt.substring(0, 100) + "...");
+    console.log("User prompt:", userPrompt);
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -100,6 +114,8 @@ serve(async (req) => {
     const data = await response.json();
     let sql = data.choices[0].message.content.trim();
 
+    console.log("Generated SQL:", sql);
+
     // If response starts with "ERROR", return it as an error message
     if (sql.startsWith("ERROR")) {
       return new Response(
@@ -111,7 +127,7 @@ serve(async (req) => {
     // Clean up any markdown formatting that might be included
     sql = sql.replace(/```sql\n|\n```|```/g, '');
 
-    console.log("Generated SQL:", sql);
+    console.log("Final SQL to execute:", sql);
 
     return new Response(
       JSON.stringify({ sql }),
