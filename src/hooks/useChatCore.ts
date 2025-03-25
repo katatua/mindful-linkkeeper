@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useChatSuggestions } from "./useChatSuggestions";
 import { useVisualization } from "./useVisualization";
 import { useQueryProcessor } from "./useQueryProcessor";
+import { isMetricsQuery as checkIfMetricsQuery } from "@/utils/queryDetection";
 
 export const useChatCore = (language: string) => {
   const initialMessage = language === 'en' 
@@ -38,12 +39,7 @@ export const useChatCore = (language: string) => {
   
   const { toast } = useToast();
   
-  const { 
-    isMetricsQuery, 
-    generateSqlFromNaturalLanguage, 
-    executeQuery,
-    processQuestion 
-  } = useQueryProcessor();
+  const queryProcessor = useQueryProcessor();
   
   const {
     showVisualization,
@@ -86,11 +82,11 @@ export const useChatCore = (language: string) => {
       let thinkingContent: string | undefined;
       let vizData: any[] | undefined;
       
-      if (await isMetricsQuery(messageContent)) {
+      if (await checkIfMetricsQuery(messageContent)) {
         console.log("Detected metrics query");
         
-        // Process the question using the dynamicQueryService
-        const queryResult = await processQuestion(messageContent, language === 'en' ? 'en' : 'pt');
+        // Process the question using the queryProcessor
+        const queryResult = await queryProcessor.processQuestion(messageContent, language === 'en' ? 'en' : 'pt');
         console.log("Query result:", queryResult);
         
         response = queryResult.response;

@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { executeQuery } from "@/utils/queryExecution";
 import { generateSqlFromNaturalLanguage } from "@/utils/sqlGeneration";
 import { toast } from "sonner";
+import { isMetricsQuery } from "@/utils/queryDetection";
+import { dynamicQueryService } from "@/services/dynamicQueryService";
 
 export interface QueryResult {
   response: string;
@@ -80,10 +82,44 @@ export const useQueryProcessor = () => {
     }
   };
 
+  /**
+   * Process a question using the dynamic query service
+   */
+  const processQuestion = async (question: string, language: 'en' | 'pt'): Promise<QueryResult> => {
+    try {
+      setIsProcessing(true);
+      
+      const result = await dynamicQueryService.processQuestion(question, language);
+      
+      const queryResult: QueryResult = {
+        response: result.response,
+        visualizationData: result.visualizationData,
+        sql: result.sql
+      };
+      
+      setLastResult(queryResult);
+      return queryResult;
+    } catch (error) {
+      console.error("Error processing question:", error);
+      const errorResult: QueryResult = {
+        response: `Error processing question: ${error instanceof Error ? error.message : String(error)}`,
+        error: error instanceof Error ? error.message : String(error)
+      };
+      setLastResult(errorResult);
+      return errorResult;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return {
     isProcessing,
     lastResult,
     executeQuery: executeQueryDirectly,
-    processNaturalLanguageQuery
+    processNaturalLanguageQuery,
+    // Add the missing functions that are being used in useChatCore.ts
+    isMetricsQuery,
+    generateSqlFromNaturalLanguage,
+    processQuestion
   };
 };
