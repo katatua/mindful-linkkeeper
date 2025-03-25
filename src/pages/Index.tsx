@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
+  console.log("Index component rendering");
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   
   const goToDashboard = () => {
+    console.log("Navigating to dashboard");
     navigate("/portal");  // Navigate to the ANIPortal page
   };
   
