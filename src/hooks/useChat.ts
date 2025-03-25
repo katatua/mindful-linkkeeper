@@ -96,33 +96,53 @@ export const useChat = (language: string) => {
           // Call Edge Function with timeout and better error handling
           const timeoutDuration = 60000; // 60 seconds timeout
           
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+          // Set up a timeout promise
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error(language === 'en' 
+                ? "Request timed out. The PDF processing took too long." 
+                : "A solicitação expirou. O processamento do PDF demorou muito."));
+            }, timeoutDuration);
+          });
           
-          // Call Supabase Edge Function without passing the signal to FunctionInvokeOptions
-          const { data: extractionData, error: extractionError } = await supabase.functions.invoke(
+          // Call Supabase Edge Function
+          const functionPromise = supabase.functions.invoke(
             'pdf-extractor',
             {
               body: { fileUrl, fileName: file.name }
             }
           );
           
-          clearTimeout(timeoutId);
+          // Race between the function call and the timeout
+          const { data: extractionData, error: extractionError } = await Promise.race([
+            functionPromise,
+            timeoutPromise.then(() => {
+              throw new Error(language === 'en' 
+                ? "Request timed out. The PDF processing took too long." 
+                : "A solicitação expirou. O processamento do PDF demorou muito.");
+            })
+          ]) as any;
           
           if (extractionError) {
             console.error("PDF extraction error:", extractionError);
             
-            if (controller.signal.aborted) {
-              throw new Error(language === 'en' 
-                ? "Request timed out. The PDF processing took too long. Please try with a smaller file." 
-                : "A solicitação expirou. O processamento do PDF demorou muito. Por favor, tente com um arquivo menor.");
-            } else if (extractionError.message.includes('network')) {
-              throw new Error(language === 'en' 
-                ? "Network connection error. Please check your internet connection and try again." 
-                : "Erro de conexão de rede. Por favor, verifique sua conexão com a internet e tente novamente.");
-            } else {
-              throw extractionError;
+            let errorMessage = language === 'en'
+              ? "Error during PDF extraction. Please try again later."
+              : "Erro durante a extração do PDF. Por favor, tente novamente mais tarde.";
+              
+            if (extractionError.message) {
+              if (extractionError.message.includes('network') || extractionError.message.includes('fetch')) {
+                errorMessage = language === 'en'
+                  ? "Network connection error. Please check your internet connection and try again."
+                  : "Erro de conexão de rede. Por favor, verifique sua conexão com a internet e tente novamente.";
+              } else if (extractionError.message.includes('timeout')) {
+                errorMessage = language === 'en'
+                  ? "Request timed out. The PDF processing took too long. Please try with a smaller file."
+                  : "A solicitação expirou. O processamento do PDF demorou muito. Por favor, tente com um arquivo menor.";
+              }
             }
+            
+            throw new Error(errorMessage);
           }
           
           if (!extractionData) {

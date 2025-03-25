@@ -22,19 +22,33 @@ export interface AIResponse {
 export const classifyDocument = async (data: ClassificationRequest): Promise<string> => {
   try {
     // Set a timeout for the request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    const timeoutDuration = 15000; // 15 second timeout
+    
+    // Set up a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Document classification request timed out"));
+      }, timeoutDuration);
+    });
     
     try {
-      // Use the imported Supabase client instead of creating a new one
-      const { data: responseData, error } = await supabase.functions.invoke<ClassificationResponse>(
+      // Call the edge function with a timeout
+      const functionPromise = supabase.functions.invoke<ClassificationResponse>(
         'classify-document',
         {
           body: data
         }
       );
       
-      clearTimeout(timeoutId);
+      // Race between the function call and the timeout
+      const result = await Promise.race([
+        functionPromise,
+        timeoutPromise.then(() => {
+          throw new Error("Document classification request timed out");
+        })
+      ]) as any;
+      
+      const { data: responseData, error } = result;
       
       if (error) {
         console.error('Error classifying document:', error);
@@ -43,10 +57,8 @@ export const classifyDocument = async (data: ClassificationRequest): Promise<str
       
       return responseData?.classification || 'unknown';
     } catch (fetchError) {
-      clearTimeout(timeoutId);
-      
       // Handle specific error types
-      if (fetchError.name === 'AbortError') {
+      if (fetchError.name === 'AbortError' || fetchError.message.includes('timed out')) {
         console.error('Document classification request timed out');
       } else if (fetchError.message && fetchError.message.includes('fetch')) {
         console.error('Network error during document classification:', fetchError);
@@ -81,19 +93,33 @@ export const generateResponse = async (userInput: string): Promise<string> => {
     }
     
     // Set a timeout for the request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutDuration = 30000; // 30 second timeout
+    
+    // Set up a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Gemini API request timed out"));
+      }, timeoutDuration);
+    });
     
     try {
-      // Call the Gemini edge function using the imported Supabase client
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+      // Call the Gemini edge function with a timeout
+      const functionPromise = supabase.functions.invoke('gemini-chat', {
         body: { 
           userMessage: userInput,
           chatHistory: chatHistory.slice(0, -1) // Send previous messages as context
         }
       });
       
-      clearTimeout(timeoutId);
+      // Race between the function call and the timeout
+      const result = await Promise.race([
+        functionPromise,
+        timeoutPromise.then(() => {
+          throw new Error("Gemini API request timed out");
+        })
+      ]) as any;
+      
+      const { data, error } = result;
       
       if (error) {
         console.error('Error calling Gemini API:', error);
@@ -108,10 +134,8 @@ export const generateResponse = async (userInput: string): Promise<string> => {
       
       return data.response;
     } catch (fetchError) {
-      clearTimeout(timeoutId);
-      
       // Handle specific error types
-      if (fetchError.name === 'AbortError') {
+      if (fetchError.name === 'AbortError' || fetchError.message.includes('timed out')) {
         console.error('Gemini API request timed out');
         return "Desculpe, o tempo limite de resposta foi excedido. Por favor, tente novamente ou simplifique sua pergunta.";
       } 
