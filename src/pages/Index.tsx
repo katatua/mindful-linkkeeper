@@ -10,7 +10,7 @@ const Index = () => {
   const navigate = useNavigate();
   
   const goToDashboard = () => {
-    navigate("/portal");  // Navigate to the ANIPortal page
+    navigate("/portal");
   };
   
   return (
