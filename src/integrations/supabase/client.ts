@@ -10,10 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials. Using fallback values for development.');
 }
 
-// Create a client variable
-let supabaseClient: any;
+// Initialize the Supabase client
+let supabaseClient;
 
-// Add try-catch to prevent uncaught exceptions
 try {
   console.log('Initializing Supabase client...');
   // Create the Supabase client
@@ -31,7 +30,7 @@ try {
     from: () => ({
       select: () => ({
         eq: () => ({
-          then: (callback: any) => {
+          then: (callback) => {
             console.error('Using fallback Supabase client, database operations will fail');
             return callback({ data: [], error: new Error('Supabase client failed to initialize') });
           }
@@ -45,5 +44,5 @@ try {
   };
 }
 
-// Export the client
+// Export the initialized client
 export const supabase = supabaseClient;
