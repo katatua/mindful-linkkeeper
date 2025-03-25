@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Share2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Separator } from "@/components/ui/separator";
 import { jsPDF } from "jspdf";
@@ -32,7 +31,6 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
       
       console.log('Fetching report details for ID:', reportId);
       
-      // Add a timeout to the fetch request
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error(language === 'en' 
@@ -47,7 +45,6 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
         .eq('id', reportId)
         .single();
       
-      // Race between fetch and timeout
       const { data, error } = await Promise.race([
         fetchPromise,
         timeoutPromise.then(() => {
@@ -65,7 +62,6 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
       console.log('Report details fetched:', data);
       setReport(data);
       
-      // Reset retry count on successful fetch
       if (retryCount > 0) {
         setRetryCount(0);
       }
@@ -73,7 +69,6 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
     } catch (err) {
       console.error('Error loading report:', err);
       
-      // Determine if it's a network error
       const isNetworkError = err.message && (
         err.message.includes('Failed to fetch') || 
         err.message.includes('network') || 
@@ -102,19 +97,16 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
     }
   }, [reportId, language, toast, retryCount]);
 
-  // Initial fetch and setup auto-retry if needed
   useEffect(() => {
     if (reportId) {
       fetchReportDetails();
     }
     
-    // Cleanup any pending retries
     return () => {
       setRetryCount(0);
     };
   }, [reportId, fetchReportDetails]);
 
-  // Auto-retry logic when error occurs
   useEffect(() => {
     if (error && retryCount < 3) {
       const retryTimer = setTimeout(() => {
@@ -128,7 +120,7 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
   }, [error, retryCount, fetchReportDetails]);
 
   const handleManualRetry = () => {
-    setRetryCount(0); // Reset retry count for manual retry
+    setRetryCount(0);
     fetchReportDetails();
   };
 
@@ -149,7 +141,6 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
         format: 'a4'
       });
       
-      // Add header
       pdf.setFontSize(22);
       pdf.text(report.report_title, 20, 30);
       
@@ -160,19 +151,16 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
       pdf.setFontSize(16);
       pdf.text("Content Summary", 20, 75);
       
-      // Add report content if available
       if (report.report_content) {
         pdf.setFontSize(12);
         const contentLines = pdf.splitTextToSize(report.report_content, 170);
         pdf.text(contentLines, 20, 85);
       }
       
-      // Add key metrics if available
       if (report.report_data?.key_metrics?.length > 0) {
         pdf.setFontSize(16);
         pdf.text("Key Metrics", 20, 160);
         
-        pdf.setFontSize(12);
         report.report_data.key_metrics.forEach((metric: any, index: number) => {
           pdf.text(`• ${metric.type}: ${metric.value} ${metric.unit || ''}`, 20, 170 + (index * 10));
         });
