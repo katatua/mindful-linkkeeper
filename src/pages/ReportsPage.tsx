@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Calendar, FileText, Share2, Clock, Filter, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, Download, Calendar, FileText, Share2, Clock, Filter, CheckCircle2, AlertCircle, WifiOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
@@ -21,8 +20,10 @@ const ReportsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
+  
   const [pdfReports, setPdfReports] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Get reportId from URL query parameters
   const queryParams = new URLSearchParams(location.search);
@@ -49,6 +50,7 @@ const ReportsPage = () => {
     async function fetchPDFReports() {
       try {
         setLoadingReports(true);
+        setLoadError(null);
         
         const { data, error } = await supabase
           .from('pdf_reports')
@@ -60,6 +62,11 @@ const ReportsPage = () => {
         setPdfReports(data || []);
       } catch (err) {
         console.error('Error fetching PDF reports:', err);
+        setLoadError(
+          language === 'en' 
+            ? "Connection error. Please check your internet connection and try again."
+            : "Erro de conexão. Por favor, verifique sua conexão com a internet e tente novamente."
+        );
         toast({
           title: language === 'en' ? "Error loading reports" : "Erro ao carregar relatórios",
           description: err instanceof Error ? err.message : 'Unknown error',
@@ -292,6 +299,26 @@ const ReportsPage = () => {
                     <p className="text-gray-500">
                       {language === 'en' ? "Loading reports..." : "Carregando relatórios..."}
                     </p>
+                  </div>
+                ) : loadError ? (
+                  <div className="text-center p-6 border border-dashed rounded-lg">
+                    <WifiOff className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                    <h3 className="text-lg font-medium text-destructive">
+                      {language === 'en' ? "Connection Error" : "Erro de Conexão"}
+                    </h3>
+                    <p className="text-gray-500 mb-4">{loadError}</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setLoadingReports(true);
+                        setLoadError(null);
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 500);
+                      }}
+                    >
+                      {language === 'en' ? "Try Again" : "Tentar Novamente"}
+                    </Button>
                   </div>
                 ) : pdfReports.length === 0 ? (
                   <div className="text-center p-6 border border-dashed rounded-lg">
