@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,13 @@ const Index = () => {
   console.log("Index component rendering");
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    console.log("Index component mounted");
+    return () => {
+      console.log("Index component unmounting");
+    };
+  }, []);
   
   const goToDashboard = () => {
     console.log("Navigating to dashboard");
@@ -26,7 +33,7 @@ const Index = () => {
           alt="ANI Logo" 
           className="h-12 w-12 rounded" 
         />
-        <h1 className="text-2xl font-bold">{t('app.title')}</h1>
+        <h1 className="text-2xl font-bold">{t('app.title') || 'ANI Data Portal'}</h1>
       </div>
       
       <Card className="w-full max-w-lg shadow-lg">
@@ -35,12 +42,12 @@ const Index = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-center text-gray-600">
-            {t('index.welcome')}. {t('index.choose')}
+            {t('index.welcome') || 'Welcome to the ANI Innovation Platform'}. {t('index.choose') || 'Choose an option below to continue.'}
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Button onClick={goToDashboard} className="w-full">{t('index.view.dashboard')}</Button>
+            <Button onClick={goToDashboard} className="w-full">{t('index.view.dashboard') || 'View Dashboard'}</Button>
             <Link to="/portal">
-              <Button className="w-full" variant="outline">{t('index.ai.assistant')}</Button>
+              <Button className="w-full" variant="outline">{t('index.ai.assistant') || 'AI Assistant'}</Button>
             </Link>
           </div>
         </CardContent>
