@@ -34,9 +34,7 @@ const queryClient = new QueryClient({
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       staleTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: false,
-      onError: (error) => {
-        console.error("Query error:", error);
-      }
+      // Remove the onError property as it's not supported in the current version
     },
   },
 });

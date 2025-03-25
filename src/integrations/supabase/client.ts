@@ -10,11 +10,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials. Using fallback values for development.');
 }
 
+let supabaseClient;
+
 // Add try-catch to prevent uncaught exceptions
 try {
   console.log('Initializing Supabase client...');
   // Create the Supabase client
-  export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -24,7 +26,7 @@ try {
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
   // Create a fallback client that will log errors but not crash the app
-  export const supabase = {
+  supabaseClient = {
     from: () => ({
       select: () => ({
         eq: () => ({
@@ -41,3 +43,6 @@ try {
     }
   };
 }
+
+// Export the initialized client
+export const supabase = supabaseClient;
