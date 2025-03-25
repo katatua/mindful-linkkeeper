@@ -49,67 +49,36 @@ export async function generateGeminiResponse(messages: any[], isDatabaseQuery: b
     
     console.log(`Calling Gemini API with model: ${MODEL_NAME}...`);
     
-    // Set timeout for Gemini API call
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    // Call the Gemini API with the specified model
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
     
-    try {
-      // Call the Gemini API with the specified model and timeout
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Gemini API error:", errorText);
-        
-        if (response.status === 429) {
-          throw new Error("Rate limit exceeded. Please try again in a few moments.");
-        } else if (response.status === 404) {
-          throw new Error(`Model ${MODEL_NAME} not found. Falling back to standard response.`);
-        } else {
-          throw new Error(`Gemini API returned ${response.status}: ${errorText}`);
-        }
-      }
-      
-      const data = await response.json();
-      
-      // Extract the response text
-      if (data.candidates && data.candidates.length > 0 && 
-          data.candidates[0].content && 
-          data.candidates[0].content.parts && 
-          data.candidates[0].content.parts.length > 0) {
-        
-        console.log("Gemini response received successfully");
-        return data.candidates[0].content.parts[0].text;
-      }
-      
-      throw new Error("Unexpected API response format");
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      
-      if (fetchError.name === 'AbortError') {
-        throw new Error("Request timed out. Please try again.");
-      }
-      
-      // Check for network errors
-      if (fetchError.message.includes('Failed to fetch') || 
-          fetchError.message.includes('NetworkError') ||
-          fetchError.message.includes('network')) {
-        throw new Error("Network connection error. Please check your internet connection and try again.");
-      }
-      
-      throw fetchError;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API error:", errorText);
+      throw new Error(`Gemini API returned ${response.status}: ${errorText}`);
     }
+    
+    const data = await response.json();
+    
+    // Extract the response text
+    if (data.candidates && data.candidates.length > 0 && 
+        data.candidates[0].content && 
+        data.candidates[0].content.parts && 
+        data.candidates[0].content.parts.length > 0) {
+      
+      console.log("Gemini response received successfully");
+      return data.candidates[0].content.parts[0].text;
+    }
+    
+    throw new Error("Unexpected API response format");
   } catch (error) {
     console.error("Error generating Gemini response:", error);
-    return `Desculpe, encontrei um erro ao gerar uma resposta: ${error.message}. Por favor, tente novamente mais tarde.`;
+    return "Desculpe, encontrei um erro ao gerar uma resposta. Por favor, tente novamente mais tarde.";
   }
 }

@@ -21,53 +21,20 @@ export interface AIResponse {
 // Function to classify documents via Supabase Edge Function
 export const classifyDocument = async (data: ClassificationRequest): Promise<string> => {
   try {
-    // Set a timeout for the request
-    const timeoutDuration = 15000; // 15 second timeout
-    
-    // Set up a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error("Document classification request timed out"));
-      }, timeoutDuration);
-    });
-    
-    try {
-      // Call the edge function with a timeout
-      const functionPromise = supabase.functions.invoke<ClassificationResponse>(
-        'classify-document',
-        {
-          body: data
-        }
-      );
-      
-      // Race between the function call and the timeout
-      const result = await Promise.race([
-        functionPromise,
-        timeoutPromise.then(() => {
-          throw new Error("Document classification request timed out");
-        })
-      ]) as any;
-      
-      const { data: responseData, error } = result;
-      
-      if (error) {
-        console.error('Error classifying document:', error);
-        return 'unknown';
+    // Use the imported Supabase client instead of creating a new one
+    const { data: responseData, error } = await supabase.functions.invoke<ClassificationResponse>(
+      'classify-document',
+      {
+        body: data,
       }
-      
-      return responseData?.classification || 'unknown';
-    } catch (fetchError) {
-      // Handle specific error types
-      if (fetchError.name === 'AbortError' || fetchError.message.includes('timed out')) {
-        console.error('Document classification request timed out');
-      } else if (fetchError.message && fetchError.message.includes('fetch')) {
-        console.error('Network error during document classification:', fetchError);
-      } else {
-        console.error('Error in document classification:', fetchError);
-      }
-      
+    );
+    
+    if (error) {
+      console.error('Error classifying document:', error);
       return 'unknown';
     }
+    
+    return responseData?.classification || 'unknown';
   } catch (error) {
     console.error('Unexpected error in document classification:', error);
     return 'unknown';
@@ -92,62 +59,26 @@ export const generateResponse = async (userInput: string): Promise<string> => {
       chatHistory = chatHistory.slice(chatHistory.length - 20);
     }
     
-    // Set a timeout for the request
-    const timeoutDuration = 30000; // 30 second timeout
-    
-    // Set up a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error("Gemini API request timed out"));
-      }, timeoutDuration);
+    // Call the Gemini edge function using the imported Supabase client
+    const { data, error } = await supabase.functions.invoke('gemini-chat', {
+      body: { 
+        userMessage: userInput,
+        chatHistory: chatHistory.slice(0, -1) // Send previous messages as context
+      }
     });
     
-    try {
-      // Call the Gemini edge function with a timeout
-      const functionPromise = supabase.functions.invoke('gemini-chat', {
-        body: { 
-          userMessage: userInput,
-          chatHistory: chatHistory.slice(0, -1) // Send previous messages as context
-        }
-      });
-      
-      // Race between the function call and the timeout
-      const result = await Promise.race([
-        functionPromise,
-        timeoutPromise.then(() => {
-          throw new Error("Gemini API request timed out");
-        })
-      ]) as any;
-      
-      const { data, error } = result;
-      
-      if (error) {
-        console.error('Error calling Gemini API:', error);
-        return "Desculpe, encontrei um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.";
-      }
-      
-      // Add assistant response to chat history
-      chatHistory.push({
-        role: 'assistant',
-        content: data.response
-      });
-      
-      return data.response;
-    } catch (fetchError) {
-      // Handle specific error types
-      if (fetchError.name === 'AbortError' || fetchError.message.includes('timed out')) {
-        console.error('Gemini API request timed out');
-        return "Desculpe, o tempo limite de resposta foi excedido. Por favor, tente novamente ou simplifique sua pergunta.";
-      } 
-      
-      if (fetchError.message && (fetchError.message.includes('fetch') || fetchError.message.includes('network'))) {
-        console.error('Network error calling Gemini API:', fetchError);
-        return "Parece haver um problema de conexão. Por favor, verifique sua conexão com a internet e tente novamente.";
-      }
-      
-      console.error('Error generating AI response:', fetchError);
-      return "Ocorreu um erro ao gerar a resposta. Por favor, tente novamente mais tarde.";
+    if (error) {
+      console.error('Error calling Gemini API:', error);
+      return "Desculpe, encontrei um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.";
     }
+    
+    // Add assistant response to chat history
+    chatHistory.push({
+      role: 'assistant',
+      content: data.response
+    });
+    
+    return data.response;
   } catch (error) {
     console.error('Error generating AI response:', error);
     return "Ocorreu um erro ao gerar a resposta. Por favor, tente novamente mais tarde.";
