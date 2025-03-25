@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Message } from "@/types/chatTypes";
 import { generateResponse, genId } from "@/utils/aiUtils";
@@ -42,7 +41,8 @@ export const useChatCore = (language: string) => {
   const { 
     isMetricsQuery, 
     generateSqlFromNaturalLanguage, 
-    executeQuery 
+    executeQuery,
+    processQuestion 
   } = useQueryProcessor();
   
   const {
@@ -86,20 +86,14 @@ export const useChatCore = (language: string) => {
       let thinkingContent: string | undefined;
       let vizData: any[] | undefined;
       
-      if (isMetricsQuery(messageContent)) {
+      if (await isMetricsQuery(messageContent)) {
         console.log("Detected metrics query");
-        const sqlQuery = await generateSqlFromNaturalLanguage(messageContent);
-        console.log("Generated SQL query:", sqlQuery);
         
-        const queryResult = await executeQuery(sqlQuery);
+        // Process the question using the dynamicQueryService
+        const queryResult = await processQuestion(messageContent, language === 'en' ? 'en' : 'pt');
         console.log("Query result:", queryResult);
         
         response = queryResult.response;
-        
-        // Remove SQL query from the response
-        const sqlRegex = /\n\*\*Consulta executada:\*\*\n```sql[\s\S]*?```/;
-        response = response.replace(sqlRegex, '');
-        
         vizData = queryResult.visualizationData;
         
         if (vizData && vizData.length > 0) {
