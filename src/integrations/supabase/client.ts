@@ -10,9 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials. Using fallback values for development.');
 }
 
+// Initialize the Supabase client
 let supabaseClient;
 
-// Add try-catch to prevent uncaught exceptions
 try {
   console.log('Initializing Supabase client...');
   // Create the Supabase client
