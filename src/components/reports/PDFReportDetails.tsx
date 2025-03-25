@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Share2 } from "lucide-react";
+import { FileText, Download, Share2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -21,50 +21,116 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
   const { language } = useLanguage();
 
-  useEffect(() => {
-    async function fetchReportDetails() {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        console.log('Fetching report details for ID:', reportId);
-        
-        const { data, error } = await supabase
-          .from('pdf_reports')
-          .select('*, pdf_extraction:pdf_extraction_id(*)')
-          .eq('id', reportId)
-          .single();
-          
-        if (error) {
-          console.error('Error fetching report details:', error);
-          throw error;
-        }
-        
-        console.log('Report details fetched:', data);
-        setReport(data);
-      } catch (err) {
-        console.error('Error loading report:', err);
-        setError(language === 'en' 
-          ? "Failed to load report details. Please try again." 
-          : "Falha ao carregar detalhes do relatório. Por favor, tente novamente.");
-        
-        toast({
-          title: language === 'en' ? "Error loading report" : "Erro ao carregar relatório",
-          description: err instanceof Error ? err.message : "Unknown error",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+  const fetchReportDetails = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching report details for ID:', reportId);
+      
+      // Add a timeout to the fetch request
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(language === 'en' 
+            ? "Request timed out. Please try again." 
+            : "A solicitação expirou. Por favor, tente novamente."));
+        }, 10000); // 10-second timeout
+      });
+      
+      const fetchPromise = supabase
+        .from('pdf_reports')
+        .select('*, pdf_extraction:pdf_extraction_id(*)')
+        .eq('id', reportId)
+        .single();
+      
+      // Race between fetch and timeout
+      const { data, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise.then(() => {
+          throw new Error(language === 'en' 
+            ? "Request timed out. Please try again." 
+            : "A solicitação expirou. Por favor, tente novamente.");
+        })
+      ]) as any;
+      
+      if (error) {
+        console.error('Error fetching report details:', error);
+        throw error;
       }
+      
+      console.log('Report details fetched:', data);
+      setReport(data);
+      
+      // Reset retry count on successful fetch
+      if (retryCount > 0) {
+        setRetryCount(0);
+      }
+      
+    } catch (err) {
+      console.error('Error loading report:', err);
+      
+      // Determine if it's a network error
+      const isNetworkError = err.message && (
+        err.message.includes('Failed to fetch') || 
+        err.message.includes('network') || 
+        err.message.includes('connection') ||
+        err.message.includes('timeout')
+      );
+      
+      const errorMessage = isNetworkError
+        ? (language === 'en' 
+            ? "Connection error. Please check your internet connection and try again." 
+            : "Erro de conexão. Por favor, verifique sua conexão com a internet e tente novamente.")
+        : (language === 'en' 
+            ? `Failed to load report details: ${err instanceof Error ? err.message : "Unknown error"}` 
+            : `Falha ao carregar detalhes do relatório: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
+      
+      setError(errorMessage);
+      
+      toast({
+        title: language === 'en' ? "Error loading report" : "Erro ao carregar relatório",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+    } finally {
+      setLoading(false);
     }
-    
+  }, [reportId, language, toast, retryCount]);
+
+  // Initial fetch and setup auto-retry if needed
+  useEffect(() => {
     if (reportId) {
       fetchReportDetails();
     }
-  }, [reportId, language, toast]);
+    
+    // Cleanup any pending retries
+    return () => {
+      setRetryCount(0);
+    };
+  }, [reportId, fetchReportDetails]);
+
+  // Auto-retry logic when error occurs
+  useEffect(() => {
+    if (error && retryCount < 3) {
+      const retryTimer = setTimeout(() => {
+        console.log(`Auto-retrying report fetch (attempt ${retryCount + 1})...`);
+        setRetryCount(prev => prev + 1);
+        fetchReportDetails();
+      }, 3000 * (retryCount + 1)); // Exponential backoff: 3s, 6s, 9s
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [error, retryCount, fetchReportDetails]);
+
+  const handleManualRetry = () => {
+    setRetryCount(0); // Reset retry count for manual retry
+    fetchReportDetails();
+  };
 
   const handleDownloadPDF = () => {
     if (!report) return;
@@ -151,12 +217,13 @@ export const PDFReportDetails = ({ reportId }: PDFReportDetailsProps) => {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-destructive font-medium">{error}</p>
+          <p className="text-destructive font-medium mb-4">{error}</p>
           <Button 
             variant="outline" 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
+            onClick={handleManualRetry} 
+            className="flex items-center gap-2"
           >
+            <RefreshCw className="h-4 w-4" />
             {language === 'en' ? "Try Again" : "Tentar Novamente"}
           </Button>
         </CardContent>

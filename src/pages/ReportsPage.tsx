@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Calendar, FileText, Share2, Clock, Filter, CheckCircle2, AlertCircle, WifiOff } from "lucide-react";
+import { Search, Download, Calendar, FileText, Share2, Clock, Filter, CheckCircle2, AlertCircle, WifiOff, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
@@ -24,10 +24,123 @@ const ReportsPage = () => {
   const [pdfReports, setPdfReports] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   const queryParams = new URLSearchParams(location.search);
   const reportId = queryParams.get('reportId');
+
+  const fetchPDFReports = useCallback(async (isRetry = false) => {
+    try {
+      if (isRetry) {
+        setIsRetrying(true);
+      } else {
+        setLoadingReports(true);
+      }
+      setLoadError(null);
+      
+      console.log('Fetching PDF reports...');
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(language === 'en' 
+            ? "Request timed out. Please try again." 
+            : "A solicitação expirou. Por favor, tente novamente."));
+        }, 10000); // 10-second timeout
+      });
+      
+      const fetchPromise = supabase
+        .from('pdf_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      const { data, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise.then(() => {
+          throw new Error(language === 'en' 
+            ? "Request timed out. Please try again." 
+            : "A solicitação expirou. Por favor, tente novamente.");
+        })
+      ]) as any;
+      
+      if (error) {
+        console.error('Supabase error fetching reports:', error);
+        throw error;
+      }
+      
+      console.log('PDF reports fetched successfully:', data);
+      setPdfReports(data || []);
+      
+      if (retryCount > 0) {
+        setRetryCount(0);
+        toast({
+          title: language === 'en' ? "Connection restored" : "Conexão restaurada",
+          description: language === 'en' 
+            ? "Successfully loaded PDF reports" 
+            : "Relatórios PDF carregados com sucesso",
+          variant: "success"
+        });
+      }
+      
+    } catch (err) {
+      console.error('Error fetching PDF reports:', err);
+      
+      const isNetworkError = err.message && (
+        err.message.includes('Failed to fetch') || 
+        err.message.includes('network') || 
+        err.message.includes('connection') ||
+        err.message.includes('timeout')
+      );
+      
+      const errorMessage = isNetworkError
+        ? (language === 'en' 
+            ? "Connection error. Please check your internet connection and try again." 
+            : "Erro de conexão. Por favor, verifique sua conexão com a internet e tente novamente.")
+        : (language === 'en' 
+            ? `Error loading reports: ${err instanceof Error ? err.message : 'Unknown error'}` 
+            : `Erro ao carregar relatórios: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
+      
+      setLoadError(errorMessage);
+      
+      if (!isRetry) {
+        toast({
+          title: language === 'en' ? "Error loading reports" : "Erro ao carregar relatórios",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
+      
+    } finally {
+      setLoadingReports(false);
+      setIsRetrying(false);
+    }
+  }, [language, toast, retryCount]);
+
+  useEffect(() => {
+    fetchPDFReports();
+    
+    return () => {
+      setRetryCount(0);
+    };
+  }, [fetchPDFReports]);
   
+  useEffect(() => {
+    if (loadError && retryCount < 3) {
+      const retryTimer = setTimeout(() => {
+        console.log(`Auto-retrying (attempt ${retryCount + 1})...`);
+        setRetryCount(prev => prev + 1);
+        fetchPDFReports(true);
+      }, 3000 * (retryCount + 1)); // Exponential backoff: 3s, 6s, 9s
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [loadError, retryCount, fetchPDFReports]);
+
+  const handleManualRetry = () => {
+    setRetryCount(0);
+    fetchPDFReports();
+  };
+
   const [customReport, setCustomReport] = useState({
     title: "Q4 2023 Innovation Analytics",
     startDate: "2023-10-01",
@@ -44,45 +157,6 @@ const ReportsPage = () => {
       performanceKPIs: false
     }
   });
-  
-  useEffect(() => {
-    async function fetchPDFReports() {
-      try {
-        setLoadingReports(true);
-        setLoadError(null);
-        
-        console.log('Fetching PDF reports...');
-        const { data, error } = await supabase
-          .from('pdf_reports')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('Supabase error fetching reports:', error);
-          throw error;
-        }
-        
-        console.log('PDF reports fetched:', data);
-        setPdfReports(data || []);
-      } catch (err) {
-        console.error('Error fetching PDF reports:', err);
-        setLoadError(
-          language === 'en' 
-            ? "Connection error. Please check your internet connection and try again."
-            : "Erro de conexão. Por favor, verifique sua conexão com a internet e tente novamente."
-        );
-        toast({
-          title: language === 'en' ? "Error loading reports" : "Erro ao carregar relatórios",
-          description: err instanceof Error ? err.message : 'Unknown error',
-          variant: "destructive"
-        });
-      } finally {
-        setLoadingReports(false);
-      }
-    }
-    
-    fetchPDFReports();
-  }, [language, toast]);
   
   const recentReports = [
     {
@@ -301,9 +375,23 @@ const ReportsPage = () => {
               <CardContent className="space-y-4">
                 {loadingReports ? (
                   <div className="flex justify-center p-4">
-                    <p className="text-gray-500">
-                      {language === 'en' ? "Loading reports..." : "Carregando relatórios..."}
-                    </p>
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+                      <p className="text-gray-500">
+                        {language === 'en' ? "Loading reports..." : "Carregando relatórios..."}
+                      </p>
+                    </div>
+                  </div>
+                ) : isRetrying ? (
+                  <div className="flex justify-center p-4">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mb-2"></div>
+                      <p className="text-amber-500">
+                        {language === 'en' 
+                          ? `Retrying (${retryCount}/3)...` 
+                          : `Tentando novamente (${retryCount}/3)...`}
+                      </p>
+                    </div>
                   </div>
                 ) : loadError ? (
                   <div className="text-center p-6 border border-dashed rounded-lg">
@@ -314,14 +402,10 @@ const ReportsPage = () => {
                     <p className="text-gray-500 mb-4">{loadError}</p>
                     <Button 
                       variant="outline" 
-                      onClick={() => {
-                        setLoadingReports(true);
-                        setLoadError(null);
-                        setTimeout(() => {
-                          window.location.reload();
-                        }, 500);
-                      }}
+                      onClick={handleManualRetry}
+                      className="flex items-center gap-2"
                     >
+                      <RefreshCw className="h-4 w-4" />
                       {language === 'en' ? "Try Again" : "Tentar Novamente"}
                     </Button>
                   </div>
@@ -380,6 +464,19 @@ const ReportsPage = () => {
                   </div>
                 )}
               </CardContent>
+              {!loadingReports && !loadError && pdfReports.length > 0 && (
+                <CardFooter className="flex justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleManualRetry}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {language === 'en' ? "Refresh Reports" : "Atualizar Relatórios"}
+                  </Button>
+                </CardFooter>
+              )}
             </Card>
           </div>
         </TabsContent>
@@ -629,3 +726,4 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
+
