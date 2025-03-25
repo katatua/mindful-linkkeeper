@@ -155,13 +155,17 @@ serve(async (req) => {
         position_in_document: { page: 1, x: 100, y: 200 }
       });
 
-    // Criar um relatório básico
+    // Criar um relatório básico com data atual formatada para o título
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getFullYear()}`;
+    const reportTitle = `Relatório de Análise - ${fileName.replace(/\.[^/.]+$/, "")} (${formattedDate})`;
+    
     const { data: reportData, error: reportError } = await supabase
       .from('pdf_reports')
       .insert({
         pdf_extraction_id: extractionRecord.id,
-        report_title: `Relatório de ${fileName}`,
-        report_content: `# Relatório Automático de ${fileName}
+        report_title: reportTitle,
+        report_content: `# ${reportTitle}
 
 ## Sumário Executivo
 O documento analisado contém informações sobre projetos e desempenho financeiro.
@@ -180,7 +184,10 @@ Gráfico de crescimento trimestral
         report_data: {
           summary: "O documento apresenta informações financeiras e de projetos",
           key_metrics: extractedNumbers,
-          visuals: extractedImages.map(img => img.caption)
+          visuals: extractedImages.map(img => img.caption),
+          extraction_date: new Date().toISOString(),
+          file_name: fileName,
+          file_url: fileUrl
         },
         report_status: 'completed'
       })

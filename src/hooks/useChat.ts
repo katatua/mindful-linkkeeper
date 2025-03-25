@@ -3,11 +3,13 @@ import { useChatCore } from "./useChatCore";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export const useChat = (language: string) => {
   const chatCore = useChatCore(language);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const navigate = useNavigate();
   
   const handleFileUpload = async (file: File) => {
     try {
@@ -71,12 +73,27 @@ export const useChat = (language: string) => {
           
           if (extractionError) throw extractionError;
           
-          // Criar uma mensagem rica com os resultados da extração
+          // Criar uma mensagem rica com os resultados da extração e um link para o relatório na página de relatórios
+          const reportPath = `/reports?reportId=${extractionData.report.id}`;
           const successMessage = language === 'en'
-            ? `✅ PDF processed successfully!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} numerical data points extracted\n- ${extractionData.extraction.extracted_images.length} images identified\n\n**Report created:** [${extractionData.report.report_title}](${window.location.origin}/reports/${extractionData.report.id})`
-            : `✅ PDF processado com sucesso!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} dados numéricos extraídos\n- ${extractionData.extraction.extracted_images.length} imagens identificadas\n\n**Relatório criado:** [${extractionData.report.report_title}](${window.location.origin}/reports/${extractionData.report.id})`;
+            ? `✅ PDF processed successfully!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} numerical data points extracted\n- ${extractionData.extraction.extracted_images.length} images identified\n\n**Report created:** [${extractionData.report.report_title}](${reportPath})`
+            : `✅ PDF processado com sucesso!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} dados numéricos extraídos\n- ${extractionData.extraction.extracted_images.length} imagens identificadas\n\n**Relatório criado:** [${extractionData.report.report_title}](${reportPath})`;
           
           await chatCore.handleSendCustomMessage(successMessage);
+          
+          // Opção para navegar diretamente para o relatório
+          toast.success(
+            language === 'en'
+            ? "PDF Report Created" 
+            : "Relatório PDF Criado",
+            {
+              action: {
+                label: language === 'en' ? "View Report" : "Ver Relatório",
+                onClick: () => navigate(reportPath)
+              },
+              duration: 6000,
+            }
+          );
           
         } catch (processingError) {
           console.error("Error processing PDF:", processingError);
