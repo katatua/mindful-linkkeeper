@@ -85,8 +85,9 @@ export const checkDatabaseStatus = async () => {
   
   for (const table of DATABASE_TABLES) {
     try {
+      // Add type assertion to tell TypeScript that the table name is valid
       const { count, error } = await supabase
-        .from(table)
+        .from(table as any)
         .select('*', { count: 'exact', head: true });
       
       if (error) throw error;
