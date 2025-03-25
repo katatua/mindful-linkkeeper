@@ -1,3 +1,4 @@
+
 import { useChatCore } from "./useChatCore";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,8 +36,6 @@ export const useChat = (language: string) => {
       const sanitizedName = sanitizeFileName(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
       
-      console.log('Uploading file with sanitized name:', fileName);
-      
       // Upload file to Supabase Storage with better error handling
       const { data, error: uploadError } = await supabase.storage
         .from('chat-files')
@@ -63,7 +62,7 @@ export const useChat = (language: string) => {
         }
       }
       
-      // Get public URL for the file
+      // Get public URL for the file with error handling
       const { data: urlData } = supabase.storage
         .from('chat-files')
         .getPublicUrl(fileName);
@@ -105,8 +104,6 @@ export const useChat = (language: string) => {
                 : "A solicitação expirou. O processamento do PDF demorou muito."));
             }, timeoutDuration);
           });
-          
-          console.log('Calling pdf-extractor edge function with file URL:', fileUrl);
           
           // Call Supabase Edge Function
           const functionPromise = supabase.functions.invoke(
@@ -154,8 +151,6 @@ export const useChat = (language: string) => {
               : "Nenhum dado retornado do extrator de PDF. Por favor, tente novamente.");
           }
           
-          console.log('PDF extraction successful:', extractionData);
-          
           // Create rich message with extraction results and link to report page
           const reportPath = `/reports?reportId=${extractionData.report.id}`;
           const successMessage = language === 'en'
@@ -172,10 +167,7 @@ export const useChat = (language: string) => {
             {
               action: {
                 label: language === 'en' ? "View Report" : "Ver Relatório",
-                onClick: () => {
-                  console.log(`Navigating to report: ${reportPath}`);
-                  navigate(reportPath);
-                }
+                onClick: () => navigate(reportPath)
               },
               duration: 6000,
             }
