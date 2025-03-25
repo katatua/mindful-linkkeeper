@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { SuggestionLink } from "@/types/chatTypes";
 import { genId } from "@/utils/aiUtils";
@@ -8,46 +9,46 @@ export const useChatSuggestions = (language: string) => {
       return [
         { 
           id: genId(), 
-          text: "Investment in R&D over the last 3 years",
-          query: "What was the investment in R&D over the last 3 years?"
-        },
-        { 
-          id: genId(), 
-          text: "Regional investment distribution",
-          query: "Show me the investment distribution by region over the last 3 years"
-        },
-        { 
-          id: genId(), 
-          text: "Number of patents filed last year",
-          query: "How many patents were filed last year?"
+          text: "R&D investment in the last 3 years",
+          query: "What was the R&D investment in Portugal over the last 3 years?"
         },
         { 
           id: genId(), 
           text: "Active funding programs",
-          query: "What are the current active funding programs?"
+          query: "Show me the active funding programs with deadlines"
+        },
+        { 
+          id: genId(), 
+          text: "Patent statistics by sector",
+          query: "How many patents were registered by sector?"
+        },
+        { 
+          id: genId(), 
+          text: "Top research institutions",
+          query: "Which are the top research institutions by project count?"
         }
       ];
     } else {
       return [
         { 
           id: genId(), 
-          text: "Investimento em P&D nos últimos 3 anos",
-          query: "Qual foi o investimento em P&D nos últimos 3 anos?"
-        },
-        { 
-          id: genId(), 
-          text: "Distribuição de investimento por região",
-          query: "Mostre-me a distribuição de investimento por região nos últimos 3 anos"
-        },
-        { 
-          id: genId(), 
-          text: "Número de patentes registradas no último ano",
-          query: "Quantas patentes foram registradas no último ano?"
+          text: "Investimento em I&D nos últimos 3 anos",
+          query: "Qual foi o investimento em I&D em Portugal nos últimos 3 anos?"
         },
         { 
           id: genId(), 
           text: "Programas de financiamento ativos",
-          query: "Quais são os programas de financiamento ativos atualmente?"
+          query: "Mostre os programas de financiamento ativos com prazos"
+        },
+        { 
+          id: genId(), 
+          text: "Estatísticas de patentes por setor",
+          query: "Quantas patentes foram registradas por setor?"
+        },
+        { 
+          id: genId(), 
+          text: "Principais instituições de pesquisa",
+          query: "Quais são as principais instituições de pesquisa por número de projetos?"
         }
       ];
     }
@@ -57,13 +58,13 @@ export const useChatSuggestions = (language: string) => {
     const lowerQuery = lastQuery.toLowerCase();
     
     if (lowerQuery.includes('investment') || lowerQuery.includes('investimento') || 
-        lowerQuery.includes('r&d') || lowerQuery.includes('p&d')) {
+        lowerQuery.includes('r&d') || lowerQuery.includes('i&d')) {
       if (language === 'en') {
         return [
           { 
             id: genId(), 
             text: "Compare with previous year",
-            query: "How does this R&D investment compare with the previous year?"
+            query: "How does R&D investment compare with the previous year?"
           },
           { 
             id: genId(), 
@@ -72,13 +73,13 @@ export const useChatSuggestions = (language: string) => {
           },
           { 
             id: genId(), 
-            text: "Future projections",
-            query: "What are the projections for R&D investment next year?"
+            text: "Regional investment trends",
+            query: "Show me R&D investment trends by region"
           },
           { 
             id: genId(), 
-            text: "Budget allocation",
-            query: "How is the innovation budget allocated?"
+            text: "Project funding distribution",
+            query: "How is funding distributed among active projects?"
           }
         ];
       } else {
@@ -86,22 +87,22 @@ export const useChatSuggestions = (language: string) => {
           { 
             id: genId(), 
             text: "Comparar com ano anterior",
-            query: "Como esse investimento em P&D se compara ao do ano anterior?"
+            query: "Como o investimento em I&D se compara ao do ano anterior?"
           },
           { 
             id: genId(), 
             text: "Investimento por setor",
-            query: "Qual é a distribuição do investimento em P&D por setor?"
+            query: "Qual é a distribuição do investimento em I&D por setor?"
           },
           { 
             id: genId(), 
-            text: "Projeções futuras",
-            query: "Quais são as projeções para o investimento em P&D no próximo ano?"
+            text: "Tendências de investimento regional",
+            query: "Mostre as tendências de investimento em I&D por região"
           },
           { 
             id: genId(), 
-            text: "Alocação de orçamento",
-            query: "Como o orçamento de inovação é alocado?"
+            text: "Distribuição de financiamento de projetos",
+            query: "Como o financiamento está distribuído entre projetos ativos?"
           }
         ];
       }
@@ -112,46 +113,46 @@ export const useChatSuggestions = (language: string) => {
         return [
           { 
             id: genId(), 
-            text: "Patents by technology area",
-            query: "What is the distribution of patents by technology area?"
+            text: "Patents by institution",
+            query: "Which institutions have the most patents?"
           },
           { 
             id: genId(), 
             text: "Patent growth rate",
-            query: "What is the growth rate of patent applications over the last 5 years?"
+            query: "What is the growth rate of patent registrations over the last 5 years?"
           },
           { 
             id: genId(), 
-            text: "International patents",
-            query: "How many international patents were filed?"
+            text: "Patents by researcher",
+            query: "Who are the researchers with the most patents?"
           },
           { 
             id: genId(), 
-            text: "Top patent holders",
-            query: "Who are the top patent holders in the country?"
+            text: "Innovation index by sector",
+            query: "What is the innovation index by sector based on patent counts?"
           }
         ];
       } else {
         return [
           { 
             id: genId(), 
-            text: "Patentes por área tecnológica",
-            query: "Qual é a distribuição de patentes por área tecnológica?"
+            text: "Patentes por instituição",
+            query: "Quais instituições têm mais patentes?"
           },
           { 
             id: genId(), 
             text: "Taxa de crescimento de patentes",
-            query: "Qual é a taxa de crescimento dos pedidos de patentes nos últimos 5 anos?"
+            query: "Qual é a taxa de crescimento dos registros de patentes nos últimos 5 anos?"
           },
           { 
             id: genId(), 
-            text: "Patentes internacionais",
-            query: "Quantas patentes internacionais foram registradas?"
+            text: "Patentes por pesquisador",
+            query: "Quais são os pesquisadores com mais patentes?"
           },
           { 
             id: genId(), 
-            text: "Principais detentores de patentes",
-            query: "Quem são os principais detentores de patentes no país?"
+            text: "Índice de inovação por setor",
+            query: "Qual é o índice de inovação por setor com base na contagem de patentes?"
           }
         ];
       }
@@ -163,96 +164,147 @@ export const useChatSuggestions = (language: string) => {
         return [
           { 
             id: genId(), 
-            text: "Funding success rates",
-            query: "What are the success rates for funding applications?"
+            text: "Funding application success rates",
+            query: "What are the success rates for funding applications by sector?"
           },
           { 
             id: genId(), 
-            text: "Application deadlines",
+            text: "Upcoming application deadlines",
             query: "What are the upcoming funding application deadlines?"
           },
           { 
             id: genId(), 
-            text: "Funding by sector",
-            query: "How is funding distributed across different sectors?"
+            text: "Funding by sector focus",
+            query: "How is funding distributed across different sector focuses?"
           },
           { 
             id: genId(), 
-            text: "International funding",
-            query: "What international funding programs are available?"
+            text: "Average review time",
+            query: "What is the average review time for funding applications?"
           }
         ];
       } else {
         return [
           { 
             id: genId(), 
-            text: "Taxas de sucesso de financiamento",
-            query: "Quais são as taxas de sucesso para pedidos de financiamento?"
+            text: "Taxas de sucesso de candidaturas",
+            query: "Quais são as taxas de sucesso para candidaturas de financiamento por setor?"
           },
           { 
             id: genId(), 
-            text: "Prazos de inscrição",
-            query: "Quais são os próximos prazos de inscrição para financiamento?"
+            text: "Próximos prazos de candidatura",
+            query: "Quais são os próximos prazos de candidatura para financiamento?"
           },
           { 
             id: genId(), 
-            text: "Financiamento por setor",
-            query: "Como o financiamento é distribuído entre diferentes setores?"
+            text: "Financiamento por foco setorial",
+            query: "Como o financiamento é distribuído entre diferentes focos setoriais?"
           },
           { 
             id: genId(), 
-            text: "Financiamento internacional",
-            query: "Quais programas de financiamento internacional estão disponíveis?"
+            text: "Tempo médio de análise",
+            query: "Qual é o tempo médio de análise para candidaturas de financiamento?"
           }
         ];
       }
     }
     
-    if (lowerQuery.includes('region') || lowerQuery.includes('região') || lowerQuery.includes('regional')) {
+    if (lowerQuery.includes('institution') || lowerQuery.includes('instituição') || 
+        lowerQuery.includes('research') || lowerQuery.includes('pesquisa')) {
       if (language === 'en') {
         return [
           { 
             id: genId(), 
-            text: "Top performing regions",
-            query: "Which regions have the highest innovation performance?"
+            text: "Top institutions by projects",
+            query: "Which institutions have the most research projects?"
           },
           { 
             id: genId(), 
-            text: "Regional growth rates",
-            query: "What are the innovation growth rates by region?"
+            text: "Institutions by region",
+            query: "How are research institutions distributed by region?"
           },
           { 
             id: genId(), 
-            text: "Regional specializations",
-            query: "What are the technology specializations by region?"
+            text: "Institution specializations",
+            query: "What are the main specialization areas of research institutions?"
           },
           { 
             id: genId(), 
-            text: "Regional funding allocation",
-            query: "How is funding allocated across different regions?"
+            text: "Institution collaboration network",
+            query: "Which institutions have the highest collaboration counts?"
           }
         ];
       } else {
         return [
           { 
             id: genId(), 
-            text: "Regiões com melhor desempenho",
-            query: "Quais regiões têm o maior desempenho em inovação?"
+            text: "Principais instituições por projetos",
+            query: "Quais instituições têm mais projetos de pesquisa?"
           },
           { 
             id: genId(), 
-            text: "Taxas de crescimento regional",
-            query: "Quais são as taxas de crescimento de inovação por região?"
+            text: "Instituições por região",
+            query: "Como as instituições de pesquisa estão distribuídas por região?"
           },
           { 
             id: genId(), 
-            text: "Especializações regionais",
-            query: "Quais são as especializações tecnológicas por região?"
+            text: "Especializações das instituições",
+            query: "Quais são as principais áreas de especialização das instituições de pesquisa?"
           },
           { 
             id: genId(), 
-            text: "Alocação de financiamento regional",
-            query: "Como o financiamento é alocado entre diferentes regiões?"
+            text: "Rede de colaboração entre instituições",
+            query: "Quais instituições têm o maior número de colaborações?"
+          }
+        ];
+      }
+    }
+    
+    if (lowerQuery.includes('project') || lowerQuery.includes('projeto')) {
+      if (language === 'en') {
+        return [
+          { 
+            id: genId(), 
+            text: "Active projects by sector",
+            query: "How many active projects are there by sector?"
+          },
+          { 
+            id: genId(), 
+            text: "Projects by status",
+            query: "What is the distribution of projects by status?"
+          },
+          { 
+            id: genId(), 
+            text: "Projects completion rate",
+            query: "What is the completion rate of projects over the past year?"
+          },
+          { 
+            id: genId(), 
+            text: "Researchers per project",
+            query: "What is the average number of researchers per project?"
+          }
+        ];
+      } else {
+        return [
+          { 
+            id: genId(), 
+            text: "Projetos ativos por setor",
+            query: "Quantos projetos ativos existem por setor?"
+          },
+          { 
+            id: genId(), 
+            text: "Projetos por status",
+            query: "Qual é a distribuição de projetos por status?"
+          },
+          { 
+            id: genId(), 
+            text: "Taxa de conclusão de projetos",
+            query: "Qual é a taxa de conclusão de projetos no último ano?"
+          },
+          { 
+            id: genId(), 
+            text: "Pesquisadores por projeto",
+            query: "Qual é o número médio de pesquisadores por projeto?"
           }
         ];
       }
@@ -281,10 +333,11 @@ export const useChatSuggestions = (language: string) => {
   const getAllPossibleSuggestions = (lang: string): SuggestionLink[] => {
     if (lang === 'en') {
       return [
+        // Investment and R&D queries
         { 
           id: genId(), 
-          text: "Investment in R&D over the last 3 years",
-          query: "What was the investment in R&D over the last 3 years?"
+          text: "R&D investment in the last 3 years",
+          query: "What was the R&D investment in Portugal over the last 3 years?"
         },
         { 
           id: genId(), 
@@ -293,18 +346,8 @@ export const useChatSuggestions = (language: string) => {
         },
         { 
           id: genId(), 
-          text: "Number of patents filed last year",
-          query: "How many patents were filed last year?"
-        },
-        { 
-          id: genId(), 
-          text: "Active funding programs",
-          query: "What are the current active funding programs?"
-        },
-        { 
-          id: genId(), 
           text: "Compare with previous year",
-          query: "How does this R&D investment compare with the previous year?"
+          query: "How does R&D investment compare with the previous year?"
         },
         { 
           id: genId(), 
@@ -313,81 +356,120 @@ export const useChatSuggestions = (language: string) => {
         },
         { 
           id: genId(), 
-          text: "Future projections",
-          query: "What are the projections for R&D investment next year?"
+          text: "Regional investment trends",
+          query: "Show me R&D investment trends by region"
+        },
+        
+        // Patent queries
+        { 
+          id: genId(), 
+          text: "Patent statistics by sector",
+          query: "How many patents were registered by sector?"
         },
         { 
           id: genId(), 
-          text: "Budget allocation",
-          query: "How is the innovation budget allocated?"
-        },
-        { 
-          id: genId(), 
-          text: "Patents by technology area",
-          query: "What is the distribution of patents by technology area?"
+          text: "Patents by institution",
+          query: "Which institutions have the most patents?"
         },
         { 
           id: genId(), 
           text: "Patent growth rate",
-          query: "What is the growth rate of patent applications over the last 5 years?"
+          query: "What is the growth rate of patent registrations over the last 5 years?"
         },
         { 
           id: genId(), 
-          text: "International patents",
-          query: "How many international patents were filed?"
+          text: "Patents by researcher",
+          query: "Who are the researchers with the most patents?"
         },
         { 
           id: genId(), 
-          text: "Top patent holders",
-          query: "Who are the top patent holders in the country?"
+          text: "Innovation index by sector",
+          query: "What is the innovation index by sector based on patent counts?"
+        },
+        
+        // Funding and program queries
+        { 
+          id: genId(), 
+          text: "Active funding programs",
+          query: "Show me the active funding programs with deadlines"
         },
         { 
           id: genId(), 
-          text: "Funding success rates",
-          query: "What are the success rates for funding applications?"
+          text: "Funding application success rates",
+          query: "What are the success rates for funding applications by sector?"
         },
         { 
           id: genId(), 
-          text: "Application deadlines",
+          text: "Upcoming application deadlines",
           query: "What are the upcoming funding application deadlines?"
         },
         { 
           id: genId(), 
-          text: "Funding by sector",
-          query: "How is funding distributed across different sectors?"
+          text: "Funding by sector focus",
+          query: "How is funding distributed across different sector focuses?"
         },
         { 
           id: genId(), 
-          text: "International funding",
-          query: "What international funding programs are available?"
+          text: "Average review time",
+          query: "What is the average review time for funding applications?"
+        },
+        
+        // Institution and research queries
+        { 
+          id: genId(), 
+          text: "Top research institutions",
+          query: "Which are the top research institutions by project count?"
         },
         { 
           id: genId(), 
-          text: "Top performing regions",
-          query: "Which regions have the highest innovation performance?"
+          text: "Institutions by region",
+          query: "How are research institutions distributed by region?"
         },
         { 
           id: genId(), 
-          text: "Regional growth rates",
-          query: "What are the innovation growth rates by region?"
+          text: "Institution specializations",
+          query: "What are the main specialization areas of research institutions?"
         },
         { 
           id: genId(), 
-          text: "Regional specializations",
-          query: "What are the technology specializations by region?"
+          text: "Institution collaboration network",
+          query: "Which institutions have the highest collaboration counts?"
+        },
+        
+        // Project queries
+        { 
+          id: genId(), 
+          text: "Active projects by sector",
+          query: "How many active projects are there by sector?"
         },
         { 
           id: genId(), 
-          text: "Regional funding allocation",
-          query: "How is funding allocated across different regions?"
+          text: "Projects by status",
+          query: "What is the distribution of projects by status?"
+        },
+        { 
+          id: genId(), 
+          text: "Projects completion rate",
+          query: "What is the completion rate of projects over the past year?"
+        },
+        { 
+          id: genId(), 
+          text: "Researchers per project",
+          query: "What is the average number of researchers per project?"
+        },
+        { 
+          id: genId(), 
+          text: "International collaborations",
+          query: "What are the major international collaboration programs?"
         }
       ];
     } else {
       return [
+        // Investment and R&D queries in Portuguese
         { 
           id: genId(), 
-          text: "Investimento em P&D nos últimos 3 anos",
-          query: "Qual foi o investimento em P&D nos últimos 3 anos?"
+          text: "Investimento em I&D nos últimos 3 anos",
+          query: "Qual foi o investimento em I&D em Portugal nos últimos 3 anos?"
         },
         { 
           id: genId(), 
@@ -396,93 +478,121 @@ export const useChatSuggestions = (language: string) => {
         },
         { 
           id: genId(), 
-          text: "Número de patentes registradas no último ano",
-          query: "Quantas patentes foram registradas no último ano?"
-        },
-        { 
-          id: genId(), 
-          text: "Programas de financiamento ativos",
-          query: "Quais são os programas de financiamento ativos atualmente?"
-        },
-        { 
-          id: genId(), 
           text: "Comparar com ano anterior",
-          query: "Como esse investimento em P&D se compara ao do ano anterior?"
+          query: "Como o investimento em I&D se compara ao do ano anterior?"
         },
         { 
           id: genId(), 
           text: "Investimento por setor",
-          query: "Qual é a distribuição do investimento em P&D por setor?"
+          query: "Qual é a distribuição do investimento em I&D por setor?"
         },
         { 
           id: genId(), 
-          text: "Projeções futuras",
-          query: "Quais são as projeções para o investimento em P&D no próximo ano?"
+          text: "Tendências de investimento regional",
+          query: "Mostre as tendências de investimento em I&D por região"
+        },
+        
+        // Patent queries in Portuguese
+        { 
+          id: genId(), 
+          text: "Estatísticas de patentes por setor",
+          query: "Quantas patentes foram registradas por setor?"
         },
         { 
           id: genId(), 
-          text: "Alocação de orçamento",
-          query: "Como o orçamento de inovação é alocado?"
-        },
-        { 
-          id: genId(), 
-          text: "Patentes por área tecnológica",
-          query: "Qual é a distribuição de patentes por área tecnológica?"
+          text: "Patentes por instituição",
+          query: "Quais instituições têm mais patentes?"
         },
         { 
           id: genId(), 
           text: "Taxa de crescimento de patentes",
-          query: "Qual é a taxa de crescimento dos pedidos de patentes nos últimos 5 anos?"
+          query: "Qual é a taxa de crescimento dos registros de patentes nos últimos 5 anos?"
         },
         { 
           id: genId(), 
-          text: "Patentes internacionais",
-          query: "Quantas patentes internacionais foram registradas?"
+          text: "Patentes por pesquisador",
+          query: "Quais são os pesquisadores com mais patentes?"
         },
         { 
           id: genId(), 
-          text: "Principais detentores de patentes",
-          query: "Quem são os principais detentores de patentes no país?"
+          text: "Índice de inovação por setor",
+          query: "Qual é o índice de inovação por setor com base na contagem de patentes?"
+        },
+        
+        // Funding and program queries in Portuguese
+        { 
+          id: genId(), 
+          text: "Programas de financiamento ativos",
+          query: "Mostre os programas de financiamento ativos com prazos"
         },
         { 
           id: genId(), 
-          text: "Taxas de sucesso de financiamento",
-          query: "Quais são as taxas de sucesso para pedidos de financiamento?"
+          text: "Taxas de sucesso de candidaturas",
+          query: "Quais são as taxas de sucesso para candidaturas de financiamento por setor?"
         },
         { 
           id: genId(), 
-          text: "Prazos de inscrição",
-          query: "Quais são os próximos prazos de inscrição para financiamento?"
+          text: "Próximos prazos de candidatura",
+          query: "Quais são os próximos prazos de candidatura para financiamento?"
         },
         { 
           id: genId(), 
-          text: "Financiamento por setor",
-          query: "Como o financiamento é distribuído entre diferentes setores?"
+          text: "Financiamento por foco setorial",
+          query: "Como o financiamento é distribuído entre diferentes focos setoriais?"
         },
         { 
           id: genId(), 
-          text: "Financiamento internacional",
-          query: "Quais programas de financiamento internacional estão disponíveis?"
+          text: "Tempo médio de análise",
+          query: "Qual é o tempo médio de análise para candidaturas de financiamento?"
+        },
+        
+        // Institution and research queries in Portuguese
+        { 
+          id: genId(), 
+          text: "Principais instituições de pesquisa",
+          query: "Quais são as principais instituições de pesquisa por número de projetos?"
         },
         { 
           id: genId(), 
-          text: "Regiões com melhor desempenho",
-          query: "Quais regiões têm o maior desempenho em inovação?"
+          text: "Instituições por região",
+          query: "Como as instituições de pesquisa estão distribuídas por região?"
         },
         { 
           id: genId(), 
-          text: "Taxas de crescimento regional",
-          query: "Quais são as taxas de crescimento de inovação por região?"
+          text: "Especializações das instituições",
+          query: "Quais são as principais áreas de especialização das instituições de pesquisa?"
         },
         { 
           id: genId(), 
-          text: "Especializações regionais",
-          query: "Quais são as especializações tecnológicas por região?"
+          text: "Rede de colaboração entre instituições",
+          query: "Quais instituições têm o maior número de colaborações?"
+        },
+        
+        // Project queries in Portuguese
+        { 
+          id: genId(), 
+          text: "Projetos ativos por setor",
+          query: "Quantos projetos ativos existem por setor?"
         },
         { 
           id: genId(), 
-          text: "Alocação de financiamento regional",
-          query: "Como o financiamento é alocado entre diferentes regiões?"
+          text: "Projetos por status",
+          query: "Qual é a distribuição de projetos por status?"
+        },
+        { 
+          id: genId(), 
+          text: "Taxa de conclusão de projetos",
+          query: "Qual é a taxa de conclusão de projetos no último ano?"
+        },
+        { 
+          id: genId(), 
+          text: "Pesquisadores por projeto",
+          query: "Qual é o número médio de pesquisadores por projeto?"
+        },
+        { 
+          id: genId(), 
+          text: "Colaborações internacionais",
+          query: "Quais são os principais programas de colaboração internacional?"
         }
       ];
     }
