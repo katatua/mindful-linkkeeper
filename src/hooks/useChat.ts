@@ -7,15 +7,16 @@ import { toast } from "sonner";
 export const useChat = (language: string) => {
   const chatCore = useChatCore(language);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   
   const handleFileUpload = async (file: File) => {
     try {
       setIsUploading(true);
       
-      // Create a unique file name
+      // Criar um nome de arquivo único
       const fileName = `${Date.now()}-${file.name}`;
       
-      // Upload the file to Supabase Storage
+      // Enviar o arquivo para o Storage do Supabase
       const { data, error } = await supabase.storage
         .from('chat-files')
         .upload(fileName, file, {
@@ -25,23 +26,69 @@ export const useChat = (language: string) => {
       
       if (error) throw error;
       
-      // Get the public URL for the file
+      // Obter a URL pública para o arquivo
       const { data: urlData } = supabase.storage
         .from('chat-files')
         .getPublicUrl(fileName);
       
-      // Add a system message with the file link
+      // Adicionar uma mensagem do sistema com o link do arquivo
       if (urlData) {
         const fileUrl = urlData.publicUrl;
-        const messageContent = language === 'en'
-          ? `I've uploaded a PDF file: [${file.name}](${fileUrl}). Please analyze this document.`
-          : `Carreguei um ficheiro PDF: [${file.name}](${fileUrl}). Por favor, analise este documento.`;
         
-        await chatCore.handleSendCustomMessage(messageContent);
+        // Mensagem inicial sobre o upload
+        const messageContent = language === 'en'
+          ? `I've uploaded a PDF file: [${file.name}](${fileUrl}). Starting extraction...`
+          : `Carreguei um ficheiro PDF: [${file.name}](${fileUrl}). Iniciando extração...`;
+        
+        const message = await chatCore.handleSendCustomMessage(messageContent);
         
         toast.success(language === 'en' 
           ? "File uploaded successfully" 
           : "Ficheiro carregado com sucesso");
+        
+        // Processar o PDF para extrair informações
+        try {
+          setIsProcessingPdf(true);
+          
+          // Informar que o processamento começou
+          const processingMessage = language === 'en'
+            ? "Processing PDF... This may take a moment."
+            : "Processando PDF... Isso pode levar um momento.";
+          
+          await chatCore.handleSendCustomMessage(processingMessage, true);
+          
+          // Chamar a função Edge do Supabase para processar o PDF
+          const { data: extractionData, error: extractionError } = await supabase.functions.invoke(
+            'pdf-extractor',
+            {
+              body: { fileUrl, fileName: file.name }
+            }
+          );
+          
+          if (extractionError) throw extractionError;
+          
+          // Criar uma mensagem rica com os resultados da extração
+          const successMessage = language === 'en'
+            ? `✅ PDF processed successfully!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} numerical data points extracted\n- ${extractionData.extraction.extracted_images.length} images identified\n\n**Report created:** [${extractionData.report.report_title}](${window.location.origin}/reports/${extractionData.report.id})`
+            : `✅ PDF processado com sucesso!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} dados numéricos extraídos\n- ${extractionData.extraction.extracted_images.length} imagens identificadas\n\n**Relatório criado:** [${extractionData.report.report_title}](${window.location.origin}/reports/${extractionData.report.id})`;
+          
+          await chatCore.handleSendCustomMessage(successMessage);
+          
+        } catch (processingError) {
+          console.error("Error processing PDF:", processingError);
+          
+          const errorMessage = language === 'en'
+            ? `Error processing PDF: ${processingError.message || "Unknown error"}. The file was uploaded but couldn't be analyzed.`
+            : `Erro ao processar o PDF: ${processingError.message || "Erro desconhecido"}. O arquivo foi carregado mas não pôde ser analisado.`;
+          
+          await chatCore.handleSendCustomMessage(errorMessage);
+          
+          toast.error(language === 'en' 
+            ? "Error processing PDF" 
+            : "Erro ao processar o PDF");
+        } finally {
+          setIsProcessingPdf(false);
+        }
       }
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -57,6 +104,6 @@ export const useChat = (language: string) => {
     ...chatCore,
     handleRefreshSuggestions: chatCore.refreshSuggestions,
     handleFileUpload,
-    isUploading
+    isUploading: isUploading || isProcessingPdf
   };
 };

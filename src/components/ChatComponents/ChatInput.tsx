@@ -38,7 +38,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     const file = files[0];
     
-    // Validate file type
+    // Validar tipo de arquivo
     if (file.type !== 'application/pdf') {
       toast.error(language === 'en' 
         ? "Only PDF files are supported" 
@@ -46,7 +46,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
     
-    // Validate file size (max 10MB)
+    // Validar tamanho do arquivo (máx 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       toast.error(language === 'en' 
@@ -59,7 +59,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       await handleFileUpload(file);
     }
     
-    // Clear the input to allow uploading the same file again
+    // Limpar o input para permitir enviar o mesmo arquivo novamente
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -88,8 +88,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         
         <Input
           placeholder={language === 'en' 
-            ? "Ask about innovation metrics, funding, or policies..." 
-            : "Pergunte sobre métricas de inovação, financiamento ou políticas..."}
+            ? isUploading 
+              ? "Processing PDF..." 
+              : "Ask about innovation metrics, funding, or policies..." 
+            : isUploading 
+              ? "Processando PDF..." 
+              : "Pergunte sobre métricas de inovação, financiamento ou políticas..."}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

@@ -1034,6 +1034,121 @@ export type Database = {
         }
         Relationships: []
       }
+      pdf_extracted_elements: {
+        Row: {
+          created_at: string
+          element_data: Json
+          element_text: string | null
+          element_type: string
+          id: string
+          pdf_extraction_id: string | null
+          position_in_document: Json | null
+        }
+        Insert: {
+          created_at?: string
+          element_data: Json
+          element_text?: string | null
+          element_type: string
+          id?: string
+          pdf_extraction_id?: string | null
+          position_in_document?: Json | null
+        }
+        Update: {
+          created_at?: string
+          element_data?: Json
+          element_text?: string | null
+          element_type?: string
+          id?: string
+          pdf_extraction_id?: string | null
+          position_in_document?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_extracted_elements_pdf_extraction_id_fkey"
+            columns: ["pdf_extraction_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_extractions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdf_extractions: {
+        Row: {
+          created_at: string
+          extracted_images: Json | null
+          extracted_numbers: Json | null
+          extracted_text: string | null
+          extraction_status: string | null
+          file_name: string
+          file_url: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string
+          extracted_images?: Json | null
+          extracted_numbers?: Json | null
+          extracted_text?: string | null
+          extraction_status?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          extracted_images?: Json | null
+          extracted_numbers?: Json | null
+          extracted_text?: string | null
+          extraction_status?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      pdf_reports: {
+        Row: {
+          created_at: string
+          id: string
+          pdf_extraction_id: string | null
+          report_content: string
+          report_data: Json | null
+          report_status: string | null
+          report_title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pdf_extraction_id?: string | null
+          report_content: string
+          report_data?: Json | null
+          report_status?: string | null
+          report_title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pdf_extraction_id?: string | null
+          report_content?: string
+          report_data?: Json | null
+          report_status?: string | null
+          report_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_reports_pdf_extraction_id_fkey"
+            columns: ["pdf_extraction_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_extractions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personalization_rules: {
         Row: {
           action: string
