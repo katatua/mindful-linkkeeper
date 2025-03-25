@@ -1,5 +1,5 @@
 
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Settings, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,17 +15,33 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const models = [
   {
     value: "claude",
     label: "Claude-3-7-Sonnet",
-    description: "Anthropic's most advanced model with reasoning capabilities"
+    description: "Advanced reasoning with thinking capabilities",
+    icon: <Sparkles className="h-4 w-4 mr-2 text-amber-500" />
   },
   {
     value: "gemini",
     label: "Gemini 2.0 Pro",
-    description: "Google's large language model"
+    description: "Fast responses for general tasks",
+    icon: <Zap className="h-4 w-4 mr-2 text-emerald-500" />
   }
 ];
 
@@ -40,45 +56,51 @@ export function ModelSelector({ currentModel, onSelectModel }: ModelSelectorProp
   const selectedModel = models.find(model => model.value === currentModel);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-[200px] justify-between text-xs"
-        >
-          {selectedModel?.label || "Select model..."}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
-        <Command>
-          <CommandGroup>
-            {models.map((model) => (
-              <CommandItem
-                key={model.value}
-                value={model.value}
-                onSelect={() => {
-                  onSelectModel(model.value as 'claude' | 'gemini');
-                  setOpen(false);
-                }}
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 h-8 px-2 border-muted-foreground/20"
               >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    currentModel === model.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex flex-col">
-                  <span>{model.label}</span>
-                  <span className="text-xs text-muted-foreground">{model.description}</span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                {selectedModel?.icon}
+                <span className="hidden sm:inline text-xs font-medium">{selectedModel?.label}</span>
+                <ChevronsUpDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-xs">AI Models</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {models.map((model) => (
+                <DropdownMenuItem
+                  key={model.value}
+                  className="flex items-start gap-2 py-2 cursor-pointer"
+                  onClick={() => onSelectModel(model.value as 'claude' | 'gemini')}
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    {model.icon}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm flex items-center gap-2">
+                      {model.label}
+                      {currentModel === model.value && (
+                        <Check className="h-3.5 w-3.5 text-primary" />
+                      )}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{model.description}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TooltipTrigger>
+        <TooltipContent side="left">
+          <p className="text-xs">Switch AI model</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

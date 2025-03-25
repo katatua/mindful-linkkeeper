@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +19,32 @@ export interface AIResponse {
   thinking?: string;
   toString(): string;
 }
+
+// Model definitions
+export interface AIModel {
+  id: 'gemini' | 'claude';
+  name: string;
+  description: string;
+  capabilities: string[];
+  thinking: boolean;
+}
+
+export const AI_MODELS: Record<string, AIModel> = {
+  claude: {
+    id: 'claude',
+    name: 'Claude-3-7-Sonnet',
+    description: 'Anthropic\'s most advanced model with reasoning capabilities',
+    capabilities: ['Extended thinking', 'High accuracy', 'Complex reasoning'],
+    thinking: true
+  },
+  gemini: {
+    id: 'gemini',
+    name: 'Gemini 2.0 Pro',
+    description: 'Google\'s large language model',
+    capabilities: ['Fast responses', 'General knowledge', 'Creative writing'],
+    thinking: false
+  }
+};
 
 // Function to classify documents via Supabase Edge Function
 export const classifyDocument = async (data: ClassificationRequest): Promise<string> => {

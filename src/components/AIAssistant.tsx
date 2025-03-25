@@ -31,7 +31,7 @@ const AIAssistant = () => {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
-      <div className="border-b px-4 py-3 flex items-center justify-between">
+      <div className="border-b px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
           <h3 className="font-medium">{language === 'en' ? 'ANI Assistant' : 'Assistente ANI'}</h3>
