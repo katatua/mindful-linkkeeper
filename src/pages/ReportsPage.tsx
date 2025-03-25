@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, Calendar, FileText, Share2, Clock, Filter, CheckCircle2, AlertCircle, WifiOff, RefreshCw } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
 import { ScheduledReports } from "@/components/reports/ScheduledReports";
@@ -79,7 +79,7 @@ const ReportsPage = () => {
           description: language === 'en' 
             ? "Successfully loaded PDF reports" 
             : "Relatórios PDF carregados com sucesso",
-          variant: "default" // Changed from "success" to "default" here
+          variant: "default" // Changed from "success" to "default"
         });
       }
       
