@@ -10,12 +10,34 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials. Using fallback values for development.');
 }
 
-// Create the Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
-
-console.log('Supabase client initialized');
+// Add try-catch to prevent uncaught exceptions
+try {
+  console.log('Initializing Supabase client...');
+  // Create the Supabase client
+  export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
+  console.log('Supabase client initialized successfully');
+} catch (error) {
+  console.error('Error initializing Supabase client:', error);
+  // Create a fallback client that will log errors but not crash the app
+  export const supabase = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          then: (callback) => {
+            console.error('Using fallback Supabase client, database operations will fail');
+            return callback({ data: [], error: new Error('Supabase client failed to initialize') });
+          }
+        })
+      })
+    }),
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    }
+  };
+}

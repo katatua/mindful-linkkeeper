@@ -21,29 +21,70 @@ import DatabaseQuery from "@/components/DatabaseQuery";
 import SyntheticDataPage from "./SyntheticDataPage";
 
 const ANIPortal = () => {
+  console.log("ANIPortal component rendering");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { showVisualization, visualizationData, setShowVisualization } = useVisualization();
 
   useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
+    console.log("ANIPortal component mounted, checking auth state");
+    
+    // Check initial auth state with error handling
+    const checkAuth = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Auth error:", error);
+          toast({
+            title: "Authentication Error",
+            description: "Failed to check authentication state. Using default.",
+            variant: "destructive",
+          });
+        }
+        
+        setIsAuthenticated(!!data.session);
+      } catch (err) {
+        console.error("Unexpected auth error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
 
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
+    // Subscribe to auth changes with error handling
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        console.log("Auth state changed:", _event);
+        setIsAuthenticated(!!session);
+      });
 
-    return () => subscription.unsubscribe();
-  }, []);
+      return () => {
+        console.log("ANIPortal component unmounting, unsubscribing from auth");
+        subscription?.unsubscribe();
+      };
+    } catch (err) {
+      console.error("Error setting up auth subscription:", err);
+      return () => {}; // Empty cleanup function
+    }
+  }, [toast]);
 
   const handleCloseVisualization = () => {
     setShowVisualization(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col">
@@ -53,7 +94,7 @@ const ANIPortal = () => {
         <main className="flex-grow max-w-[calc(100%-36rem)] overflow-auto bg-gray-50">
           <Tabs defaultValue="dashboard" className="h-full">
             <div className="container mx-auto py-4 flex justify-between items-center">
-              <TabsList>
+              <TabsList className="overflow-x-auto">
                 <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
                 <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
                 <TabsTrigger value="projects">{t('projects.tab')}</TabsTrigger>
