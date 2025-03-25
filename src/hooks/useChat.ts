@@ -11,6 +11,16 @@ export const useChat = (language: string) => {
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const navigate = useNavigate();
   
+  const sanitizeFileName = (fileName: string): string => {
+    // Remove accents and special characters
+    const normalized = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    // Replace spaces with underscores and remove non-alphanumeric characters except for periods, underscores, and hyphens
+    return normalized
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+  };
+  
   const handleFileUpload = async (file: File) => {
     try {
       setIsUploading(true);
@@ -22,8 +32,9 @@ export const useChat = (language: string) => {
       
       toast.info(uploadingMessage, { duration: 3000 });
       
-      // Create a unique filename
-      const fileName = `${Date.now()}-${file.name}`;
+      // Create a unique filename with sanitization
+      const sanitizedName = sanitizeFileName(file.name);
+      const fileName = `${Date.now()}-${sanitizedName}`;
       
       // Upload file to Supabase Storage with better error handling
       const { data, error: uploadError } = await supabase.storage

@@ -21,9 +21,11 @@ export default function AddFile() {
   const { t } = useLanguage();
 
   const sanitizeFilename = (filename: string): string => {
-    // Remove non-ASCII characters and replace spaces with underscores
-    return filename
-      .replace(/[^\x00-\x7F]/g, '')
+    // Remove accents and special characters
+    const normalized = filename.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    // Replace spaces with underscores and remove non-alphanumeric characters except for periods, underscores, and hyphens
+    return normalized
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9._-]/g, '');
   };
