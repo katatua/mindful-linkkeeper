@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,7 +79,7 @@ const ReportsPage = () => {
           description: language === 'en' 
             ? "Successfully loaded PDF reports" 
             : "Relatórios PDF carregados com sucesso",
-          variant: "success"
+          variant: "default" // Changed from "success" to "default" here
         });
       }
       
@@ -726,4 +727,3 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
-
