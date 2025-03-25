@@ -18,7 +18,9 @@ const AIAssistant = () => {
     suggestionLinks,
     handleSuggestionClick,
     handleSendMessage,
-    handleRefreshSuggestions
+    handleRefreshSuggestions,
+    handleFileUpload,
+    isUploading
   } = useChat(language);
 
   return (
@@ -45,7 +47,9 @@ const AIAssistant = () => {
           input={input}
           setInput={setInput}
           handleSendMessage={handleSendMessage}
+          handleFileUpload={handleFileUpload}
           isTyping={isTyping}
+          isUploading={isUploading}
           language={language}
         />
       </div>

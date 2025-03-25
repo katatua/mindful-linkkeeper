@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Message } from "@/types/chatTypes";
 import { generateResponse, genId } from "@/utils/aiUtils";
@@ -149,6 +150,21 @@ export const useChatCore = (language: string) => {
     }
   };
 
+  const handleSendCustomMessage = async (messageContent: string) => {
+    if (!messageContent.trim()) return;
+    
+    const userMessageId = genId();
+    const userMessage: Message = {
+      id: userMessageId,
+      role: 'user',
+      content: messageContent,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    return await processAndRespondToMessage(messageContent);
+  };
+
   const handleSuggestionClick = async (query: string) => {
     if (!query.trim()) return;
     
@@ -205,6 +221,7 @@ export const useChatCore = (language: string) => {
     suggestionLinks,
     handleSuggestionClick,
     handleSendMessage,
+    handleSendCustomMessage,
     refreshSuggestions
   };
 };
