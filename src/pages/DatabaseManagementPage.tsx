@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Database, AlertTriangle, Check, RefreshCw } from "lucide-react";
+import { Loader2, Database, AlertTriangle, Check, RefreshCw, Table, Server, BookOpen, School, User, Link, Network } from "lucide-react";
 import { toast } from "sonner";
 import { DATABASE_TABLES, populateDatabase, checkDatabaseStatus } from "@/utils/databaseUtils";
 
@@ -43,13 +43,18 @@ const DatabaseManagementPage = () => {
     setProgressInfo("Preparing to generate synthetic data...");
     
     try {
-      let currentProgress = 0;
-      const increment = 100 / DATABASE_TABLES.length;
+      // Calculate total tables for progress
+      const totalTables = DATABASE_TABLES.length;
+      let completedTables = 0;
       
       await populateDatabase((info) => {
         setProgressInfo(info);
-        currentProgress += increment / 2;
-        setProgress(Math.min(Math.round(currentProgress), 99));
+        
+        // Update progress when a table is successfully populated
+        if (info.includes("Successfully populated")) {
+          completedTables++;
+          setProgress(Math.min(Math.round((completedTables / totalTables) * 100), 99));
+        }
       });
       
       setProgress(100);
@@ -81,6 +86,20 @@ const DatabaseManagementPage = () => {
     }
     
     return <Check className="h-5 w-5 text-green-500" />;
+  };
+  
+  // Helper to get table icon
+  const getTableIcon = (table: string) => {
+    if (table.includes('metrics')) return <BarChart className="h-5 w-5 text-blue-500" />;
+    if (table.includes('projects')) return <Briefcase className="h-5 w-5 text-indigo-500" />;
+    if (table.includes('funding')) return <Database className="h-5 w-5 text-green-500" />;
+    if (table.includes('patent')) return <BookOpen className="h-5 w-5 text-amber-500" />;
+    if (table.includes('international')) return <Network className="h-5 w-5 text-purple-500" />;
+    if (table.includes('institutions')) return <School className="h-5 w-5 text-cyan-500" />;
+    if (table.includes('researchers')) return <User className="h-5 w-5 text-rose-500" />;
+    if (table.includes('_researchers')) return <Link className="h-5 w-5 text-pink-500" />;
+    
+    return <Table className="h-5 w-5 text-gray-500" />;
   };
   
   // Get overall database status
@@ -118,7 +137,7 @@ const DatabaseManagementPage = () => {
       </div>
       
       <Alert className="mb-6">
-        <Database className="h-4 w-4" />
+        <Server className="h-4 w-4" />
         <AlertTitle>Database Status</AlertTitle>
         <AlertDescription>
           {dbStatus === "unknown" && "Database status is being checked..."}
@@ -134,7 +153,10 @@ const DatabaseManagementPage = () => {
           <Card key={table}>
             <CardHeader className="pb-2">
               <div className="flex justify-between">
-                <CardTitle className="text-lg">{table}</CardTitle>
+                <div className="flex items-center gap-2">
+                  {getTableIcon(table)}
+                  <CardTitle className="text-lg">{table}</CardTitle>
+                </div>
                 {getStatusIndicator(table)}
               </div>
               <CardDescription>

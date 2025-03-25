@@ -8,7 +8,10 @@ export const DATABASE_TABLES = [
   'ani_funding_programs',
   'ani_funding_applications',
   'ani_international_collaborations',
-  'ani_patent_holders'
+  'ani_patent_holders',
+  'ani_institutions',
+  'ani_researchers',
+  'ani_projects_researchers'
 ];
 
 /**
@@ -44,7 +47,20 @@ export const generateSyntheticData = async (tableName: string, count: number = 5
 export const populateDatabase = async (updateProgress?: (info: string) => void) => {
   const results: Record<string, { success: boolean, message: string }> = {};
   
-  for (const table of DATABASE_TABLES) {
+  // Define a specific order to respect foreign key dependencies
+  const populationOrder = [
+    'ani_institutions',            // First, populate institutions
+    'ani_researchers',             // Then researchers (depends on institutions)
+    'ani_metrics',                 // Independent
+    'ani_funding_programs',        // Independent
+    'ani_projects',                // Depends on institutions
+    'ani_funding_applications',    // Depends on funding programs
+    'ani_patent_holders',          // Depends on institutions
+    'ani_international_collaborations', // Independent
+    'ani_projects_researchers'     // Depends on projects and researchers
+  ];
+  
+  for (const table of populationOrder) {
     if (updateProgress) {
       updateProgress(`Generating data for ${table}...`);
     }
@@ -54,6 +70,9 @@ export const populateDatabase = async (updateProgress?: (info: string) => void) 
     if (table === 'ani_metrics') count = 100;
     if (table === 'ani_projects') count = 75;
     if (table === 'ani_funding_programs') count = 25;
+    if (table === 'ani_institutions') count = 20;
+    if (table === 'ani_researchers') count = 40;
+    if (table === 'ani_projects_researchers') count = 120;
     
     results[table] = await generateSyntheticData(table, count);
     

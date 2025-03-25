@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ani_database_status: {
+        Row: {
+          created_at: string
+          id: string
+          last_populated: string | null
+          record_count: number | null
+          status: string | null
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_populated?: string | null
+          record_count?: number | null
+          status?: string | null
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_populated?: string | null
+          record_count?: number | null
+          status?: string | null
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ani_funding_applications: {
         Row: {
           application_date: string
@@ -58,6 +88,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ani_funding_applications_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "ani_funding_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_program_id"
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "ani_funding_programs"
@@ -118,6 +155,45 @@ export type Database = {
           start_date?: string | null
           success_rate?: number | null
           total_budget?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ani_institutions: {
+        Row: {
+          collaboration_count: number | null
+          created_at: string
+          founding_date: string | null
+          id: string
+          institution_name: string
+          project_history: string[] | null
+          region: string | null
+          specialization_areas: string[] | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          collaboration_count?: number | null
+          created_at?: string
+          founding_date?: string | null
+          id?: string
+          institution_name: string
+          project_history?: string[] | null
+          region?: string | null
+          specialization_areas?: string[] | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          collaboration_count?: number | null
+          created_at?: string
+          founding_date?: string | null
+          id?: string
+          institution_name?: string
+          project_history?: string[] | null
+          region?: string | null
+          specialization_areas?: string[] | null
+          type?: string
           updated_at?: string
         }
         Relationships: []
@@ -215,6 +291,7 @@ export type Database = {
           created_at: string | null
           id: string
           innovation_index: number | null
+          institution_id: string | null
           organization_name: string
           patent_count: number
           sector: string | null
@@ -225,6 +302,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           innovation_index?: number | null
+          institution_id?: string | null
           organization_name: string
           patent_count: number
           sector?: string | null
@@ -235,12 +313,21 @@ export type Database = {
           created_at?: string | null
           id?: string
           innovation_index?: number | null
+          institution_id?: string | null
           organization_name?: string
           patent_count?: number
           sector?: string | null
           year?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ani_patent_holders_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "ani_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ani_policy_frameworks: {
         Row: {
@@ -290,6 +377,7 @@ export type Database = {
           end_date: string | null
           funding_amount: number | null
           id: string
+          institution_id: string | null
           organization: string | null
           region: string | null
           sector: string | null
@@ -306,6 +394,7 @@ export type Database = {
           end_date?: string | null
           funding_amount?: number | null
           id?: string
+          institution_id?: string | null
           organization?: string | null
           region?: string | null
           sector?: string | null
@@ -322,6 +411,7 @@ export type Database = {
           end_date?: string | null
           funding_amount?: number | null
           id?: string
+          institution_id?: string | null
           organization?: string | null
           region?: string | null
           sector?: string | null
@@ -330,7 +420,95 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ani_projects_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "ani_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ani_projects_researchers: {
+        Row: {
+          project_id: string
+          researcher_id: string
+          role: string | null
+        }
+        Insert: {
+          project_id: string
+          researcher_id: string
+          role?: string | null
+        }
+        Update: {
+          project_id?: string
+          researcher_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ani_projects_researchers_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ani_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ani_projects_researchers_researcher_id_fkey"
+            columns: ["researcher_id"]
+            isOneToOne: false
+            referencedRelation: "ani_researchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ani_researchers: {
+        Row: {
+          created_at: string
+          email: string | null
+          h_index: number | null
+          id: string
+          institution_id: string | null
+          name: string
+          patent_count: number | null
+          publication_count: number | null
+          specialization: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          h_index?: number | null
+          id?: string
+          institution_id?: string | null
+          name: string
+          patent_count?: number | null
+          publication_count?: number | null
+          specialization?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          h_index?: number | null
+          id?: string
+          institution_id?: string | null
+          name?: string
+          patent_count?: number | null
+          publication_count?: number | null
+          specialization?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ani_researchers_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "ani_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_events: {
         Row: {
