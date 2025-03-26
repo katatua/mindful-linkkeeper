@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ServerCrash, CheckCircle2, Database, AlertTriangle } from "lucide-react";
-import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
+import { Loader2, ServerCrash, CheckCircle2, Database, AlertTriangle, PlusCircle } from "lucide-react";
+import { testDatabaseConnection, initializeDatabase } from "@/utils/databaseDiagnostics";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const DatabaseConnectionTest = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [result, setResult] = useState<{
     success?: boolean;
     message?: string;
@@ -47,22 +48,67 @@ const DatabaseConnectionTest = () => {
     }
   };
 
+  const initializeDb = async () => {
+    setIsInitializing(true);
+    
+    try {
+      toast.info("Initializing database...");
+      const initResult = await initializeDatabase();
+      
+      if (initResult.success) {
+        toast.success("Database initialized successfully");
+        // Run the test again to verify
+        await runTest();
+      } else {
+        toast.error("Database initialization failed", {
+          description: initResult.message
+        });
+      }
+    } catch (error) {
+      console.error("Error initializing database:", error);
+      toast.error("Database initialization failed", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={runTest}
-        disabled={isLoading}
-        className="gap-2 mb-2"
-      >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Database className="h-4 w-4" />
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={runTest}
+          disabled={isLoading}
+          className="gap-2"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Database className="h-4 w-4" />
+          )}
+          {isLoading ? "Testing Connection..." : "Test Database Connection"}
+        </Button>
+        
+        {result && !result.success && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={initializeDb}
+            disabled={isInitializing}
+            className="gap-2"
+          >
+            {isInitializing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <PlusCircle className="h-4 w-4" />
+            )}
+            {isInitializing ? "Initializing..." : "Initialize Database"}
+          </Button>
         )}
-        {isLoading ? "Testing Connection..." : "Test Database Connection"}
-      </Button>
+      </div>
       
       {result && (
         <Alert variant={result.success ? "default" : "destructive"} className="mt-2">
@@ -98,8 +144,9 @@ const DatabaseConnectionTest = () => {
                     <li>Verify your Supabase URL and API key are correct</li>
                     <li>Check if the database is accessible from your current location</li>
                     <li>Confirm that the edge function is deployed correctly</li>
-                    <li>Check if the execute_raw_query function exists in your database</li>
+                    <li>Check if you need to create database tables using the SQL editor</li>
                     <li>Verify network connectivity to Supabase services</li>
+                    <li>Try the "Initialize Database" button to set up basic tables</li>
                   </ul>
                 </div>
               </div>
