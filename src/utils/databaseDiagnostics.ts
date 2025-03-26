@@ -37,45 +37,68 @@ export const runDatabaseDiagnostics = async () => {
           .select('count(*)', { count: 'exact', head: true });
         
         const duration = performance.now() - start;
-        
-        results.basicConnection = {
-          success: !statusError,
-          duration: `${duration.toFixed(2)}ms`,
-          error: statusError ? statusError.message : null,
-          errorCode: statusError ? statusError.code : null,
-          errorDetails: statusError ? JSON.stringify(statusError) : null
-        };
+
+        // Enhanced error handling for empty error responses
+        let errorMessage = null;
+        let errorCode = null;
+        let errorSuggestion = null;
         
         if (statusError) {
           console.error("Basic connection test failed:", statusError);
           
-          // Enhanced suggestions based on error type
-          if (statusError.message?.includes('fetch') || statusError.message?.includes('network')) {
-            results.basicConnection.suggestion = "Network connectivity issue detected. Check your internet connection and firewall settings.";
-          } else if (statusError.code === '42P01') { // Table doesn't exist
-            results.basicConnection.suggestion = "The ani_database_status table doesn't exist. Make sure the database is properly initialized.";
-          } else if (statusError.code?.startsWith('28')) { // Authentication issues
-            results.basicConnection.suggestion = "Authentication failed. Verify your Supabase API key is correct.";
-          } else if (statusError.code === 'PGRST116') {
-            results.basicConnection.suggestion = "Permission denied. Check the Row Level Security (RLS) policies for the ani_database_status table.";
-          } else if (!statusError.message && !statusError.code) {
-            // Handle empty error object
-            results.basicConnection.error = "Empty error response. This might indicate a CORS issue or network interruption.";
-            results.basicConnection.suggestion = "Check browser console for CORS errors and verify your network connection is stable.";
+          // Handle empty error object specifically
+          if (!statusError.message && !statusError.code) {
+            errorMessage = "Empty error response. This might indicate a CORS issue or network interruption.";
+            errorSuggestion = "Check browser console for CORS errors and verify your network connection is stable. Try accessing the Supabase dashboard directly to verify project availability.";
+          } else {
+            errorMessage = statusError.message;
+            errorCode = statusError.code;
+            
+            // Enhanced suggestions based on error type
+            if (statusError.message?.includes('fetch') || statusError.message?.includes('network')) {
+              errorSuggestion = "Network connectivity issue detected. Check your internet connection and firewall settings.";
+            } else if (statusError.code === '42P01') { // Table doesn't exist
+              errorSuggestion = "The ani_database_status table doesn't exist. Make sure the database is properly initialized.";
+            } else if (statusError.code?.startsWith('28')) { // Authentication issues
+              errorSuggestion = "Authentication failed. Verify your Supabase API key is correct.";
+            } else if (statusError.code === 'PGRST116') {
+              errorSuggestion = "Permission denied. Check the Row Level Security (RLS) policies for the ani_database_status table.";
+            }
           }
-        } else {
+        }
+        
+        results.basicConnection = {
+          success: !statusError,
+          duration: `${duration.toFixed(2)}ms`,
+          error: errorMessage,
+          errorCode: errorCode,
+          errorDetails: statusError ? JSON.stringify(statusError) : null,
+          suggestion: errorSuggestion
+        };
+        
+        if (!statusError) {
           console.log("Basic connection test successful");
         }
       }
     } catch (testError: any) {
       console.error("Test 1 failed with exception:", testError);
+      
+      // Improved error handling for exceptions
+      let errorMessage = testError.message || "Unknown error";
+      let errorSuggestion = testError.message?.includes('fetch') ? 
+        "Network connectivity issue detected. Check your internet connection." : 
+        "Unexpected error occurred during connection test.";
+      
+      // Special handling for AbortError or timeout errors
+      if (testError.name === 'AbortError' || errorMessage.includes('timeout')) {
+        errorSuggestion = "Request timed out. The Supabase service might be experiencing high load or connection issues.";
+      }
+      
       results.basicConnection = {
         success: false,
-        error: testError.message || "Unknown error",
+        error: errorMessage,
         errorType: 'EXCEPTION',
-        suggestion: testError.message?.includes('fetch') ? 
-          "Network connectivity issue detected. Check your internet connection." : 
-          "Unexpected error occurred during connection test."
+        suggestion: errorSuggestion
       };
     }
     
@@ -249,10 +272,14 @@ export const testDatabaseConnection = async () => {
       console.error("Database connection failed:", error);
       
       // Provide helpful toast message based on error type
-      let errorMessage = error.message || "Unknown error";
-      let errorDescription = "";
+      let errorMessage = "Database connection failed";
+      let errorDescription = error.message || "Unknown error";
       
-      if (error.message?.includes('fetch') || error.message?.includes('network')) {
+      // Enhanced error handling for empty responses
+      if (!error.message && !error.code) {
+        errorMessage = "Connection error";
+        errorDescription = "Empty error response. This might indicate a CORS issue or network interruption. Try refreshing the page or checking your network settings.";
+      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
         errorMessage = "Network connectivity issue detected";
         errorDescription = "Check your internet connection and firewall settings.";
       } else if (error.code === '42P01') {
@@ -264,13 +291,10 @@ export const testDatabaseConnection = async () => {
       } else if (error.code === 'PGRST116') {
         errorMessage = "Permission denied";
         errorDescription = "Check the RLS policies for the ani_database_status table.";
-      } else if (!error.message && !error.code) {
-        errorMessage = "Connection error";
-        errorDescription = "Empty error response. This might indicate a CORS issue or network interruption.";
       }
       
       toast.error(errorMessage, {
-        description: errorDescription || error.message
+        description: errorDescription
       });
       
       return { 
