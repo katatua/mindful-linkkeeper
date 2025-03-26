@@ -3,9 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, ServerCrash, CheckCircle2, Database, AlertTriangle, PlusCircle } from "lucide-react";
-import { testDatabaseConnection, initializeDatabase } from "@/utils/databaseDiagnostics";
+import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const DatabaseConnectionTest = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -53,21 +54,46 @@ const DatabaseConnectionTest = () => {
     
     try {
       toast.info("Initializing database...");
-      const initResult = await initializeDatabase();
       
-      if (initResult.success) {
+      // Call the edge function for database initialization
+      const { data, error } = await supabase.functions.invoke('initialize-database');
+      
+      if (error) {
+        console.error("Error initializing database:", error);
+        toast.error("Database initialization failed", {
+          description: error.message || "Unknown error"
+        });
+        setResult({
+          success: false,
+          message: error.message || "Failed to initialize database",
+          details: error
+        });
+        return;
+      }
+      
+      if (data.success) {
         toast.success("Database initialized successfully");
         // Run the test again to verify
         await runTest();
       } else {
         toast.error("Database initialization failed", {
-          description: initResult.message
+          description: data.error || "Unknown error"
+        });
+        setResult({
+          success: false,
+          message: data.error || "Failed to initialize database",
+          details: data
         });
       }
     } catch (error) {
       console.error("Error initializing database:", error);
       toast.error("Database initialization failed", {
         description: error instanceof Error ? error.message : "Unknown error"
+      });
+      setResult({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error occurred",
+        details: error
       });
     } finally {
       setIsInitializing(false);
@@ -92,22 +118,20 @@ const DatabaseConnectionTest = () => {
           {isLoading ? "Testing Connection..." : "Test Database Connection"}
         </Button>
         
-        {result && !result.success && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={initializeDb}
-            disabled={isInitializing}
-            className="gap-2"
-          >
-            {isInitializing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <PlusCircle className="h-4 w-4" />
-            )}
-            {isInitializing ? "Initializing..." : "Initialize Database"}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={initializeDb}
+          disabled={isInitializing}
+          className="gap-2"
+        >
+          {isInitializing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <PlusCircle className="h-4 w-4" />
+          )}
+          {isInitializing ? "Initializing..." : "Initialize Database"}
+        </Button>
       </div>
       
       {result && (

@@ -64,58 +64,6 @@ export const testDatabaseConnection = async () => {
   }
 };
 
-export const initializeDatabase = async () => {
-  // Check admin status before allowing database initialization
-  const isAdmin = await checkAdminStatus();
-  if (!isAdmin) {
-    return {
-      success: false,
-      message: 'Admin permission required for database initialization',
-      details: { error: 'Permission denied' }
-    };
-  }
-
-  try {
-    // Using supabaseAdmin for administrative operations
-    // Create ani_database_status table if it doesn't exist
-    const { data, error } = await supabaseAdmin.rpc('execute_raw_query', {
-      sql_query: `
-        CREATE TABLE IF NOT EXISTS ani_database_status (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          table_name TEXT NOT NULL,
-          record_count INTEGER DEFAULT 0,
-          status TEXT DEFAULT 'empty',
-          last_populated TIMESTAMP WITH TIME ZONE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        );
-      `
-    });
-
-    if (error) {
-      console.error('Database initialization failed:', error);
-      return {
-        success: false,
-        message: error.message,
-        details: error
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Database initialized successfully',
-      data
-    };
-  } catch (error) {
-    console.error('Unexpected error during database initialization:', error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      details: error
-    };
-  }
-};
-
 export const checkDatabaseStatus = async () => {
   // Check admin status before allowing database status check
   const isAdmin = await checkAdminStatus();
