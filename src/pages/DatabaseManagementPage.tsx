@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DATABASE_TABLES, populateDatabase, checkDatabaseStatus } from "@/utils/databaseUtils";
+import DatabaseStatusViewer from "@/components/DatabaseStatusViewer";
 
 const DatabaseManagementPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -162,6 +163,11 @@ const DatabaseManagementPage = () => {
           {dbStatus === "populated" && "Database is populated with data."}
         </AlertDescription>
       </Alert>
+      
+      {/* Add the DatabaseStatusViewer component */}
+      <div className="mb-6">
+        <DatabaseStatusViewer />
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {DATABASE_TABLES.map(table => (
