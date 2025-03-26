@@ -4,6 +4,60 @@ import { localDatabase } from "@/utils/localDatabase";
 
 // A simplified mock of the Supabase client for local development
 export const mockClient = {
+  auth: {
+    getSession: async () => {
+      return {
+        data: {
+          session: null
+        },
+        error: null
+      };
+    },
+    onAuthStateChange: (_event, _callback) => {
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      };
+    },
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      // Mock sign in - in a real app this would validate credentials
+      console.log('Mock sign in with', email, password);
+      return {
+        data: {
+          user: {
+            id: uuidv4(),
+            email,
+          },
+          session: {
+            access_token: 'mock-token'
+          }
+        },
+        error: null
+      };
+    },
+    signUp: async ({ email, password }: { email: string; password: string }) => {
+      console.log('Mock sign up with', email, password);
+      return {
+        data: {
+          user: {
+            id: uuidv4(),
+            email,
+          },
+          session: null
+        },
+        error: null
+      };
+    },
+    signOut: async () => {
+      console.log('Mock sign out');
+      return {
+        error: null
+      };
+    }
+  },
   from: (table: string) => ({
     select: (columns?: string) => {
       return {

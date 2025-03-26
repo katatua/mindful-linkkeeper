@@ -15,10 +15,15 @@ export interface QueryResult {
   isConnectionError?: boolean;
 }
 
-export const useQueryProcessor = () => {
+export function useQueryProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState<QueryResult | null>(null);
   const [useOfflineMode, setUseOfflineMode] = useState(false);
+  const [query, setQuery] = useState<string>('');
+  const [sqlQuery, setSqlQuery] = useState<string>('');
+  const [results, setResults] = useState<any[]>([]);
+  const [interpretation, setInterpretation] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   /**
    * Toggle between online and offline mode
@@ -138,7 +143,7 @@ export const useQueryProcessor = () => {
       setIsProcessing(false);
     }
   };
-  
+
   /**
    * Process a natural language question to SQL and execute it
    */
@@ -320,6 +325,87 @@ export const useQueryProcessor = () => {
     }
   };
 
+  /**
+   * Process a query using the Supabase functions
+   */
+  const processQuery = async (question: string) => {
+    try {
+      setIsProcessing(true);
+      setQuery(question);
+
+      // Generate SQL from the question
+      const generateResponse = await supabase.functions.invoke('generate-sql', {
+        body: { question }
+      });
+
+      if (generateResponse.error) {
+        setError(generateResponse.error.message);
+        setIsProcessing(false);
+        return { success: false, error: generateResponse.error.message };
+      }
+
+      const { sql } = generateResponse.data;
+      setSqlQuery(sql);
+
+      // Execute the SQL query
+      const executeResponse = await supabase.functions.invoke('execute-sql', {
+        body: { sqlQuery: sql }
+      });
+
+      if (executeResponse.error) {
+        setError(executeResponse.error.message);
+        setIsProcessing(false);
+        return { success: false, error: executeResponse.error.message };
+      }
+
+      // Get the results
+      const result = executeResponse.data.result;
+      setResults(result);
+
+      // Interpret the results in natural language
+      const interpretResponse = await supabase.functions.invoke('interpret-results', {
+        body: { 
+          question, 
+          sql,
+          results: result 
+        }
+      });
+
+      // Store the natural language interpretation
+      if (!interpretResponse.error) {
+        setInterpretation(interpretResponse.data.interpretation);
+      } else {
+        // Default interpretation if AI interpretation fails
+        setInterpretation(`Query executed successfully. Found ${result.length} results.`);
+      }
+
+      setIsProcessing(false);
+      return { 
+        success: true, 
+        data: result, 
+        sql, 
+        interpretation: interpretResponse.data?.interpretation || `Query executed successfully. Found ${result.length} results.`
+      };
+    } catch (error) {
+      console.error("Error processing query:", error);
+      
+      // Fallback to dummy data for any error
+      const dummyResult = generateDummyResponse(question);
+      const errorResult: QueryResult = {
+        response: dummyResult.response,
+        visualizationData: dummyResult.visualizationData,
+        error: error instanceof Error ? error.message : String(error),
+        isConnectionError: error instanceof Error && 
+          (error.message?.includes('connection') || error.message?.includes('network'))
+      };
+      
+      setLastResult(errorResult);
+      return errorResult;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return {
     isProcessing,
     lastResult,
@@ -329,6 +415,7 @@ export const useQueryProcessor = () => {
     processNaturalLanguageQuery,
     isMetricsQuery,
     generateSqlFromNaturalLanguage,
-    processQuestion
+    processQuestion,
+    processQuery
   };
 };
