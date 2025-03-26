@@ -137,6 +137,93 @@ const metricDetailsMap = {
       "Expand the patent voucher program to more sectors"
     ]
   },
+  'active-projects': {
+    title: "Active Projects",
+    description: "Number of ongoing innovation projects across all sectors and regions.",
+    currentValue: "186",
+    previousValue: "152",
+    changePercentage: "+22.4%",
+    trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 130 },
+      { month: 'Feb', value: 138 },
+      { month: 'Mar', value: 145 },
+      { month: 'Apr', value: 153 },
+      { month: 'May', value: 162 },
+      { month: 'Jun', value: 171 },
+      { month: 'Jul', value: 178 },
+      { month: 'Aug', value: 186 },
+    ],
+    insights: [
+      "Digital transformation projects have increased by 35% since last year",
+      "Lisboa region leads with 42% of all active projects",
+      "Cross-sector collaborative projects show 27% higher completion rates",
+      "Average project duration has decreased by 1.5 months with new methodologies"
+    ],
+    recommendations: [
+      "Expand project management training programs for project coordinators",
+      "Implement regional innovation hubs in underrepresented areas",
+      "Develop standardized metrics for measuring project impact across sectors"
+    ]
+  },
+  'startups-incubated': {
+    title: "Startups Incubated",
+    description: "Total number of startups supported through national incubation programs.",
+    currentValue: "124",
+    previousValue: "98",
+    changePercentage: "+26.5%",
+    trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 85 },
+      { month: 'Feb', value: 90 },
+      { month: 'Mar', value: 95 },
+      { month: 'Apr', value: 102 },
+      { month: 'May', value: 108 },
+      { month: 'Jun', value: 115 },
+      { month: 'Jul', value: 119 },
+      { month: 'Aug', value: 124 },
+    ],
+    insights: [
+      "Fintech startups represent the fastest growing segment at 31%",
+      "Startups with female founders increased by 18% this year",
+      "Average seed funding increased by €75,000 compared to last year",
+      "Incubator programs with mentorship show 40% higher success rates"
+    ],
+    recommendations: [
+      "Create specialized incubation tracks for deep tech startups",
+      "Expand international market access programs for later-stage startups",
+      "Develop targeted support for underrepresented founder demographics"
+    ]
+  },
+  'international-collaborations': {
+    title: "International Collaborations",
+    description: "Number of active international research and innovation partnerships.",
+    currentValue: "93",
+    previousValue: "71",
+    changePercentage: "+31.0%",
+    trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 60 },
+      { month: 'Feb', value: 65 },
+      { month: 'Mar', value: 71 },
+      { month: 'Apr', value: 76 },
+      { month: 'May', value: 81 },
+      { month: 'Jun', value: 85 },
+      { month: 'Jul', value: 89 },
+      { month: 'Aug', value: 93 },
+    ],
+    insights: [
+      "EU Horizon Europe partnerships account for 45% of all collaborations",
+      "Bilateral partnerships with Germany and France have doubled",
+      "Sustainability-focused collaborations have increased by 65%",
+      "Joint publications resulting from collaborations increased by 28%"
+    ],
+    recommendations: [
+      "Establish dedicated liaison offices for key international regions",
+      "Create a central database of potential international partners",
+      "Develop specialized funding for transatlantic innovation partnerships"
+    ]
+  },
 };
 
 const MetricDetailPage: React.FC = () => {
