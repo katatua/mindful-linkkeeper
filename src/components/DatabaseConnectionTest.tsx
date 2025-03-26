@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { testDatabaseConnection, runDatabaseDiagnostics } from '@/utils/databaseDiagnostics';
-import { Database, ServerCrash, Check, X, RefreshCw, Loader2, AlertTriangle, Link, Globe } from 'lucide-react';
+import { Database, ServerCrash, Check, X, RefreshCw, Loader2, AlertTriangle, Link, Globe, Shield, Network } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from 'sonner';
 import { supabase, SUPABASE_URL } from "@/integrations/supabase/client";
@@ -42,6 +42,19 @@ const DatabaseConnectionTest: React.FC = () => {
       <X className="h-5 w-5 text-red-500" />;
   };
   
+  const getErrorTypeIcon = (errorData: any) => {
+    if (!errorData || !errorData.error) return <ServerCrash className="h-4 w-4" />;
+    
+    if (errorData.error.includes('network') || errorData.error.includes('fetch')) 
+      return <Network className="h-4 w-4" />;
+    if (errorData.error.includes('permission') || errorData.error.includes('denied'))
+      return <Shield className="h-4 w-4" />;
+    if (errorData.error.includes('timeout'))
+      return <Loader2 className="h-4 w-4" />;
+      
+    return <ServerCrash className="h-4 w-4" />;
+  };
+  
   const renderTestResult = (name: string, result: any) => {
     if (!result) return null;
     
@@ -57,12 +70,17 @@ const DatabaseConnectionTest: React.FC = () => {
         
         {!result.success && (
           <Alert variant="destructive" className="mt-2">
-            <ServerCrash className="h-4 w-4" />
+            {getErrorTypeIcon(result)}
             <AlertTitle>Error Details</AlertTitle>
             <AlertDescription className="text-sm">
               {result.error}
+              {result.errorCode && (
+                <div className="mt-1 text-xs font-mono bg-gray-100 p-1 rounded">
+                  Error code: {result.errorCode}
+                </div>
+              )}
               {result.suggestion && (
-                <div className="mt-1 text-sm italic">
+                <div className="mt-2 text-sm italic border-l-2 border-amber-400 pl-2">
                   Suggestion: {result.suggestion}
                 </div>
               )}
@@ -161,6 +179,7 @@ const DatabaseConnectionTest: React.FC = () => {
             {renderTestResult('Basic Database Connection', results.results.basicConnection)}
             {renderTestResult('Functions Endpoint', results.results.functionsEndpoint)}
             {renderTestResult('Client Configuration', results.results.clientConfiguration)}
+            {renderTestResult('Connection String', results.results.connectionString)}
             
             {results.results.summary && results.results.summary.recommendations.length > 0 && (
               <div className="mt-6 border-t pt-4">
