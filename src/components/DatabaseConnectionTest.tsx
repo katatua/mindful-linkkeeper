@@ -84,12 +84,18 @@ const DatabaseConnectionTest: React.FC = () => {
         toast.success("Diagnostics completed successfully");
         setConnectionStatus("connected");
       } else {
-        // Fixed the TypeScript error by safely accessing the summary and recommendations
-        const errorSummary = diagnosticResults.results && 
-                            diagnosticResults.results.summary && 
-                            diagnosticResults.results.summary.recommendations ? 
-                            diagnosticResults.results.summary.recommendations.join("; ") : 
-                            "Check the console for detailed results";
+        // Handle potential missing properties with proper type guards
+        let errorSummary = "Check the console for detailed results";
+        
+        // Safely check for the existence of the necessary properties
+        if (diagnosticResults.results && 
+            typeof diagnosticResults.results === 'object' && 
+            'summary' in diagnosticResults.results && 
+            diagnosticResults.results.summary && 
+            'recommendations' in diagnosticResults.results.summary && 
+            Array.isArray(diagnosticResults.results.summary.recommendations)) {
+          errorSummary = diagnosticResults.results.summary.recommendations.join("; ");
+        }
         
         setErrorDetails(errorSummary);
         
