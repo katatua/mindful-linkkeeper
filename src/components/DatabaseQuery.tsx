@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,15 @@ export default function DatabaseQuery() {
     
     const result = await processQuery(query);
     
-    if (result.success) {
+    if ('success' in result && result.success) {
       setQueryResults(result.data);
-      setSqlStatement(result.sql);
+      setSqlStatement(result.sql || '');
       setNaturalLanguageResponse(result.interpretation || '');
       setDisplayResults(true);
     } else {
       toast({
         title: "Query Error",
-        description: result.error || "Failed to execute query",
+        description: ('error' in result) ? result.error : "Failed to execute query",
         variant: "destructive",
       });
     }

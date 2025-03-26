@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +30,6 @@ const DatabaseManagementPage = () => {
   const [tableStatus, setTableStatus] = useState<Record<string, number>>({});
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   
-  // Check database status on component mount
   useEffect(() => {
     checkStatus();
   }, []);
@@ -59,14 +57,12 @@ const DatabaseManagementPage = () => {
     setProgressInfo("Preparing to generate synthetic data...");
     
     try {
-      // Calculate total tables for progress
       const totalTables = DATABASE_TABLES.length;
       let completedTables = 0;
       
       await populateDatabase((info) => {
         setProgressInfo(info);
         
-        // Update progress when a table is successfully populated
         if (info.includes("Successfully populated")) {
           completedTables++;
           setProgress(Math.min(Math.round((completedTables / totalTables) * 100), 99));
@@ -77,7 +73,6 @@ const DatabaseManagementPage = () => {
       setProgressInfo("Database population completed!");
       toast.success("Database populated successfully");
       
-      // Refresh the status after population
       await checkStatus();
     } catch (error) {
       console.error("Error populating database:", error);
@@ -89,7 +84,6 @@ const DatabaseManagementPage = () => {
     }
   };
   
-  // Helper function to get status indicator
   const getStatusIndicator = (table: string) => {
     const count = tableStatus[table];
     
@@ -104,7 +98,6 @@ const DatabaseManagementPage = () => {
     return <Check className="h-5 w-5 text-green-500" />;
   };
   
-  // Helper to get table icon
   const getTableIcon = (table: string) => {
     if (table.includes('metrics')) return <BarChartIcon className="h-5 w-5 text-blue-500" />;
     if (table.includes('projects')) return <Briefcase className="h-5 w-5 text-indigo-500" />;
@@ -118,7 +111,6 @@ const DatabaseManagementPage = () => {
     return <Table className="h-5 w-5 text-gray-500" />;
   };
   
-  // Get overall database status
   const getDatabaseStatus = () => {
     const tables = Object.keys(tableStatus);
     if (tables.length === 0) return "unknown";
@@ -164,7 +156,6 @@ const DatabaseManagementPage = () => {
         </AlertDescription>
       </Alert>
       
-      {/* Add the DatabaseStatusViewer component */}
       <div className="mb-6">
         <DatabaseStatusViewer />
       </div>

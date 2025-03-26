@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,7 +6,6 @@ import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getDatabaseInitScript } from "@/utils/databaseUtils";
 import { initializeLocalDatabase } from "@/utils/localDatabase";
 
 const DatabaseConnectionTest = () => {
