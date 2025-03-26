@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Database, AlertTriangle, BookOpen } from 'lucide-react';
+import { Loader2, Database, AlertTriangle, BookOpen, ServerCrash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Markdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,8 @@ import { useQueryProcessor } from '@/hooks/useQueryProcessor';
 import DatabaseConnectionTest from './DatabaseConnectionTest';
 import { useVisualization } from '@/hooks/useVisualization';
 import DataVisualization from './DataVisualization';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { testDatabaseConnection } from '@/utils/databaseDiagnostics';
 
 const EXAMPLE_QUERIES = {
   tablesCount: `SELECT
@@ -132,10 +134,34 @@ const DatabaseQuery: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sqlQuery, setSqlQuery] = useState<string>(EXAMPLE_QUERIES.tablesCount);
+  const [initialConnectionChecked, setInitialConnectionChecked] = useState(false);
+  const [isConnectionOk, setIsConnectionOk] = useState(false);
   const { toast } = useToast();
   const { showVisualization, setShowVisualization, visualizationData, setVisualizationData, handleVisualizationData } = useVisualization();
   
   const { executeQuery } = useQueryProcessor();
+
+  // Check connection on component mount
+  useEffect(() => {
+    checkInitialConnection();
+  }, []);
+
+  const checkInitialConnection = async () => {
+    try {
+      const connectionResult = await testDatabaseConnection();
+      setIsConnectionOk(connectionResult.success);
+      setInitialConnectionChecked(true);
+      
+      if (!connectionResult.success) {
+        setError("Database connection is not available. Use the connection test button below to troubleshoot.");
+      }
+    } catch (e) {
+      console.error("Initial connection check failed:", e);
+      setIsConnectionOk(false);
+      setInitialConnectionChecked(true);
+      setError("Failed to perform initial connection check.");
+    }
+  };
 
   const handleSelectQuery = (queryKey: string) => {
     if (queryKey in EXAMPLE_QUERIES) {
@@ -158,7 +184,11 @@ const DatabaseQuery: React.FC = () => {
     setShowVisualization(false);
     
     try {
-      const { response, visualizationData } = await executeQuery(sqlQuery.trim());
+      const { response, visualizationData, error: queryError, isConnectionError } = await executeQuery(sqlQuery.trim());
+      
+      if (queryError) {
+        throw new Error(queryError);
+      }
       
       if (response) {
         setResults(response);
@@ -182,11 +212,18 @@ const DatabaseQuery: React.FC = () => {
       }
     } catch (error) {
       console.error("Error querying database:", error);
-      setError(`Erro ao consultar o banco de dados. Por favor, tente novamente mais tarde. Detalhes: ${error instanceof Error ? error.message : String(error)}`);
+      const isConnectionError = error.message?.includes('connection') || 
+                                error.message?.includes('network') ||
+                                error.message?.includes('Failed to send');
+      
+      setError(`${isConnectionError ? 'Database connection error: ' : 'Error executing query: '}${error instanceof Error ? error.message : String(error)}`);
+      
       toast({
         variant: "destructive",
-        title: "Falha na Consulta do Banco de Dados",
-        description: "Houve um erro ao buscar dados do banco de dados."
+        title: isConnectionError ? "Falha na Conexão com o Banco de Dados" : "Falha na Consulta do Banco de Dados",
+        description: isConnectionError 
+          ? "Não foi possível conectar ao banco de dados. Verifique a conexão e as configurações do Supabase."
+          : "Houve um erro ao executar a consulta SQL."
       });
     } finally {
       setLoading(false);
@@ -211,6 +248,17 @@ const DatabaseQuery: React.FC = () => {
           <CardDescription>Execute consultas SQL personalizadas no banco de dados da Agência Nacional de Inovação</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {initialConnectionChecked && !isConnectionOk && (
+            <Alert variant="destructive" className="mb-4">
+              <ServerCrash className="h-4 w-4" />
+              <AlertTitle>Problema de conexão com o banco de dados</AlertTitle>
+              <AlertDescription>
+                Não foi possível estabelecer conexão com o banco de dados. 
+                Verifique a configuração do Supabase e use o botão de diagnóstico abaixo para identificar o problema.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div>
             <label htmlFor="query-template" className="block text-sm font-medium mb-2">
               Consultas de Exemplo
@@ -261,7 +309,7 @@ const DatabaseQuery: React.FC = () => {
           <div className="flex justify-end">
             <Button 
               onClick={handleExecuteQuery} 
-              disabled={loading}
+              disabled={loading || (!isConnectionOk && initialConnectionChecked)}
               className="flex items-center gap-2"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -1,3 +1,4 @@
+
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -12,51 +13,96 @@ export const runDatabaseDiagnostics = async () => {
       console.log("Test 1: Checking basic connection to database...");
       const start = performance.now();
       
-      // Try a direct query to see if the database is reachable at all
-      const { data: directData, error: directError } = await supabase.rpc('execute_raw_query', { 
-        sql_query: "SELECT 1 as health_check" 
-      });
+      // Try multiple connection approaches in sequence
+      let connectSuccess = false;
+      let connectMethod = '';
+      let connectError = null;
       
-      if (directError) {
-        console.error("Basic direct query test failed:", directError);
+      // Method 1: Direct RPC call
+      try {
+        const { data: directData, error: directError } = await supabase.rpc('execute_raw_query', { 
+          sql_query: "SELECT 1 as health_check" 
+        });
         
-        // Try a different approach
-        const { data: tableInfo, error: tableInfoError } = await supabase
-          .from('ani_database_status')
-          .select('count(*)', { count: 'exact', head: true });
-        
-        if (tableInfoError) {
-          // Try information schema as a last resort
-          const { data: schemaData, error: schemaError } = await supabase.rpc('execute_raw_query', { 
-            sql_query: "SELECT COUNT(*) FROM information_schema.tables LIMIT 1"
+        if (!directError) {
+          connectSuccess = true;
+          connectMethod = 'rpc';
+        } else {
+          connectError = directError;
+        }
+      } catch (rpcError) {
+        console.error("RPC method failed:", rpcError);
+        // Continue to next method
+      }
+      
+      // Method 2: Direct table access if Method 1 failed
+      if (!connectSuccess) {
+        try {
+          const { data: tableInfo, error: tableInfoError } = await supabase
+            .from('ani_database_status')
+            .select('count(*)', { count: 'exact', head: true });
+          
+          if (!tableInfoError) {
+            connectSuccess = true;
+            connectMethod = 'direct_table';
+          } else {
+            if (!connectError) connectError = tableInfoError;
+            
+            // Try information schema as a fallback
+            const { data: schemaData, error: schemaError } = await supabase.rpc('execute_raw_query', { 
+              sql_query: "SELECT COUNT(*) FROM information_schema.tables LIMIT 1"
+            });
+            
+            if (!schemaError) {
+              connectSuccess = true;
+              connectMethod = 'information_schema';
+            } else if (!connectError) {
+              connectError = schemaError;
+            }
+          }
+        } catch (tableError) {
+          console.error("Table access method failed:", tableError);
+          if (!connectError) connectError = tableError;
+        }
+      }
+      
+      // Method 3: Edge function as last resort
+      if (!connectSuccess) {
+        try {
+          const { data: functionData, error: functionError } = await supabase.functions.invoke('execute-sql', { 
+            body: { 
+              sqlQuery: 'SELECT 1 as health_check',
+              operation: 'query'
+            }
           });
           
-          if (schemaError) {
-            results.basicConnection = {
-              success: false,
-              duration: `${(performance.now() - start).toFixed(2)}ms`,
-              error: "Unable to connect to database using multiple methods",
-              suggestion: "Please check that the Supabase project is active and the database is online."
-            };
-          } else {
-            results.basicConnection = {
-              success: true,
-              duration: `${(performance.now() - start).toFixed(2)}ms`,
-              note: "Connected via information_schema fallback"
-            };
+          if (!functionError) {
+            connectSuccess = true;
+            connectMethod = 'edge_function';
+          } else if (!connectError) {
+            connectError = functionError;
           }
-        } else {
-          results.basicConnection = {
-            success: true,
-            duration: `${(performance.now() - start).toFixed(2)}ms`,
-            note: "Connected via direct table access"
-          };
+        } catch (functionCallError) {
+          console.error("Edge function method failed:", functionCallError);
+          if (!connectError) connectError = functionCallError;
         }
-      } else {
+      }
+      
+      const duration = performance.now() - start;
+      
+      if (connectSuccess) {
         results.basicConnection = {
           success: true,
-          duration: `${(performance.now() - start).toFixed(2)}ms`,
-          data: directData
+          duration: `${duration.toFixed(2)}ms`,
+          method: connectMethod,
+          message: `Connected via ${connectMethod}`
+        };
+      } else {
+        results.basicConnection = {
+          success: false,
+          duration: `${duration.toFixed(2)}ms`,
+          error: connectError ? connectError.message || "Unknown error" : "All connection methods failed",
+          suggestion: "Please check that the Supabase project is active and the database is online."
         };
       }
     } catch (testError: any) {
@@ -100,6 +146,8 @@ export const runDatabaseDiagnostics = async () => {
           results.functionsEndpoint.suggestion = "Authentication to edge functions failed. Check your API key permissions.";
         } else if (functionError.message?.includes('timeout')) {
           results.functionsEndpoint.suggestion = "Request to edge function timed out. The function might be overloaded or offline.";
+        } else {
+          results.functionsEndpoint.suggestion = "Failed to send a request to the Edge Function";
         }
       } else {
         console.log("Functions endpoint test successful");
@@ -112,7 +160,7 @@ export const runDatabaseDiagnostics = async () => {
         errorType: 'EXCEPTION',
         suggestion: testError.message?.includes('fetch') ? 
           "Network connectivity issue detected. Check your internet connection." : 
-          "Unexpected error occurred during function endpoint test."
+          "Failed to send a request to the Edge Function"
       };
     }
     
@@ -160,6 +208,8 @@ export const runDatabaseDiagnostics = async () => {
           results.connectionString.suggestion = "Permission denied. The database user may not have execute permission on the function.";
         } else if (healthError.code === '22023') {
           results.connectionString.suggestion = "Invalid parameter value. The SQL query may be malformed.";
+        } else if (healthError.code === 'PGRST202') {
+          results.connectionString.suggestion = "Could not find the function public.execute_raw_query(sql_query) in the schema cache. Try re-running the SQL setup or check the function exists.";
         } else if (healthError.message?.includes('gateway')) {
           results.connectionString.suggestion = "API Gateway error. The Supabase project might be in sleep mode or has reached usage limits.";
         }
@@ -171,12 +221,51 @@ export const runDatabaseDiagnostics = async () => {
       results.connectionString = {
         success: false,
         error: testError.message || "Unknown error",
-        errorType: 'EXCEPTION'
+        errorType: 'EXCEPTION',
+        suggestion: "Connection string test failed. Check if the Supabase project is active."
+      };
+    }
+    
+    // Test 5: Try to verify the edge function is working correctly
+    try {
+      console.log("Test 5: Verifying execute-sql edge function...");
+      const start = performance.now();
+      
+      const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('execute-sql', { 
+        body: { 
+          sqlQuery: 'SELECT version() as postgres_version',
+          operation: 'query'
+        }
+      });
+      
+      const duration = performance.now() - start;
+      
+      results.edgeFunction = {
+        success: !edgeFunctionError && edgeFunctionData?.result,
+        duration: `${duration.toFixed(2)}ms`,
+        error: edgeFunctionError ? edgeFunctionError.message : null,
+        data: edgeFunctionData?.result ? 'Function returned data' : 'No data returned'
+      };
+      
+      if (edgeFunctionError) {
+        results.edgeFunction.suggestion = "Edge function execution failed. Check the function logs.";
+      } else if (!edgeFunctionData?.result) {
+        results.edgeFunction.suggestion = "Edge function returned empty response.";
+      }
+    } catch (edgeFunctionError: any) {
+      console.error("Edge function test failed with exception:", edgeFunctionError);
+      results.edgeFunction = {
+        success: false,
+        error: edgeFunctionError.message || "Unknown error",
+        errorType: 'EXCEPTION',
+        suggestion: "Edge function invocation failed. Check network connectivity."
       };
     }
     
     // Determine overall success
-    const overallSuccess = results.basicConnection?.success || false;
+    const overallSuccess = results.basicConnection?.success || 
+                          results.edgeFunction?.success || 
+                          false;
     
     // Generate a summary with recommendations
     results.summary = {
@@ -205,6 +294,12 @@ export const runDatabaseDiagnostics = async () => {
     if (!results.connectionString?.success) {
       results.summary.recommendations.push(
         "Database connection string validation failed. Check if the Supabase project is active."
+      );
+    }
+    
+    if (!results.edgeFunction?.success) {
+      results.summary.recommendations.push(
+        "Edge function execution failed. Check the edge function logs for details."
       );
     }
     
@@ -269,12 +364,42 @@ export const testDatabaseConnection = async () => {
         }
       });
       
-      if (!functionError) {
+      if (!functionError && functionData) {
         console.log("Database connection via edge function successful:", functionData);
         return { success: true, method: "edge_function" };
       }
+      
+      // If the edge function returned without error but no data, try a direct version check
+      const { data: versionData, error: versionError } = await supabase.functions.invoke('execute-sql', { 
+        body: { 
+          sqlQuery: 'SELECT version() as postgres_version',
+          operation: 'query'
+        }
+      });
+      
+      if (!versionError && versionData) {
+        console.log("Database connection via edge function version check successful:", versionData);
+        return { success: true, method: "edge_function_version" };
+      }
     } catch (e) {
       console.log("Edge function method threw exception");
+    }
+    
+    // Try a last-resort call to information_schema
+    try {
+      const { data: schemaData, error: schemaError } = await supabase.functions.invoke('execute-sql', { 
+        body: { 
+          sqlQuery: 'SELECT COUNT(*) FROM information_schema.tables LIMIT 1',
+          operation: 'query'
+        }
+      });
+      
+      if (!schemaError && schemaData) {
+        console.log("Database connection via information_schema successful:", schemaData);
+        return { success: true, method: "information_schema" };
+      }
+    } catch (e) {
+      console.log("Information schema method threw exception");
     }
     
     // If we get here, all methods failed
@@ -289,8 +414,8 @@ export const testDatabaseConnection = async () => {
     console.error("Database connection test failed with exception:", error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
+      suggestion: "An unexpected error occurred during connection testing. Check console for details."
     };
   }
 };
-

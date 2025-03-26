@@ -6,11 +6,13 @@ import { testDatabaseConnection, runDatabaseDiagnostics } from '@/utils/database
 import { Database, ServerCrash, Check, X, RefreshCw, Loader2, AlertTriangle, Link, Globe, Shield, Network } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const DatabaseConnectionTest: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<"unknown" | "connected" | "error">("unknown");
   const [loading, setLoading] = useState(false);
   const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   
   // Check connection on component mount
   useEffect(() => {
@@ -19,7 +21,30 @@ const DatabaseConnectionTest: React.FC = () => {
   
   const checkConnection = async () => {
     setLoading(true);
+    setErrorDetails(null);
+    
     try {
+      // First try a direct connection test with the Supabase client
+      try {
+        const { data: tableInfo, error: tableInfoError } = await supabase
+          .from('ani_database_status')
+          .select('count(*)', { count: 'exact', head: true });
+        
+        if (!tableInfoError) {
+          setConnectionStatus("connected");
+          toast.success("Database connection successful", {
+            description: "Direct table access is working"
+          });
+          setLoading(false);
+          setLastCheckTime(new Date());
+          return;
+        }
+      } catch (directError) {
+        console.error("Direct connection test failed:", directError);
+        // Continue to other methods if direct access fails
+      }
+      
+      // If direct test fails, try the comprehensive test
       const result = await testDatabaseConnection();
       setConnectionStatus(result.success ? "connected" : "error");
       
@@ -28,6 +53,7 @@ const DatabaseConnectionTest: React.FC = () => {
           description: `Connected using ${result.method} method`
         });
       } else {
+        setErrorDetails(result.suggestion || result.error || "Unknown database connection issue");
         toast.error("Database connection failed", {
           description: result.suggestion || "Check Supabase project status"
         });
@@ -35,6 +61,7 @@ const DatabaseConnectionTest: React.FC = () => {
     } catch (error) {
       console.error("Error checking database connection:", error);
       setConnectionStatus("error");
+      setErrorDetails(error instanceof Error ? error.message : "Unknown error occurred");
       toast.error("Connection test failed", {
         description: error instanceof Error ? error.message : "Unknown error occurred"
       });
@@ -57,8 +84,12 @@ const DatabaseConnectionTest: React.FC = () => {
         toast.success("Diagnostics completed successfully");
         setConnectionStatus("connected");
       } else {
+        const errorSummary = diagnosticResults.results?.summary?.recommendations?.join("; ") || 
+                            "Check the console for detailed results";
+        setErrorDetails(errorSummary);
+        
         toast.error("Diagnostics found issues", {
-          description: "Check the console for detailed results"
+          description: errorSummary
         });
         setConnectionStatus("error");
       }
@@ -66,6 +97,7 @@ const DatabaseConnectionTest: React.FC = () => {
       console.log("Full diagnostic results:", diagnosticResults);
     } catch (error) {
       console.error("Error running diagnostics:", error);
+      setErrorDetails(error instanceof Error ? error.message : "Unknown error occurred");
       toast.error("Diagnostics failed", {
         description: error instanceof Error ? error.message : "Unknown error occurred"
       });
@@ -76,46 +108,51 @@ const DatabaseConnectionTest: React.FC = () => {
   };
   
   return (
-    <div className="flex items-center gap-2">
-      <Button 
-        variant={connectionStatus === "connected" ? "outline" : "default"}
-        size="sm"
-        onClick={checkConnection}
-        disabled={loading}
-        className={`flex items-center gap-2 ${
-          connectionStatus === "connected" ? "border-green-500 text-green-500" : 
-          connectionStatus === "error" ? "bg-red-500 hover:bg-red-600" :
-          "bg-blue-500 hover:bg-blue-600"
-        }`}
-      >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : connectionStatus === "connected" ? (
-          <Check className="h-4 w-4" />
-        ) : connectionStatus === "error" ? (
-          <X className="h-4 w-4" />
-        ) : (
-          <Database className="h-4 w-4" />
-        )}
-        {connectionStatus === "connected" ? "Connected" : 
-         connectionStatus === "error" ? "Connection Error" : 
-         "Check Connection"}
-      </Button>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleFullDiagnostics}
-        disabled={loading}
-      >
-        <RefreshCw className="h-4 w-4 mr-1" />
-        Diagnostics
-      </Button>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Button 
+          variant={connectionStatus === "connected" ? "outline" : "default"}
+          size="sm"
+          onClick={checkConnection}
+          disabled={loading}
+          className={`flex items-center gap-2 ${
+            connectionStatus === "connected" ? "border-green-500 text-green-500" : 
+            connectionStatus === "error" ? "bg-red-500 hover:bg-red-600" :
+            "bg-blue-500 hover:bg-blue-600"
+          }`}
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : connectionStatus === "connected" ? (
+            <Check className="h-4 w-4" />
+          ) : connectionStatus === "error" ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <Database className="h-4 w-4" />
+          )}
+          {connectionStatus === "connected" ? "Connected" : 
+          connectionStatus === "error" ? "Connection Error" : 
+          "Check Connection"}
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleFullDiagnostics}
+          disabled={loading}
+        >
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Diagnostics
+        </Button>
+      </div>
       
       {lastCheckTime && (
-        <span className="text-xs text-gray-500">
-          Last check: {lastCheckTime.toLocaleTimeString()}
-        </span>
+        <div className="text-xs text-gray-500 flex items-center gap-2">
+          <span>Last check: {lastCheckTime.toLocaleTimeString()}</span>
+          {errorDetails && (
+            <span className="text-red-500 font-medium">{errorDetails}</span>
+          )}
+        </div>
       )}
     </div>
   );
