@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -42,6 +41,15 @@ export function useQueryProcessor() {
       setLastResult(null);
       
       console.log("Processing question:", question);
+      
+      // Extract year information from query for more specific dummy data
+      const extractYearFromQuery = (query: string): number | null => {
+        const yearMatch = query.toLowerCase().match(/\b(20[0-9][0-9])\b/g);
+        return yearMatch && yearMatch.length > 0 ? parseInt(yearMatch[0]) : null;
+      };
+      
+      const queryYear = extractYearFromQuery(question);
+      console.log("Extracted year from query:", queryYear);
       
       // If in offline mode, use dummy data directly
       if (useOfflineMode || (supabase as any).isUsingLocalDb) {

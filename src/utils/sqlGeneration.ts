@@ -1,4 +1,3 @@
-
 /**
  * SQL query generation utilities
  * Responsible for converting natural language to SQL queries
@@ -14,26 +13,86 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
     const lowerQuery = query.toLowerCase();
     
     // Patent count for specific years query pattern (including Portuguese)
-    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente') || lowerQuery.includes('patentes')) && 
-        (lowerQuery.includes('2020') || lowerQuery.includes('2021') || lowerQuery.includes('2022'))) {
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente') || lowerQuery.includes('patentes'))) {
       
-      // Specific query for patents issued between 2020-2022
-      if ((lowerQuery.includes('number') || lowerQuery.includes('count') || lowerQuery.includes('número') || 
-          lowerQuery.includes('quantidade') || lowerQuery.includes('total')) &&
-          (lowerQuery.includes('between') || lowerQuery.includes('from') || lowerQuery.includes('de') || 
-          lowerQuery.includes('entre'))) {
+      // Extract specific years mentioned in the query
+      const yearMatches = lowerQuery.match(/\b(20[0-9][0-9])\b/g);
+      
+      if (yearMatches && yearMatches.length === 1) {
+        // Single year patent query
+        const year = parseInt(yearMatches[0]);
         
         return `SELECT 
-                  year, 
-                  SUM(patent_count) as total_patents
+                  organization_name, 
+                  patent_count,
+                  innovation_index,
+                  sector,
+                  year
                 FROM 
                   ani_patent_holders
                 WHERE 
-                  year BETWEEN 2020 AND 2022
-                GROUP BY 
-                  year
+                  year = ${year}
                 ORDER BY 
-                  year`;
+                  patent_count DESC`;
+      }
+      
+      // Query for patents issued between specific years
+      if (yearMatches && yearMatches.length >= 2) {
+        const years = yearMatches.map(y => parseInt(y)).sort((a, b) => a - b);
+        const startYear = years[0];
+        const endYear = years[years.length - 1];
+        
+        if ((lowerQuery.includes('between') || lowerQuery.includes('from') || lowerQuery.includes('de') || 
+            lowerQuery.includes('entre') || lowerQuery.includes('a'))) {
+          
+          // If asking for sum/count across years
+          if (lowerQuery.includes('number') || lowerQuery.includes('count') || lowerQuery.includes('número') || 
+              lowerQuery.includes('quantidade') || lowerQuery.includes('total')) {
+            
+            return `SELECT 
+                      year, 
+                      SUM(patent_count) as total_patents
+                    FROM 
+                      ani_patent_holders
+                    WHERE 
+                      year BETWEEN ${startYear} AND ${endYear}
+                    GROUP BY 
+                      year
+                    ORDER BY 
+                      year`;
+          }
+          
+          // Otherwise return all patents between those years
+          return `SELECT 
+                    organization_name, 
+                    patent_count,
+                    innovation_index,
+                    sector,
+                    year
+                  FROM 
+                    ani_patent_holders
+                  WHERE 
+                    year BETWEEN ${startYear} AND ${endYear}
+                  ORDER BY 
+                    year, patent_count DESC`;
+        }
+      }
+      
+      // If just asking about patents generally with no specific year
+      if ((lowerQuery.includes('number') || lowerQuery.includes('count') || lowerQuery.includes('número') || 
+           lowerQuery.includes('quantidade') || lowerQuery.includes('total'))) {
+        
+        // Default to most recent year if no specific year mentioned
+        return `SELECT 
+                  organization_name, 
+                  patent_count,
+                  innovation_index,
+                  sector,
+                  year
+                FROM 
+                  ani_patent_holders
+                ORDER BY 
+                  year DESC, patent_count DESC`;
       }
     }
     
