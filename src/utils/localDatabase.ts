@@ -34,7 +34,7 @@ export const LOCAL_TABLES = [
 
 // Interface for database operations
 export interface LocalDatabaseOperations {
-  select: (table: string, options?: QueryOptions) => Promise<{ data: any[]; error: Error | null }>;
+  select: (table: string, options?: QueryOptions) => Promise<{ data: any[]; error: Error | null; count?: number }>;
   insert: (table: string, data: any) => Promise<{ data: any; error: Error | null }>;
   update: (table: string, id: string, data: any) => Promise<{ data: any; error: Error | null }>;
   delete: (table: string, id: string) => Promise<{ error: Error | null }>;
@@ -44,16 +44,40 @@ export interface LocalDatabaseOperations {
   };
 }
 
+// Mock user for auth simulation
+const MOCK_USER = {
+  id: "mock-user-id",
+  email: "user@example.com",
+  user_metadata: {
+    name: "Mock User"
+  },
+  app_metadata: {
+    role: "user"
+  },
+  aud: "authenticated",
+  created_at: new Date().toISOString()
+};
+
+// Mock session for auth simulation
+const MOCK_SESSION = {
+  user: MOCK_USER,
+  access_token: "mock-access-token",
+  refresh_token: "mock-refresh-token",
+  expires_at: Date.now() + 3600000
+};
+
 // Query options interface to simulate Supabase queries
 export interface QueryOptions {
   select?: string;
   eq?: [string, any];
+  neq?: [string, any];
   limit?: number;
   order?: [string, { ascending: boolean }];
   count?: string;
   head?: boolean;
   from?: string;
   match?: [string, any];
+  single?: boolean;
 }
 
 // Helper to get the file path for a table
@@ -400,6 +424,11 @@ export const localDatabase: LocalDatabaseOperations = {
         data = data.filter(item => item[field] === value);
       }
       
+      if (options?.neq) {
+        const [field, value] = options.neq;
+        data = data.filter(item => item[field] !== value);
+      }
+      
       // Apply limit
       if (options?.limit) {
         data = data.slice(0, options.limit);
@@ -422,6 +451,17 @@ export const localDatabase: LocalDatabaseOperations = {
         if (options?.head) {
           return { data: null, count: data.length, error: null };
         }
+      }
+      
+      // Handle single requests
+      if (options?.single === true) {
+        if (data.length === 0) {
+          return { data: null, error: new Error("No rows found") };
+        }
+        if (data.length > 1) {
+          return { data: null, error: new Error("Multiple rows found") };
+        }
+        return { data: data[0], error: null };
       }
       
       return { data, error: null };
@@ -606,6 +646,26 @@ export const localDatabase: LocalDatabaseOperations = {
           };
         }
         
+        if (functionName === 'pdf-extractor') {
+          // Simulate PDF extraction
+          const { fileName } = options?.body || {};
+          
+          return {
+            data: {
+              extraction: {
+                extracted_text: "This is extracted text from the PDF document.",
+                extracted_numbers: [123, 456, 789],
+                extracted_images: ["image1.png", "image2.png"]
+              },
+              report: {
+                id: crypto.randomUUID ? crypto.randomUUID() : `report-${Date.now()}`,
+                report_title: `Analysis of ${fileName || 'Document'}`
+              }
+            },
+            error: null
+          };
+        }
+        
         throw new Error(`Edge function ${functionName} not implemented`);
       } catch (error) {
         console.error(`Error in local database function call for ${functionName}:`, error);
@@ -615,8 +675,54 @@ export const localDatabase: LocalDatabaseOperations = {
   }
 };
 
+// Mock FileStorage class to handle file operations
+class LocalFileStorage {
+  bucket: string;
+  
+  constructor(bucket: string) {
+    this.bucket = bucket;
+  }
+  
+  upload(filePath: string, file: any, options: any = {}) {
+    console.log(`Simulating upload of ${file.name || 'file'} to ${this.bucket}/${filePath}`);
+    
+    // Return success
+    return Promise.resolve({
+      data: { 
+        path: filePath
+      },
+      error: null
+    });
+  }
+  
+  getPublicUrl(filePath: string) {
+    return {
+      data: {
+        publicUrl: `https://mock-storage.local/${this.bucket}/${filePath}`
+      }
+    };
+  }
+  
+  list(folderPath: string = '') {
+    return Promise.resolve({
+      data: {
+        files: []
+      },
+      error: null
+    });
+  }
+  
+  remove(filePaths: string[]) {
+    return Promise.resolve({
+      data: null,
+      error: null
+    });
+  }
+}
+
 // Create a replacement for the Supabase client that uses our local database
-export const localSupabaseClient = {
+export const mockSupabase = {
+  // Data methods
   from: (table: string) => ({
     select: (cols?: string) => ({
       limit: (limit: number) => ({
@@ -663,6 +769,70 @@ export const localSupabaseClient = {
           })
           .then(result => callback(result))
           .catch(error => callback({ error }));
+        },
+        single: () => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols, 
+              limit,
+              single: true 
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        })
+      }),
+      order: (column: string, { ascending }: { ascending: boolean }) => ({
+        then: (callback: Function) => {
+          localDatabase.select(table, { 
+            select: cols, 
+            order: [column, { ascending }] 
+          })
+          .then(result => callback(result))
+          .catch(error => callback({ error }));
+        },
+        eq: (column: string, value: any) => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols, 
+              order: [column, { ascending }],
+              eq: [column, value]
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        }),
+        limit: (limit: number) => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols, 
+              order: [column, { ascending }],
+              limit
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        }),
+        single: () => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols, 
+              order: [column, { ascending }],
+              single: true 
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        })
+      }),
+      single: () => ({
+        then: (callback: Function) => {
+          localDatabase.select(table, { 
+            select: cols, 
+            single: true 
+          })
+          .then(result => callback(result))
+          .catch(error => callback({ error }));
         }
       }),
       eq: (column: string, value: any) => ({
@@ -670,6 +840,49 @@ export const localSupabaseClient = {
           localDatabase.select(table, { 
             select: cols,
             eq: [column, value]
+          })
+          .then(result => callback(result))
+          .catch(error => callback({ error }));
+        },
+        single: () => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols,
+              eq: [column, value],
+              single: true 
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        }),
+        order: (column: string, { ascending }: { ascending: boolean }) => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols,
+              eq: [column, value], 
+              order: [column, { ascending }] 
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        }),
+        limit: (limit: number) => ({
+          then: (callback: Function) => {
+            localDatabase.select(table, { 
+              select: cols,
+              eq: [column, value], 
+              limit
+            })
+            .then(result => callback(result))
+            .catch(error => callback({ error }));
+          }
+        })
+      }),
+      neq: (column: string, value: any) => ({
+        then: (callback: Function) => {
+          localDatabase.select(table, { 
+            select: cols,
+            neq: [column, value]
           })
           .then(result => callback(result))
           .catch(error => callback({ error }));
@@ -727,9 +940,31 @@ export const localSupabaseClient = {
             })
             .catch(error => callback({ error }));
         }
+      }),
+      neq: (column: string, value: any) => ({
+        then: (callback: Function) => {
+          // Find all items that don't match
+          localDatabase.select(table, { neq: [column, value] })
+            .then(result => {
+              if (result.data && result.data.length > 0) {
+                // Delete each item found
+                const promises = result.data.map(item => 
+                  localDatabase.delete(table, item.id)
+                );
+                Promise.all(promises)
+                  .then(() => callback({ error: null }))
+                  .catch(error => callback({ error }));
+              } else {
+                callback({ error: null }); // Nothing to delete
+              }
+            })
+            .catch(error => callback({ error }));
+        }
       })
     })
   }),
+  
+  // RPC method
   rpc: (functionName: string, params: any) => ({
     then: (callback: Function) => {
       localDatabase.rpc(functionName, params)
@@ -737,10 +972,57 @@ export const localSupabaseClient = {
         .catch(error => callback({ error }));
     }
   }),
+  
+  // Edge functions
   functions: {
     invoke: (functionName: string, options?: { body?: any }) => {
       return localDatabase.functions.invoke(functionName, options);
     }
+  },
+  
+  // Auth methods
+  auth: {
+    getSession: () => Promise.resolve({ data: { session: MOCK_SESSION }, error: null }),
+    
+    getUser: () => Promise.resolve({ data: { user: MOCK_USER }, error: null }),
+    
+    onAuthStateChange: (callback: Function) => {
+      // Call callback with initial state
+      callback('SIGNED_IN', MOCK_SESSION);
+      
+      // Return unsubscribe function
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      };
+    },
+    
+    signOut: () => Promise.resolve({ error: null }),
+    
+    signUp: (credentials: { email: string, password: string }) => 
+      Promise.resolve({ data: { user: MOCK_USER, session: MOCK_SESSION }, error: null }),
+    
+    signIn: (credentials: { email: string, password: string }) => 
+      Promise.resolve({ data: { user: MOCK_USER, session: MOCK_SESSION }, error: null }),
+      
+    signInWithOAuth: (options: { provider: string }) => 
+      Promise.resolve({ data: { provider: options.provider, url: '#' }, error: null }),
+      
+    refreshSession: () => Promise.resolve({ data: { session: MOCK_SESSION }, error: null }),
+    
+    setSession: () => Promise.resolve({ data: { session: MOCK_SESSION }, error: null }),
+    
+    // Use this for local state
+    session: MOCK_SESSION,
+    user: MOCK_USER
+  },
+  
+  // Storage methods
+  storage: {
+    from: (bucket: string) => new LocalFileStorage(bucket)
   }
 };
 
@@ -752,6 +1034,3 @@ if (typeof window === 'undefined' || !localStorage.getItem('local_db_initialized
     localStorage.setItem('local_db_initialized', 'true');
   }
 }
-
-// Export a mock of the supabase client
-export const mockSupabase = localSupabaseClient;
