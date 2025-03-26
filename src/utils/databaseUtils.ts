@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -119,4 +118,57 @@ export const checkDatabaseStatus = async () => {
   }
   
   return results;
+};
+
+/**
+ * Gets the SQL script needed to initialize the database
+ * This can be copied and run manually in the SQL Editor if edge functions fail
+ */
+export const getDatabaseInitScript = () => {
+  return `
+-- Create the ani_database_status table to track database tables status
+CREATE TABLE IF NOT EXISTS public.ani_database_status (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_name TEXT NOT NULL UNIQUE,
+  record_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'empty',
+  last_populated TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create execute_raw_query function for administrative operations
+CREATE OR REPLACE FUNCTION public.execute_raw_query(sql_query text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  result JSONB;
+BEGIN
+  -- For security, restrict to SELECT statements in this function
+  IF NOT (lower(btrim(sql_query)) LIKE 'select%') THEN
+    RAISE EXCEPTION 'Only SELECT queries are allowed for security reasons';
+  END IF;
+  
+  -- Execute the query and get results as JSON
+  EXECUTE 'SELECT json_agg(t) FROM (' || sql_query || ') t' INTO result;
+  
+  -- Return empty array instead of null
+  RETURN COALESCE(result, '[]'::jsonb);
+END;
+$$;
+
+-- Create is_admin function to check if the current user is an admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+`;
 };
