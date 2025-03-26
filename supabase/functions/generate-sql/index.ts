@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || "";
-const MODEL_NAME = "gemini-2.0-pro-exp-02-05";
+const MODEL_NAME = "gemini-1.5-pro";
 
 // Set up CORS headers
 const corsHeaders = {
@@ -254,7 +254,7 @@ serve(async (req) => {
     console.log("User prompt:", userPrompt);
 
     try {
-      // Call Gemini API
+      // Call Gemini API with the updated API endpoint and request structure
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -287,7 +287,17 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      let sql = data.candidates[0].content.parts[0].text.trim();
+      
+      // Handle different response structures based on model version
+      let sql = '';
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        sql = data.candidates[0].content.parts[0].text.trim();
+      } else if (data.candidates && data.candidates[0] && data.candidates[0].text) {
+        sql = data.candidates[0].text.trim();
+      } else {
+        console.error("Unexpected Gemini API response structure:", JSON.stringify(data));
+        throw new Error("Unexpected response format from Gemini API");
+      }
 
       console.log("Generated SQL:", sql);
 
