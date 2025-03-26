@@ -8,6 +8,21 @@ import { Search, Loader2 } from "lucide-react";
 import { useQueryProcessor } from '@/hooks/useQueryProcessor';
 import { SQLResponseDisplay } from './ChatComponents/SQLResponseDisplay';
 
+// Define the types for the query result
+interface QuerySuccess {
+  success: true;
+  data: any;
+  sql: string;
+  interpretation: string;
+}
+
+interface QueryError {
+  success: false;
+  error: any;
+}
+
+type QueryResult = QuerySuccess | QueryError;
+
 export default function DatabaseQuery() {
   const [query, setQuery] = useState('');
   const [queryResults, setQueryResults] = useState<any[] | null>(null);
@@ -24,9 +39,9 @@ export default function DatabaseQuery() {
     setIsExecuting(true);
     setDisplayResults(false);
     
-    const result = await processQuery(query);
+    const result = await processQuery(query) as QueryResult;
     
-    if ('success' in result && result.success) {
+    if (result.success) {
       setQueryResults(result.data);
       setSqlStatement(result.sql || '');
       setNaturalLanguageResponse(result.interpretation || '');
@@ -34,7 +49,7 @@ export default function DatabaseQuery() {
     } else {
       toast({
         title: "Query Error",
-        description: ('error' in result) ? result.error : "Failed to execute query",
+        description: result.error ? String(result.error) : "Failed to execute query",
         variant: "destructive",
       });
     }

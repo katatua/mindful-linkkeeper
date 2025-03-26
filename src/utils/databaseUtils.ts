@@ -42,7 +42,7 @@ export const executeQuery = async (query: Promise<any>) => {
 };
 
 // Utility function to check database status
-export const checkDatabaseStatus = async () => {
+export const checkDatabaseStatus = async (): Promise<Record<string, number>> => {
   try {
     const tables = DATABASE_TABLES;
     
@@ -71,7 +71,7 @@ export const checkDatabaseStatus = async () => {
     }, {} as Record<string, number>);
   } catch (error) {
     console.error('Error checking database status:', error);
-    return { error: 'Failed to check database status' };
+    return {}; // Return empty object instead of an error object
   }
 };
 

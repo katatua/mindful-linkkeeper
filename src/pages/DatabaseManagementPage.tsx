@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const DatabaseManagementPage = () => {
     setIsCheckingStatus(true);
     try {
       const status = await checkDatabaseStatus();
+      // Modified: Always set the status, as checkDatabaseStatus now returns empty object on error
       setTableStatus(status);
     } catch (error) {
       console.error("Error checking database status:", error);

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { initializeLocalDatabase } from "@/utils/localDatabase";
+import { getDatabaseInitScript } from "@/utils/databaseUtils";
 
 const DatabaseConnectionTest = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +56,6 @@ const DatabaseConnectionTest = () => {
     try {
       toast.info("Initializing local database...");
       
-      // Use our local database initialization function
       initializeLocalDatabase();
       
       toast.success("Local database initialized successfully");
@@ -80,7 +80,6 @@ const DatabaseConnectionTest = () => {
   };
 
   const openLocalDbInfo = () => {
-    // Display local database information in a new tab or modal
     toast.info("Using local file-based database", {
       description: "Data is stored in text files or localStorage in the browser"
     });
