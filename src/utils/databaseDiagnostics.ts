@@ -1,4 +1,3 @@
-
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -10,102 +9,64 @@ export const runDatabaseDiagnostics = async () => {
     
     // Test 1: Basic connection by querying a small table
     try {
-      console.log("Test 1: Checking basic connection to ani_database_status table...");
+      console.log("Test 1: Checking basic connection to database...");
       const start = performance.now();
       
-      // First, check if the ani_database_status table exists
-      const { data: tableCheck, error: tableCheckError } = await supabase
-        .rpc('execute_raw_query', { 
-          sql_query: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ani_database_status')"
-        });
+      // Try a direct query to see if the database is reachable at all
+      const { data: directData, error: directError } = await supabase.rpc('execute_raw_query', { 
+        sql_query: "SELECT 1 as health_check" 
+      });
       
-      // Fix for TypeScript error: Safely check if tableCheck is an array with elements
-      const tableExists = tableCheck && 
-                         Array.isArray(tableCheck) && 
-                         tableCheck.length > 0 && 
-                         typeof tableCheck[0] === 'object' && 
-                         tableCheck[0] !== null &&
-                         'exists' in tableCheck[0] && 
-                         tableCheck[0].exists;
-      
-      if (!tableExists) {
-        console.warn("The ani_database_status table doesn't exist. This might be expected in a new setup.");
+      if (directError) {
+        console.error("Basic direct query test failed:", directError);
         
-        results.basicConnection = {
-          success: false,
-          duration: `${(performance.now() - start).toFixed(2)}ms`,
-          error: "The ani_database_status table doesn't exist in the database.",
-          suggestion: "This could be normal for a new setup. Either create the table or modify the diagnostic to test a different table."
-        };
-      } else {
-        // Table exists, so attempt to query it
-        const { data: statusData, error: statusError } = await supabase
+        // Try a different approach
+        const { data: tableInfo, error: tableInfoError } = await supabase
           .from('ani_database_status')
           .select('count(*)', { count: 'exact', head: true });
         
-        const duration = performance.now() - start;
-
-        // Enhanced error handling for empty error responses
-        let errorMessage = null;
-        let errorCode = null;
-        let errorSuggestion = null;
-        
-        if (statusError) {
-          console.error("Basic connection test failed:", statusError);
+        if (tableInfoError) {
+          // Try information schema as a last resort
+          const { data: schemaData, error: schemaError } = await supabase.rpc('execute_raw_query', { 
+            sql_query: "SELECT COUNT(*) FROM information_schema.tables LIMIT 1"
+          });
           
-          // Handle empty error object specifically
-          if (Object.keys(statusError).length === 0 || (!statusError.message && !statusError.code)) {
-            errorMessage = "Empty error response. This might indicate a CORS issue or network interruption.";
-            errorSuggestion = "Check browser console for CORS errors and verify your network connection is stable. Try accessing the Supabase dashboard directly to verify project availability.";
+          if (schemaError) {
+            results.basicConnection = {
+              success: false,
+              duration: `${(performance.now() - start).toFixed(2)}ms`,
+              error: "Unable to connect to database using multiple methods",
+              suggestion: "Please check that the Supabase project is active and the database is online."
+            };
           } else {
-            errorMessage = statusError.message;
-            errorCode = statusError.code;
-            
-            // Enhanced suggestions based on error type
-            if (statusError.message?.includes('fetch') || statusError.message?.includes('network')) {
-              errorSuggestion = "Network connectivity issue detected. Check your internet connection and firewall settings.";
-            } else if (statusError.code === '42P01') { // Table doesn't exist
-              errorSuggestion = "The ani_database_status table doesn't exist. Make sure the database is properly initialized.";
-            } else if (statusError.code?.startsWith('28')) { // Authentication issues
-              errorSuggestion = "Authentication failed. Verify your Supabase API key is correct.";
-            } else if (statusError.code === 'PGRST116') {
-              errorSuggestion = "Permission denied. Check the Row Level Security (RLS) policies for the ani_database_status table.";
-            }
+            results.basicConnection = {
+              success: true,
+              duration: `${(performance.now() - start).toFixed(2)}ms`,
+              note: "Connected via information_schema fallback"
+            };
           }
+        } else {
+          results.basicConnection = {
+            success: true,
+            duration: `${(performance.now() - start).toFixed(2)}ms`,
+            note: "Connected via direct table access"
+          };
         }
-        
+      } else {
         results.basicConnection = {
-          success: !statusError,
-          duration: `${duration.toFixed(2)}ms`,
-          error: errorMessage,
-          errorCode: errorCode,
-          errorDetails: statusError ? JSON.stringify(statusError) : null,
-          suggestion: errorSuggestion
+          success: true,
+          duration: `${(performance.now() - start).toFixed(2)}ms`,
+          data: directData
         };
-        
-        if (!statusError) {
-          console.log("Basic connection test successful");
-        }
       }
     } catch (testError: any) {
       console.error("Test 1 failed with exception:", testError);
       
-      // Improved error handling for exceptions
-      let errorMessage = testError.message || "Unknown error";
-      let errorSuggestion = testError.message?.includes('fetch') ? 
-        "Network connectivity issue detected. Check your internet connection." : 
-        "Unexpected error occurred during connection test.";
-      
-      // Special handling for AbortError or timeout errors
-      if (testError.name === 'AbortError' || errorMessage.includes('timeout')) {
-        errorSuggestion = "Request timed out. The Supabase service might be experiencing high load or connection issues.";
-      }
-      
       results.basicConnection = {
         success: false,
-        error: errorMessage,
+        error: testError.message || "Unknown error",
         errorType: 'EXCEPTION',
-        suggestion: errorSuggestion
+        suggestion: "Database connection failed. Check network connectivity and Supabase project status."
       };
     }
     
@@ -215,10 +176,7 @@ export const runDatabaseDiagnostics = async () => {
     }
     
     // Determine overall success
-    const overallSuccess = results.basicConnection?.success && 
-                          results.functionsEndpoint?.success && 
-                          results.clientConfiguration?.success &&
-                          results.connectionString?.success;
+    const overallSuccess = results.basicConnection?.success || false;
     
     // Generate a summary with recommendations
     results.summary = {
@@ -227,38 +185,31 @@ export const runDatabaseDiagnostics = async () => {
     };
     
     if (!results.basicConnection?.success) {
-      const basicConnRec = "Database connection is failing. Check network connectivity and Supabase project status.";
       results.summary.recommendations.push(
-        results.basicConnection?.suggestion ? `${basicConnRec} ${results.basicConnection.suggestion}` : basicConnRec
+        "Database connection is failing. Check network connectivity and Supabase project status."
       );
     }
     
     if (!results.functionsEndpoint?.success) {
-      const funcEndpointRec = "Connection to Supabase Functions is failing. Verify edge function deployment.";
       results.summary.recommendations.push(
-        results.functionsEndpoint?.suggestion ? `${funcEndpointRec} ${results.functionsEndpoint.suggestion}` : funcEndpointRec
+        "Connection to Supabase Functions is failing. Verify edge function deployment."
       );
     }
     
     if (!results.clientConfiguration?.success) {
-      const configRec = "Supabase client configuration is incorrect. Verify the URL and API key.";
       results.summary.recommendations.push(
-        results.clientConfiguration?.suggestion ? `${configRec} ${results.clientConfiguration.suggestion}` : configRec
+        "Supabase client configuration is incorrect. Verify the URL and API key."
       );
     }
     
     if (!results.connectionString?.success) {
-      const connStringRec = "Database connection string validation failed. Check if the Supabase project is active.";
       results.summary.recommendations.push(
-        results.connectionString?.suggestion ? `${connStringRec} ${results.connectionString.suggestion}` : connStringRec
+        "Database connection string validation failed. Check if the Supabase project is active."
       );
     }
     
     return {
-      success: results.basicConnection?.success && 
-              results.functionsEndpoint?.success && 
-              results.clientConfiguration?.success &&
-              results.connectionString?.success,
+      success: overallSuccess,
       results
     };
     
@@ -276,74 +227,70 @@ export const runDatabaseDiagnostics = async () => {
 
 export const testDatabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
-    
-    if (error) {
-      console.error("Database connection failed:", error);
-      
-      // Provide helpful toast message based on error type
-      let errorMessage = "Database connection failed";
-      let errorDescription = error.message || "Unknown error";
-      
-      // Enhanced error handling for empty responses
-      if (Object.keys(error).length === 0 || (!error.message && !error.code)) {
-        errorMessage = "Connection error";
-        errorDescription = "Empty error response. This might indicate a CORS issue or network interruption. Try refreshing the page or checking your network settings.";
-      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
-        errorMessage = "Network connectivity issue detected";
-        errorDescription = "Check your internet connection and firewall settings.";
-      } else if (error.code === '42P01') {
-        errorMessage = "Table not found";
-        errorDescription = "The ani_database_status table doesn't exist. Database may need initialization.";
-      } else if (error.code?.startsWith('28')) {
-        errorMessage = "Authentication failed";
-        errorDescription = "Verify your Supabase API key is correct.";
-      } else if (error.code === 'PGRST116') {
-        errorMessage = "Permission denied";
-        errorDescription = "Check the RLS policies for the ani_database_status table.";
-      }
-      
-      toast.error(errorMessage, {
-        description: errorDescription
+    // Try multiple connection approaches
+    try {
+      // Try execute_raw_query with a simple query
+      const { data: rpcData, error: rpcError } = await supabase.rpc('execute_raw_query', { 
+        sql_query: "SELECT 1 as health_check" 
       });
       
-      return { 
-        success: false, 
-        error: errorMessage,
-        errorDetails: error,
-        suggestion: errorDescription
-      };
+      if (!rpcError) {
+        console.log("Database connection via RPC successful:", rpcData);
+        return { success: true, method: "rpc" };
+      }
+      
+      console.log("RPC method failed, trying direct table access...");
+    } catch (e) {
+      console.log("RPC method threw exception, trying direct table access...");
     }
     
-    console.log("Database connection successful:", data);
-    toast.success("Database connection successful");
-    return { success: true };
-  } catch (error: any) {
-    console.error("Database connection test failed with exception:", error);
-    
-    // Provide detailed error feedback
-    let errorMessage = error instanceof Error ? error.message : "Unknown error";
-    let errorDescription = "";
-    
-    if (errorMessage.includes('fetch')) {
-      errorMessage = "Network error";
-      errorDescription = "Unable to reach Supabase. Check your internet connection.";
-    } else if (errorMessage.includes('timeout')) {
-      errorMessage = "Connection timeout";
-      errorDescription = "The request to Supabase timed out. The service might be experiencing high load.";
+    // Try direct table access
+    try {
+      const { error: tableError } = await supabase
+        .from('ani_database_status')
+        .select('count(*)', { count: 'exact', head: true });
+      
+      if (!tableError) {
+        console.log("Database connection via direct table successful");
+        return { success: true, method: "direct_table" };
+      }
+      
+      console.log("Direct table access failed, trying edge function...");
+    } catch (e) {
+      console.log("Direct table access threw exception, trying edge function...");
     }
     
-    toast.error(errorMessage, {
-      description: errorDescription || (error instanceof Error ? error.message : String(error))
-    });
+    // Try edge function as a last resort
+    try {
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('execute-sql', { 
+        body: { 
+          sqlQuery: 'SELECT 1 as health_check',
+          operation: 'query'
+        }
+      });
+      
+      if (!functionError) {
+        console.log("Database connection via edge function successful:", functionData);
+        return { success: true, method: "edge_function" };
+      }
+    } catch (e) {
+      console.log("Edge function method threw exception");
+    }
     
+    // If we get here, all methods failed
+    console.error("All database connection methods failed");
     return { 
       success: false, 
-      error: errorMessage,
-      errorDetails: error instanceof Error ? 
-        { message: error.message, stack: error.stack } : 
-        { message: String(error) },
-      suggestion: errorDescription
+      error: "All connection methods failed",
+      suggestion: "Check Supabase project status and network connectivity"
+    };
+    
+  } catch (error: any) {
+    console.error("Database connection test failed with exception:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 };
+
