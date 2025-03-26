@@ -1,9 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || "";
+const MODEL_NAME = "gemini-2.0-pro-exp-02-05";
 
 // Set up CORS headers
 const corsHeaders = {
@@ -18,10 +19,10 @@ serve(async (req) => {
   }
 
   try {
-    // Validate OpenAI API key
-    if (!OPENAI_API_KEY || OPENAI_API_KEY.startsWith('sk-proj-')) {
-      console.error("Invalid OpenAI API key format");
-      throw new Error("The OpenAI API key is not properly configured. Please check your environment variables.");
+    // Validate Gemini API key
+    if (!GEMINI_API_KEY) {
+      console.error("Missing Gemini API key");
+      throw new Error("The Gemini API key is not properly configured. Please check your environment variables.");
     }
 
     const { question, language = 'en' } = await req.json();
@@ -249,36 +250,44 @@ serve(async (req) => {
     // User prompt is the question itself with language handling
     const userPrompt = `${language === 'pt' ? 'Traduzir para SQL: ' : 'Translate to SQL: '}${question}`;
 
-    console.log("Sending to OpenAI with system prompt:", systemPrompt.substring(0, 100) + "...");
+    console.log("Sending to Gemini with system prompt:", systemPrompt.substring(0, 100) + "...");
     console.log("User prompt:", userPrompt);
 
     try {
-      // Call OpenAI API
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Call Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: systemPrompt }]
+            },
+            {
+              role: 'user',
+              parts: [{ text: userPrompt }]
+            }
           ],
-          temperature: 0.1,
-          max_tokens: 600
+          generationConfig: {
+            temperature: 0.1,
+            topK: 32,
+            topP: 0.95,
+            maxOutputTokens: 600
+          }
         })
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('OpenAI API error:', errorData);
-        throw new Error(`OpenAI API error: ${errorData}`);
+        console.error('Gemini API error:', errorData);
+        throw new Error(`Gemini API error: ${errorData}`);
       }
 
       const data = await response.json();
-      let sql = data.choices[0].message.content.trim();
+      let sql = data.candidates[0].content.parts[0].text.trim();
 
       console.log("Generated SQL:", sql);
 
@@ -299,8 +308,8 @@ serve(async (req) => {
         JSON.stringify({ sql }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } catch (openAiError) {
-      console.error("OpenAI API error:", openAiError);
+    } catch (geminiError) {
+      console.error("Gemini API error:", geminiError);
       
       // For R&D investment queries, return a fallback SQL query
       if (question.toLowerCase().includes('r&d') || 
@@ -331,7 +340,7 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`Failed to generate SQL: ${openAiError.message}`);
+      throw new Error(`Failed to generate SQL: ${geminiError.message}`);
     }
   } catch (error) {
     console.error("Error generating SQL:", error);
