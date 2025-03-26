@@ -26,6 +26,8 @@ serve(async (req) => {
 
     if (error) throw error;
 
+    console.log('Database Status Records:', JSON.stringify(data, null, 2));
+
     return new Response(
       JSON.stringify(data), 
       { 
