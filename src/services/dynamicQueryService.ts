@@ -36,11 +36,12 @@ export const dynamicQueryService = {
       
       if (error) {
         console.error("Error generating SQL:", error);
-        throw new Error("Failed to generate SQL query");
+        throw new Error(`Failed to generate SQL query: ${error.message}`);
       }
       
-      if (!data.sql) {
-        throw new Error("No SQL was generated");
+      if (!data?.sql) {
+        console.error("No SQL was generated. Response:", data);
+        throw new Error("No SQL was generated for your question");
       }
       
       console.log("Generated SQL:", data.sql);
@@ -69,6 +70,16 @@ export const dynamicQueryService = {
       if (error) {
         console.error("Error executing SQL:", error);
         throw new Error(`Failed to execute SQL query: ${error.message}`);
+      }
+
+      if (!data?.result) {
+        console.warn("Query executed but returned no results:", data);
+        // Return empty response but don't throw an error
+        return { 
+          response: "The query executed successfully but did not return any data.",
+          visualizationData: [],
+          sql: sql
+        };
       }
       
       // Generate a natural language response from the query results
@@ -109,14 +120,22 @@ export const dynamicQueryService = {
         };
       }
       
-      // Generate SQL from the natural language question using AI
-      const sqlQuery = await dynamicQueryService.generateSqlFromQuestion({
-        question,
-        language
-      });
-      
-      // Execute the generated SQL
-      return await dynamicQueryService.executeQuery(sqlQuery);
+      try {
+        // Generate SQL from the natural language question using AI
+        const sqlQuery = await dynamicQueryService.generateSqlFromQuestion({
+          question,
+          language
+        });
+        
+        // Execute the generated SQL
+        return await dynamicQueryService.executeQuery(sqlQuery);
+      } catch (error) {
+        console.error("Error in SQL generation or execution:", error);
+        return {
+          response: `I'm sorry, I couldn't process your question. ${error.message}`,
+          sql: ""
+        };
+      }
     } catch (error) {
       console.error("Error processing question:", error);
       return {

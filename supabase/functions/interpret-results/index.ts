@@ -70,7 +70,10 @@ serve(async (req) => {
     7. Use a friendly, professional tone appropriate for a government agency.
     8. Never mention that you're an AI or refer to yourself at all.
     9. When appropriate, describe the time period the data covers.
-    10. If the results are related to R&D investment, make sure to highlight this focus in your explanation.`;
+    10. If the results are related to R&D investment, make sure to highlight this focus in your explanation.
+    11. If the results show zero rows or null values, explain that no data was found matching the query criteria.
+    12. For numeric results, mention whether values represent totals, averages, or individual measurements.
+    13. Use appropriate terminology based on the domain (research, innovation, funding, etc.)`;
 
     // User prompt combines the question, query, and results
     const userPrompt = `Question: ${question || "What does this data show?"}\n\nSQL Query Used:\n${sqlQuery}\n\n${resultsText}\n\nPlease interpret these results.`;
