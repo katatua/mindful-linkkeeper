@@ -12,7 +12,25 @@ type DatabaseTable =
   | 'ani_policy_frameworks'
   | 'ani_projects'
   | 'ani_projects_researchers'
-  | 'ani_researchers';
+  | 'ani_researchers'
+  | 'profiles';
+
+export const checkAdminStatus = async (): Promise<boolean> => {
+  try {
+    // Call the is_admin function we created in the database
+    const { data, error } = await supabase.rpc('is_admin');
+    
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
+    
+    return data || false;
+  } catch (error) {
+    console.error('Unexpected error during admin check:', error);
+    return false;
+  }
+};
 
 export const testDatabaseConnection = async () => {
   try {
@@ -47,6 +65,16 @@ export const testDatabaseConnection = async () => {
 };
 
 export const initializeDatabase = async () => {
+  // Check admin status before allowing database initialization
+  const isAdmin = await checkAdminStatus();
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: 'Admin permission required for database initialization',
+      details: { error: 'Permission denied' }
+    };
+  }
+
   try {
     // Create ani_database_status table if it doesn't exist
     const { data, error } = await supabase.rpc('execute_raw_query', {
@@ -88,6 +116,13 @@ export const initializeDatabase = async () => {
 };
 
 export const checkDatabaseStatus = async () => {
+  // Check admin status before allowing database status check
+  const isAdmin = await checkAdminStatus();
+  if (!isAdmin) {
+    console.warn('Non-admin user attempted to check database status');
+    return { error: 'Admin permission required' };
+  }
+
   try {
     const tables: DatabaseTable[] = [
       'ani_database_status',
@@ -100,7 +135,8 @@ export const checkDatabaseStatus = async () => {
       'ani_policy_frameworks',
       'ani_projects',
       'ani_projects_researchers',
-      'ani_researchers'
+      'ani_researchers',
+      'profiles'
     ];
 
     const statusPromises = tables.map(async (table) => {
@@ -122,6 +158,6 @@ export const checkDatabaseStatus = async () => {
     }, {} as Record<DatabaseTable, number>);
   } catch (error) {
     console.error('Error checking database status:', error);
-    return {};
+    return { error: 'Failed to check database status' };
   }
 };

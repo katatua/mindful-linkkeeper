@@ -3,11 +3,12 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, Clock, RefreshCw, Loader2 } from "lucide-react";
+import { AlertTriangle, Clock, RefreshCw, Loader2, Lock, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { checkAdminStatus } from "@/utils/databaseDiagnostics";
 
 interface DatabaseStatus {
   id: string;
@@ -23,12 +24,28 @@ const DatabaseStatusViewer = () => {
   const [statusRecords, setStatusRecords] = useState<DatabaseStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  const checkPermissions = async () => {
+    const adminStatus = await checkAdminStatus();
+    setIsAdmin(adminStatus);
+    return adminStatus;
+  };
 
   const fetchDatabaseStatus = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
+      // Check if user has admin permissions
+      const hasPermission = await checkPermissions();
+      
+      if (!hasPermission) {
+        setError("You don't have permission to view database status. Admin role required.");
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error: fetchError } = await supabase.functions.invoke('show-database-status');
 
       if (fetchError) {
@@ -57,7 +74,13 @@ const DatabaseStatusViewer = () => {
   };
 
   useEffect(() => {
-    fetchDatabaseStatus();
+    checkPermissions().then(hasPermission => {
+      if (hasPermission) {
+        fetchDatabaseStatus();
+      } else {
+        setIsLoading(false);
+      }
+    });
   }, []);
 
   const formatDate = (dateString: string | null) => {
@@ -76,6 +99,29 @@ const DatabaseStatusViewer = () => {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Database Status Records</CardTitle>
+          <CardDescription>
+            Administrator access required
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertTitle>Access Restricted</AlertTitle>
+            <AlertDescription>
+              You need administrator privileges to view database status information.
+              Please contact an administrator if you need access.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

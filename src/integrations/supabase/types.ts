@@ -1359,6 +1359,39 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          first_name: string | null
+          id: string
+          institution: string | null
+          last_name: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          first_name?: string | null
+          id: string
+          institution?: string | null
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          first_name?: string | null
+          id?: string
+          institution?: string | null
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subscriber_list_members: {
         Row: {
           created_at: string | null
@@ -1842,6 +1875,10 @@ export type Database = {
         }
         Returns: unknown
       }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       ivfflat_bit_support: {
         Args: {
           "": unknown
@@ -2042,6 +2079,7 @@ export type Database = {
     }
     Enums: {
       subscriber_status: "active" | "inactive" | "unsubscribed"
+      user_role: "admin" | "researcher" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
