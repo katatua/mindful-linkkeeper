@@ -1,4 +1,3 @@
-
 /**
  * Dummy data for simulating database responses when the database is not available
  */
@@ -527,4 +526,3 @@ export const generateDummyResponse = (query: string, language: 'en' | 'pt' = 'en
   
   return { response, visualizationData };
 };
-
