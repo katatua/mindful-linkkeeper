@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Database, AlertCircle } from "lucide-react";
+import { Loader2, Database, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface DatabaseStatus {
@@ -22,11 +22,15 @@ export const DatabaseStatusRetriever = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [lastAttempt, setLastAttempt] = useState<Date | null>(null);
 
   const fetchDatabaseStatus = async () => {
     try {
       setLoading(true);
       setError(null);
+      setLastAttempt(new Date());
+      
+      console.log("Invoking show-database-status edge function...");
       
       // Call the Supabase edge function
       const { data, error } = await supabase.functions.invoke('show-database-status');
@@ -36,44 +40,80 @@ export const DatabaseStatusRetriever = () => {
         throw new Error(`Error invoking function: ${error.message}`);
       }
       
-      if (Array.isArray(data)) {
-        setRecords(data);
+      console.log("Edge function response:", data);
+      
+      if (data?.data && Array.isArray(data.data)) {
+        setRecords(data.data);
         setIsVisible(true);
-        if (data.length === 0) {
+        if (data.data.length === 0) {
           toast.info("No database status records found");
+        } else {
+          toast.success(`Retrieved ${data.data.length} database status records`);
         }
+      } else if (data?.message) {
+        // Handle informational messages
+        setRecords([]);
+        setIsVisible(true);
+        toast.info(data.message);
       } else {
         console.error('Unexpected response format:', data);
-        throw new Error('Unexpected response format');
+        throw new Error('Unexpected response format from edge function');
       }
     } catch (err) {
       console.error('Failed to fetch database status:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      toast.error(err instanceof Error ? err.message : 'Failed to fetch database status');
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      
+      // Provide a more helpful toast message based on the error
+      if (errorMessage.includes('Failed to send a request')) {
+        toast.error("Could not connect to the edge function. Please check that it's deployed properly.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRetry = () => {
+    // Clear previous error and try again
+    setError(null);
+    fetchDatabaseStatus();
+  };
+
   return (
     <div className="my-4">
-      <Button 
-        onClick={fetchDatabaseStatus} 
-        disabled={loading}
-        className="mb-4"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Fetching Database Status...
-          </>
-        ) : (
-          <>
-            <Database className="mr-2 h-4 w-4" />
-            Show Database Status Records
-          </>
+      <div className="flex items-center gap-2 mb-4">
+        <Button 
+          onClick={fetchDatabaseStatus} 
+          disabled={loading}
+          className="flex-1"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Fetching Database Status...
+            </>
+          ) : (
+            <>
+              <Database className="mr-2 h-4 w-4" />
+              Show Database Status Records
+            </>
+          )}
+        </Button>
+        
+        {lastAttempt && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRetry}
+            disabled={loading}
+            title="Try again"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         )}
-      </Button>
+      </div>
 
       {error && (
         <Card className="mb-4 border-red-200">
@@ -83,9 +123,15 @@ export const DatabaseStatusRetriever = () => {
               <p className="font-medium">Error</p>
             </div>
             <p className="text-sm text-gray-700">{error}</p>
-            <p className="text-xs text-gray-500 mt-2">
-              Please check that the Supabase edge function is deployed correctly and your database connection is working.
-            </p>
+            <div className="mt-4 text-xs space-y-2 text-gray-500">
+              <p>Possible solutions:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Check that the edge function is deployed correctly</li>
+                <li>Verify that Supabase environment variables are set</li>
+                <li>Make sure your database connection is working</li>
+                <li>Check the edge function logs in the Supabase dashboard</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       )}
