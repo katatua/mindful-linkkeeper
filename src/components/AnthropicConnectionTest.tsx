@@ -66,7 +66,7 @@ const AnthropicConnectionTest: React.FC = () => {
         {testResult && (
           <div className="mt-4">
             {testResult.success ? (
-              <Alert className="bg-green-50 border-green-200">
+              <Alert variant="default" className="bg-green-50 border-green-200">
                 <Check className="h-4 w-4 text-green-500" />
                 <AlertTitle className="text-green-700">Connection Successful</AlertTitle>
                 <AlertDescription className="text-sm text-green-600">
