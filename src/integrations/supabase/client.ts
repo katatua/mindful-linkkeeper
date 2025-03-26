@@ -5,8 +5,13 @@ import type { Database } from './types';
 
 export const SUPABASE_URL = "https://tujvvuqhvjicbcqzmcwq.supabase.co";
 export const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1anZ2dXFodmppY2JjcXptY3dxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5OTc2MjYsImV4cCI6MjA1ODU3MzYyNn0.JByr4xw9fd6vnZ59Y4MKR07a3MGFqsSJJYSJa2iIWAI";
+export const SUPABASE_SERVICE_KEY = "sbp_65b8f9c452d1db3932c618b2afd7b1ce5a52e99e";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Default client uses the publishable key
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Service client with admin privileges - use this only in protected functions
+export const supabaseAdmin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY);

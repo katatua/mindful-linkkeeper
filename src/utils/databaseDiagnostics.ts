@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
 
 type DatabaseTable = 
   | 'ani_database_status'
@@ -76,8 +76,9 @@ export const initializeDatabase = async () => {
   }
 
   try {
+    // Using supabaseAdmin for administrative operations
     // Create ani_database_status table if it doesn't exist
-    const { data, error } = await supabase.rpc('execute_raw_query', {
+    const { data, error } = await supabaseAdmin.rpc('execute_raw_query', {
       sql_query: `
         CREATE TABLE IF NOT EXISTS ani_database_status (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -139,8 +140,9 @@ export const checkDatabaseStatus = async () => {
       'profiles'
     ];
 
+    // Using supabaseAdmin for querying table counts
     const statusPromises = tables.map(async (table) => {
-      const { count, error } = await supabase
+      const { count, error } = await supabaseAdmin
         .from(table)
         .select('*', { count: 'exact', head: true });
 
