@@ -18,6 +18,12 @@ serve(async (req) => {
   }
 
   try {
+    // Validate OpenAI API key
+    if (!OPENAI_API_KEY || OPENAI_API_KEY.startsWith('sk-proj-')) {
+      console.error("Invalid OpenAI API key format");
+      throw new Error("The OpenAI API key is not properly configured. Please check your environment variables.");
+    }
+
     const { question, language = 'en' } = await req.json();
 
     if (!question) {
@@ -225,7 +231,20 @@ serve(async (req) => {
     FROM ani_funding_programs
     WHERE application_deadline BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '3 months')
     ORDER BY application_deadline ASC
-    LIMIT 20;`;
+    LIMIT 20;
+    
+    Question: "What was the R&D investment in Portugal over the last 3 years?"
+    SQL:
+    SELECT EXTRACT(YEAR FROM measurement_date) as year, 
+           SUM(value) as total_investment, 
+           unit
+    FROM ani_metrics 
+    WHERE (category = 'Investment' OR category = 'R&D') 
+    AND (name ILIKE '%R&D%' OR name ILIKE '%research%' OR name ILIKE '%development%')
+    AND region = 'Portugal' 
+    AND measurement_date >= CURRENT_DATE - INTERVAL '3 years'
+    GROUP BY EXTRACT(YEAR FROM measurement_date), unit
+    ORDER BY year DESC;`;
 
     // User prompt is the question itself with language handling
     const userPrompt = `${language === 'pt' ? 'Traduzir para SQL: ' : 'Translate to SQL: '}${question}`;
@@ -233,52 +252,87 @@ serve(async (req) => {
     console.log("Sending to OpenAI with system prompt:", systemPrompt.substring(0, 100) + "...");
     console.log("User prompt:", userPrompt);
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.1,
-        max_tokens: 600
-      })
-    });
+    try {
+      // Call OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.1,
+          max_tokens: 600
+        })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData}`);
-    }
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('OpenAI API error:', errorData);
+        throw new Error(`OpenAI API error: ${errorData}`);
+      }
 
-    const data = await response.json();
-    let sql = data.choices[0].message.content.trim();
+      const data = await response.json();
+      let sql = data.choices[0].message.content.trim();
 
-    console.log("Generated SQL:", sql);
+      console.log("Generated SQL:", sql);
 
-    // If response starts with "ERROR", return it as an error message
-    if (sql.startsWith("ERROR")) {
+      // If response starts with "ERROR", return it as an error message
+      if (sql.startsWith("ERROR")) {
+        return new Response(
+          JSON.stringify({ error: sql.replace("ERROR", "").trim() }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Clean up any markdown formatting that might be included
+      sql = sql.replace(/```sql\n|\n```|```/g, '');
+
+      console.log("Final SQL to execute:", sql);
+
       return new Response(
-        JSON.stringify({ error: sql.replace("ERROR", "").trim() }),
+        JSON.stringify({ sql }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    } catch (openAiError) {
+      console.error("OpenAI API error:", openAiError);
+      
+      // For R&D investment queries, return a fallback SQL query
+      if (question.toLowerCase().includes('r&d') || 
+          question.toLowerCase().includes('research') || 
+          question.toLowerCase().includes('development') ||
+          question.toLowerCase().includes('investment')) {
+        
+        const fallbackSql = `
+        SELECT 
+          EXTRACT(YEAR FROM measurement_date) as year, 
+          SUM(value) as total_investment, 
+          unit
+        FROM ani_metrics 
+        WHERE (category = 'Investment' OR category = 'R&D') 
+        AND (name ILIKE '%R&D%' OR name ILIKE '%research%' OR name ILIKE '%development%')
+        GROUP BY EXTRACT(YEAR FROM measurement_date), unit
+        ORDER BY year DESC
+        LIMIT 10;`;
+        
+        console.log("Using fallback SQL for R&D query:", fallbackSql);
+        
+        return new Response(
+          JSON.stringify({ 
+            sql: fallbackSql,
+            warning: "Using a fallback query due to API service issues"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`Failed to generate SQL: ${openAiError.message}`);
     }
-
-    // Clean up any markdown formatting that might be included
-    sql = sql.replace(/```sql\n|\n```|```/g, '');
-
-    console.log("Final SQL to execute:", sql);
-
-    return new Response(
-      JSON.stringify({ sql }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error("Error generating SQL:", error);
     return new Response(

@@ -12,7 +12,7 @@ export const isMetricsQuery = async (question: string): Promise<boolean> => {
     'average', 'mean', 'median', 'statistics',
     'metrics', 'measure', 'trend', 'growth',
     'percentage', 'rate', 'distribution', 'breakdown',
-    'investment', 'r&d', 'research', 'development',
+    'investment', 'r&d', 'i&d', 'research', 'development',
     'funding', 'financial', 'budget', 'spent',
     'allocation', 'sector', 'industry', 'region',
     'annual', 'quarterly', 'monthly', 'yearly',
@@ -20,7 +20,9 @@ export const isMetricsQuery = async (question: string): Promise<boolean> => {
     'project', 'program', 'patent', 'innovation',
     'performance', 'effectiveness', 'impact', 'outcome',
     'ani', 'database', 'data', 'portugal', 'show', 'find', 'list',
-    'what', 'who', 'where', 'when', 'why', 'which', 'was', 'is'
+    'what', 'who', 'where', 'when', 'why', 'which', 'was', 'is',
+    'pesquisa', 'desenvolvimento', 'investimento', 'financiamento',
+    'estatísticas', 'métricas', 'dados', 'projetos', 'inovação'
   ];
   
   // Check if the question contains metrics-related keywords

@@ -16,6 +16,18 @@ serve(async (req) => {
   }
 
   try {
+    // Validate OpenAI API key
+    if (!OPENAI_API_KEY || OPENAI_API_KEY.startsWith('sk-proj-')) {
+      console.error("Invalid OpenAI API key format");
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid OpenAI API key configuration. Please set a valid API key for the edge function.",
+          response: "I'm sorry, but I couldn't interpret these results due to a configuration issue with the AI service."
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { question, sqlQuery, results } = await req.json();
 
     if (!results) {
@@ -80,39 +92,53 @@ serve(async (req) => {
 
     console.log("Sending interpretation request to OpenAI");
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.5,
-        max_tokens: 1000
-      })
-    });
+    try {
+      // Call OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.5,
+          max_tokens: 1000
+        })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData}`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('OpenAI API error:', errorData);
+        throw new Error(`OpenAI API error: ${errorData}`);
+      }
+
+      const data = await response.json();
+      const interpretation = data.choices[0].message.content.trim();
+
+      console.log("Generated interpretation:", interpretation.substring(0, 100) + "...");
+
+      return new Response(
+        JSON.stringify({ response: interpretation }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (openAiError) {
+      console.error("OpenAI API error:", openAiError);
+      
+      // Return a fallback interpretation when OpenAI fails
+      return new Response(
+        JSON.stringify({ 
+          response: "These results show data from the ANI database based on your query. Due to technical limitations, I'm unable to provide a detailed interpretation at this time.",
+          error: openAiError.message
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const data = await response.json();
-    const interpretation = data.choices[0].message.content.trim();
-
-    console.log("Generated interpretation:", interpretation.substring(0, 100) + "...");
-
-    return new Response(
-      JSON.stringify({ response: interpretation }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error("Error interpreting results:", error);
     return new Response(
