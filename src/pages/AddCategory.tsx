@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,10 +25,11 @@ export default function AddCategory() {
     }
 
     try {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const userResult = await supabase.auth.getUser();
+      const userId = userResult.data.user?.id;
       if (!userId) throw new Error("No user found");
 
-      const { error } = await supabase
+      const result = await supabase
         .from('links')
         .insert({
           title: categoryName,
@@ -40,7 +40,7 @@ export default function AddCategory() {
           user_id: userId
         });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       toast({
         title: "Category added successfully",

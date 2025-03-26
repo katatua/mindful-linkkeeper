@@ -28,16 +28,16 @@ export const PDFReportDetails = ({ reportId }: { reportId?: string }) => {
       try {
         setLoading(true);
         
-        // Note: Changed from using .single() to using custom single option
-        const { data, error } = await supabase
+        // Adjusted to use the properly structured promise
+        const result = await supabase
           .from('pdf_reports')
           .select()
           .eq('id', id)
           .single();
-          
-        if (error) throw error;
         
-        setReport(data);
+        if (result.error) throw result.error;
+        
+        setReport(result.data);
       } catch (err) {
         console.error('Error fetching report:', err);
         toast({
@@ -48,15 +48,15 @@ export const PDFReportDetails = ({ reportId }: { reportId?: string }) => {
         
         // Try to fetch report by extraction ID if the first query failed
         try {
-          const { data, error } = await supabase
+          const extractionResult = await supabase
             .from('pdf_reports')
             .select()
             .eq('pdf_extraction_id', id)
             .single();
             
-          if (error) throw error;
+          if (extractionResult.error) throw extractionResult.error;
           
-          setReport(data);
+          setReport(extractionResult.data);
         } catch (extractionError) {
           console.error('Error fetching report by extraction ID:', extractionError);
         }

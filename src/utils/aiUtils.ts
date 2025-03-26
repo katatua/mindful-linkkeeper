@@ -50,19 +50,19 @@ export const AI_MODELS: Record<string, AIModel> = {
 export const classifyDocument = async (data: ClassificationRequest): Promise<string> => {
   try {
     // Use the imported Supabase client instead of creating a new one
-    const { data: responseData, error } = await supabase.functions.invoke<ClassificationResponse>(
+    const result = await supabase.functions.invoke(
       'classify-document',
       {
         body: data,
       }
     );
     
-    if (error) {
-      console.error('Error classifying document:', error);
+    if (result.error) {
+      console.error('Error classifying document:', result.error);
       return 'unknown';
     }
     
-    return responseData?.classification || 'unknown';
+    return result.data?.classification || 'unknown';
   } catch (error) {
     console.error('Unexpected error in document classification:', error);
     return 'unknown';

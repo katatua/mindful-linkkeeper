@@ -24,7 +24,7 @@ export const useProjectData = () => {
       setIsLoading(true);
       
       try {
-        const { data: projectsData, error: projectsError } = await supabase
+        const result = await supabase
           .from('ani_projects')
           .select(`
             id,
@@ -46,7 +46,8 @@ export const useProjectData = () => {
           .order('created_at', { ascending: false })
           .limit(10);
         
-        if (projectsError) throw projectsError;
+        if (result.error) throw result.error;
+        const projectsData = result.data || [];
         
         const formattedProjects: ProjectData[] = projectsData.map(project => {
           // Map the database status to one of the allowed ProjectData status values
@@ -89,32 +90,36 @@ export const useProjectData = () => {
   
   const fetchMetrics = async () => {
     try {
-      const { count: totalCount } = await supabase
+      const totalResult = await supabase
         .from('ani_projects')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact' });
+      const totalCount = totalResult.count || 0;
         
-      const { count: activeCount } = await supabase
+      const activeResult = await supabase
         .from('ani_projects')
-        .select('*', { count: 'exact', head: true })
+        .select('*', { count: 'exact' })
         .eq('status', 'active');
+      const activeCount = activeResult.count || 0;
         
-      const { count: completedCount } = await supabase
+      const completedResult = await supabase
         .from('ani_projects')
-        .select('*', { count: 'exact', head: true })
+        .select('*', { count: 'exact' })
         .eq('status', 'completed');
+      const completedCount = completedResult.count || 0;
       
-      const { data: budgetData } = await supabase
+      const budgetResult = await supabase
         .from('ani_projects')
         .select('funding_amount');
+      const budgetData = budgetResult.data || [];
       
-      const totalBudget = budgetData?.reduce((sum, project) => sum + (project.funding_amount || 0), 0) || 0;
+      const totalBudget = budgetData.reduce((sum, project) => sum + (project.funding_amount || 0), 0) || 0;
       
       const completionRate = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
       
       setMetrics({
-        totalProjects: totalCount || 0,
+        totalProjects: totalCount,
         totalProjectsChange: 12,
-        activeProjects: activeCount || 0,
+        activeProjects: activeCount,
         activeProjectsChange: 8,
         activeProjectsTrend: [65, 68, 72, 75, 78, activeCount || 82],
         completionRate: completionRate,

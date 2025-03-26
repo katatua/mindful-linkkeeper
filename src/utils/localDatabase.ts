@@ -1,1036 +1,751 @@
 
-import fs from 'fs';
-import path from 'path';
+/**
+ * Local database implementation for development and testing
+ * This file provides a mock implementation of the Supabase client
+ * with file-based storage for simulating a database
+ */
 
-// Define the base directory for our local database files
-const DB_DIR = path.join(process.cwd(), 'local_db');
+import { toast } from "sonner";
 
-// Ensure the directory exists
-if (typeof window === 'undefined') {
-  if (!fs.existsSync(DB_DIR)) {
-    try {
-      fs.mkdirSync(DB_DIR, { recursive: true });
-    } catch (error) {
-      console.error('Error creating local database directory:', error);
+type MockData = Record<string, any[]>;
+
+// Initial in-memory database with all tables
+const localData: MockData = {
+  ani_funding_applications: [],
+  ani_funding_programs: [],
+  ani_institutions: [],
+  ani_international_collaborations: [],
+  ani_metrics: [],
+  ani_patent_holders: [],
+  ani_policy_frameworks: [],
+  ani_projects: [],
+  ani_projects_researchers: [],
+  ani_researchers: [],
+  campaign_events: [],
+  campaign_simulations: [],
+  campaigns: [],
+  content_variations: [],
+  deployments: [],
+  document_notes: [],
+  esp_providers: [],
+  generated_content: [],
+  generated_images: [],
+  images: [],
+  links: [],
+  list_personalization_rules: [],
+  model_metrics: [],
+  model_versions: [],
+  models: [],
+  newsletter_templates: [],
+  newsletters: [],
+  notes: [],
+  pdf_extracted_elements: [],
+  pdf_extractions: [],
+  pdf_reports: [
+    {
+      id: 'report-1',
+      report_title: 'Sample PDF Report',
+      report_content: '<h2>Executive Summary</h2><p>This is a sample report generated for testing.</p>',
+      created_at: new Date().toISOString(),
+      pdf_extraction_id: 'extraction-1'
     }
-  }
-}
+  ],
+  personalization_rules: [],
+  subscriber_list_members: [],
+  subscriber_lists: [],
+  subscriber_segments: [],
+  subscriber_tags: [],
+  subscribers: [],
+  synthetic_datasets: [],
+  synthetic_samples: [],
+  tasks: [],
+  template_lists: [],
+  ani_database_status: [{ status: 'connected', last_checked: new Date().toISOString() }]
+};
 
-// Define the tables we want to simulate from Supabase
-export const LOCAL_TABLES = [
-  'ani_database_status',
-  'ani_funding_applications',
-  'ani_funding_programs',
-  'ani_institutions',
-  'ani_international_collaborations',
-  'ani_metrics',
-  'ani_patent_holders',
-  'ani_policy_frameworks',
-  'ani_projects',
-  'ani_projects_researchers',
-  'ani_researchers',
-  'profiles'
-];
-
-// Interface for database operations
-export interface LocalDatabaseOperations {
-  select: (table: string, options?: QueryOptions) => Promise<{ data: any[]; error: Error | null; count?: number }>;
-  insert: (table: string, data: any) => Promise<{ data: any; error: Error | null }>;
-  update: (table: string, id: string, data: any) => Promise<{ data: any; error: Error | null }>;
-  delete: (table: string, id: string) => Promise<{ error: Error | null }>;
-  rpc: (functionName: string, params: any) => Promise<{ data: any; error: Error | null }>;
-  functions: {
-    invoke: (functionName: string, options?: { body?: any }) => Promise<{ data: any; error: Error | null }>;
-  };
-}
-
-// Mock user for auth simulation
-const MOCK_USER = {
-  id: "mock-user-id",
-  email: "user@example.com",
-  user_metadata: {
-    name: "Mock User"
-  },
-  app_metadata: {
-    role: "user"
-  },
-  aud: "authenticated",
+// Sample user for authentication simulation
+const sampleUser = {
+  id: 'user-1',
+  email: 'sample@example.com',
+  user_metadata: { name: 'Sample User' },
+  app_metadata: { role: 'authenticated' },
+  aud: 'authenticated',
   created_at: new Date().toISOString()
 };
 
 // Mock session for auth simulation
-const MOCK_SESSION = {
-  user: MOCK_USER,
-  access_token: "mock-access-token",
-  refresh_token: "mock-refresh-token",
-  expires_at: Date.now() + 3600000
+const mockSession = {
+  user: sampleUser,
+  access_token: 'mock-access-token',
+  refresh_token: 'mock-refresh-token',
+  expires_at: Date.now() + 3600000,
 };
 
-// Query options interface to simulate Supabase queries
-export interface QueryOptions {
-  select?: string;
-  eq?: [string, any];
-  neq?: [string, any];
-  limit?: number;
-  order?: [string, { ascending: boolean }];
-  count?: string;
-  head?: boolean;
-  from?: string;
-  match?: [string, any];
-  single?: boolean;
+// Current auth state
+let currentUser: typeof sampleUser | null = sampleUser;
+let currentSession: typeof mockSession | null = mockSession;
+
+// Type for query response
+interface QueryResponse<T> {
+  data: T | null;
+  error: Error | null;
+  count?: number;
 }
 
-// Helper to get the file path for a table
-const getTablePath = (table: string): string => {
-  return path.join(DB_DIR, `${table}.json`);
+// Function to create a Promise that resolves to a QueryResponse
+const createQueryPromise = <T>(data: T | null, error: Error | null = null, count?: number): Promise<QueryResponse<T>> => {
+  return Promise.resolve({ data, error, count });
 };
 
-// Helper to read data from a table file
-const readTable = (table: string): any[] => {
-  if (typeof window !== 'undefined') {
-    // In browser context, use localStorage as fallback
-    const data = localStorage.getItem(`local_db_${table}`);
-    return data ? JSON.parse(data) : [];
-  }
+// Helper to simulate delayed response
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  try {
-    const filePath = getTablePath(table);
-    if (!fs.existsSync(filePath)) {
-      return [];
-    }
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(fileContent);
-  } catch (error) {
-    console.error(`Error reading from table ${table}:`, error);
-    return [];
-  }
-};
-
-// Helper to write data to a table file
-const writeTable = (table: string, data: any[]): void => {
-  if (typeof window !== 'undefined') {
-    // In browser context, use localStorage as fallback
-    localStorage.setItem(`local_db_${table}`, JSON.stringify(data));
-    return;
-  }
-
-  try {
-    const filePath = getTablePath(table);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-  } catch (error) {
-    console.error(`Error writing to table ${table}:`, error);
-  }
-};
-
-// Initialize database with sample data
-export const initializeLocalDatabase = (): void => {
-  // Only initialize if tables don't exist
-  LOCAL_TABLES.forEach(table => {
-    const tableData = readTable(table);
-    if (tableData.length === 0) {
-      // Table doesn't exist or is empty, initialize with sample data
-      const sampleData = generateSampleData(table);
-      writeTable(table, sampleData);
-    }
-  });
-
-  // Update database status table
-  updateDatabaseStatus();
-};
-
-// Update the status table with counts from all tables
-export const updateDatabaseStatus = (): void => {
-  const statusRecords = LOCAL_TABLES.map(tableName => {
-    const tableData = readTable(tableName);
-    return {
-      id: crypto.randomUUID ? crypto.randomUUID() : `${tableName}-${Date.now()}`,
-      table_name: tableName,
-      record_count: tableData.length,
-      status: tableData.length > 0 ? 'populated' : 'empty',
-      last_populated: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-  });
-
-  writeTable('ani_database_status', statusRecords);
-};
-
-// Generate sample data for tables
-export const generateSampleData = (table: string): any[] => {
-  switch (table) {
-    case 'ani_database_status':
-      return [];
-    
-    case 'ani_metrics':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `metric-1`,
-          name: "R&D Intensity",
-          value: 1.41,
-          unit: "%",
-          category: "Investment",
-          measurement_date: "2023-12-31",
-          description: "R&D expenditure as percentage of GDP",
-          source: "Statistics Portugal",
-          sector: null,
-          region: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `metric-2`,
-          name: "Private Sector R&D Investment",
-          value: 58.2,
-          unit: "%",
-          category: "Investment",
-          measurement_date: "2023-12-31",
-          description: "Percentage of total R&D performed by business sector",
-          source: "Statistics Portugal",
-          sector: "Business",
-          region: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `metric-3`,
-          name: "Patent Applications",
-          value: 235,
-          unit: "applications",
-          category: "Intellectual Property",
-          measurement_date: "2023-12-31",
-          description: "Number of patent applications filed",
-          source: "European Patent Office",
-          sector: null,
-          region: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'ani_projects':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `project-1`,
-          title: "AI for Medical Diagnostics",
-          description: "Development of AI algorithms for early disease detection",
-          status: "active",
-          funding_amount: 750000,
-          start_date: "2023-02-15",
-          end_date: "2025-02-14",
-          sector: "Healthcare",
-          region: "Lisboa",
-          organization: "Lisbon Medical Center",
-          contact_email: "contact@lisbonmedical.pt",
-          contact_phone: "+351123456789",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `project-2`,
-          title: "Sustainable Energy Storage",
-          description: "Research into advanced battery technologies for renewable energy",
-          status: "active",
-          funding_amount: 620000,
-          start_date: "2023-05-10",
-          end_date: "2025-05-09",
-          sector: "Energy",
-          region: "Norte",
-          organization: "Porto Energy Research Center",
-          contact_email: "research@portoenergy.pt",
-          contact_phone: "+351987654321",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'ani_funding_programs':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `program-1`,
-          name: "Innovation Boost",
-          description: "Funding for innovative projects in SMEs",
-          funding_type: "Grant",
-          total_budget: 25000000,
-          start_date: "2023-01-15",
-          end_date: "2024-12-31",
-          application_deadline: "2024-06-30",
-          sector_focus: ["ICT", "Manufacturing", "Health"],
-          eligibility_criteria: "SMEs with innovative projects",
-          success_rate: 45.5,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `program-2`,
-          name: "Green Tech Initiative",
-          description: "Support for sustainable technology development",
-          funding_type: "Co-financing",
-          total_budget: 18500000,
-          start_date: "2023-03-01",
-          end_date: "2025-02-28",
-          application_deadline: "2024-07-15",
-          sector_focus: ["Renewable Energy", "Sustainability"],
-          eligibility_criteria: "Organizations developing green technologies",
-          success_rate: 38.2,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'ani_institutions':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `institution-1`,
-          institution_name: "University of Lisbon",
-          type: "Higher Education",
-          region: "Lisboa",
-          specialization_areas: ["Computer Science", "Medicine", "Engineering"],
-          founding_date: "1911-03-23",
-          collaboration_count: 45,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `institution-2`,
-          institution_name: "Porto Research Institute",
-          type: "Research",
-          region: "Norte",
-          specialization_areas: ["Biotechnology", "Materials Science"],
-          founding_date: "1987-05-10",
-          collaboration_count: 32,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'ani_patent_holders':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `patent-1`,
-          organization_name: "University of Lisbon",
-          patent_count: 48,
-          year: 2023,
-          sector: "Higher Education",
-          innovation_index: 8.7,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `patent-2`,
-          organization_name: "PharmaTech Solutions",
-          patent_count: 35,
-          year: 2023,
-          sector: "Pharmaceuticals",
-          innovation_index: 9.2,
-          created_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'ani_international_collaborations':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `collab-1`,
-          program_name: "EU Research Consortium",
-          country: "Germany",
-          partnership_type: "Joint Research",
-          focus_areas: ["AI", "Healthcare"],
-          total_budget: 3500000,
-          portuguese_contribution: 850000,
-          start_date: "2023-01-01",
-          end_date: "2025-12-31",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `collab-2`,
-          program_name: "Sustainable Energy Coalition",
-          country: "Spain",
-          partnership_type: "Technology Transfer",
-          focus_areas: ["Renewable Energy"],
-          total_budget: 2800000,
-          portuguese_contribution: 720000,
-          start_date: "2023-03-15",
-          end_date: "2025-03-14",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'ani_researchers':
-      return [
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `researcher-1`,
-          name: "Maria Silva",
-          specialization: "Artificial Intelligence",
-          institution_id: null, // Would normally link to an institution
-          email: "maria.silva@research.pt",
-          h_index: 24,
-          publication_count: 78,
-          patent_count: 3,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `researcher-2`,
-          name: "João Santos",
-          specialization: "Biotechnology",
-          institution_id: null,
-          email: "joao.santos@research.pt",
-          h_index: 18,
-          publication_count: 45,
-          patent_count: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    case 'profiles':
-      return [
-        {
-          id: "user-1",
-          email: "admin@example.com",
-          first_name: "Admin",
-          last_name: "User",
-          role: "admin",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "user-2",
-          email: "viewer@example.com",
-          first_name: "Viewer",
-          last_name: "User",
-          role: "viewer",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-    
-    // Generate empty arrays for other tables
-    default:
-      return [];
-  }
-};
-
-// Create the local database client with similar API to Supabase
-export const localDatabase: LocalDatabaseOperations = {
-  select: async (table: string, options?: QueryOptions) => {
-    try {
-      let data = readTable(table);
-      
-      // Apply filters if provided
-      if (options?.eq) {
-        const [field, value] = options.eq;
-        data = data.filter(item => item[field] === value);
-      }
-      
-      if (options?.neq) {
-        const [field, value] = options.neq;
-        data = data.filter(item => item[field] !== value);
-      }
-      
-      // Apply limit
-      if (options?.limit) {
-        data = data.slice(0, options.limit);
-      }
-      
-      // Apply ordering
-      if (options?.order) {
-        const [field, { ascending }] = options.order;
-        data.sort((a, b) => {
-          if (ascending) {
-            return a[field] > b[field] ? 1 : -1;
-          } else {
-            return a[field] < b[field] ? 1 : -1;
-          }
-        });
-      }
-      
-      // Handle count requests
-      if (options?.count === 'exact') {
-        if (options?.head) {
-          return { data: null, count: data.length, error: null };
-        }
-      }
-      
-      // Handle single requests
-      if (options?.single === true) {
-        if (data.length === 0) {
-          return { data: null, error: new Error("No rows found") };
-        }
-        if (data.length > 1) {
-          return { data: null, error: new Error("Multiple rows found") };
-        }
-        return { data: data[0], error: null };
-      }
-      
-      return { data, error: null };
-    } catch (error) {
-      console.error(`Error in local database select operation for ${table}:`, error);
-      return { data: null, error: error as Error };
-    }
-  },
-  
-  insert: async (table: string, data: any) => {
-    try {
-      const tableData = readTable(table);
-      
-      // Ensure the data has an ID
-      const newItem = {
-        ...data,
-        id: data.id || (crypto.randomUUID ? crypto.randomUUID() : `${table}-${Date.now()}`),
-        created_at: data.created_at || new Date().toISOString(),
-        updated_at: data.updated_at || new Date().toISOString()
-      };
-      
-      tableData.push(newItem);
-      writeTable(table, tableData);
-      
-      // Update database status
-      updateDatabaseStatus();
-      
-      return { data: newItem, error: null };
-    } catch (error) {
-      console.error(`Error in local database insert operation for ${table}:`, error);
-      return { data: null, error: error as Error };
-    }
-  },
-  
-  update: async (table: string, id: string, data: any) => {
-    try {
-      let tableData = readTable(table);
-      const index = tableData.findIndex(item => item.id === id);
-      
-      if (index === -1) {
-        throw new Error(`Item with ID ${id} not found in table ${table}`);
-      }
-      
-      // Update the item
-      tableData[index] = {
-        ...tableData[index],
-        ...data,
-        updated_at: new Date().toISOString()
-      };
-      
-      writeTable(table, tableData);
-      
-      return { data: tableData[index], error: null };
-    } catch (error) {
-      console.error(`Error in local database update operation for ${table}:`, error);
-      return { data: null, error: error as Error };
-    }
-  },
-  
-  delete: async (table: string, id: string) => {
-    try {
-      let tableData = readTable(table);
-      const filteredData = tableData.filter(item => item.id !== id);
-      
-      writeTable(table, filteredData);
-      
-      // Update database status
-      updateDatabaseStatus();
-      
-      return { error: null };
-    } catch (error) {
-      console.error(`Error in local database delete operation for ${table}:`, error);
-      return { error: error as Error };
-    }
-  },
-  
-  rpc: async (functionName: string, params: any) => {
-    try {
-      // Simulate RPC functions
-      if (functionName === 'execute_raw_query') {
-        // Simple implementation for select queries
-        const { sql_query } = params;
-        
-        // Very basic SQL parser to extract table
-        const match = sql_query.match(/FROM\s+([a-zA-Z_]+)/i);
-        if (match && match[1]) {
-          const table = match[1];
-          const data = readTable(table);
-          return { data, error: null };
-        }
-        
-        return { data: [], error: null };
-      }
-      
-      if (functionName === 'is_admin') {
-        // Check if user is admin (simulate by returning true)
-        return { data: true, error: null };
-      }
-      
-      throw new Error(`RPC function ${functionName} not implemented`);
-    } catch (error) {
-      console.error(`Error in local database RPC call for ${functionName}:`, error);
-      return { data: null, error: error as Error };
-    }
-  },
-  
-  functions: {
-    invoke: async (functionName: string, options?: { body?: any }) => {
-      try {
-        // Simulate Supabase Edge Functions
-        if (functionName === 'initialize-database') {
-          // Initialize all tables with sample data
-          LOCAL_TABLES.forEach(table => {
-            const sampleData = generateSampleData(table);
-            writeTable(table, sampleData);
-          });
-          
-          return { 
-            data: { success: true, message: "Database initialized successfully" }, 
-            error: null 
-          };
-        }
-        
-        if (functionName === 'show-database-status') {
-          // Return status of all tables
-          const statusData = readTable('ani_database_status');
-          return { 
-            data: { success: true, data: statusData }, 
-            error: null 
-          };
-        }
-        
-        if (functionName === 'generate-sql') {
-          // Simulate SQL generation from natural language
-          const { question } = options?.body || {};
-          let sql = '';
-          
-          if (question.toLowerCase().includes('metrics')) {
-            sql = 'SELECT * FROM ani_metrics LIMIT 10';
-          } else if (question.toLowerCase().includes('project')) {
-            sql = 'SELECT * FROM ani_projects LIMIT 10';
-          } else if (question.toLowerCase().includes('funding')) {
-            sql = 'SELECT * FROM ani_funding_programs LIMIT 10';
-          } else if (question.toLowerCase().includes('patent')) {
-            sql = 'SELECT * FROM ani_patent_holders LIMIT 10';
-          } else {
-            sql = 'SELECT * FROM ani_metrics LIMIT 5';
-          }
-          
-          return { 
-            data: { sql, warning: null }, 
-            error: null 
-          };
-        }
-        
-        if (functionName === 'execute-sql') {
-          // Simulate SQL execution
-          const { sqlQuery } = options?.body || {};
-          
-          // Very basic SQL parser to extract table
-          const match = sqlQuery.match(/FROM\s+([a-zA-Z_]+)/i);
-          if (match && match[1]) {
-            const table = match[1];
-            const data = readTable(table);
-            return { 
-              data: { result: data.slice(0, 10) }, 
-              error: null 
-            };
-          }
-          
-          return { 
-            data: { result: [] }, 
-            error: null 
-          };
-        }
-        
-        if (functionName === 'interpret-results') {
-          // Simulate result interpretation
-          return { 
-            data: { response: "Here are the results of your query. The data shows trends in the selected metrics." }, 
-            error: null 
-          };
-        }
-        
-        if (functionName === 'pdf-extractor') {
-          // Simulate PDF extraction
-          const { fileName } = options?.body || {};
-          
-          return {
-            data: {
-              extraction: {
-                extracted_text: "This is extracted text from the PDF document.",
-                extracted_numbers: [123, 456, 789],
-                extracted_images: ["image1.png", "image2.png"]
-              },
-              report: {
-                id: crypto.randomUUID ? crypto.randomUUID() : `report-${Date.now()}`,
-                report_title: `Analysis of ${fileName || 'Document'}`
-              }
-            },
-            error: null
-          };
-        }
-        
-        throw new Error(`Edge function ${functionName} not implemented`);
-      } catch (error) {
-        console.error(`Error in local database function call for ${functionName}:`, error);
-        return { data: null, error: error as Error };
-      }
-    }
-  }
-};
-
-// Mock FileStorage class to handle file operations
-class LocalFileStorage {
-  bucket: string;
-  
-  constructor(bucket: string) {
-    this.bucket = bucket;
-  }
-  
-  upload(filePath: string, file: any, options: any = {}) {
-    console.log(`Simulating upload of ${file.name || 'file'} to ${this.bucket}/${filePath}`);
-    
-    // Return success
-    return Promise.resolve({
-      data: { 
-        path: filePath
-      },
-      error: null
-    });
-  }
-  
-  getPublicUrl(filePath: string) {
-    return {
-      data: {
-        publicUrl: `https://mock-storage.local/${this.bucket}/${filePath}`
-      }
-    };
-  }
-  
-  list(folderPath: string = '') {
-    return Promise.resolve({
-      data: {
-        files: []
-      },
-      error: null
-    });
-  }
-  
-  remove(filePaths: string[]) {
-    return Promise.resolve({
-      data: null,
-      error: null
-    });
-  }
-}
-
-// Create a replacement for the Supabase client that uses our local database
+// Mock Supabase client implementation
 export const mockSupabase = {
-  // Data methods
-  from: (table: string) => ({
-    select: (cols?: string) => ({
-      limit: (limit: number) => ({
-        order: (column: string, { ascending }: { ascending: boolean }) => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols, 
-              limit, 
-              order: [column, { ascending }] 
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          },
-          eq: (column: string, value: any) => ({
-            then: (callback: Function) => {
-              localDatabase.select(table, { 
-                select: cols, 
-                limit, 
-                order: [column, { ascending }],
-                eq: [column, value]
-              })
-              .then(result => callback(result))
-              .catch(error => callback({ error }));
-            }
-          }),
-          data: null,
-          error: null
-        }),
-        eq: (column: string, value: any) => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols, 
-              limit,
-              eq: [column, value]
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        }),
-        then: (callback: Function) => {
-          localDatabase.select(table, { 
-            select: cols, 
-            limit 
-          })
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
-        },
-        single: () => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols, 
-              limit,
-              single: true 
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        })
-      }),
-      order: (column: string, { ascending }: { ascending: boolean }) => ({
-        then: (callback: Function) => {
-          localDatabase.select(table, { 
-            select: cols, 
-            order: [column, { ascending }] 
-          })
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
-        },
-        eq: (column: string, value: any) => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols, 
-              order: [column, { ascending }],
-              eq: [column, value]
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        }),
-        limit: (limit: number) => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols, 
-              order: [column, { ascending }],
-              limit
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        }),
-        single: () => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols, 
-              order: [column, { ascending }],
-              single: true 
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        })
-      }),
-      single: () => ({
-        then: (callback: Function) => {
-          localDatabase.select(table, { 
-            select: cols, 
-            single: true 
-          })
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
+  from: (table: string) => {
+    // Ensure table exists in local data
+    if (!localData[table]) {
+      localData[table] = [];
+    }
+
+    // Initialize query state
+    let selectedData = [...localData[table]];
+    let selectedColumns: string[] | undefined = undefined;
+    let filterConditions: { column: string; value: any; operator: string }[] = [];
+    let limitValue: number | undefined = undefined;
+    let orderByColumn: string | undefined = undefined;
+    let orderDirection: 'asc' | 'desc' = 'asc';
+    
+    return {
+      select: (cols?: string) => {
+        if (cols) {
+          selectedColumns = cols.split(',').map(col => col.trim());
         }
-      }),
-      eq: (column: string, value: any) => ({
-        then: (callback: Function) => {
-          localDatabase.select(table, { 
-            select: cols,
-            eq: [column, value]
-          })
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
-        },
-        single: () => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols,
-              eq: [column, value],
-              single: true 
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        }),
-        order: (column: string, { ascending }: { ascending: boolean }) => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols,
-              eq: [column, value], 
-              order: [column, { ascending }] 
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        }),
-        limit: (limit: number) => ({
-          then: (callback: Function) => {
-            localDatabase.select(table, { 
-              select: cols,
-              eq: [column, value], 
-              limit
-            })
-            .then(result => callback(result))
-            .catch(error => callback({ error }));
-          }
-        })
-      }),
-      neq: (column: string, value: any) => ({
-        then: (callback: Function) => {
-          localDatabase.select(table, { 
-            select: cols,
-            neq: [column, value]
-          })
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
-        }
-      }),
-      count: (countType: string, options?: { head: boolean }) => {
-        return localDatabase.select(table, { count: countType, head: options?.head });
-      },
-      then: (callback: Function) => {
-        localDatabase.select(table, { select: cols })
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
-      }
-    }),
-    insert: (data: any) => ({
-      then: (callback: Function) => {
-        localDatabase.insert(table, data)
-          .then(result => callback(result))
-          .catch(error => callback({ error }));
-      }
-    }),
-    update: (data: any) => ({
-      eq: (column: string, value: any) => ({
-        then: (callback: Function) => {
-          // Find the item first
-          localDatabase.select(table, { eq: [column, value] })
-            .then(result => {
-              if (result.data && result.data.length > 0) {
-                const id = result.data[0].id;
-                localDatabase.update(table, id, data)
-                  .then(updateResult => callback(updateResult))
-                  .catch(error => callback({ error }));
-              } else {
-                callback({ data: null, error: new Error(`No item found in ${table} where ${column} = ${value}`) });
-              }
-            })
-            .catch(error => callback({ error }));
-        }
-      })
-    }),
-    delete: () => ({
-      eq: (column: string, value: any) => ({
-        then: (callback: Function) => {
-          // Find the item first
-          localDatabase.select(table, { eq: [column, value] })
-            .then(result => {
-              if (result.data && result.data.length > 0) {
-                const id = result.data[0].id;
-                localDatabase.delete(table, id)
-                  .then(deleteResult => callback(deleteResult))
-                  .catch(error => callback({ error }));
-              } else {
-                callback({ error: null }); // Nothing to delete
-              }
-            })
-            .catch(error => callback({ error }));
-        }
-      }),
-      neq: (column: string, value: any) => ({
-        then: (callback: Function) => {
-          // Find all items that don't match
-          localDatabase.select(table, { neq: [column, value] })
-            .then(result => {
-              if (result.data && result.data.length > 0) {
-                // Delete each item found
-                const promises = result.data.map(item => 
-                  localDatabase.delete(table, item.id)
+        
+        return {
+          limit: (limit: number) => {
+            limitValue = limit;
+            
+            return {
+              order: (column: string, options?: { ascending: boolean }) => {
+                orderByColumn = column;
+                orderDirection = options?.ascending === false ? 'desc' : 'asc';
+                
+                return {
+                  eq: (column: string, value: any) => {
+                    filterConditions.push({ column, value, operator: 'eq' });
+
+                    // Execute the query and return results
+                    const result = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      limitValue,
+                      orderByColumn,
+                      orderDirection
+                    );
+
+                    return createQueryPromise(result);
+                  },
+                  neq: (column: string, value: any) => {
+                    filterConditions.push({ column, value, operator: 'neq' });
+
+                    // Execute the query and return results
+                    const result = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      limitValue,
+                      orderByColumn,
+                      orderDirection
+                    );
+
+                    return createQueryPromise(result);
+                  },
+                  single: () => {
+                    // Execute the query and return a single result
+                    const results = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      1, // Limit to 1 result
+                      orderByColumn,
+                      orderDirection
+                    );
+                    
+                    const result = results.length > 0 ? results[0] : null;
+                    const error = results.length === 0 
+                      ? new Error(`No rows found in ${table}`)
+                      : results.length > 1 
+                      ? new Error(`Multiple rows found in ${table}`)
+                      : null;
+                      
+                    return createQueryPromise(result, error);
+                  },
+                  then: (callback: Function) => {
+                    // Execute query and pass results to callback
+                    const results = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      limitValue,
+                      orderByColumn,
+                      orderDirection
+                    );
+                    callback({ data: results, error: null });
+                  },
+                  data: executeLocalQuery(
+                    table, 
+                    selectedData,
+                    selectedColumns,
+                    filterConditions,
+                    limitValue,
+                    orderByColumn,
+                    orderDirection
+                  ),
+                  error: null
+                };
+              },
+              eq: (column: string, value: any) => {
+                filterConditions.push({ column, value, operator: 'eq' });
+                
+                return {
+                  single: () => {
+                    // Execute the query and return a single result
+                    const results = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      1, // Limit to 1
+                      orderByColumn,
+                      orderDirection
+                    );
+                    
+                    const result = results.length > 0 ? results[0] : null;
+                    const error = results.length === 0 
+                      ? new Error(`No rows found in ${table}`)
+                      : results.length > 1 
+                      ? new Error(`Multiple rows found in ${table}`)
+                      : null;
+                      
+                    return createQueryPromise(result, error);
+                  },
+                  then: (callback: Function) => {
+                    // Execute query and pass results to callback
+                    const results = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      limitValue,
+                      orderByColumn,
+                      orderDirection
+                    );
+                    callback({ data: results, error: null });
+                  }
+                };
+              },
+              then: (callback: Function) => {
+                // Execute query and pass results to callback
+                const results = executeLocalQuery(
+                  table, 
+                  selectedData,
+                  selectedColumns,
+                  filterConditions,
+                  limitValue,
+                  orderByColumn,
+                  orderDirection
                 );
-                Promise.all(promises)
-                  .then(() => callback({ error: null }))
-                  .catch(error => callback({ error }));
-              } else {
-                callback({ error: null }); // Nothing to delete
+                callback({ data: results, error: null });
               }
-            })
-            .catch(error => callback({ error }));
+            };
+          },
+          eq: (column: string, value: any) => {
+            filterConditions.push({ column, value, operator: 'eq' });
+            
+            return {
+              single: () => {
+                // Execute the query and return a single result
+                const results = executeLocalQuery(
+                  table, 
+                  selectedData,
+                  selectedColumns,
+                  filterConditions,
+                  1, // Limit to 1
+                  orderByColumn,
+                  orderDirection
+                );
+                
+                const result = results.length > 0 ? results[0] : null;
+                const error = results.length === 0 
+                  ? new Error(`No rows found in ${table}`)
+                  : results.length > 1 
+                  ? new Error(`Multiple rows found in ${table}`)
+                  : null;
+                  
+                return createQueryPromise(result, error);
+              },
+              order: (column: string, options?: { ascending: boolean }) => {
+                orderByColumn = column;
+                orderDirection = options?.ascending === false ? 'desc' : 'asc';
+                
+                return {
+                  then: (callback: Function) => {
+                    // Execute query and pass results to callback
+                    const results = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      limitValue,
+                      orderByColumn,
+                      orderDirection
+                    );
+                    callback({ data: results, error: null });
+                  }
+                };
+              },
+              then: (callback: Function) => {
+                // Execute query and pass results to callback
+                const results = executeLocalQuery(
+                  table, 
+                  selectedData,
+                  selectedColumns,
+                  filterConditions,
+                  limitValue,
+                  orderByColumn,
+                  orderDirection
+                );
+                callback({ data: results, error: null });
+              }
+            };
+          },
+          single: () => {
+            // Return a promise for a single record
+            return createQueryPromise(
+              localData[table].length > 0 ? localData[table][0] : null,
+              localData[table].length === 0 
+                ? new Error(`No rows found in ${table}`) 
+                : localData[table].length > 1 
+                ? new Error(`Multiple rows found in ${table}`)
+                : null
+            );
+          },
+          order: (column: string, options?: { ascending: boolean }) => {
+            orderByColumn = column;
+            orderDirection = options?.ascending === false ? 'desc' : 'asc';
+            
+            return {
+              limit: (limit: number) => {
+                limitValue = limit;
+                
+                return {
+                  then: (callback: Function) => {
+                    // Execute query and pass results to callback
+                    const results = executeLocalQuery(
+                      table, 
+                      selectedData,
+                      selectedColumns,
+                      filterConditions,
+                      limitValue,
+                      orderByColumn,
+                      orderDirection
+                    );
+                    callback({ data: results, error: null });
+                  }
+                };
+              },
+              then: (callback: Function) => {
+                // Execute query and pass results to callback
+                const results = executeLocalQuery(
+                  table, 
+                  selectedData,
+                  selectedColumns,
+                  filterConditions,
+                  limitValue,
+                  orderByColumn,
+                  orderDirection
+                );
+                callback({ data: results, error: null });
+              }
+            };
+          },
+          then: (callback: Function) => {
+            // Execute query and pass results to callback
+            const results = executeLocalQuery(
+              table, 
+              selectedData,
+              selectedColumns,
+              filterConditions,
+              limitValue,
+              orderByColumn,
+              orderDirection
+            );
+            callback({ data: results, error: null });
+          }
+        };
+      },
+      insert: (data: any) => {
+        // Add ID if not present
+        const newItem = {
+          id: data.id || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          created_at: data.created_at || new Date().toISOString(),
+          ...data
+        };
+        
+        localData[table].push(newItem);
+        console.log(`Inserted data into ${table}:`, newItem);
+        
+        return createQueryPromise(newItem);
+      },
+      update: (data: any) => {
+        // Find and update item
+        const index = localData[table].findIndex(item => item.id === data.id);
+        
+        if (index !== -1) {
+          localData[table][index] = {
+            ...localData[table][index],
+            ...data,
+            updated_at: new Date().toISOString()
+          };
+          console.log(`Updated data in ${table}:`, localData[table][index]);
+          return createQueryPromise(localData[table][index]);
         }
-      })
-    })
-  }),
-  
-  // RPC method
-  rpc: (functionName: string, params: any) => ({
-    then: (callback: Function) => {
-      localDatabase.rpc(functionName, params)
-        .then(result => callback(result))
-        .catch(error => callback({ error }));
-    }
-  }),
-  
-  // Edge functions
-  functions: {
-    invoke: (functionName: string, options?: { body?: any }) => {
-      return localDatabase.functions.invoke(functionName, options);
-    }
+        
+        return createQueryPromise(null, new Error(`Item with ID ${data.id} not found in ${table}`));
+      },
+      delete: () => {
+        // Delete based on filters
+        return {
+          eq: (column: string, value: any) => {
+            const beforeCount = localData[table].length;
+            localData[table] = localData[table].filter(item => item[column] !== value);
+            const deletedCount = beforeCount - localData[table].length;
+            
+            console.log(`Deleted ${deletedCount} items from ${table} where ${column} = ${value}`);
+            return createQueryPromise({ count: deletedCount });
+          }
+        };
+      },
+      select: (cols?: string) => {
+        if (cols) {
+          selectedColumns = cols.split(',').map(col => col.trim());
+        }
+        
+        return {
+          eq: (column: string, value: any) => {
+            filterConditions.push({ column, value, operator: 'eq' });
+            
+            return {
+              order: (column: string, options?: { ascending: boolean }) => {
+                orderByColumn = column;
+                orderDirection = options?.ascending === false ? 'desc' : 'asc';
+                
+                return {
+                  limit: (limit: number) => {
+                    limitValue = limit;
+                    
+                    return {
+                      then: (callback: Function) => {
+                        // Execute query and pass results to callback
+                        const results = executeLocalQuery(
+                          table, 
+                          selectedData,
+                          selectedColumns,
+                          filterConditions,
+                          limitValue,
+                          orderByColumn,
+                          orderDirection
+                        );
+                        callback({ data: results, error: null });
+                      }
+                    };
+                  }
+                };
+              },
+              single: () => {
+                // Execute the query and return a single result
+                const results = executeLocalQuery(
+                  table, 
+                  selectedData,
+                  selectedColumns,
+                  filterConditions,
+                  1,
+                  orderByColumn,
+                  orderDirection
+                );
+                
+                const result = results.length > 0 ? results[0] : null;
+                const error = results.length === 0 
+                  ? new Error(`No rows found in ${table}`)
+                  : results.length > 1 
+                  ? new Error(`Multiple rows found in ${table}`)
+                  : null;
+                  
+                return createQueryPromise(result, error);
+              }
+            };
+          },
+          neq: (column: string, value: any) => {
+            filterConditions.push({ column, value, operator: 'neq' });
+            
+            return {
+              then: (callback: Function) => {
+                // Execute query and pass results to callback
+                const results = executeLocalQuery(
+                  table, 
+                  selectedData,
+                  selectedColumns,
+                  filterConditions,
+                  limitValue,
+                  orderByColumn,
+                  orderDirection
+                );
+                callback({ data: results, error: null });
+              }
+            };
+          },
+          single: () => {
+            const results = localData[table];
+            const result = results.length > 0 ? results[0] : null;
+            const error = results.length === 0 
+              ? new Error(`No rows found in ${table}`)
+              : results.length > 1 
+              ? new Error(`Multiple rows found in ${table}`)
+              : null;
+              
+            return createQueryPromise(result, error);
+          }
+        };
+      }
+    };
   },
-  
-  // Auth methods
+  // Mock auth functions
   auth: {
-    getSession: () => Promise.resolve({ data: { session: MOCK_SESSION }, error: null }),
-    
-    getUser: () => Promise.resolve({ data: { user: MOCK_USER }, error: null }),
-    
-    onAuthStateChange: (callback: Function) => {
-      // Call callback with initial state
-      callback('SIGNED_IN', MOCK_SESSION);
+    getUser: async () => {
+      return { data: { user: currentUser }, error: null };
+    },
+    getSession: async () => {
+      return { data: { session: currentSession }, error: null };
+    },
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+      // Simulate auth state change
+      callback('SIGNED_IN', currentSession);
       
-      // Return unsubscribe function
+      // Return mock subscription
       return {
         data: {
           subscription: {
-            unsubscribe: () => {}
+            unsubscribe: () => console.log('Unsubscribed from auth state change')
           }
         }
       };
     },
-    
-    signOut: () => Promise.resolve({ error: null }),
-    
-    signUp: (credentials: { email: string, password: string }) => 
-      Promise.resolve({ data: { user: MOCK_USER, session: MOCK_SESSION }, error: null }),
-    
-    signIn: (credentials: { email: string, password: string }) => 
-      Promise.resolve({ data: { user: MOCK_USER, session: MOCK_SESSION }, error: null }),
+    signUp: async ({ email, password }: { email: string; password: string }) => {
+      await delay(500); // Simulate network delay
       
-    signInWithOAuth: (options: { provider: string }) => 
-      Promise.resolve({ data: { provider: options.provider, url: '#' }, error: null }),
+      if (!email || !password) {
+        return { error: new Error('Email and password are required'), data: null };
+      }
       
-    refreshSession: () => Promise.resolve({ data: { session: MOCK_SESSION }, error: null }),
-    
-    setSession: () => Promise.resolve({ data: { session: MOCK_SESSION }, error: null }),
-    
-    // Use this for local state
-    session: MOCK_SESSION,
-    user: MOCK_USER
+      currentUser = {
+        ...sampleUser,
+        email,
+        id: `user-${Date.now()}`
+      };
+      
+      currentSession = {
+        ...mockSession,
+        user: currentUser,
+        expires_at: Date.now() + 3600000
+      };
+      
+      console.log('User signed up:', currentUser);
+      return { data: { user: currentUser, session: currentSession }, error: null };
+    },
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      await delay(500); // Simulate network delay
+      
+      if (email === 'error@example.com') {
+        return { error: new Error('Authentication failed'), data: null };
+      }
+      
+      currentUser = {
+        ...sampleUser,
+        email,
+        id: `user-${Date.now()}`
+      };
+      
+      currentSession = {
+        ...mockSession,
+        user: currentUser,
+        expires_at: Date.now() + 3600000
+      };
+      
+      console.log('User signed in:', currentUser);
+      return { data: { user: currentUser, session: currentSession }, error: null };
+    },
+    signOut: async () => {
+      currentUser = null;
+      currentSession = null;
+      console.log('User signed out');
+      return { error: null };
+    }
   },
-  
-  // Storage methods
+  // Mock storage functions
   storage: {
-    from: (bucket: string) => new LocalFileStorage(bucket)
+    from: (bucket: string) => {
+      return {
+        upload: async (path: string, file: File) => {
+          console.log(`Uploading ${file.name} to ${bucket}/${path}`);
+          return { data: { path }, error: null };
+        },
+        download: async (path: string) => {
+          console.log(`Downloading from ${bucket}/${path}`);
+          return { data: new Blob(['Mock file content']), error: null };
+        },
+        getPublicUrl: (path: string) => {
+          return { data: { publicUrl: `https://example.com/storage/${bucket}/${path}` } };
+        },
+        remove: async (paths: string[]) => {
+          console.log(`Removing files from ${bucket}:`, paths);
+          return { data: { count: paths.length }, error: null };
+        }
+      };
+    }
+  },
+  // Mock functions API
+  functions: {
+    invoke: async (functionName: string, options?: { body?: any }) => {
+      console.log(`Invoking function: ${functionName}`, options?.body);
+      
+      // Simulate common function responses
+      if (functionName === 'classify-document') {
+        return { data: { classification: 'document' }, error: null };
+      }
+      
+      if (functionName === 'claude-chat' || functionName === 'gemini-chat') {
+        return { 
+          data: { 
+            response: `This is a mock AI response to: ${options?.body?.userMessage || 'your query'}`,
+            thinking: options?.body?.thinkingEnabled ? 'Thinking about the response...' : undefined
+          }, 
+          error: null 
+        };
+      }
+      
+      if (functionName === 'generate-sql') {
+        return { 
+          data: { 
+            sql: 'SELECT * FROM sample_table LIMIT 10;',
+            warning: 'This is a mock SQL generation'
+          }, 
+          error: null 
+        };
+      }
+      
+      if (functionName === 'execute-sql') {
+        return { 
+          data: { 
+            result: [{ id: 1, name: 'Sample data' }],
+            message: 'Query executed successfully',
+            affectedRows: 1
+          }, 
+          error: null 
+        };
+      }
+      
+      // Default response
+      return { 
+        data: { message: 'Function executed successfully (mock)' }, 
+        error: null 
+      };
+    }
   }
 };
 
-// Initialize the database when this module is imported
-// Only in Node.js environment or once in browser
-if (typeof window === 'undefined' || !localStorage.getItem('local_db_initialized')) {
-  initializeLocalDatabase();
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('local_db_initialized', 'true');
+// Utility function to execute queries locally
+function executeLocalQuery(
+  table: string,
+  data: any[],
+  columns?: string[],
+  filters?: { column: string; value: any; operator: string }[],
+  limit?: number,
+  orderBy?: string,
+  orderDir: 'asc' | 'desc' = 'asc'
+): any[] {
+  // Start with all data for the table
+  let result = [...data];
+  
+  // Apply filters
+  if (filters && filters.length > 0) {
+    result = result.filter(item => {
+      return filters.every(filter => {
+        if (filter.operator === 'eq') {
+          return item[filter.column] === filter.value;
+        } else if (filter.operator === 'neq') {
+          return item[filter.column] !== filter.value;
+        }
+        return true;
+      });
+    });
   }
+  
+  // Apply sorting
+  if (orderBy) {
+    result.sort((a, b) => {
+      const aValue = a[orderBy];
+      const bValue = b[orderBy];
+      
+      if (aValue < bValue) return orderDir === 'asc' ? -1 : 1;
+      if (aValue > bValue) return orderDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  
+  // Apply limit
+  if (limit && limit > 0) {
+    result = result.slice(0, limit);
+  }
+  
+  // Apply column selection
+  if (columns && columns.length > 0) {
+    result = result.map(item => {
+      const newItem: Record<string, any> = {};
+      columns.forEach(col => {
+        if (col === '*') {
+          Object.assign(newItem, item);
+        } else {
+          newItem[col] = item[col];
+        }
+      });
+      return newItem;
+    });
+  }
+  
+  return result;
 }
+
+// Export the database instance for direct manipulation
+export const localDatabase = {
+  data: localData,
+  reset: () => {
+    Object.keys(localData).forEach(table => {
+      localData[table] = [];
+    });
+    console.log('Local database reset');
+  },
+  seed: (data: MockData) => {
+    Object.keys(data).forEach(table => {
+      localData[table] = [...data[table]];
+    });
+    console.log('Local database seeded with data');
+  },
+  getTables: () => Object.keys(localData),
+  getTableData: (table: string) => localData[table] || []
+};
