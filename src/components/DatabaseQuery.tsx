@@ -4,12 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Search, Loader2, Database, History } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useQueryProcessor } from '@/hooks/useQueryProcessor';
 import { SQLResponseDisplay } from './ChatComponents/SQLResponseDisplay';
 import { saveQueryToHistory, detectPotentialTableNames, findSimilarFailedQueries } from '@/utils/queryHistory';
 import { createDynamicTable } from '@/utils/dynamicTableCreator';
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function DatabaseQuery() {
+  const { language } = useLanguage();
   const [query, setQuery] = useState('');
   const [queryResults, setQueryResults] = useState<any[] | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -236,9 +239,19 @@ export default function DatabaseQuery() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-2">Database Query</h1>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-2xl font-bold">{language === 'en' ? 'Database Query' : 'Consulta ao Banco de Dados'}</h1>
+        <Link to="/portal/query-history">
+          <Button variant="outline" size="sm" className="flex items-center gap-1">
+            <History className="h-4 w-4" />
+            {language === 'en' ? 'View Query History' : 'Ver Histórico de Consultas'}
+          </Button>
+        </Link>
+      </div>
       <p className="text-gray-600 mb-6">
-        Ask questions about the ANI database in natural language.
+        {language === 'en' 
+          ? 'Ask questions about the ANI database in natural language.' 
+          : 'Faça perguntas sobre o banco de dados ANI em linguagem natural.'}
       </p>
       
       <div className="grid grid-cols-1 gap-6">
