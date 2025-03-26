@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { DATABASE_TABLES, populateDatabase, checkDatabaseStatus } from "@/utils/databaseUtils";
 import DatabaseStatusViewer from "@/components/DatabaseStatusViewer";
+import { supabase } from "@/integrations/supabase/client";
 
 const DatabaseManagementPage = () => {
   const navigate = useNavigate();
@@ -33,9 +34,14 @@ const DatabaseManagementPage = () => {
   const [tableStatus, setTableStatus] = useState<Record<string, number>>({});
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [logs, setLogs] = useState<string[]>([]);
+  const [isLocalDatabase, setIsLocalDatabase] = useState(false);
   
   useEffect(() => {
     checkStatus();
+    // Check if we're using a local database
+    setIsLocalDatabase((supabase as any).isUsingLocalDb === true || 
+                       (supabase as any)._supabaseUrl === undefined ||
+                       import.meta.env.DEV && !import.meta.env.VITE_SUPABASE_URL);
   }, []);
   
   const checkStatus = async () => {
@@ -78,14 +84,14 @@ const DatabaseManagementPage = () => {
       setProgress(100);
       setProgressInfo("Database population completed!");
       setLogs(prev => [...prev, "Database population completed!"]);
-      toast.success("Database populated successfully");
+      toast.success(`${isLocalDatabase ? "Local" : ""} Database populated successfully`);
       
       await checkStatus();
     } catch (error) {
       console.error("Error populating database:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setLogs(prev => [...prev, `Error: ${errorMessage}`]);
-      toast.error("Failed to populate database", {
+      toast.error(`Failed to populate ${isLocalDatabase ? "local" : ""} database`, {
         description: errorMessage
       });
     } finally {
@@ -142,7 +148,12 @@ const DatabaseManagementPage = () => {
   return (
     <div className="container py-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Database Management</h1>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold">Database Management</h1>
+          {isLocalDatabase && (
+            <p className="text-sm text-muted-foreground">Using local in-memory database</p>
+          )}
+        </div>
         <Button 
           onClick={checkStatus} 
           variant="outline" 
@@ -163,9 +174,9 @@ const DatabaseManagementPage = () => {
         <AlertDescription>
           {dbStatus === "unknown" && "Database status is being checked..."}
           {dbStatus === "error" && "Error checking some tables. Please check the logs."}
-          {dbStatus === "empty" && "Database appears to be empty. Use the button below to populate it with synthetic data."}
-          {dbStatus === "partial" && "Some tables are empty. Consider repopulating the database."}
-          {dbStatus === "populated" && "Database is populated with data."}
+          {dbStatus === "empty" && `${isLocalDatabase ? "Local" : ""} Database appears to be empty. Use the button below to populate it with synthetic data.`}
+          {dbStatus === "partial" && `Some tables are empty. Consider repopulating the ${isLocalDatabase ? "local" : ""} database.`}
+          {dbStatus === "populated" && `${isLocalDatabase ? "Local" : ""} Database is populated with data.`}
         </AlertDescription>
       </Alert>
       
@@ -204,7 +215,8 @@ const DatabaseManagementPage = () => {
         <CardHeader>
           <CardTitle>Synthetic Data Generator</CardTitle>
           <CardDescription>
-            Generate realistic synthetic data for the ANI database. This will clear existing data and replace it with randomly generated sample data.
+            Generate realistic synthetic data for the {isLocalDatabase ? "local" : "ANI"} database. 
+            This will clear existing data and replace it with randomly generated sample data.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -246,7 +258,7 @@ const DatabaseManagementPage = () => {
             ) : (
               <>
                 <Database className="mr-2 h-4 w-4" />
-                Populate Database with Synthetic Data
+                Populate {isLocalDatabase ? "Local" : ""} Database with Synthetic Data
               </>
             )}
           </Button>

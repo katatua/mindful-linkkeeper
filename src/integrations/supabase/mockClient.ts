@@ -1,9 +1,10 @@
-
 import { v4 as uuidv4 } from 'uuid';
-import { localDatabase } from "@/utils/localDatabase";
+import { localDatabase, getLocalDatabaseData, initializeLocalDatabase } from "@/utils/localDatabase";
 
 // A simplified mock of the Supabase client for local development
 export const mockClient = {
+  isUsingLocalDb: true, // Identifier to detect mock client
+  
   auth: {
     getSession: async () => {
       return {
@@ -62,37 +63,149 @@ export const mockClient = {
     select: (columns?: string) => {
       return {
         eq: async (column: string, value: any) => {
-          const data = localDatabase.select(table);
-          if (!data) return { data: null, error: { message: "No data found" } };
-          
+          const data = getLocalDatabaseData(table);
           const filtered = data.filter(row => row[column] === value);
           return { data: filtered, error: null };
         },
         neq: async (column: string, value: any) => {
-          const data = localDatabase.select(table);
-          if (!data) return { data: null, error: { message: "No data found" } };
-          
+          const data = getLocalDatabaseData(table);
           const filtered = data.filter(row => row[column] !== value);
           return { data: filtered, error: null };
         },
         then: (callback: any) => {
-          const data = localDatabase.select(table);
+          const data = getLocalDatabaseData(table);
           return Promise.resolve({ data, error: null }).then(callback);
+        },
+        limit: (count: number) => {
+          const data = getLocalDatabaseData(table).slice(0, count);
+          return {
+            then: (callback: any) => {
+              return Promise.resolve({ data, error: null }).then(callback);
+            }
+          };
+        },
+        order: (column: string, { ascending = true }: { ascending: boolean }) => {
+          const data = [...getLocalDatabaseData(table)].sort((a, b) => {
+            if (ascending) {
+              return a[column] > b[column] ? 1 : -1;
+            } else {
+              return a[column] < b[column] ? 1 : -1;
+            }
+          });
+          return {
+            then: (callback: any) => {
+              return Promise.resolve({ data, error: null }).then(callback);
+            },
+            limit: (count: number) => {
+              const limitedData = data.slice(0, count);
+              return {
+                then: (callback: any) => {
+                  return Promise.resolve({ data: limitedData, error: null }).then(callback);
+                }
+              };
+            }
+          };
         }
       };
     },
     insert: (data: any) => {
       return {
         then: (callback: any) => {
+          // If data is an array, insert all items
+          if (Array.isArray(data)) {
+            const results = data.map(item => localDatabase.insert(table, item));
+            return Promise.resolve({ data: results, error: null }).then(callback);
+          }
+          
+          // Otherwise insert single item
           const result = localDatabase.insert(table, data);
           return Promise.resolve({ data: result, error: null }).then(callback);
+        },
+        select: () => {
+          return {
+            then: (callback: any) => {
+              // If data is an array, insert all items
+              if (Array.isArray(data)) {
+                const results = data.map(item => localDatabase.insert(table, item));
+                return Promise.resolve({ data: results, error: null }).then(callback);
+              }
+              
+              // Otherwise insert single item
+              const result = localDatabase.insert(table, data);
+              return Promise.resolve({ data: result, error: null }).then(callback);
+            }
+          };
+        }
+      };
+    },
+    delete: () => {
+      return {
+        neq: async (column: string, value: any) => {
+          try {
+            // Get current data
+            const dbJson = localStorage.getItem('localDatabase');
+            if (!dbJson) return { data: null, error: null };
+            
+            const db = JSON.parse(dbJson);
+            
+            // Filter out records that don't match the condition
+            if (db[table]) {
+              db[table] = db[table].filter((row: any) => row[column] === value);
+              localStorage.setItem('localDatabase', JSON.stringify(db));
+            }
+            
+            return { data: null, error: null };
+          } catch (error) {
+            console.error('Error deleting from mock database:', error);
+            return { 
+              data: null, 
+              error: { message: error instanceof Error ? error.message : 'Unknown error' } 
+            };
+          }
+        },
+        then: (callback: any) => {
+          try {
+            // Clear the table
+            const dbJson = localStorage.getItem('localDatabase');
+            if (!dbJson) return Promise.resolve({ data: null, error: null }).then(callback);
+            
+            const db = JSON.parse(dbJson);
+            if (db[table]) {
+              db[table] = [];
+              localStorage.setItem('localDatabase', JSON.stringify(db));
+            }
+            
+            return Promise.resolve({ data: null, error: null }).then(callback);
+          } catch (error) {
+            console.error('Error clearing table in mock database:', error);
+            return Promise.resolve({ 
+              data: null, 
+              error: { message: error instanceof Error ? error.message : 'Unknown error' } 
+            }).then(callback);
+          }
         }
       };
     }
   }),
   functions: {
     invoke: (functionName: string, { body }: { body: any }) => {
-      // Simulate edge function behavior
+      // Mock function to handle generate-synthetic-data
+      if (functionName === 'generate-synthetic-data') {
+        const { tableName, count } = body;
+        console.log(`Mock generate-synthetic-data function called for table ${tableName}`);
+        
+        // This won't generate data - we'll handle it in the populateDatabase function
+        return Promise.resolve({
+          data: { 
+            message: `Successfully generated and inserted synthetic records into ${tableName}`,
+            count: count,
+            success: true 
+          },
+          error: null
+        });
+      }
+      
+      // Simulate execute-sql function behavior
       if (functionName === 'execute-sql') {
         const { sqlQuery } = body;
         console.log('Mock execute-sql function called with:', sqlQuery);
@@ -162,6 +275,32 @@ export const mockClient = {
         
         return Promise.resolve({
           data: { sql },
+          error: null
+        });
+      }
+      
+      // Mock show-database-status
+      if (functionName === 'show-database-status') {
+        // Return mock status data
+        const dbJson = localStorage.getItem('localDatabase');
+        if (!dbJson) {
+          return Promise.resolve({
+            data: { 
+              statusRecords: [],
+              success: true 
+            },
+            error: null
+          });
+        }
+        
+        const db = JSON.parse(dbJson);
+        const statusRecords = db['ani_database_status'] || [];
+        
+        return Promise.resolve({
+          data: { 
+            statusRecords,
+            success: true 
+          },
           error: null
         });
       }
