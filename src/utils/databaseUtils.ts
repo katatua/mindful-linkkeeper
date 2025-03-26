@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -34,7 +33,7 @@ export const generateSyntheticData = async (tableName: string, count: number = 5
         `
       });
     
-    if (tableCheckError || !tableInfo || tableInfo.length === 0) {
+    if (tableCheckError || !tableInfo || !Array.isArray(tableInfo) || tableInfo.length === 0) {
       console.error(`Table check failed for ${tableName}:`, tableCheckError || "Table not found");
       return { 
         success: false, 
@@ -96,7 +95,7 @@ const generateFallbackData = async (tableName: string, count: number) => {
     const { data: columnsData, error: columnsError } = await supabase
       .rpc('execute_raw_query', { sql_query: columnsQuery });
       
-    if (columnsError || !columnsData || columnsData.length === 0) {
+    if (columnsError || !columnsData || !Array.isArray(columnsData) || columnsData.length === 0) {
       return { 
         success: false, 
         message: `Couldn't get column information for ${tableName}`
@@ -113,27 +112,29 @@ const generateFallbackData = async (tableName: string, count: number) => {
     for (let i = 0; i < count; i++) {
       let record: Record<string, any> = {};
       
-      columnsData.forEach((col: any) => {
-        const colName = col.column_name;
-        
-        if (col.data_type.includes('timestamp')) {
-          record[colName] = currentDate;
-        } else if (col.data_type === 'integer' || col.data_type === 'numeric') {
-          record[colName] = Math.floor(Math.random() * 1000);
-        } else if (col.data_type === 'boolean') {
-          record[colName] = Math.random() > 0.5;
-        } else if (col.data_type.includes('uuid') && (colName.endsWith('_id'))) {
-          // Skip foreign keys for simplicity in fallback mode
-          if (col.is_nullable === 'YES') {
-            record[colName] = null;
+      if (Array.isArray(columnsData)) {
+        columnsData.forEach((col: any) => {
+          const colName = col.column_name;
+          
+          if (col.data_type.includes('timestamp')) {
+            record[colName] = currentDate;
+          } else if (col.data_type === 'integer' || col.data_type === 'numeric') {
+            record[colName] = Math.floor(Math.random() * 1000);
+          } else if (col.data_type === 'boolean') {
+            record[colName] = Math.random() > 0.5;
+          } else if (col.data_type.includes('uuid') && (colName.endsWith('_id'))) {
+            // Skip foreign keys for simplicity in fallback mode
+            if (col.is_nullable === 'YES') {
+              record[colName] = null;
+            }
+          } else if (col.data_type === 'ARRAY') {
+            record[colName] = ['Sample Item 1', 'Sample Item 2'];
+          } else {
+            // Default to text values
+            record[colName] = `${tableName.replace('ani_', '')} ${colName} ${i + 1}`;
           }
-        } else if (col.data_type === 'ARRAY') {
-          record[colName] = ['Sample Item 1', 'Sample Item 2'];
-        } else {
-          // Default to text values
-          record[colName] = `${tableName.replace('ani_', '')} ${colName} ${i + 1}`;
-        }
-      });
+        });
+      }
       
       insertData.push(record);
     }
@@ -496,6 +497,18 @@ FOR EACH STATEMENT EXECUTE FUNCTION update_database_status();
 
 CREATE TRIGGER trigger_update_intl_collaborations_status
 AFTER INSERT OR UPDATE OR DELETE ON public.ani_international_collaborations
+FOR EACH STATEMENT EXECUTE FUNCTION update_database_status();
+
+CREATE TRIGGER trigger_update_institutions_status
+AFTER INSERT OR UPDATE OR DELETE ON public.ani_institutions
+FOR EACH STATEMENT EXECUTE FUNCTION update_database_status();
+
+CREATE TRIGGER trigger_update_researchers_status
+AFTER INSERT OR UPDATE OR DELETE ON public.ani_researchers
+FOR EACH STATEMENT EXECUTE FUNCTION update_database_status();
+
+CREATE TRIGGER trigger_update_projects_researchers_status
+AFTER INSERT OR UPDATE OR DELETE ON public.ani_projects_researchers
 FOR EACH STATEMENT EXECUTE FUNCTION update_database_status();
 
 -- Initialize ani_database_status table with all tables' status

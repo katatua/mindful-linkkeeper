@@ -6,6 +6,7 @@ import { generateSqlFromNaturalLanguage } from "@/utils/sqlGeneration";
 import { toast } from "sonner";
 import { isMetricsQuery } from "@/utils/queryDetection";
 import { dynamicQueryService } from "@/services/dynamicQueryService";
+import { generateDummyResponse } from "@/utils/dummyData";
 
 export interface QueryResult {
   response: string;
@@ -18,6 +19,21 @@ export interface QueryResult {
 export const useQueryProcessor = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState<QueryResult | null>(null);
+  const [useOfflineMode, setUseOfflineMode] = useState(false);
+
+  /**
+   * Toggle between online and offline mode
+   */
+  const toggleOfflineMode = (forceOffline?: boolean) => {
+    const newMode = forceOffline !== undefined ? forceOffline : !useOfflineMode;
+    setUseOfflineMode(newMode);
+    toast.info(newMode ? "Offline mode activated" : "Online mode activated", {
+      description: newMode 
+        ? "Using dummy data for responses" 
+        : "Using database for responses"
+    });
+    return newMode;
+  };
 
   /**
    * Execute a SQL query directly with improved connection error handling
@@ -26,12 +42,45 @@ export const useQueryProcessor = () => {
     try {
       setIsProcessing(true);
       
-      // Check for connectivity to Supabase before executing the query
-      const { data: connCheck, error: connError } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
+      // If in offline mode, use dummy data
+      if (useOfflineMode) {
+        console.log("Using offline mode, returning dummy data");
+        const dummyResult = generateDummyResponse(sql);
+        const queryResult: QueryResult = {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          sql
+        };
+        setLastResult(queryResult);
+        return queryResult;
+      }
       
-      if (connError) {
-        console.error("Database connection check failed:", connError);
-        throw new Error(`Database connection error: ${connError.message}`);
+      // Check for connectivity to Supabase before executing the query
+      try {
+        const { data: connCheck, error: connError } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
+        
+        if (connError) {
+          console.error("Database connection check failed:", connError);
+          console.log("Switching to offline mode due to connection error");
+          toggleOfflineMode(true);
+          const dummyResult = generateDummyResponse(sql);
+          return {
+            response: dummyResult.response,
+            visualizationData: dummyResult.visualizationData,
+            sql,
+            isConnectionError: true
+          };
+        }
+      } catch (connErr) {
+        console.error("Connection check error:", connErr);
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(sql);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          sql,
+          isConnectionError: true
+        };
       }
       
       const result = await executeQuery(sql);
@@ -48,10 +97,27 @@ export const useQueryProcessor = () => {
       console.error("Error executing query:", error);
       
       // Determine if this is a connection error
-      const isConnectionError = error.message?.includes('Failed to send a request') || 
-                               error.message?.includes('network error') ||
-                               error.message?.includes('connection') ||
-                               error.message?.includes('timeout');
+      const isConnectionError = error instanceof Error && (
+        error.message?.includes('Failed to send a request') || 
+        error.message?.includes('network error') ||
+        error.message?.includes('connection') ||
+        error.message?.includes('timeout')
+      );
+      
+      if (isConnectionError) {
+        console.log("Connection error detected, using dummy data");
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(sql);
+        const errorResult: QueryResult = {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          sql,
+          error: error instanceof Error ? error.message : String(error),
+          isConnectionError: true
+        };
+        setLastResult(errorResult);
+        return errorResult;
+      }
       
       const errorResult: QueryResult = {
         response: `Error executing query: ${error instanceof Error ? error.message : String(error)}`,
@@ -62,8 +128,8 @@ export const useQueryProcessor = () => {
       
       // Log additional information for debugging
       console.log("Error details:", {
-        errorType: error.constructor.name,
-        stack: error.stack,
+        errorType: error.constructor?.name,
+        stack: error instanceof Error ? error.stack : '',
         isConnectionError
       });
       
@@ -81,6 +147,16 @@ export const useQueryProcessor = () => {
     try {
       setIsProcessing(true);
       
+      // If in offline mode, use dummy data
+      if (useOfflineMode) {
+        console.log("Using offline mode, returning dummy data");
+        const dummyResult = generateDummyResponse(question);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData
+        };
+      }
+      
       // First generate SQL from the natural language question
       const sql = await generateSqlFromNaturalLanguage(question);
       
@@ -92,6 +168,26 @@ export const useQueryProcessor = () => {
       return await executeQueryDirectly(sql);
     } catch (error) {
       console.error("Error processing natural language query:", error);
+      
+      // If this appears to be a connection error, use dummy data
+      const isConnectionError = error instanceof Error && (
+        error.message?.includes('connection') || 
+        error.message?.includes('network') ||
+        error.message?.includes('Failed to send')
+      );
+      
+      if (isConnectionError) {
+        console.log("Connection error detected, using dummy data");
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(question);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          error: error instanceof Error ? error.message : String(error),
+          isConnectionError: true
+        };
+      }
+      
       toast.error("Failed to process question", {
         description: error instanceof Error ? error.message : String(error)
       });
@@ -99,8 +195,9 @@ export const useQueryProcessor = () => {
       const errorResult: QueryResult = {
         response: `Error processing question: ${error instanceof Error ? error.message : String(error)}`,
         error: error instanceof Error ? error.message : String(error),
-        isConnectionError: error.message?.includes('connection') || error.message?.includes('network')
+        isConnectionError: error instanceof Error && error.message?.includes('connection')
       };
+      
       setLastResult(errorResult);
       return errorResult;
     } finally {
@@ -115,10 +212,15 @@ export const useQueryProcessor = () => {
     try {
       setIsProcessing(true);
       
-      // Check if question is likely an R&D/Investment query for fallback handling
-      const isRdQuery = question.toLowerCase().includes('r&d') || 
-                         question.toLowerCase().includes('research') || 
-                         question.toLowerCase().includes('investment');
+      // If in offline mode, use dummy data directly
+      if (useOfflineMode) {
+        console.log("Using offline mode, returning dummy data");
+        const dummyResult = generateDummyResponse(question, language);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData
+        };
+      }
       
       // Attempt connection check
       let connectionOk = true;
@@ -133,21 +235,16 @@ export const useQueryProcessor = () => {
         connectionOk = false;
       }
       
-      // If connection is down and this is an R&D query, immediately use fallback
-      if (!connectionOk && isRdQuery) {
-        console.log("Connection is down, using R&D fallback response directly");
-        const fallbackResponse = language === 'en' 
-          ? "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment."
-          : "Não foi possível recuperar os dados atuais devido a um problema de conexão, mas aqui está o que sabemos sobre as tendências de investimento em P&D em Portugal: A intensidade de P&D (P&D/PIB) atingiu 1,41% no ano mais recente, com o setor empresarial representando a maior parte do investimento em P&D, aproximadamente 58%. Organizações de pesquisa públicas e instituições de ensino superior contribuem com cerca de 42% do investimento total em P&D.";
-        
-        const fallbackResult: QueryResult = {
-          response: fallbackResponse,
-          error: "Connection to database unavailable",
+      // If connection is down, use dummy data
+      if (!connectionOk) {
+        console.log("Connection is down, using dummy data response");
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(question, language);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
           isConnectionError: true
         };
-        
-        setLastResult(fallbackResult);
-        return fallbackResult;
       }
       
       try {
@@ -166,35 +263,34 @@ export const useQueryProcessor = () => {
         console.error("Error in dynamicQueryService:", error);
         
         // Check if this is a connection error
-        const isConnectionError = error.message?.includes('Failed to send a request') || 
-                                 error.message?.includes('network error') ||
-                                 error.message?.includes('connection') ||
-                                 error.message?.includes('timeout');
+        const isConnectionError = error instanceof Error && (
+          error.message?.includes('Failed to send a request') || 
+          error.message?.includes('network error') ||
+          error.message?.includes('connection') ||
+          error.message?.includes('timeout')
+        );
         
         // Enhanced error logging
         console.log("Query processing error details:", {
           errorType: error.constructor?.name,
-          stack: error.stack,
-          message: error.message,
+          stack: error instanceof Error ? error.stack : '',
+          message: error instanceof Error ? error.message : '',
           isConnectionError
         });
         
-        // Provide a fallback for R&D investment queries
-        if (isRdQuery) {
-          const fallbackResponse = language === 'en' 
-            ? "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment."
-            : "Não foi possível recuperar os dados atuais devido a um problema de conexão, mas aqui está o que sabemos sobre as tendências de investimento em P&D em Portugal: A intensidade de P&D (P&D/PIB) atingiu 1,41% no ano mais recente, com o setor empresarial representando a maior parte do investimento em P&D, aproximadamente 58%. Organizações de pesquisa públicas e instituições de ensino superior contribuem com cerca de 42% do investimento total em P&D.";
-            
-          const errorResult: QueryResult = {
-            response: fallbackResponse,
+        if (isConnectionError) {
+          console.log("Connection error detected, using dummy data");
+          toggleOfflineMode(true);
+          const dummyResult = generateDummyResponse(question, language);
+          return {
+            response: dummyResult.response,
+            visualizationData: dummyResult.visualizationData,
             error: error instanceof Error ? error.message : String(error),
-            isConnectionError
+            isConnectionError: true
           };
-          setLastResult(errorResult);
-          return errorResult;
         }
         
-        // For non-R&D queries, return the error
+        // For non-connection errors, still return an error
         const errorResult: QueryResult = {
           response: `Error processing question: ${error instanceof Error ? error.message : String(error)}`,
           error: error instanceof Error ? error.message : String(error),
@@ -205,11 +301,17 @@ export const useQueryProcessor = () => {
       }
     } catch (error) {
       console.error("Error processing question:", error);
+      
+      // Fallback to dummy data for any error
+      const dummyResult = generateDummyResponse(question, language);
       const errorResult: QueryResult = {
-        response: `Error processing question: ${error instanceof Error ? error.message : String(error)}`,
+        response: dummyResult.response,
+        visualizationData: dummyResult.visualizationData,
         error: error instanceof Error ? error.message : String(error),
-        isConnectionError: error.message?.includes('connection') || error.message?.includes('network')
+        isConnectionError: error instanceof Error && 
+          (error.message?.includes('connection') || error.message?.includes('network'))
       };
+      
       setLastResult(errorResult);
       return errorResult;
     } finally {
@@ -220,6 +322,8 @@ export const useQueryProcessor = () => {
   return {
     isProcessing,
     lastResult,
+    useOfflineMode,
+    toggleOfflineMode,
     executeQuery: executeQueryDirectly,
     processNaturalLanguageQuery,
     // Also expose these functions that are being used in useChatCore.ts

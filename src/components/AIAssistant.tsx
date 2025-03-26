@@ -11,6 +11,7 @@ import { ThinkingPanel } from "./ChatComponents/ThinkingPanel";
 import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
 import { Button } from "@/components/ui/button";
 import { DatabaseStatusRetriever } from "./DatabaseStatusRetriever";
+import { DatabaseStatusIndicator } from "./DatabaseStatusIndicator";
 
 const AIAssistant = () => {
   const { language } = useLanguage();
@@ -51,6 +52,7 @@ const AIAssistant = () => {
           <h3 className="font-medium">{language === 'en' ? 'ANI Assistant' : 'Assistente ANI'}</h3>
         </div>
         <div className="flex items-center gap-2">
+          <DatabaseStatusIndicator />
           <Button 
             variant="outline" 
             size="sm"

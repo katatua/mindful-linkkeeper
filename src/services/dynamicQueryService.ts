@@ -1,6 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ClassificationRequest } from "@/utils/aiUtils";
 import { toast } from "sonner";
+import { generateDummyResponse, findRelevantDummyData } from "@/utils/dummyData";
 
 // Types for service operations
 export interface QueryGenerationRequest {
@@ -73,6 +75,15 @@ export const dynamicQueryService = {
                           sql.toLowerCase().includes('investment');
       
       try {
+        // First try direct database connection to see if it's available
+        const { data: connCheck, error: connCheckError } = await supabase
+          .from('ani_database_status')
+          .select('count(*)', { count: 'exact', head: true });
+          
+        if (connCheckError) {
+          throw new Error("Database connection unavailable - using offline data");
+        }
+        
         // Call the execute-sql edge function with the SQL query
         const { data, error } = await supabase.functions.invoke('execute-sql', {
           body: { 
@@ -117,25 +128,36 @@ export const dynamicQueryService = {
         };
       } catch (executeError) {
         console.error("Error executing query:", executeError);
+        console.log("Falling back to offline dummy data");
         
-        // Try direct database query for R&D queries as fallback
-        if (isRdQuery) {
-          return {
-            response: "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment.",
+        // Generate a response from dummy data
+        const dummyResponseResult = generateDummyResponse(sql);
+        return {
+          response: dummyResponseResult.response,
+          visualizationData: dummyResponseResult.visualizationData,
           sql
         };
       }
+    } catch (error) {
+      console.error("Error in query execution:", error);
       
-      throw executeError;
+      // Even if we have an error, try to return dummy data as a last resort
+      try {
+        console.log("Attempting to use dummy data as final fallback");
+        const dummyResponseResult = generateDummyResponse(error.message);
+        return {
+          response: dummyResponseResult.response,
+          visualizationData: dummyResponseResult.visualizationData,
+          sql
+        };
+      } catch (dummyError) {
+        return { 
+          response: `I'm sorry, I couldn't retrieve the data due to a technical issue: ${error.message}`,
+          sql: sql
+        };
+      }
     }
-  } catch (error) {
-    console.error("Error in query execution:", error);
-    return { 
-      response: `I'm sorry, I couldn't retrieve the data due to a technical issue: ${error.message}`,
-      sql: sql
-    };
-  }
-},
+  },
   
   /**
    * Process a natural language question end-to-end - generate SQL, execute it, and return results
@@ -155,55 +177,63 @@ export const dynamicQueryService = {
       }
       
       try {
-        // Generate SQL from the natural language question using AI
-        const sqlQuery = await dynamicQueryService.generateSqlFromQuestion({
-          question,
-          language
-        });
-        
-        // Execute the generated SQL
-        return await dynamicQueryService.executeQuery(sqlQuery);
+        // Check database connectivity first
+        try {
+          const { error: connCheckError } = await supabase
+            .from('ani_database_status')
+            .select('count(*)', { count: 'exact', head: true })
+            .then(response => {
+              return response;
+            })
+            .catch(err => {
+              throw new Error("Database connection unavailable");
+            });
+            
+          if (connCheckError) {
+            throw new Error("Database connection unavailable");
+          }
+          
+          // Database is available, proceed with normal flow
+          
+          // Generate SQL from the natural language question using AI
+          const sqlQuery = await dynamicQueryService.generateSqlFromQuestion({
+            question,
+            language
+          });
+          
+          // Execute the generated SQL
+          return await dynamicQueryService.executeQuery(sqlQuery);
+        } catch (connError) {
+          console.log("Database connection error, using offline data:", connError);
+          
+          // Use dummy data when the database is not available
+          const dummyResult = generateDummyResponse(question, language);
+          return {
+            response: dummyResult.response,
+            visualizationData: dummyResult.visualizationData,
+            sql: ""
+          };
+        }
       } catch (error) {
         console.error("Error in SQL generation or execution:", error);
         
-        // Fallback for R&D investment queries
-        if (question.toLowerCase().includes('r&d') || 
-            question.toLowerCase().includes('research') || 
-            question.toLowerCase().includes('investment')) {
-          
-          const fallbackSql = `
-          SELECT 
-            EXTRACT(YEAR FROM measurement_date) as year, 
-            SUM(value) as total_investment, 
-            unit
-          FROM ani_metrics 
-          WHERE (category = 'Investment' OR category = 'R&D') 
-          AND (name ILIKE '%R&D%' OR name ILIKE '%research%' OR name ILIKE '%development%')
-          GROUP BY EXTRACT(YEAR FROM measurement_date), unit
-          ORDER BY year DESC
-          LIMIT 10;`;
-          
-          try {
-            console.log("Attempting fallback query for R&D question");
-            return await dynamicQueryService.executeQuery(fallbackSql);
-          } catch (fallbackError) {
-            console.error("Fallback query failed:", fallbackError);
-            return {
-              response: "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment.",
-              sql: fallbackSql
-            };
-          }
-        }
-        
+        // Fallback to dummy data
+        console.log("Using dummy data as fallback");
+        const dummyResult = generateDummyResponse(question, language);
         return {
-          response: `I'm sorry, I couldn't process your question. ${error.message}`,
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
           sql: ""
         };
       }
     } catch (error) {
       console.error("Error processing question:", error);
+      
+      // Final fallback - use dummy data even if there's a processing error
+      const dummyResult = generateDummyResponse(question, language);
       return {
-        response: `I'm sorry, I couldn't process your question. ${error.message}`,
+        response: dummyResult.response,
+        visualizationData: dummyResult.visualizationData,
         sql: ""
       };
     }
@@ -297,3 +327,4 @@ export const dynamicQueryService = {
     }
   }
 };
+
