@@ -10,11 +10,13 @@ import { ModelSelector } from "./ChatComponents/ModelSelector";
 import { ThinkingPanel } from "./ChatComponents/ThinkingPanel";
 import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
 import { Button } from "@/components/ui/button";
+import { DatabaseStatusRetriever } from "./DatabaseStatusRetriever";
 
 const AIAssistant = () => {
   const { language } = useLanguage();
   const [showThinking, setShowThinking] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
   
   const {
     messages,
@@ -59,6 +61,16 @@ const AIAssistant = () => {
             <ServerCrash className="h-3.5 w-3.5" />
             {language === 'en' ? 'Test Connection' : 'Testar Conexão'}
           </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowDatabaseStatus(!showDatabaseStatus)}
+            className="flex items-center gap-1 text-xs"
+          >
+            {showDatabaseStatus ? 
+              (language === 'en' ? 'Hide Database Status' : 'Ocultar Estado da Base de Dados') : 
+              (language === 'en' ? 'Show Database Status' : 'Mostrar Estado da Base de Dados')}
+          </Button>
           <ModelSelector 
             currentModel={currentAIModel}
             onSelectModel={switchAIModel}
@@ -85,6 +97,12 @@ const AIAssistant = () => {
         
         {thinking && showThinking && (
           <ThinkingPanel thinking={thinking} />
+        )}
+        
+        {showDatabaseStatus && (
+          <div className="px-4 py-2 border-b">
+            <DatabaseStatusRetriever />
+          </div>
         )}
         
         <div className={`flex-1 overflow-hidden ${thinking && showThinking ? 'h-[60%]' : 'h-full'}`}>
