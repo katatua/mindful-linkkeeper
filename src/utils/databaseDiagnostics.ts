@@ -8,6 +8,16 @@ export const testDatabaseConnection = async () => {
   try {
     console.log("Testing database connection...");
     
+    // First check if the client is initialized correctly
+    if (!supabase || typeof supabase.functions.invoke !== 'function') {
+      console.error("Supabase client is not initialized correctly");
+      return { 
+        success: false, 
+        message: "Supabase client is not properly initialized. Check your configuration.",
+        details: { error: "Invalid Supabase client" }
+      };
+    }
+    
     // Try to invoke the execute-sql edge function with a simple health check query
     const { data, error } = await supabase.functions.invoke('execute-sql', {
       body: { 
@@ -35,7 +45,11 @@ export const testDatabaseConnection = async () => {
     }
     
     console.log("Database connection test successful:", data);
-    return { success: true, message: "Database connection is working" };
+    return { 
+      success: true, 
+      message: "Database connection is working correctly. The execute-sql edge function returned the expected result.",
+      details: data
+    };
   } 
   catch (error) {
     console.error("Exception during database connection test:", error);
@@ -51,7 +65,7 @@ export const testDatabaseConnection = async () => {
         console.error("Direct query fallback also failed:", directError);
         return { 
           success: false, 
-          message: "All database connection attempts failed",
+          message: "All database connection attempts failed. Check your Supabase configuration and network connectivity.",
           details: { 
             originalError: error, 
             fallbackError: directError 
@@ -62,14 +76,14 @@ export const testDatabaseConnection = async () => {
       console.log("Direct query fallback succeeded");
       return { 
         success: true, 
-        message: "Direct database connection is working, but edge function had issues" 
+        message: "Direct database connection is working, but the edge function had issues. This may indicate a problem with the edge function deployment." 
       };
     } 
     catch (fallbackError) {
       console.error("All connection attempts failed:", fallbackError);
       return { 
         success: false, 
-        message: "Database connection is completely unavailable",
+        message: "Database connection is completely unavailable. Please verify your Supabase configuration and credentials.",
         details: { 
           originalError: error, 
           fallbackError 
