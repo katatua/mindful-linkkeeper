@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +25,7 @@ import PolicyGuidePage from "./pages/PolicyGuidePage";
 import DatabaseQuery from '@/components/DatabaseQuery';
 import SyntheticDataPage from '@/pages/SyntheticDataPage';
 import DatabaseManagementPage from './pages/DatabaseManagementPage';
+import DatabaseAnalysisPage from './pages/DatabaseAnalysisPage';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,7 @@ function App() {
               <Route path="/legacy" element={<Index />} />
               <Route path="/portal" element={<ANIPortal />}>
                 <Route path="database" element={<DatabaseManagementPage />} />
+                <Route path="database-analysis" element={<DatabaseAnalysisPage />} />
               </Route>
               <Route path="/add-file" element={<AddFile />} />
               <Route path="/add-link" element={<AddLink />} />
