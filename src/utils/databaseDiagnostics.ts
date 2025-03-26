@@ -54,7 +54,7 @@ export const runDatabaseDiagnostics = async () => {
           console.error("Basic connection test failed:", statusError);
           
           // Handle empty error object specifically
-          if (!statusError.message && !statusError.code) {
+          if (Object.keys(statusError).length === 0 || (!statusError.message && !statusError.code)) {
             errorMessage = "Empty error response. This might indicate a CORS issue or network interruption.";
             errorSuggestion = "Check browser console for CORS errors and verify your network connection is stable. Try accessing the Supabase dashboard directly to verify project availability.";
           } else {
@@ -286,7 +286,7 @@ export const testDatabaseConnection = async () => {
       let errorDescription = error.message || "Unknown error";
       
       // Enhanced error handling for empty responses
-      if (!error.message && !error.code) {
+      if (Object.keys(error).length === 0 || (!error.message && !error.code)) {
         errorMessage = "Connection error";
         errorDescription = "Empty error response. This might indicate a CORS issue or network interruption. Try refreshing the page or checking your network settings.";
       } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
