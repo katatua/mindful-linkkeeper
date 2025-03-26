@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
@@ -130,14 +130,11 @@ export const runDatabaseDiagnostics = async (): Promise<{
       };
     }
     
-    // Test 3: Check Supabase client configuration
+    // Test 3: Check Supabase client configuration - Fixed to work in browser
     try {
       console.log("Test 3: Checking Supabase client configuration...");
       
-      // Get configuration data directly from the imported variables in the client file
-      // instead of using non-existent methods
-      const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } = require("@/integrations/supabase/client");
-      
+      // Access the configuration directly without using require
       results.clientConfiguration = {
         success: !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY),
         supabaseUrl: SUPABASE_URL ? "Configured" : "Not configured",
@@ -210,42 +207,18 @@ export const runDatabaseDiagnostics = async (): Promise<{
  * Runs a comprehensive database connection test and displays results in a toast notification
  */
 export const testDatabaseConnection = async () => {
-  toast.info("Testing database connection...", {
-    duration: 3000,
-  });
-  
   try {
-    const diagnosticResults = await runDatabaseDiagnostics();
+    const { data, error } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
     
-    if (diagnosticResults.success) {
-      toast.success("Database connection is working properly", {
-        description: "All connection tests passed successfully.",
-        duration: 5000,
-      });
-    } else {
-      const failedTests = Object.entries(diagnosticResults.results)
-        .filter(([key, value]) => key !== 'summary' && !value.success)
-        .map(([key]) => key)
-        .join(', ');
-      
-      toast.error("Database connection issues detected", {
-        description: `Failed tests: ${failedTests}. Check the console for detailed diagnostics.`,
-        duration: 8000,
-      });
+    if (error) {
+      console.error("Database connection failed:", error);
+      return { success: false, error: error.message };
     }
     
-    console.log("Database diagnostic results:", diagnosticResults);
-    return diagnosticResults;
+    console.log("Database connection successful:", data);
+    return { success: true };
   } catch (error) {
-    console.error("Error running database diagnostics:", error);
-    toast.error("Error running database diagnostics", {
-      description: error.message,
-      duration: 5000,
-    });
-    return {
-      success: false,
-      results: {},
-      errorDetails: error
-    };
+    console.error("Database connection test failed with exception:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 };

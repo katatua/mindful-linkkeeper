@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +24,7 @@ const DATABASE_TABLES = [
   "ani_institutions",
   "ani_researchers",
   "ani_projects_researchers"
-];
+] as const;  // Mark this array as readonly
 
 // Type definition for valid table names
 type ValidTableName = typeof DATABASE_TABLES[number];
@@ -72,7 +71,6 @@ const DatabaseAnalysisPage = () => {
     setErrorMessage(null);
     
     try {
-      // Use type assertion to tell TypeScript that tableName is a valid table name
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
@@ -128,7 +126,6 @@ const DatabaseAnalysisPage = () => {
     setErrorMessage(null);
     
     try {
-      // We use a special SQL function to retrieve table schema information
       const { data, error } = await supabase.functions.invoke('execute-sql', {
         body: { 
           sqlQuery: `
