@@ -119,5 +119,3 @@ export const DatabaseStatusRetriever = () => {
     </div>
   );
 };
-
-export default DatabaseStatusRetriever;

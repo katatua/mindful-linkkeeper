@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AIAssistant } from "@/components/AIAssistant";
 
 const Index = () => {
   const { t, language } = useLanguage();
@@ -40,6 +41,11 @@ const Index = () => {
             <Link to="/portal">
               <Button className="w-full" variant="outline">{t('index.ai.assistant') || 'AI Assistant'}</Button>
             </Link>
+          </div>
+          
+          <div className="mt-8 pt-8 border-t">
+            <h3 className="text-lg font-medium mb-4">Database Status</h3>
+            <DatabaseStatusRetriever />
           </div>
         </CardContent>
       </Card>
