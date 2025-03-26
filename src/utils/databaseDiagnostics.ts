@@ -2,15 +2,7 @@
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-/**
- * Performs a series of diagnostic tests on the Supabase connection
- * and returns detailed information about any failures.
- */
-export const runDatabaseDiagnostics = async (): Promise<{
-  success: boolean;
-  results: Record<string, any>;
-  errorDetails?: any;
-}> => {
+export const runDatabaseDiagnostics = async () => {
   const results: Record<string, any> = {};
   
   try {
@@ -21,16 +13,9 @@ export const runDatabaseDiagnostics = async (): Promise<{
       console.log("Test 1: Checking basic connection to ani_database_status table...");
       const start = performance.now();
       
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
-      );
-      
-      // Race the actual query against the timeout
-      const { data: statusData, error: statusError } = await Promise.race([
-        supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true }),
-        timeoutPromise as Promise<any>
-      ]);
+      const { data: statusData, error: statusError } = await supabase
+        .from('ani_database_status')
+        .select('count(*)', { count: 'exact', head: true });
       
       const duration = performance.now() - start;
       
@@ -42,20 +27,6 @@ export const runDatabaseDiagnostics = async (): Promise<{
       
       if (statusError) {
         console.error("Basic connection test failed:", statusError);
-        
-        // Additional details for connection errors
-        if (statusError.message.includes('Failed to fetch') || 
-            statusError.message.includes('NetworkError') ||
-            statusError.message.includes('timeout')) {
-          results.basicConnection.errorType = 'NETWORK';
-          results.basicConnection.suggestion = 'This appears to be a network connectivity issue.';
-        } else if (statusError.code === '3D000' || statusError.code === '28P01') {
-          results.basicConnection.errorType = 'AUTHENTICATION';
-          results.basicConnection.suggestion = 'This appears to be an authentication issue with the database.';
-        } else if (statusError.code === '08001' || statusError.code === '08006') {
-          results.basicConnection.errorType = 'CONNECTION_REFUSED';
-          results.basicConnection.suggestion = 'The database server actively refused the connection.';
-        }
       } else {
         console.log("Basic connection test successful");
       }
@@ -73,21 +44,12 @@ export const runDatabaseDiagnostics = async (): Promise<{
       console.log("Test 2: Checking connection to Supabase Functions endpoint...");
       const start = performance.now();
       
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Functions endpoint timeout')), 5000)
-      );
-      
-      // Race the actual function call against the timeout
-      const { data: functionData, error: functionError } = await Promise.race([
-        supabase.functions.invoke('execute-sql', { 
-          body: { 
-            sqlQuery: 'SELECT 1 as health_check',
-            operation: 'query'
-          }
-        }),
-        timeoutPromise as Promise<any>
-      ]);
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('execute-sql', { 
+        body: { 
+          sqlQuery: 'SELECT 1 as health_check',
+          operation: 'query'
+        }
+      });
       
       const duration = performance.now() - start;
       
@@ -100,24 +62,6 @@ export const runDatabaseDiagnostics = async (): Promise<{
       
       if (functionError) {
         console.error("Functions endpoint test failed:", functionError);
-        
-        // Additional details for function errors
-        if (functionError.message.includes('Failed to fetch') || 
-            functionError.message.includes('NetworkError') ||
-            functionError.message.includes('timeout')) {
-          results.functionsEndpoint.errorType = 'NETWORK';
-          results.functionsEndpoint.suggestion = 'Network connectivity issue when connecting to Functions.';
-        } else if (functionError.message.includes('invalid token') || 
-                  functionError.message.includes('JWT')) {
-          results.functionsEndpoint.errorType = 'AUTHENTICATION';
-          results.functionsEndpoint.suggestion = 'Authentication issue when connecting to Functions.';
-        } else if (functionError.status === 404) {
-          results.functionsEndpoint.errorType = 'NOT_FOUND';
-          results.functionsEndpoint.suggestion = 'The function endpoint does not exist or is not deployed.';
-        } else if (functionError.status === 500) {
-          results.functionsEndpoint.errorType = 'SERVER_ERROR';
-          results.functionsEndpoint.suggestion = 'The function encountered an internal error.';
-        }
       } else {
         console.log("Functions endpoint test successful");
       }
@@ -130,31 +74,13 @@ export const runDatabaseDiagnostics = async (): Promise<{
       };
     }
     
-    // Test 3: Check Supabase client configuration - Fixed to work in browser
-    try {
-      console.log("Test 3: Checking Supabase client configuration...");
-      
-      // Access the configuration directly without using require
-      results.clientConfiguration = {
-        success: !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY),
-        supabaseUrl: SUPABASE_URL ? "Configured" : "Not configured",
-        supabaseKeyPrefix: SUPABASE_PUBLISHABLE_KEY ? "Configured" : "Missing",
-        error: !SUPABASE_URL ? 'Missing Supabase URL' : (!SUPABASE_PUBLISHABLE_KEY ? 'Missing Supabase key' : null)
-      };
-      
-      if (!results.clientConfiguration.success) {
-        console.error("Client configuration test failed:", results.clientConfiguration.error);
-      } else {
-        console.log("Client configuration test successful");
-      }
-    } catch (testError: any) {
-      console.error("Test 3 failed with exception:", testError);
-      results.clientConfiguration = {
-        success: false,
-        error: testError.message,
-        errorType: 'EXCEPTION'
-      };
-    }
+    // Test 3: Check Supabase client configuration
+    results.clientConfiguration = {
+      success: !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY),
+      supabaseUrl: SUPABASE_URL ? "Configured" : "Not configured",
+      supabaseKeyPrefix: SUPABASE_PUBLISHABLE_KEY ? "Configured" : "Missing",
+      error: !SUPABASE_URL ? 'Missing Supabase URL' : (!SUPABASE_PUBLISHABLE_KEY ? 'Missing Supabase key' : null)
+    };
     
     // Determine overall success
     const overallSuccess = results.basicConnection?.success && 
@@ -164,7 +90,6 @@ export const runDatabaseDiagnostics = async (): Promise<{
     // Generate a summary with recommendations
     results.summary = {
       overallSuccess,
-      timestamp: new Date().toISOString(),
       recommendations: []
     };
     
@@ -176,36 +101,31 @@ export const runDatabaseDiagnostics = async (): Promise<{
     
     if (!results.functionsEndpoint?.success) {
       results.summary.recommendations.push(
-        "Connection to Supabase Functions is failing. Check if functions are properly deployed and accessible."
+        "Connection to Supabase Functions is failing. Verify edge function deployment."
       );
     }
     
     if (!results.clientConfiguration?.success) {
       results.summary.recommendations.push(
-        "Supabase client configuration is incorrect. Verify the URL and API key are properly set."
+        "Supabase client configuration is incorrect. Verify the URL and API key."
       );
     }
     
     return {
-      success: results.basicConnection?.success && 
-              results.functionsEndpoint?.success && 
-              results.clientConfiguration?.success,
+      success: overallSuccess,
       results
     };
     
   } catch (error) {
-    console.error("Database diagnostics failed with an unexpected error:", error);
+    console.error("Unexpected error in database diagnostics:", error);
     return {
       success: false,
-      results,
+      results: {},
       errorDetails: error
     };
   }
 };
 
-/**
- * Runs a comprehensive database connection test and displays results in a toast notification
- */
 export const testDatabaseConnection = async () => {
   try {
     const { data, error } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
