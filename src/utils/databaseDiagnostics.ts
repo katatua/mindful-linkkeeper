@@ -1,4 +1,3 @@
-
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,7 +18,8 @@ export const runDatabaseDiagnostics = async () => {
           sql_query: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ani_database_status')"
         });
       
-      const tableExists = tableCheck && tableCheck.length > 0 && tableCheck[0].exists;
+      // Fix for TypeScript error: Check if tableCheck is an array with elements
+      const tableExists = tableCheck && Array.isArray(tableCheck) && tableCheck.length > 0 && tableCheck[0].exists;
       
       if (!tableExists) {
         console.warn("The ani_database_status table doesn't exist. This might be expected in a new setup.");
