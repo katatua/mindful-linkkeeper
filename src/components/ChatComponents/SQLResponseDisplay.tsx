@@ -19,6 +19,9 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
     // No special reset logic needed - component will re-render with new props
   }, [sql, naturalLanguageResponse]);
 
+  const displaySql = sql || '-- No SQL query was generated';
+  const displayResponse = naturalLanguageResponse || "No natural language response was generated.";
+
   return (
     <Card className="mt-4 shadow-sm">
       <CardHeader className="pb-2">
@@ -33,7 +36,7 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
           
           <TabsContent value="response">
             <div className="text-sm py-2 prose max-w-full">
-              {naturalLanguageResponse || "No natural language response was generated."}
+              {displayResponse}
             </div>
           </TabsContent>
           
@@ -43,7 +46,7 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
               style={materialDark}
               customStyle={{ borderRadius: '0.375rem' }}
             >
-              {sql || '-- No SQL query was generated'}
+              {displaySql}
             </SyntaxHighlighter>
           </TabsContent>
         </Tabs>

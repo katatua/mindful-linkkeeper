@@ -46,12 +46,26 @@ export function useQueryProcessor() {
       // If in offline mode, use dummy data directly
       if (useOfflineMode || (supabase as any).isUsingLocalDb) {
         console.log("Using local/offline mode");
+        
+        // Generate a SQL query for display purposes even in offline mode
+        let sqlQuery = "";
+        try {
+          sqlQuery = await generateSqlFromNaturalLanguage(question);
+          console.log("Generated SQL for offline mode:", sqlQuery);
+        } catch (sqlGenError) {
+          console.error("Error generating SQL in offline mode:", sqlGenError);
+          sqlQuery = `-- Failed to generate SQL: ${sqlGenError instanceof Error ? sqlGenError.message : String(sqlGenError)}`;
+        }
+        
         const dummyResult = generateDummyResponse(question, language);
-        return {
+        const result = {
           response: dummyResult.response,
           visualizationData: dummyResult.visualizationData,
-          sql: "-- Using local database"
+          sql: sqlQuery || "-- Using local database"
         };
+        
+        setLastResult(result);
+        return result;
       }
       
       // First, check if we can connect to the database
@@ -63,22 +77,40 @@ export function useQueryProcessor() {
         if (connError) {
           console.error("Database connection check failed:", connError);
           toggleOfflineMode(true);
+          
+          // Try to generate SQL even if we switch to offline mode
+          let fallbackSql = "";
+          try {
+            fallbackSql = await generateSqlFromNaturalLanguage(question);
+          } catch (e) {
+            fallbackSql = "-- Connection error, using local data";
+          }
+          
           const dummyResult = generateDummyResponse(question, language);
           return {
             response: dummyResult.response,
             visualizationData: dummyResult.visualizationData,
-            sql: "-- Connection error, using local data",
+            sql: fallbackSql,
             isConnectionError: true
           };
         }
       } catch (connErr) {
         console.error("Connection error:", connErr);
         toggleOfflineMode(true);
+        
+        // Try to generate SQL even if we switch to offline mode
+        let fallbackSql = "";
+        try {
+          fallbackSql = await generateSqlFromNaturalLanguage(question);
+        } catch (e) {
+          fallbackSql = "-- Connection error, using local data";
+        }
+        
         const dummyResult = generateDummyResponse(question, language);
         return {
           response: dummyResult.response,
           visualizationData: dummyResult.visualizationData,
-          sql: "-- Connection error, using local data",
+          sql: fallbackSql,
           isConnectionError: true
         };
       }
@@ -170,11 +202,20 @@ export function useQueryProcessor() {
     } catch (error) {
       console.error("Error processing question:", error);
       
+      // Try to generate SQL for display even in error case
+      let errorSql = "";
+      try {
+        errorSql = await generateSqlFromNaturalLanguage(question);
+      } catch (e) {
+        errorSql = `-- Error generating SQL: ${e instanceof Error ? e.message : String(e)}`;
+      }
+      
       // Fallback to dummy data for any error
       const dummyResult = generateDummyResponse(question, language);
       const result: QueryResult = {
         response: dummyResult.response,
         visualizationData: dummyResult.visualizationData,
+        sql: errorSql,
         error: error instanceof Error ? error.message : String(error)
       };
       

@@ -13,6 +13,30 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
   try {
     const lowerQuery = query.toLowerCase();
     
+    // Patent count for specific years query pattern (including Portuguese)
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente') || lowerQuery.includes('patentes')) && 
+        (lowerQuery.includes('2020') || lowerQuery.includes('2021') || lowerQuery.includes('2022'))) {
+      
+      // Specific query for patents issued between 2020-2022
+      if ((lowerQuery.includes('number') || lowerQuery.includes('count') || lowerQuery.includes('número') || 
+          lowerQuery.includes('quantidade') || lowerQuery.includes('total')) &&
+          (lowerQuery.includes('between') || lowerQuery.includes('from') || lowerQuery.includes('de') || 
+          lowerQuery.includes('entre'))) {
+        
+        return `SELECT 
+                  year, 
+                  SUM(patent_count) as total_patents
+                FROM 
+                  ani_patent_holders
+                WHERE 
+                  year BETWEEN 2020 AND 2022
+                GROUP BY 
+                  year
+                ORDER BY 
+                  year`;
+      }
+    }
+    
     // R&D investment patterns
     if ((lowerQuery.includes('r&d') || lowerQuery.includes('i&d') || 
         lowerQuery.includes('research') || lowerQuery.includes('pesquisa') ||
@@ -373,7 +397,9 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
     const { data, error } = await supabase.functions.invoke('generate-sql', {
       body: { 
         question: query,
-        language: lowerQuery.includes('em portugal') ? 'pt' : 'en'
+        language: lowerQuery.includes('em portugal') || 
+                 lowerQuery.includes('patentes') || 
+                 lowerQuery.includes('número') ? 'pt' : 'en'
       }
     });
     
