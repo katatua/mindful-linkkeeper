@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQueryProcessor } from '@/hooks/useQueryProcessor';
 import DatabaseConnectionTest from './DatabaseConnectionTest';
+import { useVisualization } from '@/hooks/useVisualization';
+import DataVisualization from './DataVisualization';
 
 const EXAMPLE_QUERIES = {
   tablesCount: `SELECT
@@ -130,6 +133,7 @@ const DatabaseQuery: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sqlQuery, setSqlQuery] = useState<string>(EXAMPLE_QUERIES.tablesCount);
   const { toast } = useToast();
+  const { showVisualization, setShowVisualization, visualizationData, setVisualizationData, handleVisualizationData } = useVisualization();
   
   const { executeQuery } = useQueryProcessor();
 
@@ -151,6 +155,7 @@ const DatabaseQuery: React.FC = () => {
 
     setLoading(true);
     setError(null);
+    setShowVisualization(false);
     
     try {
       const { response, visualizationData } = await executeQuery(sqlQuery.trim());
@@ -159,6 +164,9 @@ const DatabaseQuery: React.FC = () => {
         setResults(response);
         
         if (visualizationData && visualizationData.length > 0) {
+          setVisualizationData(visualizationData);
+          setShowVisualization(true);
+          
           toast({
             title: "Visualização Disponível",
             description: "Os dados podem ser visualizados em um gráfico. Verifique as opções de visualização."
@@ -187,6 +195,13 @@ const DatabaseQuery: React.FC = () => {
 
   return (
     <>
+      {showVisualization && visualizationData.length > 0 && (
+        <DataVisualization 
+          data={visualizationData} 
+          onClose={() => setShowVisualization(false)}
+        />
+      )}
+      
       <Card className="w-full max-w-3xl mx-auto my-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -243,6 +258,17 @@ const DatabaseQuery: React.FC = () => {
             />
           </div>
 
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleExecuteQuery} 
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Executar Consulta
+            </Button>
+          </div>
+
           {loading ? (
             <div className="flex justify-center items-center py-10">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -261,6 +287,27 @@ const DatabaseQuery: React.FC = () => {
               </div>
             </div>
           ) : results ? (
-            <div className="border rounded-md p-4 bg-white">
-             
+            <div className="border rounded-md p-4 bg-white overflow-auto max-h-96">
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <Markdown>{results}</Markdown>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-muted-foreground">
+              <Database className="h-12 w-12 mx-auto opacity-20 mb-2" />
+              <p>Execute uma consulta para ver os resultados aqui</p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between border-t pt-4">
+          <DatabaseConnectionTest />
+          <div className="text-xs text-muted-foreground">
+            Todas as consultas são executadas em um ambiente seguro e isolado
+          </div>
+        </CardFooter>
+      </Card>
+    </>
+  );
+};
 
+export default DatabaseQuery;
