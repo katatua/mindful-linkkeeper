@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ArrowLeft } from "lucide-react";
 
 export default function AddCategory() {
   const [categoryName, setCategoryName] = useState("");
@@ -57,12 +59,27 @@ export default function AddCategory() {
     }
   };
 
+  const handleBack = () => {
+    navigate("/");
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <div className="container mx-auto p-6 flex-1">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">{t('category.title')}</h1>
+          <div className="flex items-center mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleBack} 
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('category.back') || 'Back'}
+            </Button>
+            <h1 className="text-2xl font-bold">{t('category.title')}</h1>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Input

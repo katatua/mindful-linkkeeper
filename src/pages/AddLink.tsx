@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -123,6 +123,10 @@ export default function AddLink() {
     }
   };
 
+  const handleBack = () => {
+    navigate("/");
+  };
+
   const renderAuthWarning = () => {
     if (!isAuthenticated && !isLoading) {
       return (
@@ -157,7 +161,18 @@ export default function AddLink() {
       <Header />
       <div className="container mx-auto p-6 flex-1">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">{t('link.title')}</h1>
+          <div className="flex items-center mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleBack} 
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('link.back') || 'Back'}
+            </Button>
+            <h1 className="text-2xl font-bold">{t('link.title')}</h1>
+          </div>
           
           {renderAuthWarning()}
           
