@@ -84,17 +84,24 @@ const DatabaseConnectionTest: React.FC = () => {
         toast.success("Diagnostics completed successfully");
         setConnectionStatus("connected");
       } else {
-        // Handle potential missing properties with proper type guards
+        // Properly handle possible undefined or missing properties
         let errorSummary = "Check the console for detailed results";
         
-        // Safely check for the existence of the necessary properties
+        // Type guard to ensure results exists and is an object
         if (diagnosticResults.results && 
-            typeof diagnosticResults.results === 'object' && 
-            'summary' in diagnosticResults.results && 
-            diagnosticResults.results.summary && 
-            'recommendations' in diagnosticResults.results.summary && 
-            Array.isArray(diagnosticResults.results.summary.recommendations)) {
-          errorSummary = diagnosticResults.results.summary.recommendations.join("; ");
+            typeof diagnosticResults.results === 'object') {
+          
+          // Check if summary exists in results
+          if ('summary' in diagnosticResults.results && 
+              diagnosticResults.results.summary) {
+            
+            // Check if recommendations exists in summary and is an array
+            const summary = diagnosticResults.results.summary;
+            if ('recommendations' in summary && 
+                Array.isArray(summary.recommendations)) {
+              errorSummary = summary.recommendations.join("; ");
+            }
+          }
         }
         
         setErrorDetails(errorSummary);
