@@ -28,7 +28,7 @@ export const PDFReportDetails = ({ reportId }: { reportId?: string }) => {
       try {
         setLoading(true);
         
-        // Adjusted to use the properly structured promise
+        // Fetch report by ID
         const result = await supabase
           .from('pdf_reports')
           .select()

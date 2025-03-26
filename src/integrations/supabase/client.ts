@@ -1,15 +1,99 @@
 
-// This file now uses the local database instead of the actual Supabase client
+import { createClient } from '@supabase/supabase-js';
+import { mockClient } from './mockClient';
 
-import { mockSupabase } from '@/utils/localDatabase';
-import type { Database } from './types';
+// Check if we're in a development environment
+const isDevelopment = import.meta.env.DEV;
 
-export const SUPABASE_URL = "https://tujvvuqhvjicbcqzmcwq.supabase.co";
-export const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1anZ2dXFodmppY2JjcXptY3dxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5OTc2MjYsImV4cCI6MjA1ODU3MzYyNn0.JByr4xw9fd6vnZ59Y4MKR07a3MGFqsSJJYSJa2iIWAI";
-export const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1anZ2dXFodmppY2JjcXptY3dxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mjk5NzYyNiwiZXhwIjoyMDU4NTczNjI2fQ.3YK8QgsQhLJILWL0_k5TgGsfH2dcwXQwKhOcD8o_exw";
+// Use a local database for development if the Supabase URL is not provided
+const useLocalDatabase = isDevelopment && !import.meta.env.VITE_SUPABASE_URL;
 
-// Instead of using the actual Supabase client, we use our mock implementation
-export const supabase = mockSupabase;
+// Create the Supabase client
+let supabaseClient;
 
-// Service client with admin privileges - for consistency, also use the mock
-export const supabaseAdmin = mockSupabase;
+if (useLocalDatabase) {
+  console.log('Using local mock database');
+  supabaseClient = mockClient;
+} else {
+  // Use the actual Supabase client
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn(
+      'Supabase credentials not provided. Using mock client. ' +
+      'To use a real Supabase instance, provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.'
+    );
+    supabaseClient = mockClient;
+  } else {
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
+  }
+}
+
+// Enhance the client to make it more Promise-friendly
+const enhancedClient = {
+  ...supabaseClient,
+  from: (table: string) => {
+    const originalFrom = supabaseClient.from(table);
+    return {
+      ...originalFrom,
+      select: (columns?: string) => {
+        const originalSelect = originalFrom.select(columns);
+        
+        // Replace then-based methods with proper Promise-based methods
+        return {
+          ...originalSelect,
+          eq: (column: string, value: any) => {
+            const query = originalSelect.eq(column, value);
+            // Ensure it returns a Promise
+            if (typeof query.then === 'function') {
+              return Promise.resolve(query);
+            }
+            return Promise.resolve(query);
+          },
+          neq: (column: string, value: any) => {
+            const query = originalSelect.neq ? originalSelect.neq(column, value) : originalSelect;
+            // Ensure it returns a Promise
+            if (typeof query.then === 'function') {
+              return Promise.resolve(query);
+            }
+            return Promise.resolve(query);
+          },
+          order: (column: string, options: { ascending: boolean }) => {
+            const query = originalSelect.order(column, options);
+            return {
+              ...query,
+              limit: (limit: number) => {
+                const limitQuery = query.limit(limit);
+                return Promise.resolve(limitQuery);
+              }
+            };
+          },
+          limit: (limit: number) => {
+            const query = originalSelect.limit(limit);
+            return {
+              ...query,
+              order: (column: string, options: { ascending: boolean }) => {
+                const orderQuery = query.order(column, options);
+                return Promise.resolve(orderQuery);
+              }
+            };
+          },
+          single: () => {
+            const query = originalSelect.single ? originalSelect.single() : originalSelect;
+            return Promise.resolve(query);
+          },
+          maybeSingle: () => {
+            const query = originalSelect.maybeSingle ? originalSelect.maybeSingle() : originalSelect;
+            return Promise.resolve(query);
+          }
+        };
+      },
+      count: (options?: { exact?: boolean }) => {
+        return Promise.resolve(originalFrom.count(options));
+      }
+    };
+  }
+};
+
+export const supabase = enhancedClient;

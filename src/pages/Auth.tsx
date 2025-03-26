@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,31 @@ export default function Auth() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
+  const signIn = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Logged in successfully",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Authentication error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -33,15 +57,7 @@ export default function Auth() {
           description: "Please check your email to verify your account",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast({
-          title: "Logged in successfully",
-        });
-        navigate("/");
+        await signIn(email, password);
       }
     } catch (error: any) {
       toast({

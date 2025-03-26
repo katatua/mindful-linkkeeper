@@ -90,32 +90,39 @@ export const useProjectData = () => {
   
   const fetchMetrics = async () => {
     try {
+      // Get count of all projects
       const totalResult = await supabase
         .from('ani_projects')
-        .select('*', { count: 'exact' });
+        .select('count', { count: 'exact' });
       const totalCount = totalResult.count || 0;
         
+      // Get count of active projects
       const activeResult = await supabase
         .from('ani_projects')
-        .select('*', { count: 'exact' })
+        .select('count', { count: 'exact' })
         .eq('status', 'active');
       const activeCount = activeResult.count || 0;
         
+      // Get count of completed projects
       const completedResult = await supabase
         .from('ani_projects')
-        .select('*', { count: 'exact' })
+        .select('count', { count: 'exact' })
         .eq('status', 'completed');
       const completedCount = completedResult.count || 0;
       
+      // Get funding amount data
       const budgetResult = await supabase
         .from('ani_projects')
         .select('funding_amount');
       const budgetData = budgetResult.data || [];
       
+      // Calculate total budget
       const totalBudget = budgetData.reduce((sum, project) => sum + (project.funding_amount || 0), 0) || 0;
       
+      // Calculate completion rate
       const completionRate = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
       
+      // Set the metrics
       setMetrics({
         totalProjects: totalCount,
         totalProjectsChange: 12,

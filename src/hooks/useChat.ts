@@ -15,16 +15,15 @@ export const useChat = (language: string) => {
     try {
       setIsUploading(true);
       
-      // Criar um nome de arquivo único
+      // Create a unique filename
       const fileName = `${Date.now()}-${file.name}`;
       
-      // Enviar o arquivo para o Storage do Supabase
+      // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
         .from('chat-files')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false,
-          contentType: file.type
+          upsert: false
         });
       
       if (error) {
@@ -32,16 +31,16 @@ export const useChat = (language: string) => {
         throw new Error(`Upload error: ${error.message}`);
       }
       
-      // Obter a URL pública para o arquivo
+      // Get the public URL for the file
       const { data: urlData } = supabase.storage
         .from('chat-files')
         .getPublicUrl(fileName);
       
-      // Adicionar uma mensagem do sistema com o link do arquivo
+      // Add a system message with the file link
       if (urlData) {
         const fileUrl = urlData.publicUrl;
         
-        // Mensagem inicial sobre o upload
+        // Initial message about the upload
         const messageContent = language === 'en'
           ? `I've uploaded a PDF file: [${file.name}](${fileUrl}). Starting extraction... I'm using the Gemini 2.0 Pro Experimental model for analysis.`
           : `Carreguei um ficheiro PDF: [${file.name}](${fileUrl}). Iniciando extração... Estou usando o modelo Gemini 2.0 Pro Experimental para análise.`;
@@ -52,18 +51,18 @@ export const useChat = (language: string) => {
           ? "File uploaded successfully" 
           : "Ficheiro carregado com sucesso");
         
-        // Processar o PDF para extrair informações
+        // Process PDF to extract information
         try {
           setIsProcessingPdf(true);
           
-          // Informar que o processamento começou
+          // Inform that processing has started
           const processingMessage = language === 'en'
             ? "Processing PDF with Gemini 2.0 Pro Experimental... This may take a moment."
             : "Processando PDF com Gemini 2.0 Pro Experimental... Isso pode levar um momento.";
           
           await chatCore.handleSendCustomMessage(processingMessage, true);
           
-          // Chamar a função Edge do Supabase para processar o PDF
+          // Call Supabase Edge Function to process PDF
           const { data: extractionData, error: extractionError } = await supabase.functions.invoke(
             'pdf-extractor',
             {
@@ -73,15 +72,29 @@ export const useChat = (language: string) => {
           
           if (extractionError) throw extractionError;
           
-          // Criar uma mensagem rica com os resultados da extração e um link para o relatório na página de relatórios
+          // Create a rich message with extraction results and a link to the report
           const reportPath = `/reports?reportId=${extractionData.report.id}`;
+          
+          // Ensure we're using the correct properties from the extraction response
+          const extractedTextSample = extractionData.extraction?.extracted_text?.substring(0, 100) || 
+                                      extractionData.extraction?.content?.substring(0, 100) || 
+                                      "Text content extracted";
+          
+          const numbersCount = extractionData.extraction?.extracted_numbers?.length || 
+                              (extractionData.extraction?.elements?.filter(el => el.type === 'number')?.length) || 0;
+          
+          const imagesCount = extractionData.extraction?.extracted_images?.length || 
+                             (extractionData.extraction?.elements?.filter(el => el.type === 'image')?.length) || 0;
+          
+          const reportTitle = extractionData.report?.report_title || extractionData.report?.title || "PDF Report";
+          
           const successMessage = language === 'en'
-            ? `✅ PDF processed successfully with Gemini 2.0 Pro Experimental!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} numerical data points extracted\n- ${extractionData.extraction.extracted_images.length} images identified\n\n**Report created:** [${extractionData.report.report_title}](${reportPath})`
-            : `✅ PDF processado com sucesso usando Gemini 2.0 Pro Experimental!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractionData.extraction.extracted_text.substring(0, 100)}...\n- ${extractionData.extraction.extracted_numbers.length} dados numéricos extraídos\n- ${extractionData.extraction.extracted_images.length} imagens identificadas\n\n**Relatório criado:** [${extractionData.report.report_title}](${reportPath})`;
+            ? `✅ PDF processed successfully with Gemini 2.0 Pro Experimental!\n\n**Document:** ${file.name}\n\n**Extracted information:**\n- Text content: ${extractedTextSample}...\n- ${numbersCount} numerical data points extracted\n- ${imagesCount} images identified\n\n**Report created:** [${reportTitle}](${reportPath})`
+            : `✅ PDF processado com sucesso usando Gemini 2.0 Pro Experimental!\n\n**Documento:** ${file.name}\n\n**Informações extraídas:**\n- Conteúdo de texto: ${extractedTextSample}...\n- ${numbersCount} dados numéricos extraídos\n- ${imagesCount} imagens identificadas\n\n**Relatório criado:** [${reportTitle}](${reportPath})`;
           
           await chatCore.handleSendCustomMessage(successMessage);
           
-          // Opção para navegar diretamente para o relatório
+          // Option to navigate directly to the report
           toast.success(
             language === 'en'
             ? "PDF Report Created" 

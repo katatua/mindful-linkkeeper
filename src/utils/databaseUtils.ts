@@ -249,13 +249,15 @@ export const checkDatabaseStatus = async () => {
       }
       
       // Add type assertion to tell TypeScript that the table name is valid
-      const { count, error } = await supabase
-        .from(table as any)
-        .select('*', { count: 'exact', head: true });
+      const { data: existingRows, error: checkError } = await supabase
+        .from(table)
+        .select('count(*)', { count: 'exact' });
       
-      if (error) throw error;
-      
-      results[table] = count || 0;
+      if (checkError || !existingRows || !Array.isArray(existingRows) || existingRows.length === 0) {
+        results[table] = -1; // Error code
+      } else {
+        results[table] = existingRows[0].count;
+      }
     } catch (error) {
       console.error(`Error checking ${table}:`, error);
       results[table] = -1; // Error code

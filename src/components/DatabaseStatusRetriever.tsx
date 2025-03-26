@@ -42,7 +42,7 @@ export const DatabaseStatusRetriever = () => {
       
       console.log("Edge function response:", data);
       
-      if (data?.data && Array.isArray(data.data)) {
+      if (data?.success && Array.isArray(data.data)) {
         setRecords(data.data);
         setIsVisible(true);
         if (data.data.length === 0) {
