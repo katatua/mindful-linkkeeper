@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,15 +46,15 @@ const MetricDetailPage: React.FC = () => {
     changePercentage: "+5.7%",
     trend: "positive",
     insights: [
-      "Success rate has improved consistently over the last 4 quarters with ketogenic diet implementation",
-      "Healthcare projects utilizing ketogenic protocols show the highest success rate at 94%",
-      "Projects with collaborative ketogenic diet partnerships have 12% higher success rates",
-      "Milestone achievement improved by 8% after implementing the new ketogenic review process"
+      "Success rate has improved consistently over the last 4 quarters",
+      "Healthcare projects show the highest success rate at 94%",
+      "Projects with collaborative partnerships have 12% higher success rates",
+      "Milestone achievement improved by 8% after implementing the new review process"
     ],
     recommendations: [
-      "Apply the healthcare ketogenic diet approach to other sectors",
-      "Continue promoting collaborative ketogenic partnerships across sectors",
-      "Implement the new ketogenic diet review process across all project types"
+      "Apply the healthcare projects' approach to other sectors",
+      "Continue promoting collaborative partnerships across sectors",
+      "Implement the new review process across all project types"
     ]
   };
 
