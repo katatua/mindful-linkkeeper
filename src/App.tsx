@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,6 +60,7 @@ function App() {
               <Route path="/policy-guide" element={<PolicyGuidePage />} />
               <Route path="/database-info" element={<DatabaseQuery />} />
               <Route path="/synthetic-data" element={<SyntheticDataPage />} />
+              <Route path="/database-management" element={<DatabaseManagementPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

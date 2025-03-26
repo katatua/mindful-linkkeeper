@@ -1,9 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle, Clock, RefreshCw, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DatabaseStatus {
   id: string;
@@ -15,103 +19,132 @@ interface DatabaseStatus {
   updated_at: string;
 }
 
-export const DatabaseStatusViewer: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [records, setRecords] = useState<DatabaseStatus[]>([]);
+const DatabaseStatusViewer = () => {
+  const [statusRecords, setStatusRecords] = useState<DatabaseStatus[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchDatabaseStatus = async () => {
-      try {
-        setLoading(true);
-        
-        // Call the Supabase edge function
-        const { data, error } = await supabase.functions.invoke('show-database-status');
-        
-        if (error) {
-          throw new Error(`Error invoking function: ${error.message}`);
-        }
-        
-        if (Array.isArray(data)) {
-          setRecords(data);
-        } else {
-          throw new Error('Unexpected response format');
-        }
-      } catch (err) {
-        console.error('Failed to fetch database status:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDatabaseStatus = async () => {
+    setIsLoading(true);
+    setError(null);
 
+    try {
+      const { data, error: fetchError } = await supabase.functions.invoke('show-database-status');
+
+      if (fetchError) {
+        console.error("Error fetching database status:", fetchError);
+        setError(fetchError.message);
+        toast.error("Failed to fetch database status");
+        return;
+      }
+
+      if (data?.success && Array.isArray(data.data)) {
+        setStatusRecords(data.data);
+      } else {
+        console.log("Unexpected response format:", data);
+        setStatusRecords([]);
+        if (data?.message) {
+          setError(data.message);
+        }
+      }
+    } catch (err) {
+      console.error("Error in fetchDatabaseStatus:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      toast.error("Failed to fetch database status");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDatabaseStatus();
   }, []);
 
-  if (loading) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading Database Status Records...
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Never";
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
 
-  if (error) {
-    return (
-      <Card className="w-full border-red-200">
-        <CardHeader>
-          <CardTitle className="text-red-500">Error Fetching Database Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>{error}</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'populated':
+        return <Badge className="bg-green-500">Populated</Badge>;
+      case 'empty':
+        return <Badge variant="outline" className="text-amber-500 border-amber-500">Empty</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Database Status Records ({records.length})</CardTitle>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle>Database Status Records</CardTitle>
+          <CardDescription>
+            Showing status information from the ani_database_status table
+          </CardDescription>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchDatabaseStatus}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Table Name</TableHead>
-                <TableHead>Record Count</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Populated</TableHead>
-                <TableHead>Updated At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">{record.table_name}</TableCell>
-                  <TableCell>{record.record_count}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      record.status === 'populated' ? 'bg-green-100 text-green-800' :
-                      record.status === 'empty' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {record.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{record.last_populated ? new Date(record.last_populated).toLocaleString() : 'Never'}</TableCell>
-                  <TableCell>{new Date(record.updated_at).toLocaleString()}</TableCell>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {isLoading ? (
+          <div className="py-6 flex justify-center items-center">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          </div>
+        ) : statusRecords.length === 0 ? (
+          <div className="py-6 text-center text-gray-500">
+            No database status records found.
+          </div>
+        ) : (
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Table Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Record Count</TableHead>
+                  <TableHead>
+                    <div className="flex items-center">
+                      <Clock className="mr-1 h-4 w-4" />
+                      Last Populated
+                    </div>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {statusRecords.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">{record.table_name}</TableCell>
+                    <TableCell>{getStatusBadge(record.status)}</TableCell>
+                    <TableCell>{record.record_count}</TableCell>
+                    <TableCell>{formatDate(record.last_populated)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

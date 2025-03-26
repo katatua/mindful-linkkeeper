@@ -11,6 +11,7 @@ type DatabaseTable =
   | 'ani_patent_holders'
   | 'ani_policy_frameworks'
   | 'ani_projects'
+  | 'ani_projects_researchers'
   | 'ani_researchers';
 
 export const testDatabaseConnection = async () => {
@@ -98,6 +99,7 @@ export const checkDatabaseStatus = async () => {
       'ani_patent_holders',
       'ani_policy_frameworks',
       'ani_projects',
+      'ani_projects_researchers',
       'ani_researchers'
     ];
 
