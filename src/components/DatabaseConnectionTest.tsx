@@ -55,8 +55,26 @@ const DatabaseConnectionTest = () => {
     try {
       toast.info("Initializing database...");
       
-      // Call the edge function for database initialization
-      const { data, error } = await supabase.functions.invoke('initialize-database');
+      // Add a timeout for the edge function call
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Edge function request timed out")), 10000);
+      });
+      
+      // Call the edge function with a timeout
+      const functionPromise = supabase.functions.invoke('initialize-database', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      // Race the function call against the timeout
+      const { data, error } = await Promise.race([
+        functionPromise, 
+        timeoutPromise.then(() => {
+          throw new Error("Edge function request timed out");
+        })
+      ]) as any;
       
       if (error) {
         console.error("Error initializing database:", error);
@@ -71,17 +89,17 @@ const DatabaseConnectionTest = () => {
         return;
       }
       
-      if (data.success) {
+      if (data && data.success) {
         toast.success("Database initialized successfully");
         // Run the test again to verify
         await runTest();
       } else {
         toast.error("Database initialization failed", {
-          description: data.error || "Unknown error"
+          description: (data && data.error) || "Unknown error"
         });
         setResult({
           success: false,
-          message: data.error || "Failed to initialize database",
+          message: (data && data.error) || "Failed to initialize database",
           details: data
         });
       }
@@ -170,7 +188,7 @@ const DatabaseConnectionTest = () => {
                     <li>Confirm that the edge function is deployed correctly</li>
                     <li>Check if you need to create database tables using the SQL editor</li>
                     <li>Verify network connectivity to Supabase services</li>
-                    <li>Try the "Initialize Database" button to set up basic tables</li>
+                    <li>Try again after a few minutes as edge functions may need time to deploy</li>
                   </ul>
                 </div>
               </div>
