@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +26,7 @@ import DatabaseQuery from '@/components/DatabaseQuery';
 import SyntheticDataPage from '@/pages/SyntheticDataPage';
 import DatabaseManagementPage from './pages/DatabaseManagementPage';
 import DatabaseAnalysisPage from './pages/DatabaseAnalysisPage';
+import TableRecordsPage from './pages/TableRecordsPage';
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,7 @@ function App() {
               <Route path="/database-info" element={<DatabaseQuery />} />
               <Route path="/synthetic-data" element={<SyntheticDataPage />} />
               <Route path="/database-management" element={<DatabaseManagementPage />} />
+              <Route path="/table-records/:tableName" element={<TableRecordsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

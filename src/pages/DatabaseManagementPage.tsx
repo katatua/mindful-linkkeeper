@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +26,7 @@ import { DATABASE_TABLES, populateDatabase, checkDatabaseStatus } from "@/utils/
 import DatabaseStatusViewer from "@/components/DatabaseStatusViewer";
 
 const DatabaseManagementPage = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressInfo, setProgressInfo] = useState("");
@@ -118,6 +120,10 @@ const DatabaseManagementPage = () => {
     return <Table className="h-5 w-5 text-gray-500" />;
   };
   
+  const handleViewTableRecords = (table: string) => {
+    navigate(`/table-records/${table}`);
+  };
+  
   const getDatabaseStatus = () => {
     const tables = Object.keys(tableStatus);
     if (tables.length === 0) return "unknown";
@@ -169,7 +175,11 @@ const DatabaseManagementPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {DATABASE_TABLES.map(table => (
-          <Card key={table}>
+          <Card 
+            key={table} 
+            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => handleViewTableRecords(table)}
+          >
             <CardHeader className="pb-2">
               <div className="flex justify-between">
                 <div className="flex items-center gap-2">
@@ -183,7 +193,7 @@ const DatabaseManagementPage = () => {
                   ? "Checking..." 
                   : tableStatus[table] === -1 
                     ? "Error checking table" 
-                    : `${tableStatus[table] || 0} records`}
+                    : `${tableStatus[table] || 0} records • Click to view`}
               </CardDescription>
             </CardHeader>
           </Card>
