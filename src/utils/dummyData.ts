@@ -336,63 +336,46 @@ export const dummyProjects = [
 export const findRelevantDummyData = (query: string): any[] => {
   const queryLower = query.toLowerCase();
   
-  // Check for regional investment queries
-  if ((queryLower.includes('region') || queryLower.includes('região') || queryLower.includes('regiao')) &&
-      (queryLower.includes('investment') || queryLower.includes('investimento'))) {
-    return dummyRegionalInvestment;
-  }
-  
-  // Check for patent-related queries with year
+  // Extract year information from query
+  const yearMatches = queryLower.match(/\b(20[0-9][0-9])\b/g);
+  const specificYear = yearMatches && yearMatches.length > 0 
+    ? parseInt(yearMatches[0]) 
+    : new Date().getFullYear();
+
+  // Check for year range queries
+  const isYearRangeQuery = (yearMatches && yearMatches.length >= 2) ||
+    queryLower.includes('between') || 
+    queryLower.includes('from') || 
+    queryLower.includes('de') || 
+    queryLower.includes('entre') || 
+    queryLower.includes('a');
+
+  // Patent-specific logic
   if (queryLower.includes('patent') || queryLower.includes('patente')) {
-    // Extract year from query if present
-    const yearMatch = queryLower.match(/\b(20[0-9][0-9])\b/g);
-    if (yearMatch && yearMatch.length > 0) {
-      const year = parseInt(yearMatch[0]);
-      if (dummyPatentHoldersByYear[year]) {
-        return dummyPatentHoldersByYear[year];
-      }
+    if (dummyPatentHoldersByYear[specificYear]) {
+      return dummyPatentHoldersByYear[specificYear];
     }
     
-    // If looking for patents between years
-    if (queryLower.includes('between') || queryLower.includes('entre') || 
-        (queryLower.includes('from') && queryLower.includes('to')) ||
-        (queryLower.includes('de') && queryLower.includes('a'))) {
+    // Handle year range queries
+    if (isYearRangeQuery && yearMatches && yearMatches.length >= 2) {
+      const startYear = parseInt(yearMatches[0]);
+      const endYear = parseInt(yearMatches[1]);
       
-      const yearMatches = queryLower.match(/\b(20[0-9][0-9])\b/g);
-      if (yearMatches && yearMatches.length >= 2) {
-        const startYear = parseInt(yearMatches[0]);
-        const endYear = parseInt(yearMatches[1]);
-        
-        // Combine patent data for the range of years
-        let combinedData = [];
-        for (let year = startYear; year <= endYear; year++) {
-          if (dummyPatentHoldersByYear[year]) {
-            combinedData = [...combinedData, ...dummyPatentHoldersByYear[year]];
-          }
-        }
-        
-        if (combinedData.length > 0) {
-          return combinedData;
+      let combinedData = [];
+      for (let year = startYear; year <= endYear; year++) {
+        if (dummyPatentHoldersByYear[year]) {
+          combinedData = [...combinedData, ...dummyPatentHoldersByYear[year]];
         }
       }
+      
+      return combinedData.length > 0 ? combinedData : dummyPatentHolders;
     }
-    
-    return dummyPatentHolders;
   }
+
+  // Similar logic for other data types can be added here
   
-  // Check for funding program queries
-  if (queryLower.includes('funding') || queryLower.includes('programa') || 
-      queryLower.includes('financiamento') || queryLower.includes('program')) {
-    return dummyFundingPrograms;
-  }
-  
-  // Check for project queries
-  if (queryLower.includes('project') || queryLower.includes('projeto')) {
-    return dummyProjects;
-  }
-  
-  // Default to metrics data
-  return dummyMetrics;
+  // Fallback to default data if no specific year match
+  return dummyPatentHolders;
 };
 
 // Generate natural language responses for dummy data
@@ -401,12 +384,37 @@ export const generateDummyResponse = (query: string, language: 'en' | 'pt' = 'en
   visualizationData?: any[];
 } => {
   const queryLower = query.toLowerCase();
-  let response = "";
-  let visualizationData = undefined;
-  
-  // Extract year from query if present
-  const yearMatch = queryLower.match(/\b(20[0-9][0-9])\b/g);
-  const specificYear = yearMatch && yearMatch.length > 0 ? parseInt(yearMatch[0]) : null;
+  const yearMatches = queryLower.match(/\b(20[0-9][0-9])\b/g);
+  const specificYear = yearMatches && yearMatches.length > 0 
+    ? parseInt(yearMatches[0]) 
+    : new Date().getFullYear();
+
+  let patentData = dummyPatentHoldersByYear[specificYear] || dummyPatentHolders;
+  let yearText = specificYear.toString();
+
+  // Check for year range in patent queries
+  const isYearRangeQuery = (yearMatches && yearMatches.length >= 2) ||
+    queryLower.includes('between') || 
+    queryLower.includes('from') || 
+    queryLower.includes('de') || 
+    queryLower.includes('entre') || 
+    queryLower.includes('a');
+
+  if (isYearRangeQuery && yearMatches && yearMatches.length >= 2) {
+    const startYear = parseInt(yearMatches[0]);
+    const endYear = parseInt(yearMatches[1]);
+    
+    patentData = [];
+    for (let year = startYear; year <= endYear; year++) {
+      if (dummyPatentHoldersByYear[year]) {
+        patentData = [...patentData, ...dummyPatentHoldersByYear[year]];
+      }
+    }
+    
+    yearText = `${startYear} to ${endYear}`;
+  }
+
+  const totalPatents = patentData.reduce((sum, item) => sum + item.patent_count, 0);
   
   // R&D investment query
   if (queryLower.includes('r&d') || queryLower.includes('investment') || 

@@ -12,6 +12,50 @@ export const generateSqlFromNaturalLanguage = async (query: string): Promise<str
   try {
     const lowerQuery = query.toLowerCase();
     
+    // Enhanced year extraction function
+    const extractYearRange = (queryText: string) => {
+      const yearMatches = queryText.match(/\b(20[0-9][0-9])\b/g);
+      if (!yearMatches) return null;
+      
+      if (yearMatches.length === 1) {
+        return { 
+          startYear: parseInt(yearMatches[0]), 
+          endYear: parseInt(yearMatches[0]) 
+        };
+      }
+      
+      if (yearMatches.length >= 2) {
+        const years = yearMatches.map(y => parseInt(y)).sort((a, b) => a - b);
+        return { 
+          startYear: years[0], 
+          endYear: years[years.length - 1] 
+        };
+      }
+      
+      return null;
+    };
+
+    const yearRange = extractYearRange(lowerQuery);
+
+    // Patent queries with year range
+    if ((lowerQuery.includes('patent') || lowerQuery.includes('patente')) && yearRange) {
+      return `SELECT 
+                organization_name, 
+                SUM(patent_count) as total_patents,
+                AVG(innovation_index) as avg_innovation_index,
+                ARRAY_AGG(DISTINCT sector) as sectors,
+                ${yearRange.startYear} as start_year,
+                ${yearRange.endYear} as end_year
+              FROM 
+                ani_patent_holders
+              WHERE 
+                year BETWEEN ${yearRange.startYear} AND ${yearRange.endYear}
+              GROUP BY 
+                organization_name
+              ORDER BY 
+                total_patents DESC`;
+    }
+
     // Patent count for specific years query pattern (including Portuguese)
     if ((lowerQuery.includes('patent') || lowerQuery.includes('patente') || lowerQuery.includes('patentes'))) {
       
