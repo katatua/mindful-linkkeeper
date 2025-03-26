@@ -37,11 +37,15 @@ serve(async (req) => {
       );
     }
 
+    // Clean the SQL by removing excess whitespace
+    const cleanedSql = sqlQuery.trim();
+    console.log("Cleaned SQL:", cleanedSql);
+
     if (operation === 'write') {
       // For write operations (INSERT, UPDATE, DELETE)
-      console.log("Executing SQL write operation:", sqlQuery);
+      console.log("Executing SQL write operation:", cleanedSql);
       
-      const { data, error } = await supabase.rpc('execute_raw_query', { sql_query: sqlQuery });
+      const { data, error } = await supabase.rpc('execute_raw_query', { sql_query: cleanedSql });
       
       if (error) {
         console.error("Error executing SQL write operation:", error);
@@ -58,9 +62,9 @@ serve(async (req) => {
     } 
     else {
       // For query operations (SELECT)
-      console.log("Executing SQL query operation:", sqlQuery);
+      console.log("Executing SQL query operation:", cleanedSql);
       
-      const { data, error } = await supabase.rpc('execute_raw_query', { sql_query: sqlQuery });
+      const { data, error } = await supabase.rpc('execute_raw_query', { sql_query: cleanedSql });
       
       if (error) {
         console.error("Error executing SQL query:", error);
