@@ -46,22 +46,24 @@ const DatabaseStatusViewer = () => {
         return;
       }
 
-      const { data, error: fetchError } = await supabase.functions.invoke('show-database-status');
+      const response = await supabase.functions.invoke('show-database-status');
 
-      if (fetchError) {
-        console.error("Error fetching database status:", fetchError);
-        setError(fetchError.message);
+      if (response.error) {
+        console.error("Error fetching database status:", response.error);
+        setError(response.error.message || "Failed to fetch database status");
         toast.error("Failed to fetch database status");
         return;
       }
 
-      if (data?.success && Array.isArray(data.data)) {
-        setStatusRecords(data.data);
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        setStatusRecords(response.data.data);
       } else {
-        console.log("Unexpected response format:", data);
+        console.log("Unexpected response format:", response.data);
         setStatusRecords([]);
-        if (data?.message) {
-          setError(data.message);
+        if (response.data?.message) {
+          setError(response.data.message);
+        } else {
+          setError("Received an invalid response format from the server");
         }
       }
     } catch (err) {

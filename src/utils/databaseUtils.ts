@@ -82,19 +82,50 @@ export const populateDatabase = async (progressCallback?: (info: string) => void
       progressCallback("Starting database population process...");
     }
     
-    // This would be replaced with actual database population logic
-    // For now, it's just a simulation
+    // Process tables one by one using the generate-synthetic-data function
     for (const table of DATABASE_TABLES) {
-      if (progressCallback) {
-        progressCallback(`Populating ${table}...`);
+      try {
+        if (progressCallback) {
+          progressCallback(`Populating ${table}...`);
+        }
+        
+        // Skip the database status table as it's populated by triggers
+        if (table === 'ani_database_status') {
+          if (progressCallback) {
+            progressCallback(`Skipping ${table} (automatically updated)`);
+          }
+          continue;
+        }
+        
+        // Call the edge function to generate synthetic data for this table
+        const response = await supabase.functions.invoke('generate-synthetic-data', {
+          body: { tableName: table, count: 25 }
+        });
+        
+        if (response.error) {
+          console.error(`Error populating ${table}:`, response.error);
+          if (progressCallback) {
+            progressCallback(`Error populating ${table}: ${response.error.message}`);
+          }
+          continue; // Continue with next table even if this one fails
+        }
+        
+        if (progressCallback) {
+          progressCallback(`Successfully populated ${table}`);
+        }
+        
+      } catch (err) {
+        console.error(`Error processing table ${table}:`, err);
+        if (progressCallback) {
+          progressCallback(`Error processing ${table}: ${err instanceof Error ? err.message : "Unknown error"}`);
+        }
+        // Continue with next table
       }
-      
-      // Simulate some work
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (progressCallback) {
-        progressCallback(`Successfully populated ${table}`);
-      }
+    }
+    
+    // Final status update
+    if (progressCallback) {
+      progressCallback("Database population completed!");
     }
     
     return { success: true, message: "Database populated successfully" };

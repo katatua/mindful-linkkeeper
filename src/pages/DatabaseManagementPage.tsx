@@ -30,6 +30,7 @@ const DatabaseManagementPage = () => {
   const [progressInfo, setProgressInfo] = useState("");
   const [tableStatus, setTableStatus] = useState<Record<string, number>>({});
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [logs, setLogs] = useState<string[]>([]);
   
   useEffect(() => {
     checkStatus();
@@ -39,7 +40,6 @@ const DatabaseManagementPage = () => {
     setIsCheckingStatus(true);
     try {
       const status = await checkDatabaseStatus();
-      // Modified: Always set the status, as checkDatabaseStatus now returns empty object on error
       setTableStatus(status);
     } catch (error) {
       console.error("Error checking database status:", error);
@@ -57,6 +57,7 @@ const DatabaseManagementPage = () => {
     setIsLoading(true);
     setProgress(0);
     setProgressInfo("Preparing to generate synthetic data...");
+    setLogs(["Starting database population process..."]);
     
     try {
       const totalTables = DATABASE_TABLES.length;
@@ -64,6 +65,7 @@ const DatabaseManagementPage = () => {
       
       await populateDatabase((info) => {
         setProgressInfo(info);
+        setLogs(prev => [...prev, info]);
         
         if (info.includes("Successfully populated")) {
           completedTables++;
@@ -73,13 +75,16 @@ const DatabaseManagementPage = () => {
       
       setProgress(100);
       setProgressInfo("Database population completed!");
+      setLogs(prev => [...prev, "Database population completed!"]);
       toast.success("Database populated successfully");
       
       await checkStatus();
     } catch (error) {
       console.error("Error populating database:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      setLogs(prev => [...prev, `Error: ${errorMessage}`]);
       toast.error("Failed to populate database", {
-        description: error instanceof Error ? error.message : "Unknown error"
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);
@@ -197,6 +202,23 @@ const DatabaseManagementPage = () => {
             <div className="space-y-2">
               <Progress value={progress} className="h-2" />
               <p className="text-sm text-gray-500">{progressInfo}</p>
+              
+              <div className="mt-4 bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
+                <h4 className="text-sm font-medium mb-2">Process Logs:</h4>
+                <div className="space-y-1 text-xs text-gray-600">
+                  {logs.map((log, index) => (
+                    <div key={index} className="border-b border-gray-100 pb-1">
+                      {log.includes("Error") ? (
+                        <span className="text-red-500">{log}</span>
+                      ) : log.includes("Successfully") ? (
+                        <span className="text-green-600">{log}</span>
+                      ) : (
+                        <span>{log}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
