@@ -1,7 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const MODEL_NAME = "gemini-2.0-pro-exp-02-05";
 
 // Set up CORS headers
 const corsHeaders = {
@@ -16,12 +17,12 @@ serve(async (req) => {
   }
 
   try {
-    // Validate OpenAI API key
-    if (!OPENAI_API_KEY || OPENAI_API_KEY.startsWith('sk-proj-')) {
-      console.error("Invalid OpenAI API key format");
+    // Validate Gemini API key
+    if (!GEMINI_API_KEY) {
+      console.error("Missing Gemini API key");
       return new Response(
         JSON.stringify({ 
-          error: "Invalid OpenAI API key configuration. Please set a valid API key for the edge function.",
+          error: "Invalid Gemini API key configuration. Please set a valid API key for the edge function.",
           response: "I'm sorry, but I couldn't interpret these results due to a configuration issue with the AI service."
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -87,38 +88,45 @@ serve(async (req) => {
     12. For numeric results, mention whether values represent totals, averages, or individual measurements.
     13. Use appropriate terminology based on the domain (research, innovation, funding, etc.)`;
 
-    // User prompt combines the question, query, and results
     const userPrompt = `Question: ${question || "What does this data show?"}\n\nSQL Query Used:\n${sqlQuery}\n\n${resultsText}\n\nPlease interpret these results.`;
 
-    console.log("Sending interpretation request to OpenAI");
+    console.log("Sending interpretation request to Gemini");
 
     try {
-      // Call OpenAI API
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Call Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: systemPrompt }]
+            },
+            {
+              role: 'user',
+              parts: [{ text: userPrompt }]
+            }
           ],
-          temperature: 0.5,
-          max_tokens: 1000
+          generationConfig: {
+            temperature: 0.2,
+            topK: 32,
+            topP: 0.95,
+            maxOutputTokens: 1024
+          }
         })
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('OpenAI API error:', errorData);
-        throw new Error(`OpenAI API error: ${errorData}`);
+        console.error('Gemini API error:', errorData);
+        throw new Error(`Gemini API error: ${errorData}`);
       }
 
       const data = await response.json();
-      const interpretation = data.choices[0].message.content.trim();
+      const interpretation = data.candidates[0].content.parts[0].text.trim();
 
       console.log("Generated interpretation:", interpretation.substring(0, 100) + "...");
 
@@ -126,14 +134,14 @@ serve(async (req) => {
         JSON.stringify({ response: interpretation }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } catch (openAiError) {
-      console.error("OpenAI API error:", openAiError);
+    } catch (aiError) {
+      console.error("Gemini API error:", aiError);
       
-      // Return a fallback interpretation when OpenAI fails
+      // Return a fallback interpretation when Gemini fails
       return new Response(
         JSON.stringify({ 
           response: "These results show data from the ANI database based on your query. Due to technical limitations, I'm unable to provide a detailed interpretation at this time.",
-          error: openAiError.message
+          error: aiError.message
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
