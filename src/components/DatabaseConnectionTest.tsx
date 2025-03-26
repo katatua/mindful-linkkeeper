@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,7 +56,7 @@ const DatabaseConnectionTest: React.FC = () => {
         )}
         
         {result.success && (
-          <Alert variant="success" className="mt-2 bg-green-50 border-green-200">
+          <Alert className="mt-2 bg-green-50 border-green-200">
             <Check className="h-4 w-4 text-green-500" />
             <AlertTitle className="text-green-700">Test Passed</AlertTitle>
             <AlertDescription className="text-sm text-green-600">

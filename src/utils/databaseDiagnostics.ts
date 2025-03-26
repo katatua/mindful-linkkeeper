@@ -20,10 +20,17 @@ export const runDatabaseDiagnostics = async (): Promise<{
     try {
       console.log("Test 1: Checking basic connection to ani_database_status table...");
       const start = performance.now();
-      const { data: statusData, error: statusError } = await supabase
-        .from('ani_database_status')
-        .select('count(*)', { count: 'exact', head: true })
-        .timeout(5000);
+      
+      // Create a promise that will timeout after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+      );
+      
+      // Race the actual query against the timeout
+      const { data: statusData, error: statusError } = await Promise.race([
+        supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true }),
+        timeoutPromise as Promise<any>
+      ]);
       
       const duration = performance.now() - start;
       
@@ -52,7 +59,7 @@ export const runDatabaseDiagnostics = async (): Promise<{
       } else {
         console.log("Basic connection test successful");
       }
-    } catch (testError) {
+    } catch (testError: any) {
       console.error("Test 1 failed with exception:", testError);
       results.basicConnection = {
         success: false,
@@ -66,16 +73,21 @@ export const runDatabaseDiagnostics = async (): Promise<{
       console.log("Test 2: Checking connection to Supabase Functions endpoint...");
       const start = performance.now();
       
-      // We'll use a simple health-check endpoint if available, otherwise ping the execute-sql function
-      const { data: functionData, error: functionError } = await supabase.functions.invoke(
-        'execute-sql', 
-        { 
+      // Create a promise that will timeout after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Functions endpoint timeout')), 5000)
+      );
+      
+      // Race the actual function call against the timeout
+      const { data: functionData, error: functionError } = await Promise.race([
+        supabase.functions.invoke('execute-sql', { 
           body: { 
             sqlQuery: 'SELECT 1 as health_check',
             operation: 'query'
           }
-        }
-      ).timeout(5000);
+        }),
+        timeoutPromise as Promise<any>
+      ]);
       
       const duration = performance.now() - start;
       
@@ -109,7 +121,7 @@ export const runDatabaseDiagnostics = async (): Promise<{
       } else {
         console.log("Functions endpoint test successful");
       }
-    } catch (testError) {
+    } catch (testError: any) {
       console.error("Test 2 failed with exception:", testError);
       results.functionsEndpoint = {
         success: false,
@@ -122,15 +134,15 @@ export const runDatabaseDiagnostics = async (): Promise<{
     try {
       console.log("Test 3: Checking Supabase client configuration...");
       
-      // Check if the URL and key are properly set
-      const supabaseUrl = supabase.supabaseUrl;
-      const supabaseKey = supabase.supabaseKey?.substring(0, 10) + '...'; // Only show part of the key for security
+      // Get configuration data from env variables instead of accessing protected properties
+      const url = process.env.SUPABASE_URL || "";
+      const hasKey = !!process.env.SUPABASE_ANON_KEY;
       
       results.clientConfiguration = {
-        success: !!(supabaseUrl && supabase.supabaseKey),
-        supabaseUrl,
-        supabaseKeyPrefix: supabaseKey,
-        error: !supabaseUrl ? 'Missing Supabase URL' : (!supabase.supabaseKey ? 'Missing Supabase key' : null)
+        success: !!(url && hasKey),
+        supabaseUrl: url || "Not configured",
+        supabaseKeyPrefix: hasKey ? "Configured" : "Missing", // Don't expose the key
+        error: !url ? 'Missing Supabase URL' : (!hasKey ? 'Missing Supabase key' : null)
       };
       
       if (!results.clientConfiguration.success) {
@@ -138,7 +150,7 @@ export const runDatabaseDiagnostics = async (): Promise<{
       } else {
         console.log("Client configuration test successful");
       }
-    } catch (testError) {
+    } catch (testError: any) {
       console.error("Test 3 failed with exception:", testError);
       results.clientConfiguration = {
         success: false,
@@ -178,7 +190,9 @@ export const runDatabaseDiagnostics = async (): Promise<{
     }
     
     return {
-      success: overallSuccess,
+      success: results.basicConnection?.success && 
+              results.functionsEndpoint?.success && 
+              results.clientConfiguration?.success,
       results
     };
     

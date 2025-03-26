@@ -39,8 +39,7 @@ export const testAnthropicConnection = async (apiKey: string): Promise<{
       // In a server environment, we can use the Anthropic API directly
       // Note: This would require the Anthropic SDK to be installed
       try {
-        // This is a simplified version of the code you provided
-        // You'll need to install the Anthropic SDK for this to work
+        // Import dynamically to avoid issues in browser environments
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         
         const anthropic = new Anthropic({
@@ -57,14 +56,14 @@ export const testAnthropicConnection = async (apiKey: string): Promise<{
           success: true,
           response: msg
         };
-      } catch (importError) {
+      } catch (importError: any) {
         return {
           success: false,
           error: `Failed to import Anthropic SDK: ${importError.message}. Make sure @anthropic-ai/sdk is installed.`
         };
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     return {
       success: false,
       error: error.message || String(error)
