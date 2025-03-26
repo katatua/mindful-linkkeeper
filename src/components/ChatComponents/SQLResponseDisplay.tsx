@@ -20,11 +20,17 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
         <CardTitle className="text-lg">Query Results</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="sql" className="w-full">
+        <Tabs defaultValue="response" className="w-full">
           <TabsList className="mb-2">
-            <TabsTrigger value="sql">SQL Query</TabsTrigger>
             <TabsTrigger value="response">Natural Language</TabsTrigger>
+            <TabsTrigger value="sql">SQL Query</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="response">
+            <div className="text-sm py-2 prose max-w-full">
+              {naturalLanguageResponse}
+            </div>
+          </TabsContent>
           
           <TabsContent value="sql" className="rounded-md bg-gray-50 p-3">
             <SyntaxHighlighter
@@ -32,19 +38,11 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
               style={materialDark}
               customStyle={{ borderRadius: '0.375rem' }}
             >
-              {sql}
+              {sql || '-- No SQL query was generated'}
             </SyntaxHighlighter>
-          </TabsContent>
-          
-          <TabsContent value="response">
-            <div className="text-sm py-2">
-              {naturalLanguageResponse}
-            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
   );
-};
-
-export default SQLResponseDisplay;
+}
