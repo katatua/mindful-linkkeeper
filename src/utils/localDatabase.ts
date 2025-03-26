@@ -432,96 +432,9 @@ export const mockSupabase = {
           }
         };
       },
-      select: (cols?: string) => {
-        if (cols) {
-          selectedColumns = cols.split(',').map(col => col.trim());
-        }
-        
-        return {
-          eq: (column: string, value: any) => {
-            filterConditions.push({ column, value, operator: 'eq' });
-            
-            return {
-              order: (column: string, options?: { ascending: boolean }) => {
-                orderByColumn = column;
-                orderDirection = options?.ascending === false ? 'desc' : 'asc';
-                
-                return {
-                  limit: (limit: number) => {
-                    limitValue = limit;
-                    
-                    return {
-                      then: (callback: Function) => {
-                        // Execute query and pass results to callback
-                        const results = executeLocalQuery(
-                          table, 
-                          selectedData,
-                          selectedColumns,
-                          filterConditions,
-                          limitValue,
-                          orderByColumn,
-                          orderDirection
-                        );
-                        callback({ data: results, error: null });
-                      }
-                    };
-                  }
-                };
-              },
-              single: () => {
-                // Execute the query and return a single result
-                const results = executeLocalQuery(
-                  table, 
-                  selectedData,
-                  selectedColumns,
-                  filterConditions,
-                  1,
-                  orderByColumn,
-                  orderDirection
-                );
-                
-                const result = results.length > 0 ? results[0] : null;
-                const error = results.length === 0 
-                  ? new Error(`No rows found in ${table}`)
-                  : results.length > 1 
-                  ? new Error(`Multiple rows found in ${table}`)
-                  : null;
-                  
-                return createQueryPromise(result, error);
-              }
-            };
-          },
-          neq: (column: string, value: any) => {
-            filterConditions.push({ column, value, operator: 'neq' });
-            
-            return {
-              then: (callback: Function) => {
-                // Execute query and pass results to callback
-                const results = executeLocalQuery(
-                  table, 
-                  selectedData,
-                  selectedColumns,
-                  filterConditions,
-                  limitValue,
-                  orderByColumn,
-                  orderDirection
-                );
-                callback({ data: results, error: null });
-              }
-            };
-          },
-          single: () => {
-            const results = localData[table];
-            const result = results.length > 0 ? results[0] : null;
-            const error = results.length === 0 
-              ? new Error(`No rows found in ${table}`)
-              : results.length > 1 
-              ? new Error(`Multiple rows found in ${table}`)
-              : null;
-              
-            return createQueryPromise(result, error);
-          }
-        };
+      count: (column: string = 'id', { head = false }: { head?: boolean } = {}) => {
+        const count = localData[table].length;
+        return createQueryPromise({ count }, null, count);
       }
     };
   },
@@ -619,6 +532,11 @@ export const mockSupabase = {
       };
     }
   },
+  // Mock RPC function
+  rpc: (functionName: string, params?: any) => {
+    console.log(`Calling RPC function: ${functionName}`, params);
+    return createQueryPromise({ success: true, result: "RPC call simulated" });
+  },
   // Mock functions API
   functions: {
     invoke: async (functionName: string, options?: { body?: any }) => {
@@ -657,6 +575,24 @@ export const mockSupabase = {
             affectedRows: 1
           }, 
           error: null 
+        };
+      }
+      
+      if (functionName === 'pdf-extractor') {
+        return {
+          data: {
+            extraction: {
+              id: `extraction-${Date.now()}`,
+              content: "Extracted content from PDF",
+              elements: [{ type: "text", content: "Sample text" }]
+            },
+            report: {
+              id: `report-${Date.now()}`,
+              title: "Generated Report",
+              summary: "Report summary"
+            }
+          },
+          error: null
         };
       }
       
@@ -747,5 +683,109 @@ export const localDatabase = {
     console.log('Local database seeded with data');
   },
   getTables: () => Object.keys(localData),
-  getTableData: (table: string) => localData[table] || []
+  getTableData: (table: string) => localData[table] || [],
+  select: (table: string) => {
+    return {
+      data: localData[table] || [],
+      error: null
+    };
+  }
+};
+
+// This is the missing function that needs to be implemented
+export const initializeLocalDatabase = () => {
+  try {
+    // Reset any existing data
+    localDatabase.reset();
+    
+    // Seed with some initial data for testing
+    localDatabase.seed({
+      ani_database_status: [
+        { 
+          id: 'status-1', 
+          status: 'connected', 
+          last_checked: new Date().toISOString(), 
+          version: '1.0.0' 
+        }
+      ],
+      ani_funding_programs: [
+        {
+          id: 'program-1',
+          name: 'Innovation Fund 2023',
+          description: 'Funding for innovative tech projects',
+          budget_allocated: 5000000,
+          start_date: '2023-01-01',
+          end_date: '2023-12-31',
+          sector_focus: ['Digital Tech', 'Healthcare', 'Energy'],
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'program-2',
+          name: 'Research Grant 2023',
+          description: 'Support for academic research',
+          budget_allocated: 3000000,
+          start_date: '2023-03-01',
+          end_date: '2024-02-28',
+          sector_focus: ['Academia', 'Science', 'Healthcare'],
+          created_at: new Date().toISOString()
+        }
+      ],
+      ani_funding_applications: [
+        {
+          id: 'app-1',
+          program_id: 'program-1',
+          applicant_id: 'researcher-1',
+          project_title: 'AI in Healthcare',
+          requested_amount: 250000,
+          status: 'approved',
+          submission_date: '2023-02-15',
+          decision_date: '2023-04-10',
+          created_at: new Date().toISOString()
+        }
+      ],
+      ani_researchers: [
+        {
+          id: 'researcher-1',
+          name: 'Dr. Maria Silva',
+          institution_id: 'inst-1',
+          research_areas: ['AI', 'Healthcare'],
+          email: 'maria.silva@example.com',
+          created_at: new Date().toISOString()
+        }
+      ],
+      ani_institutions: [
+        {
+          id: 'inst-1',
+          name: 'University of Lisbon',
+          type: 'academic',
+          region: 'Lisboa',
+          website: 'www.ulisboa.pt',
+          created_at: new Date().toISOString()
+        }
+      ],
+      pdf_reports: [
+        {
+          id: 'report-1',
+          report_title: 'Innovation Funding Trends 2023',
+          report_content: '<h1>Innovation Funding Trends 2023</h1><p>This report analyzes the distribution of innovation funding across various sectors in Portugal during 2023.</p><h2>Key Findings</h2><ul><li>Digital technology received the highest allocation</li><li>Healthcare projects saw a 25% increase in funding</li><li>Regional distribution showed balance across the country</li></ul>',
+          created_at: new Date().toISOString(),
+          pdf_extraction_id: 'extraction-1'
+        }
+      ]
+    });
+    
+    console.log('Local database initialized successfully');
+    toast.success('Local database initialized', {
+      description: 'Sample data has been loaded'
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error initializing local database:', error);
+    toast.error('Database initialization failed', {
+      description: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    
+    return false;
+  }
 };
