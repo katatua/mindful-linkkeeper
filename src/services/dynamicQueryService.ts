@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ClassificationRequest } from "@/utils/aiUtils";
 import { toast } from "sonner";
@@ -122,21 +121,21 @@ export const dynamicQueryService = {
         // Try direct database query for R&D queries as fallback
         if (isRdQuery) {
           return {
-            response: "I couldn't retrieve the real-time data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment.",
-            sql
-          };
-        }
-        
-        throw executeError;
+            response: "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment.",
+          sql
+        };
       }
-    } catch (error) {
-      console.error("Error in query execution:", error);
-      return { 
-        response: `I'm sorry, I couldn't retrieve the data due to a technical issue: ${error.message}`,
-        sql: sql
-      };
+      
+      throw executeError;
     }
-  },
+  } catch (error) {
+    console.error("Error in query execution:", error);
+    return { 
+      response: `I'm sorry, I couldn't retrieve the data due to a technical issue: ${error.message}`,
+      sql: sql
+    };
+  }
+},
   
   /**
    * Process a natural language question end-to-end - generate SQL, execute it, and return results
@@ -190,7 +189,7 @@ export const dynamicQueryService = {
           } catch (fallbackError) {
             console.error("Fallback query failed:", fallbackError);
             return {
-              response: "I couldn't retrieve the real-time data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment.",
+              response: "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment.",
               sql: fallbackSql
             };
           }

@@ -21,7 +21,7 @@ export const runDatabaseDiagnostics = async (): Promise<{
       console.log("Test 1: Checking basic connection to ani_database_status table...");
       const start = performance.now();
       
-      // Create a promise that will timeout after 5 seconds
+      // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Database connection timeout')), 5000)
       );
@@ -73,7 +73,7 @@ export const runDatabaseDiagnostics = async (): Promise<{
       console.log("Test 2: Checking connection to Supabase Functions endpoint...");
       const start = performance.now();
       
-      // Create a promise that will timeout after 5 seconds
+      // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Functions endpoint timeout')), 5000)
       );
@@ -134,15 +134,15 @@ export const runDatabaseDiagnostics = async (): Promise<{
     try {
       console.log("Test 3: Checking Supabase client configuration...");
       
-      // Get configuration data from env variables instead of accessing protected properties
-      const url = process.env.SUPABASE_URL || "";
-      const hasKey = !!process.env.SUPABASE_ANON_KEY;
+      // Get configuration data from the supabase client URL directly
+      const supabaseUrl = supabase.getUrl();
+      const hasKey = !!supabase.getClientUrl();
       
       results.clientConfiguration = {
-        success: !!(url && hasKey),
-        supabaseUrl: url || "Not configured",
+        success: !!(supabaseUrl && hasKey),
+        supabaseUrl: supabaseUrl ? "Configured" : "Not configured",
         supabaseKeyPrefix: hasKey ? "Configured" : "Missing", // Don't expose the key
-        error: !url ? 'Missing Supabase URL' : (!hasKey ? 'Missing Supabase key' : null)
+        error: !supabaseUrl ? 'Missing Supabase URL' : (!hasKey ? 'Missing Supabase key' : null)
       };
       
       if (!results.clientConfiguration.success) {

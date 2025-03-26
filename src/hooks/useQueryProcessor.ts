@@ -137,8 +137,8 @@ export const useQueryProcessor = () => {
       if (!connectionOk && isRdQuery) {
         console.log("Connection is down, using R&D fallback response directly");
         const fallbackResponse = language === 'en' 
-          ? "I couldn't retrieve the real-time data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment."
-          : "Não foi possível recuperar os dados em tempo real devido a um problema de conexão, mas aqui está o que sabemos sobre as tendências de investimento em P&D em Portugal: A intensidade de P&D (P&D/PIB) atingiu 1,41% no ano mais recente, com o setor empresarial representando a maior parte do investimento em P&D, aproximadamente 58%. Organizações de pesquisa públicas e instituições de ensino superior contribuem com cerca de 42% do investimento total em P&D.";
+          ? "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment."
+          : "Não foi possível recuperar os dados atuais devido a um problema de conexão, mas aqui está o que sabemos sobre as tendências de investimento em P&D em Portugal: A intensidade de P&D (P&D/PIB) atingiu 1,41% no ano mais recente, com o setor empresarial representando a maior parte do investimento em P&D, aproximadamente 58%. Organizações de pesquisa públicas e instituições de ensino superior contribuem com cerca de 42% do investimento total em P&D.";
         
         const fallbackResult: QueryResult = {
           response: fallbackResponse,
@@ -182,8 +182,8 @@ export const useQueryProcessor = () => {
         // Provide a fallback for R&D investment queries
         if (isRdQuery) {
           const fallbackResponse = language === 'en' 
-            ? "I couldn't retrieve the real-time data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment."
-            : "Não foi possível recuperar os dados em tempo real devido a um problema de conexão, mas aqui está o que sabemos sobre as tendências de investimento em P&D em Portugal: A intensidade de P&D (P&D/PIB) atingiu 1,41% no ano mais recente, com o setor empresarial representando a maior parte do investimento em P&D, aproximadamente 58%. Organizações de pesquisa públicas e instituições de ensino superior contribuem com cerca de 42% do investimento total em P&D.";
+            ? "I couldn't retrieve the current data due to a connection issue, but here's what we know about R&D investment trends in Portugal: R&D intensity (R&D/GDP) reached 1.41% in the most recent year, with the business sector accounting for the largest share of R&D expenditure at approximately 58%. Public research organizations and higher education institutions contribute about 42% of total R&D investment."
+            : "Não foi possível recuperar os dados atuais devido a um problema de conexão, mas aqui está o que sabemos sobre as tendências de investimento em P&D em Portugal: A intensidade de P&D (P&D/PIB) atingiu 1,41% no ano mais recente, com o setor empresarial representando a maior parte do investimento em P&D, aproximadamente 58%. Organizações de pesquisa públicas e instituições de ensino superior contribuem com cerca de 42% do investimento total em P&D.";
             
           const errorResult: QueryResult = {
             response: fallbackResponse,
