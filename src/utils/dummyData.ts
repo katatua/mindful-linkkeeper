@@ -1,3 +1,4 @@
+
 /**
  * Dummy data for simulating database responses when the database is not available
  */
@@ -391,6 +392,8 @@ export const generateDummyResponse = (query: string, language: 'en' | 'pt' = 'en
 
   let patentData = dummyPatentHoldersByYear[specificYear] || dummyPatentHolders;
   let yearText = specificYear.toString();
+  let response = "";
+  let visualizationData: any[] | undefined;
 
   // Check for year range in patent queries
   const isYearRangeQuery = (yearMatches && yearMatches.length >= 2) ||
@@ -524,3 +527,4 @@ export const generateDummyResponse = (query: string, language: 'en' | 'pt' = 'en
   
   return { response, visualizationData };
 };
+
