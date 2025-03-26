@@ -89,6 +89,8 @@ const SidebarItem = ({ icon, text, active, onClick }: SidebarItemProps) => {
 };
 
 const NavItem = ({ to, label, icon }: { to: string, label: string, icon: React.ReactNode }) => {
+  const navigate = useNavigate();
+  
   return (
     <Button
       variant="ghost"
