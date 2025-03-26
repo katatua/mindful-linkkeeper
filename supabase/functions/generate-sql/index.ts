@@ -254,7 +254,7 @@ serve(async (req) => {
     console.log("User prompt:", userPrompt);
 
     try {
-      // Call Gemini API with the updated API endpoint and request structure
+      // Improved error handling and logging for Gemini API call
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -280,23 +280,25 @@ serve(async (req) => {
         })
       });
 
+      // Enhanced error handling for API response
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Gemini API error:', errorData);
-        throw new Error(`Gemini API error: ${errorData}`);
+        console.error('Gemini API response error:', response.status, errorData);
+        throw new Error(`Gemini API error (${response.status}): ${errorData}`);
       }
 
       const data = await response.json();
+      console.log("Gemini API response structure:", JSON.stringify(data).substring(0, 200) + "...");
       
-      // Handle different response structures based on model version
+      // More robust response parsing
       let sql = '';
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+      if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
         sql = data.candidates[0].content.parts[0].text.trim();
-      } else if (data.candidates && data.candidates[0] && data.candidates[0].text) {
+      } else if (data?.candidates?.[0]?.text) {
         sql = data.candidates[0].text.trim();
       } else {
         console.error("Unexpected Gemini API response structure:", JSON.stringify(data));
-        throw new Error("Unexpected response format from Gemini API");
+        throw new Error("Could not extract SQL from Gemini API response. Response format unexpected.");
       }
 
       console.log("Generated SQL:", sql);
@@ -311,6 +313,9 @@ serve(async (req) => {
 
       // Clean up any markdown formatting that might be included
       sql = sql.replace(/```sql\n|\n```|```/g, '');
+      
+      // Remove trailing semicolon which causes problems in some database functions
+      sql = sql.replace(/;$/, '');
 
       console.log("Final SQL to execute:", sql);
 
@@ -337,7 +342,7 @@ serve(async (req) => {
         AND (name ILIKE '%R&D%' OR name ILIKE '%research%' OR name ILIKE '%development%')
         GROUP BY EXTRACT(YEAR FROM measurement_date), unit
         ORDER BY year DESC
-        LIMIT 10;`;
+        LIMIT 10`;
         
         console.log("Using fallback SQL for R&D query:", fallbackSql);
         

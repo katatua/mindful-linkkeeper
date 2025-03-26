@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.7";
 
@@ -28,15 +27,6 @@ function cleanSqlFromMarkdown(sqlText: string): string {
   
   // Trim whitespace
   return sqlText.trim();
-}
-
-/**
- * Validate UUID format
- * A valid UUID follows the 8-4-4-4-12 format with hexadecimal characters
- */
-function isValidUUID(str: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
 }
 
 /**
@@ -128,6 +118,15 @@ function replaceUUIDsWithGenerated(sqlStatement: string): string {
   return sqlStatement;
 }
 
+/**
+ * Validate UUID format
+ * A valid UUID follows the 8-4-4-4-12 format with hexadecimal characters
+ */
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -136,10 +135,11 @@ serve(async (req) => {
 
   try {
     // Parse request
-    const { sqlQuery, operation } = await req.json();
+    const { sqlQuery, sqlStatements, operation } = await req.json();
+    const query = sqlQuery || sqlStatements;
     
     // Validate input
-    if (!sqlQuery || typeof sqlQuery !== 'string') {
+    if (!query || typeof query !== 'string') {
       return new Response(
         JSON.stringify({ error: "SQL query must be provided as a string" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
@@ -147,8 +147,30 @@ serve(async (req) => {
     }
 
     // Clean the SQL statements from markdown formatting
-    const cleanedSql = cleanSqlFromMarkdown(sqlQuery);
+    const cleanedSql = cleanSqlFromMarkdown(query);
     console.log("Cleaned SQL:", cleanedSql);
+
+    // Add timeout for connection health check
+    const connectionPromise = Promise.race([
+      supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+      )
+    ]);
+    
+    try {
+      await connectionPromise;
+    } catch (connError) {
+      console.error("Database connection error:", connError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Database connection error. The service might be temporarily unavailable.",
+          errorDetail: connError.message,
+          isConnectionError: true
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 }
+      );
+    }
 
     if (operation === 'write') {
       // For write operations (INSERT, UPDATE, DELETE)
@@ -174,35 +196,50 @@ serve(async (req) => {
         
         console.log("Executing statement:", trimmedStatement);
         
-        // Execute each statement separately
-        const { data, error } = await supabase.rpc(
-          'execute_raw_query',
-          { sql_query: trimmedStatement }
-        );
+        // Execute each statement separately with timeout
+        const executePromise = Promise.race([
+          supabase.rpc('execute_raw_query', { sql_query: trimmedStatement }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Query execution timeout')), 10000)
+          )
+        ]);
         
-        if (error) {
-          console.error("Error executing SQL statement:", error);
+        try {
+          const { data, error } = await executePromise;
           
-          // Special handling for UUID errors
-          if (error.message && error.message.includes('invalid input syntax for type uuid')) {
+          if (error) {
+            console.error("Error executing SQL statement:", error);
+            
+            // Special handling for UUID errors
+            if (error.message && error.message.includes('invalid input syntax for type uuid')) {
+              return new Response(
+                JSON.stringify({ 
+                  error: `UUID format error: ${error.message}. 
+                          Please use valid UUIDs in format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+                          or remove ID columns to let the system generate them automatically.` 
+                }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+              );
+            }
+            
             return new Response(
-              JSON.stringify({ 
-                error: `UUID format error: ${error.message}. 
-                        Please use valid UUIDs in format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-                        or remove ID columns to let the system generate them automatically.` 
-              }),
+              JSON.stringify({ error: error.message }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
             );
           }
           
+          console.log("Statement result:", data);
+          results.push(data);
+        } catch (timeoutError) {
+          console.error("Query execution timeout:", timeoutError);
           return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+            JSON.stringify({ 
+              error: "Query execution timed out after 10 seconds. Please try again with a simpler query.",
+              isTimeout: true
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 408 }
           );
         }
-        
-        console.log("Statement result:", data);
-        results.push(data);
       }
       
       return new Response(
@@ -226,29 +263,47 @@ serve(async (req) => {
       // For query operations (SELECT)
       console.log("Executing SQL query operation:", cleanedSql);
       
-      // Execute the SQL query
-      const { data, error } = await supabase.rpc(
-        'execute_raw_query',
-        { sql_query: cleanedSql }
-      );
+      // Execute the SQL query with timeout
+      const executePromise = Promise.race([
+        supabase.rpc('execute_raw_query', { sql_query: cleanedSql }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query execution timeout')), 10000)
+        )
+      ]);
       
-      if (error) {
-        console.error("Error executing SQL query:", error);
+      try {
+        const { data, error } = await executePromise;
+        
+        if (error) {
+          console.error("Error executing SQL query:", error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+          );
+        }
+        
         return new Response(
-          JSON.stringify({ error: error.message }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+          JSON.stringify({ result: data }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (timeoutError) {
+        console.error("Query execution timeout:", timeoutError);
+        return new Response(
+          JSON.stringify({ 
+            error: "Query execution timed out after 10 seconds. Please try again with a simpler query.",
+            isTimeout: true
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 408 }
         );
       }
-      
-      return new Response(
-        JSON.stringify({ result: data }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
   } catch (error) {
     console.error("Error processing request:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        isConnectionError: error.message.includes('connection') || error.message.includes('timeout')
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
