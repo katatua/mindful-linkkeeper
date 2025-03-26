@@ -7,6 +7,7 @@ import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getDatabaseInitScript } from "@/utils/databaseUtils";
 
 const DatabaseConnectionTest = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +90,8 @@ const DatabaseConnectionTest = () => {
         // Use RPC if available, or direct query as fallback
         const { error: directSqlError } = await supabase.rpc('execute_raw_query', {
           sql_query: createTableSQL
+        }).then(response => {
+          return response;
         }).catch(err => {
           console.log("RPC function not found or error:", err);
           return { error: err };
