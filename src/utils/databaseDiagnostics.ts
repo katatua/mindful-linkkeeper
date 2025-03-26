@@ -1,5 +1,6 @@
 
 import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
+import { localDatabase } from "@/utils/localDatabase";
 
 type DatabaseTable = 
   | 'ani_database_status'
@@ -17,15 +18,8 @@ type DatabaseTable =
 
 export const checkAdminStatus = async (): Promise<boolean> => {
   try {
-    // Call the is_admin function we created in the database
-    const { data, error } = await supabase.rpc('is_admin');
-    
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-    
-    return data || false;
+    // In our local database environment, all users are considered admins
+    return true;
   } catch (error) {
     console.error('Unexpected error during admin check:', error);
     return false;
@@ -34,14 +28,11 @@ export const checkAdminStatus = async (): Promise<boolean> => {
 
 export const testDatabaseConnection = async () => {
   try {
-    // Test connection by attempting to fetch from a known table
-    const { data, error } = await supabase
-      .from('ani_database_status')
-      .select('*')
-      .limit(1);
+    // Test connection by attempting to fetch from the database status table
+    const { data, error } = await localDatabase.select('ani_database_status');
 
     if (error) {
-      console.error('Database connection test failed:', error);
+      console.error('Local database connection test failed:', error);
       return {
         success: false,
         message: error.message,
@@ -51,11 +42,11 @@ export const testDatabaseConnection = async () => {
 
     return {
       success: true,
-      message: 'Database connection successful',
+      message: 'Local database connection successful',
       data
     };
   } catch (error) {
-    console.error('Unexpected error during database connection test:', error);
+    console.error('Unexpected error during local database connection test:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -65,13 +56,6 @@ export const testDatabaseConnection = async () => {
 };
 
 export const checkDatabaseStatus = async () => {
-  // Check admin status before allowing database status check
-  const isAdmin = await checkAdminStatus();
-  if (!isAdmin) {
-    console.warn('Non-admin user attempted to check database status');
-    return { error: 'Admin permission required' };
-  }
-
   try {
     const tables: DatabaseTable[] = [
       'ani_database_status',
@@ -88,15 +72,13 @@ export const checkDatabaseStatus = async () => {
       'profiles'
     ];
 
-    // Using supabaseAdmin for querying table counts
+    // Get counts from all tables
     const statusPromises = tables.map(async (table) => {
-      const { count, error } = await supabaseAdmin
-        .from(table)
-        .select('*', { count: 'exact', head: true });
-
+      const { data, error } = await localDatabase.select(table);
+      
       return {
         table,
-        count: error ? -1 : count || 0
+        count: error ? -1 : (data ? data.length : 0)
       };
     });
 

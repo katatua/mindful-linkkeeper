@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getDatabaseInitScript } from "@/utils/databaseUtils";
+import { initializeLocalDatabase } from "@/utils/localDatabase";
 
 const DatabaseConnectionTest = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,9 +29,9 @@ const DatabaseConnectionTest = () => {
       setResult(testResult);
       
       if (testResult.success) {
-        toast.success("Database connection successful");
+        toast.success("Local database connection successful");
       } else {
-        toast.error("Database connection failed", {
+        toast.error("Local database connection failed", {
           description: testResult.message
         });
       }
@@ -53,123 +55,21 @@ const DatabaseConnectionTest = () => {
     setIsInitializing(true);
     
     try {
-      toast.info("Initializing database...");
+      toast.info("Initializing local database...");
       
-      // First check direct connection to Supabase without edge functions
-      try {
-        // Fix: Use try/catch instead of .catch() for handling Supabase query errors
-        const { data: connCheck, error: connCheckError } = await supabase
-          .from('ani_database_status')
-          .select('count(*)', { count: 'exact', head: true });
-          
-        if (connCheckError) {
-          console.log("Database direct connection check failed:", connCheckError);
-        } else {
-          console.log("Direct database connection successful");
-        }
-      } catch (connErr) {
-        console.log("Connection check error:", connErr);
-      }
+      // Use our local database initialization function
+      initializeLocalDatabase();
       
-      // Try direct SQL execution using Supabase client
-      console.log("Attempting direct table creation via SQL query");
-      try {
-        // Create the ani_database_status table directly
-        const createTableSQL = `
-          CREATE TABLE IF NOT EXISTS public.ani_database_status (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            table_name TEXT NOT NULL UNIQUE,
-            record_count INTEGER DEFAULT 0,
-            status TEXT DEFAULT 'empty',
-            last_populated TIMESTAMP WITH TIME ZONE,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `;
-        
-        // Use RPC if available, or direct query as fallback
-        try {
-          // Fix: Use proper Promise handling instead of .then().catch()
-          const { error: directSqlError } = await supabase.rpc('execute_raw_query', {
-            sql_query: createTableSQL
-          });
-          
-          if (directSqlError) {
-            console.log("Direct SQL execution failed:", directSqlError);
-          } else {
-            console.log("Table created successfully via direct SQL");
-            toast.success("Database initialized successfully");
-            await runTest();
-            setIsInitializing(false);
-            return;
-          }
-        } catch (rpcError) {
-          console.log("RPC function not found or error:", rpcError);
-        }
-      } catch (sqlError) {
-        console.log("SQL execution error:", sqlError);
-      }
-      
-      // If direct SQL failed, try the edge function as backup
-      console.log("Falling back to edge function for initialization...");
-      try {
-        // Add a timeout for the edge function call
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Edge function request timed out")), 8000);
-        });
-        
-        // Call the edge function with a timeout
-        const functionPromise = supabase.functions.invoke('initialize-database', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        // Race the function call against the timeout
-        const { data, error } = await Promise.race([
-          functionPromise, 
-          timeoutPromise.then(() => {
-            throw new Error("Edge function request timed out");
-          })
-        ]) as any;
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (data && data.success) {
-          toast.success("Database initialized successfully");
-          // Run the test again to verify
-          await runTest();
-        } else {
-          throw new Error((data && data.error) || "Unknown error during initialization");
-        }
-      } catch (edgeFnError) {
-        console.error("Edge function error:", edgeFnError);
-        
-        setResult({
-          success: false,
-          message: "Database initialization failed. Please try using the SQL Editor directly.",
-          details: {
-            message: edgeFnError instanceof Error ? edgeFnError.message : "Unknown error",
-            note: "Edge functions may be unavailable. Consider using the SQL Editor in Supabase to manually execute the initialization script."
-          }
-        });
-        
-        toast.error("Database initialization failed", {
-          description: "Edge function unavailable. Consider SQL Editor alternative."
-        });
-      }
+      toast.success("Local database initialized successfully");
+      await runTest();
     } catch (error) {
       console.error("Error initializing database:", error);
       
       setResult({
         success: false,
-        message: "Database initialization failed. Consider using the SQL Editor directly.",
+        message: "Database initialization failed.",
         details: {
-          error: error instanceof Error ? error.message : "Unknown error",
-          suggestion: "Try running the initialization SQL script manually in the SQL Editor"
+          error: error instanceof Error ? error.message : "Unknown error"
         }
       });
       
@@ -181,9 +81,11 @@ const DatabaseConnectionTest = () => {
     }
   };
 
-  const openSupabaseEditor = () => {
-    // Open the Supabase SQL Editor in a new tab
-    window.open("https://supabase.com/dashboard/project/tujvvuqhvjicbcqzmcwq/sql/new", "_blank");
+  const openLocalDbInfo = () => {
+    // Display local database information in a new tab or modal
+    toast.info("Using local file-based database", {
+      description: "Data is stored in text files or localStorage in the browser"
+    });
   };
 
   return (
@@ -201,7 +103,7 @@ const DatabaseConnectionTest = () => {
           ) : (
             <Database className="h-4 w-4" />
           )}
-          {isLoading ? "Testing Connection..." : "Test Database Connection"}
+          {isLoading ? "Testing Connection..." : "Test Local Database Connection"}
         </Button>
         
         <Button
@@ -216,17 +118,17 @@ const DatabaseConnectionTest = () => {
           ) : (
             <PlusCircle className="h-4 w-4" />
           )}
-          {isInitializing ? "Initializing..." : "Initialize Database"}
+          {isInitializing ? "Initializing..." : "Initialize Local Database"}
         </Button>
         
         <Button
           variant="outline"
           size="sm"
-          onClick={openSupabaseEditor}
+          onClick={openLocalDbInfo}
           className="gap-2"
         >
           <ExternalLink className="h-4 w-4" />
-          Open SQL Editor
+          Local Database Info
         </Button>
       </div>
       
@@ -238,7 +140,7 @@ const DatabaseConnectionTest = () => {
             <ServerCrash className="h-4 w-4" />
           )}
           <AlertTitle className="flex items-center gap-2">
-            Database Connection Test
+            Local Database Connection Test
             <Badge variant={result.success ? "default" : "destructive"}>
               {result.success ? "Success" : "Failed"}
             </Badge>
@@ -263,25 +165,11 @@ const DatabaseConnectionTest = () => {
                     Troubleshooting Tips
                   </h4>
                   <ul className="list-disc pl-5 space-y-1 text-amber-800">
-                    <li>Verify your Supabase URL and API key are correct</li>
-                    <li>Check if the database is accessible from your current location</li>
-                    <li>Try using the SQL Editor to manually run the initialization script</li>
-                    <li>Edge functions may be unavailable - direct SQL is an alternative</li>
-                    <li>Check if you need to create database tables using the SQL editor</li>
-                    <li>Verify network connectivity to Supabase services</li>
+                    <li>Local database uses text files or localStorage</li>
+                    <li>Check browser console for detailed error messages</li>
+                    <li>Try reinitializing the database</li>
+                    <li>Clear browser cache and local storage if problems persist</li>
                   </ul>
-                  
-                  <div className="mt-3">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={openSupabaseEditor}
-                      className="w-full gap-2"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Open SQL Editor
-                    </Button>
-                  </div>
                 </div>
               </div>
             )}
