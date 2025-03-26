@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AIAssistant } from "@/components/AIAssistant";
+import { DatabaseStatusRetriever } from "@/components/DatabaseStatusRetriever";
 
 const Index = () => {
   const { t, language } = useLanguage();
