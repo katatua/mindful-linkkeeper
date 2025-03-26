@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -58,6 +57,7 @@ const DatabaseConnectionTest = () => {
       
       // First check direct connection to Supabase without edge functions
       try {
+        // Fix: Use try/catch instead of .catch() for handling Supabase query errors
         const { data: connCheck, error: connCheckError } = await supabase
           .from('ani_database_status')
           .select('count(*)', { count: 'exact', head: true });
@@ -88,23 +88,23 @@ const DatabaseConnectionTest = () => {
         `;
         
         // Use RPC if available, or direct query as fallback
-        const { error: directSqlError } = await supabase.rpc('execute_raw_query', {
-          sql_query: createTableSQL
-        }).then(response => {
-          return response;
-        }).catch(err => {
-          console.log("RPC function not found or error:", err);
-          return { error: err };
-        });
-        
-        if (directSqlError) {
-          console.log("Direct SQL execution failed:", directSqlError);
-        } else {
-          console.log("Table created successfully via direct SQL");
-          toast.success("Database initialized successfully");
-          await runTest();
-          setIsInitializing(false);
-          return;
+        try {
+          // Fix: Use proper Promise handling instead of .then().catch()
+          const { error: directSqlError } = await supabase.rpc('execute_raw_query', {
+            sql_query: createTableSQL
+          });
+          
+          if (directSqlError) {
+            console.log("Direct SQL execution failed:", directSqlError);
+          } else {
+            console.log("Table created successfully via direct SQL");
+            toast.success("Database initialized successfully");
+            await runTest();
+            setIsInitializing(false);
+            return;
+          }
+        } catch (rpcError) {
+          console.log("RPC function not found or error:", rpcError);
         }
       } catch (sqlError) {
         console.log("SQL execution error:", sqlError);

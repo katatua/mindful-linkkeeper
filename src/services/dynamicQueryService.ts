@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ClassificationRequest } from "@/utils/aiUtils";
 import { toast } from "sonner";
@@ -181,13 +180,7 @@ export const dynamicQueryService = {
         try {
           const { error: connCheckError } = await supabase
             .from('ani_database_status')
-            .select('count(*)', { count: 'exact', head: true })
-            .then(response => {
-              return response;
-            })
-            .catch(err => {
-              throw new Error("Database connection unavailable");
-            });
+            .select('count(*)', { count: 'exact', head: true });
             
           if (connCheckError) {
             throw new Error("Database connection unavailable");
@@ -327,4 +320,3 @@ export const dynamicQueryService = {
     }
   }
 };
-
