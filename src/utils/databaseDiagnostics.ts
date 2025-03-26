@@ -134,15 +134,15 @@ export const runDatabaseDiagnostics = async (): Promise<{
     try {
       console.log("Test 3: Checking Supabase client configuration...");
       
-      // Get configuration data from the supabase client URL directly
-      const supabaseUrl = supabase.getUrl();
-      const hasKey = !!supabase.getClientUrl();
+      // Get configuration data directly from the imported variables in the client file
+      // instead of using non-existent methods
+      const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } = require("@/integrations/supabase/client");
       
       results.clientConfiguration = {
-        success: !!(supabaseUrl && hasKey),
-        supabaseUrl: supabaseUrl ? "Configured" : "Not configured",
-        supabaseKeyPrefix: hasKey ? "Configured" : "Missing", // Don't expose the key
-        error: !supabaseUrl ? 'Missing Supabase URL' : (!hasKey ? 'Missing Supabase key' : null)
+        success: !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY),
+        supabaseUrl: SUPABASE_URL ? "Configured" : "Not configured",
+        supabaseKeyPrefix: SUPABASE_PUBLISHABLE_KEY ? "Configured" : "Missing",
+        error: !SUPABASE_URL ? 'Missing Supabase URL' : (!SUPABASE_PUBLISHABLE_KEY ? 'Missing Supabase key' : null)
       };
       
       if (!results.clientConfiguration.success) {
