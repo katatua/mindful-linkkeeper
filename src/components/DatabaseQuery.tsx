@@ -47,9 +47,10 @@ export default function DatabaseQuery() {
       setNaturalLanguageResponse(result.interpretation || '');
       setDisplayResults(true);
     } else {
+      // Now we're correctly accessing the error property only when success is false
       toast({
         title: "Query Error",
-        description: result.error ? String(result.error) : "Failed to execute query",
+        description: String(result.error) || "Failed to execute query",
         variant: "destructive",
       });
     }
