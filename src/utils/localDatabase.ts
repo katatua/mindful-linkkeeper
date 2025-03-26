@@ -5,6 +5,7 @@
  * This file provides utilities for initializing and working with a local mock database
  * that simulates Supabase. It's used for development when Supabase connection is not available.
  */
+import { v4 as uuidv4 } from 'uuid';
 
 // Sample data for the database
 const mockData = {
@@ -159,7 +160,7 @@ export const localDatabase = {
       }
       
       const newItem = {
-        id: `${table}-${Date.now()}`,
+        id: `${table}-${uuidv4()}`,
         ...data,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

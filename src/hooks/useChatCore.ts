@@ -81,6 +81,7 @@ export const useChatCore = (language: string) => {
       let response: string;
       let thinkingContent: string | undefined;
       let vizData: any[] | undefined;
+      let sqlQuery: string | undefined;
       
       if (await checkIfMetricsQuery(messageContent)) {
         console.log("Detected metrics query");
@@ -91,9 +92,15 @@ export const useChatCore = (language: string) => {
         
         response = queryResult.response;
         vizData = queryResult.visualizationData;
+        sqlQuery = queryResult.sql;
         
         if (vizData && vizData.length > 0) {
           handleVisualizationData(vizData);
+        }
+        
+        // Format response with SQL if available
+        if (sqlQuery) {
+          response = formatResponseWithSql(response, sqlQuery);
         }
       } else {
         const aiResponse = await generateResponse(messageContent, currentAIModel);
@@ -148,6 +155,19 @@ export const useChatCore = (language: string) => {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const formatResponseWithSql = (response: string, sql: string): string => {
+    const sqlSection = `
+**Generated SQL Query:**
+\`\`\`sql
+${sql}
+\`\`\`
+
+**Answer:**
+`;
+    
+    return sqlSection + response;
   };
 
   const handleSendCustomMessage = async (messageContent: string, isSystemMessage = false) => {

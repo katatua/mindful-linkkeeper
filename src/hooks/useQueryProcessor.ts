@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { executeQuery } from "@/utils/queryExecution";
@@ -164,6 +163,8 @@ export const useQueryProcessor = () => {
         throw new Error("Failed to generate SQL query from question");
       }
       
+      console.log("Generated SQL from natural language:", sql);
+      
       // Execute the generated SQL
       return await executeQueryDirectly(sql);
     } catch (error) {
@@ -326,7 +327,6 @@ export const useQueryProcessor = () => {
     toggleOfflineMode,
     executeQuery: executeQueryDirectly,
     processNaturalLanguageQuery,
-    // Also expose these functions that are being used in useChatCore.ts
     isMetricsQuery,
     generateSqlFromNaturalLanguage,
     processQuestion

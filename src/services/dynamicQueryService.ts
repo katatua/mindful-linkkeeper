@@ -194,8 +194,16 @@ export const dynamicQueryService = {
             language
           });
           
+          console.log("Generated SQL query:", sqlQuery);
+          
           // Execute the generated SQL
-          return await dynamicQueryService.executeQuery(sqlQuery);
+          const result = await dynamicQueryService.executeQuery(sqlQuery);
+          
+          // Make sure the SQL is included in the result
+          return {
+            ...result,
+            sql: sqlQuery
+          };
         } catch (connError) {
           console.log("Database connection error, using offline data:", connError);
           
