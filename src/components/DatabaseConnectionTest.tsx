@@ -1,9 +1,12 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { testDatabaseConnection, runDatabaseDiagnostics } from '@/utils/databaseDiagnostics';
-import { Database, ServerCrash, Check, X, RefreshCw, Loader2 } from 'lucide-react';
+import { Database, ServerCrash, Check, X, RefreshCw, Loader2, AlertTriangle, Link, Globe } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from 'sonner';
+import { supabase, SUPABASE_URL } from "@/integrations/supabase/client";
 
 const DatabaseConnectionTest: React.FC = () => {
   const [results, setResults] = useState<any>(null);
@@ -14,8 +17,20 @@ const DatabaseConnectionTest: React.FC = () => {
     try {
       const diagnosticResults = await runDatabaseDiagnostics();
       setResults(diagnosticResults);
+      
+      // Show summary toast
+      if (diagnosticResults.success) {
+        toast.success("All diagnostics passed successfully");
+      } else {
+        toast.error("Some diagnostic tests failed", {
+          description: "Review the results for detailed information"
+        });
+      }
     } catch (error) {
       console.error("Error running diagnostics:", error);
+      toast.error("Failed to run diagnostics", {
+        description: error instanceof Error ? error.message : "Unknown error occurred"
+      });
     } finally {
       setLoading(false);
     }
@@ -68,6 +83,48 @@ const DatabaseConnectionTest: React.FC = () => {
     );
   };
   
+  const renderTroubleshootingLinks = () => {
+    if (!results || results.success) return null;
+    
+    return (
+      <div className="mt-4 border-t pt-4">
+        <h4 className="font-medium mb-2 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          Troubleshooting Resources
+        </h4>
+        <ul className="space-y-2 text-sm">
+          <li className="flex items-center gap-2">
+            <Link className="h-4 w-4 text-blue-500" />
+            <a href="https://supabase.com/docs/guides/database/connecting-to-postgres" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="text-blue-500 hover:underline">
+              Supabase Database Connection Guide
+            </a>
+          </li>
+          <li className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-blue-500" />
+            <a href="https://supabase.com/dashboard/project/ncnewevucbkebrqjtufl/settings" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="text-blue-500 hover:underline">
+              Supabase Project Settings
+            </a>
+          </li>
+          <li className="flex items-center gap-2">
+            <Database className="h-4 w-4 text-blue-500" />
+            <a href="https://supabase.com/dashboard/project/ncnewevucbkebrqjtufl/functions" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="text-blue-500 hover:underline">
+              Edge Functions Management
+            </a>
+          </li>
+        </ul>
+      </div>
+    );
+  };
+  
   return (
     <Card className="w-full max-w-3xl mx-auto my-8">
       <CardHeader>
@@ -115,6 +172,8 @@ const DatabaseConnectionTest: React.FC = () => {
                 </ul>
               </div>
             )}
+            
+            {renderTroubleshootingLinks()}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
@@ -129,7 +188,7 @@ const DatabaseConnectionTest: React.FC = () => {
         )}
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
         <Button 
           onClick={handleRunDiagnostics} 
           disabled={loading}
@@ -149,6 +208,12 @@ const DatabaseConnectionTest: React.FC = () => {
             "Run Connection Diagnostics"
           )}
         </Button>
+        
+        <div className="text-xs text-center text-gray-500 mt-2">
+          Connection URL: {SUPABASE_URL ? 
+            <span className="font-mono">{SUPABASE_URL.substring(0, 20)}...</span> : 
+            "Not configured"}
+        </div>
       </CardFooter>
     </Card>
   );
