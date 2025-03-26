@@ -77,7 +77,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           data: [],
-          message: "The ani_database_status table does not exist"
+          message: "The ani_database_status table does not exist",
+          success: true
         }), 
         { 
           headers: { 

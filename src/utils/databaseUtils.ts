@@ -123,14 +123,14 @@ CREATE TABLE IF NOT EXISTS ani_database_status (
 
 export const fetchDatabaseStatus = async () => {
   try {
-    const { data, error } = await supabase.functions.invoke('show-database-status');
+    const response = await supabase.functions.invoke('show-database-status');
     
-    if (error) {
-      console.error('Error fetching database status:', error);
-      return { success: false, message: error.message };
+    if (response.error) {
+      console.error('Error fetching database status:', response.error);
+      return { success: false, message: response.error.message };
     }
     
-    return { success: true, data: data };
+    return { success: true, data: response.data };
   } catch (error) {
     console.error('Unexpected error in fetchDatabaseStatus:', error);
     return { 
