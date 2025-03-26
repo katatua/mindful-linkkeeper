@@ -40,7 +40,7 @@ export const testAnthropicConnection = async (apiKey: string): Promise<{
       // Note: This would require the Anthropic SDK to be installed
       try {
         // Import dynamically to avoid issues in browser environments
-        const { default: Anthropic } = await import('@anthropic-ai/sdk');
+        const { Anthropic } = await import('@anthropic-ai/sdk');
         
         const anthropic = new Anthropic({
           apiKey // Use the provided API key
