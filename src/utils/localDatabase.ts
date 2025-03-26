@@ -136,31 +136,42 @@ export const clearLocalDatabase = () => {
 export const localDatabase = {
   tables: mockData,
   select: (table: string) => {
-    return getLocalDatabaseData(table);
+    try {
+      const data = getLocalDatabaseData(table);
+      return data;
+    } catch (error) {
+      console.error(`Error selecting from ${table}:`, error);
+      return [];
+    }
   },
   insert: (table: string, data: any) => {
-    const dbJson = localStorage.getItem('localDatabase');
-    if (!dbJson) {
-      console.warn("Local database not initialized. Initializing now...");
-      initializeLocalDatabase();
+    try {
+      const dbJson = localStorage.getItem('localDatabase');
+      if (!dbJson) {
+        console.warn("Local database not initialized. Initializing now...");
+        initializeLocalDatabase();
+      }
+      
+      const db = JSON.parse(localStorage.getItem('localDatabase') || '{}');
+      
+      if (!db[table]) {
+        db[table] = [];
+      }
+      
+      const newItem = {
+        id: `${table}-${Date.now()}`,
+        ...data,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      db[table].push(newItem);
+      localStorage.setItem('localDatabase', JSON.stringify(db));
+      
+      return newItem;
+    } catch (error) {
+      console.error(`Error inserting into ${table}:`, error);
+      return null;
     }
-    
-    const db = JSON.parse(localStorage.getItem('localDatabase') || '{}');
-    
-    if (!db[table]) {
-      db[table] = [];
-    }
-    
-    const newItem = {
-      id: `${table}-${Date.now()}`,
-      ...data,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    db[table].push(newItem);
-    localStorage.setItem('localDatabase', JSON.stringify(db));
-    
-    return newItem;
   }
 };

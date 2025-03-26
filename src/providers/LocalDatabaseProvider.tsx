@@ -1,10 +1,11 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { mockSupabase, localDatabase } from '@/utils/localDatabase';
+import { localDatabase } from '@/utils/localDatabase';
+import { mockClient } from '@/integrations/supabase/mockClient';
 
 // Create a context for the local database
 const LocalDatabaseContext = createContext({
-  supabase: mockSupabase,
+  supabase: mockClient,
   isUsingLocalDb: true,
 });
 
@@ -17,7 +18,7 @@ interface LocalDatabaseProviderProps {
 
 export const LocalDatabaseProvider: React.FC<LocalDatabaseProviderProps> = ({ children }) => {
   return (
-    <LocalDatabaseContext.Provider value={{ supabase: mockSupabase, isUsingLocalDb: true }}>
+    <LocalDatabaseContext.Provider value={{ supabase: mockClient, isUsingLocalDb: true }}>
       {children}
     </LocalDatabaseContext.Provider>
   );

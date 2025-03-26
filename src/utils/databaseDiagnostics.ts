@@ -1,5 +1,5 @@
 
-import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { localDatabase } from "@/utils/localDatabase";
 
 type DatabaseTable = 
@@ -29,14 +29,14 @@ export const checkAdminStatus = async (): Promise<boolean> => {
 export const testDatabaseConnection = async () => {
   try {
     // Test connection by attempting to fetch from the database status table
-    const { data, error } = await localDatabase.select('ani_database_status');
+    const data = await localDatabase.select('ani_database_status');
 
-    if (error) {
-      console.error('Local database connection test failed:', error);
+    if (!data) {
+      console.error('Local database connection test failed: no data returned');
       return {
         success: false,
-        message: error.message,
-        details: error
+        message: 'No data returned from database',
+        details: 'Database connection test failed'
       };
     }
 
@@ -74,11 +74,11 @@ export const checkDatabaseStatus = async () => {
 
     // Get counts from all tables
     const statusPromises = tables.map(async (table) => {
-      const { data, error } = await localDatabase.select(table);
+      const data = await localDatabase.select(table);
       
       return {
         table,
-        count: error ? -1 : (data ? data.length : 0)
+        count: data ? data.length : 0
       };
     });
 

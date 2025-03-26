@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -233,7 +234,7 @@ export const checkDatabaseStatus = async () => {
   for (const table of DATABASE_TABLES) {
     try {
       // Try a more reliable method to check if table exists first
-      const { data: tableExists, error: checkError } = await supabase
+      const { data: tableExists, error: existsError } = await supabase
         .rpc('execute_raw_query', { 
           sql_query: `
             SELECT EXISTS (
@@ -243,17 +244,17 @@ export const checkDatabaseStatus = async () => {
           `
         });
       
-      if (checkError || !tableExists || !tableExists[0] || !tableExists[0].exists) {
+      if (existsError || !tableExists || !tableExists[0] || !tableExists[0].exists) {
         results[table] = -1; // Table doesn't exist
         continue;
       }
       
       // Add type assertion to tell TypeScript that the table name is valid
-      const { data: existingRows, error: checkError } = await supabase
+      const { data: existingRows, error: countError } = await supabase
         .from(table)
         .select('count(*)', { count: 'exact' });
       
-      if (checkError || !existingRows || !Array.isArray(existingRows) || existingRows.length === 0) {
+      if (countError || !existingRows || !Array.isArray(existingRows) || existingRows.length === 0) {
         results[table] = -1; // Error code
       } else {
         results[table] = existingRows[0].count;
