@@ -7,9 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -17,9 +14,17 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Environment variables SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY are not set");
+      throw new Error("Missing required environment variables");
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if the table exists before querying
+    // First, check if the table exists
     const { data: tableExists, error: tableCheckError } = await supabase
       .from('information_schema.tables')
       .select('*')
@@ -49,14 +54,13 @@ serve(async (req) => {
 
     console.log('ani_database_status table exists');
 
+    // Fetch the database status records
     const { data, error } = await supabase
       .from('ani_database_status')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-
-    console.log('Database Status Records:', JSON.stringify(data, null, 2));
 
     return new Response(
       JSON.stringify(data || []), 
