@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Bot } from "lucide-react";
+import { Bot, ServerCrash } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MessageList } from "./ChatComponents/MessageList";
 import { ChatInput } from "./ChatComponents/ChatInput";
@@ -8,10 +8,13 @@ import { SuggestionLinks } from "./ChatComponents/SuggestionLinks";
 import { useChat } from "@/hooks/useChat";
 import { ModelSelector } from "./ChatComponents/ModelSelector";
 import { ThinkingPanel } from "./ChatComponents/ThinkingPanel";
+import { testDatabaseConnection } from "@/utils/databaseDiagnostics";
+import { Button } from "@/components/ui/button";
 
 const AIAssistant = () => {
   const { language } = useLanguage();
   const [showThinking, setShowThinking] = useState(false);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
   
   const {
     messages,
@@ -29,6 +32,15 @@ const AIAssistant = () => {
     isUploading
   } = useChat(language);
 
+  const handleTestConnection = async () => {
+    setIsTestingConnection(true);
+    try {
+      await testDatabaseConnection();
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
       <div className="border-b px-4 py-2 flex items-center justify-between">
@@ -36,10 +48,22 @@ const AIAssistant = () => {
           <Bot className="h-5 w-5 text-primary" />
           <h3 className="font-medium">{language === 'en' ? 'ANI Assistant' : 'Assistente ANI'}</h3>
         </div>
-        <ModelSelector 
-          currentModel={currentAIModel}
-          onSelectModel={switchAIModel}
-        />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleTestConnection}
+            disabled={isTestingConnection}
+            className="flex items-center gap-1 text-xs"
+          >
+            <ServerCrash className="h-3.5 w-3.5" />
+            {language === 'en' ? 'Test Connection' : 'Testar Conexão'}
+          </Button>
+          <ModelSelector 
+            currentModel={currentAIModel}
+            onSelectModel={switchAIModel}
+          />
+        </div>
       </div>
       
       <div className="flex-1 flex flex-col overflow-hidden">
