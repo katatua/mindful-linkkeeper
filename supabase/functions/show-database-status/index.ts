@@ -20,13 +20,26 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
-    // Log environment variable status (without revealing values)
-    console.log(`SUPABASE_URL ${supabaseUrl ? 'is set' : 'is NOT set'}`);
-    console.log(`SUPABASE_SERVICE_ROLE_KEY ${supabaseServiceKey ? 'is set' : 'is NOT set'}`);
+    console.log("Environment variables:", {
+      supabaseUrl: supabaseUrl ? "SET" : "NOT SET",
+      supabaseServiceKey: supabaseServiceKey ? "SET" : "NOT SET"
+    });
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Environment variables SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY are not set");
-      throw new Error("Missing required environment variables");
+      console.error("Missing Supabase environment variables");
+      return new Response(
+        JSON.stringify({ 
+          error: "Supabase environment variables are not configured",
+          hint: "Check Supabase project settings and function secrets"
+        }), 
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
     }
     
     // Initialize Supabase client
@@ -43,14 +56,11 @@ serve(async (req) => {
       .single();
 
     if (tableCheckError) {
-      console.error('Error checking if table exists:', tableCheckError);
-      
-      // Return a more informative error
+      console.error('Error checking table existence:', tableCheckError);
       return new Response(
         JSON.stringify({ 
-          error: "Failed to check if ani_database_status table exists",
-          details: tableCheckError.message,
-          hint: "Make sure the service role key has permission to query information_schema"
+          error: "Failed to check table existence",
+          details: tableCheckError.message 
         }), 
         { 
           status: 500, 
@@ -63,13 +73,11 @@ serve(async (req) => {
     }
 
     if (!tableExists) {
-      console.log('ani_database_status table does not exist, returning empty array');
-      
-      // Return empty array if table doesn't exist
+      console.log('ani_database_status table does not exist');
       return new Response(
         JSON.stringify({ 
           data: [],
-          message: "The ani_database_status table does not exist yet"
+          message: "The ani_database_status table does not exist"
         }), 
         { 
           headers: { 
@@ -80,8 +88,6 @@ serve(async (req) => {
       );
     }
 
-    console.log('ani_database_status table exists, fetching records');
-
     // Fetch the database status records
     const { data, error } = await supabase
       .from('ani_database_status')
@@ -90,10 +96,20 @@ serve(async (req) => {
 
     if (error) {
       console.error('Error fetching database status:', error);
-      throw error;
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to fetch database status",
+          details: error.message 
+        }), 
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
     }
-
-    console.log(`Successfully retrieved ${data?.length || 0} records`);
 
     return new Response(
       JSON.stringify({ 
@@ -108,11 +124,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in edge function:', error);
+    console.error('Unexpected error in edge function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Unknown error occurred",
-        location: "show-database-status edge function",
+        error: "Unexpected error occurred",
+        details: error.message,
         timestamp: new Date().toISOString()
       }), 
       { 
