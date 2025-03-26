@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,34 +17,27 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { LineChartComponent } from '@/components/DataVisualization/LineChartComponent';
 
-const MetricDetailPage: React.FC = () => {
-  const { metricId } = useParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  
-  // Historical trend data for the chart
-  const historicalTrendData = [
-    { month: 'Jan', value: 72 },
-    { month: 'Feb', value: 75 },
-    { month: 'Mar', value: 79 },
-    { month: 'Apr', value: 82 },
-    { month: 'May', value: 85 },
-    { month: 'Jun', value: 88 },
-    { month: 'Jul', value: 90 },
-    { month: 'Aug', value: 92 },
-  ];
-  
-  // Mock data for metrics
-  const metricDetails = {
-    id: metricId,
+// Define the different metric details based on metric ID
+const metricDetailsMap = {
+  'project-success-rate': {
     title: "Project Success Rate",
     description: "Overall success rate of innovation projects based on completion of milestones and achievement of outcomes.",
     currentValue: "92%",
     previousValue: "87%",
     changePercentage: "+5.7%",
     trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 72 },
+      { month: 'Feb', value: 75 },
+      { month: 'Mar', value: 79 },
+      { month: 'Apr', value: 82 },
+      { month: 'May', value: 85 },
+      { month: 'Jun', value: 88 },
+      { month: 'Jul', value: 90 },
+      { month: 'Aug', value: 92 },
+    ],
     insights: [
       "Success rate has improved consistently over the last 4 quarters",
       "Healthcare projects show the highest success rate at 94%",
@@ -56,8 +49,105 @@ const MetricDetailPage: React.FC = () => {
       "Continue promoting collaborative partnerships across sectors",
       "Implement the new review process across all project types"
     ]
-  };
+  },
+  'ai-innovation-index': {
+    title: "AI Innovation Index",
+    description: "Composite metric tracking AI innovation progress across Portugal's research institutions and industry.",
+    currentValue: "78.3",
+    previousValue: "71.6",
+    changePercentage: "+9.4%",
+    trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 65 },
+      { month: 'Feb', value: 68 },
+      { month: 'Mar', value: 70 },
+      { month: 'Apr', value: 73 },
+      { month: 'May', value: 75 },
+      { month: 'Jun', value: 76 },
+      { month: 'Jul', value: 77 },
+      { month: 'Aug', value: 78 },
+    ],
+    insights: [
+      "The AI Innovation Index has seen steady growth for 8 consecutive months",
+      "Research institutions are contributing 60% of the total innovation advances",
+      "Natural language processing has the highest growth rate at 14.2%",
+      "Cross-sector AI implementation has increased by 22% since last year"
+    ],
+    recommendations: [
+      "Increase investment in computer vision research where we lag behind benchmarks",
+      "Create more industry-academia partnerships to accelerate knowledge transfer",
+      "Focus on AI implementation in healthcare and manufacturing sectors"
+    ]
+  },
+  'rd-investment': {
+    title: "R&D Investment",
+    description: "Total annual research and development investment across sectors in millions of euros.",
+    currentValue: "€235M",
+    previousValue: "€198M",
+    changePercentage: "+18.7%",
+    trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 180 },
+      { month: 'Feb', value: 189 },
+      { month: 'Mar', value: 195 },
+      { month: 'Apr', value: 205 },
+      { month: 'May', value: 215 },
+      { month: 'Jun', value: 222 },
+      { month: 'Jul', value: 229 },
+      { month: 'Aug', value: 235 },
+    ],
+    insights: [
+      "Private sector R&D investment has increased by 22% year-over-year",
+      "Technology sector accounts for 43% of total R&D investment",
+      "SME investment in innovation has doubled in the last 2 years",
+      "Public-private partnerships have mobilized €45M in additional funding"
+    ],
+    recommendations: [
+      "Implement targeted tax incentives for research-intensive industries",
+      "Create a national fund for high-risk innovation projects",
+      "Develop specialized innovation hubs in rural regions"
+    ]
+  },
+  'patent-applications': {
+    title: "Patent Applications",
+    description: "Number of patent applications filed by Portuguese entities annually.",
+    currentValue: "412",
+    previousValue: "356",
+    changePercentage: "+15.7%",
+    trend: "positive",
+    historicalTrendData: [
+      { month: 'Jan', value: 320 },
+      { month: 'Feb', value: 335 },
+      { month: 'Mar', value: 350 },
+      { month: 'Apr', value: 365 },
+      { month: 'May', value: 380 },
+      { month: 'Jun', value: 390 },
+      { month: 'Jul', value: 400 },
+      { month: 'Aug', value: 412 },
+    ],
+    insights: [
+      "Biotech sector leads with 31% of all patent applications",
+      "University-originated patents have increased by 28%",
+      "International patent applications have increased by 45%",
+      "Average time to patent approval reduced by 3 months"
+    ],
+    recommendations: [
+      "Provide specialized legal support for SMEs filing patents",
+      "Create a fast-track process for sustainability-related innovations",
+      "Expand the patent voucher program to more sectors"
+    ]
+  },
+};
 
+const MetricDetailPage: React.FC = () => {
+  const { metricId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  
+  // Find the metric details based on the metricId
+  const metricDetails = metricDetailsMap[metricId as keyof typeof metricDetailsMap] || metricDetailsMap['project-success-rate'];
+  
   const handleBack = () => {
     navigate(-1);
   };
@@ -142,16 +232,24 @@ const MetricDetailPage: React.FC = () => {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={historicalTrendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={metricDetails.historicalTrendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
-                  <YAxis domain={[70, 100]} />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Success Rate']} />
+                  <YAxis domain={['auto', 'auto']} />
+                  <Tooltip formatter={(value) => {
+                    if (metricId === 'rd-investment') {
+                      return [`€${value}M`, 'Investment'];
+                    }
+                    if (metricId === 'ai-innovation-index' || metricId === 'project-success-rate') {
+                      return [`${value}`, 'Score'];
+                    }
+                    return [value, metricDetails.title];
+                  }} />
                   <Legend />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
-                    name="Success Rate (%)" 
+                    name={metricDetails.title} 
                     stroke="#8884d8" 
                     activeDot={{ r: 8 }} 
                     strokeWidth={2}
