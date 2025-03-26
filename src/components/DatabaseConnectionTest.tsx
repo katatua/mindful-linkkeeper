@@ -84,8 +84,13 @@ const DatabaseConnectionTest: React.FC = () => {
         toast.success("Diagnostics completed successfully");
         setConnectionStatus("connected");
       } else {
-        const errorSummary = diagnosticResults.results?.summary?.recommendations?.join("; ") || 
+        // Fixed the TypeScript error by safely accessing the summary and recommendations
+        const errorSummary = diagnosticResults.results && 
+                            diagnosticResults.results.summary && 
+                            diagnosticResults.results.summary.recommendations ? 
+                            diagnosticResults.results.summary.recommendations.join("; ") : 
                             "Check the console for detailed results";
+        
         setErrorDetails(errorSummary);
         
         toast.error("Diagnostics found issues", {
