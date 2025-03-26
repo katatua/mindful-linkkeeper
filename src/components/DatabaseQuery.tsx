@@ -47,10 +47,11 @@ export default function DatabaseQuery() {
       setNaturalLanguageResponse(result.interpretation || '');
       setDisplayResults(true);
     } else {
-      // Correctly access the error property only when result.success is false
+      // Use type assertion to tell TypeScript that result is a QueryError
+      const errorResult = result as QueryError;
       toast({
         title: "Query Error",
-        description: String(result.error) || "Failed to execute query",
+        description: String(errorResult.error) || "Failed to execute query",
         variant: "destructive",
       });
     }
