@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,14 +17,16 @@ export default function DatabaseQuery() {
   const { toast } = useToast();
   const { processQuestion } = useQueryProcessor();
 
-  const handleExecuteQuery = async () => {
+  const handleExecuteQuery = useCallback(async () => {
     if (!query.trim()) return;
     
     setIsExecuting(true);
     setDisplayResults(false);
     
     try {
+      console.log("Processing question:", query);
       const result = await processQuestion(query);
+      console.log("Query result:", result);
       
       if (result.visualizationData) {
         setQueryResults(result.visualizationData);
@@ -53,6 +55,30 @@ export default function DatabaseQuery() {
       });
     } finally {
       setIsExecuting(false);
+    }
+  }, [query, toast, processQuestion]);
+
+  // Reset state for a new query
+  const resetQueryState = () => {
+    setDisplayResults(false);
+    setQueryResults(null);
+    setSqlStatement('');
+    setNaturalLanguageResponse('');
+  };
+
+  // Handle query input change
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    // Only reset if we had results before and are changing the query
+    if (displayResults) {
+      resetQueryState();
+    }
+  };
+
+  // Handle key press event
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isExecuting) {
+      handleExecuteQuery();
     }
   };
 
@@ -109,8 +135,8 @@ export default function DatabaseQuery() {
               className="flex-grow"
               placeholder="Ask a question about the data (e.g., 'What was the R&D investment in Portugal over the last 3 years?')"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleExecuteQuery()}
+              onChange={handleQueryChange}
+              onKeyPress={handleKeyPress}
             />
             <Button 
               className="ml-2" 

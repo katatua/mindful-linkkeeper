@@ -38,6 +38,9 @@ export function useQueryProcessor() {
   const processQuestion = async (question: string, language: 'en' | 'pt' = 'en'): Promise<QueryResult> => {
     try {
       setIsProcessing(true);
+      // Always set lastResult to null when starting a new query
+      setLastResult(null);
+      
       console.log("Processing question:", question);
       
       // If in offline mode, use dummy data directly

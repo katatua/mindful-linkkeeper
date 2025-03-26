@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -14,6 +14,11 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
   sql, 
   naturalLanguageResponse 
 }) => {
+  // Reset active tab when SQL changes
+  useEffect(() => {
+    // No special reset logic needed - component will re-render with new props
+  }, [sql, naturalLanguageResponse]);
+
   return (
     <Card className="mt-4 shadow-sm">
       <CardHeader className="pb-2">
@@ -28,7 +33,7 @@ export const SQLResponseDisplay: React.FC<SQLResponseDisplayProps> = ({
           
           <TabsContent value="response">
             <div className="text-sm py-2 prose max-w-full">
-              {naturalLanguageResponse}
+              {naturalLanguageResponse || "No natural language response was generated."}
             </div>
           </TabsContent>
           
