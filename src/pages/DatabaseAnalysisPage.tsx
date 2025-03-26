@@ -27,6 +27,9 @@ const DATABASE_TABLES = [
   "ani_projects_researchers"
 ];
 
+// Type definition for valid table names
+type ValidTableName = typeof DATABASE_TABLES[number];
+
 const SAMPLE_SECTOR_DATA = [
   {
     "num_programs": 1,
@@ -56,7 +59,7 @@ const SAMPLE_SECTOR_DATA = [
 ];
 
 const DatabaseAnalysisPage = () => {
-  const [selectedTable, setSelectedTable] = useState<string>("ani_funding_programs");
+  const [selectedTable, setSelectedTable] = useState<ValidTableName>("ani_funding_programs");
   const [tableData, setTableData] = useState<any[]>([]);
   const [tableColumns, setTableColumns] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,11 +67,12 @@ const DatabaseAnalysisPage = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Fetch table data
-  const fetchTableData = async (tableName: string) => {
+  const fetchTableData = async (tableName: ValidTableName) => {
     setIsLoading(true);
     setErrorMessage(null);
     
     try {
+      // Use type assertion to tell TypeScript that tableName is a valid table name
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
@@ -119,7 +123,7 @@ const DatabaseAnalysisPage = () => {
   };
 
   // Get table schema
-  const getTableSchema = async (tableName: string) => {
+  const getTableSchema = async (tableName: ValidTableName) => {
     setIsLoading(true);
     setErrorMessage(null);
     
@@ -222,7 +226,7 @@ const DatabaseAnalysisPage = () => {
     }
   }, []);
 
-  const handleTableChange = (table: string) => {
+  const handleTableChange = (table: ValidTableName) => {
     setSelectedTable(table);
     fetchTableData(table);
   };
@@ -262,7 +266,7 @@ const DatabaseAnalysisPage = () => {
             <div className="flex justify-between items-center">
               <CardTitle>Table Analysis</CardTitle>
               <div className="flex items-center gap-2">
-                <Select value={selectedTable} onValueChange={handleTableChange}>
+                <Select value={selectedTable} onValueChange={(value) => handleTableChange(value as ValidTableName)}>
                   <SelectTrigger className="w-[220px]">
                     <SelectValue placeholder="Select a table" />
                   </SelectTrigger>
