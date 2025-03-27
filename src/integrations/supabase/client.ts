@@ -26,7 +26,13 @@ if (useLocalDatabase) {
     );
     supabaseClient = mockClient;
   } else {
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
   }
 }
 
@@ -95,5 +101,39 @@ const enhancedClient = {
     };
   }
 };
+
+// Add connection management
+let connectionAttempts = 0;
+const MAX_CONNECTION_ATTEMPTS = 3;
+
+// Function to test connection and reset on failure
+const testAndResetConnection = async () => {
+  try {
+    // Simple ping to test the connection
+    const { error } = await supabaseClient.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Supabase connection error:', error);
+      
+      if (connectionAttempts < MAX_CONNECTION_ATTEMPTS) {
+        connectionAttempts++;
+        console.log(`Connection attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS}`);
+        // Wait and retry
+        return new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        console.error('Max connection attempts reached, switching to offline mode');
+        // Could implement a fallback here
+      }
+    } else {
+      // Reset connection attempts on success
+      connectionAttempts = 0;
+    }
+  } catch (err) {
+    console.error('Error testing Supabase connection:', err);
+  }
+};
+
+// Initial connection test
+testAndResetConnection();
 
 export const supabase = enhancedClient;

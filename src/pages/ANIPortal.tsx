@@ -1,11 +1,10 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/toaster";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import FundingPage from "./FundingPage";
 import ProjectsPage from "./ProjectsPage";
@@ -30,7 +29,7 @@ const ANIPortal = () => {
   const { t, language } = useLanguage();
   const { showVisualization, visualizationData, setShowVisualization } = useVisualization();
   const { isLoggedIn } = useAuth();
-
+  
   const handleCloseVisualization = useCallback(() => {
     setShowVisualization(false);
   }, [setShowVisualization]);
@@ -39,14 +38,43 @@ const ANIPortal = () => {
     setShowAssistant(prev => !prev);
   }, []);
 
-  // This effect ensures we only run the necessary operations once
-  useEffect(() => {
-    // No need to check auth state here since it's handled in AuthContext
-    
-    // Add any cleanup operations needed for this component
-    return () => {
-      // Cleanup code if needed
-    };
+  // Memoize the tabs to prevent unnecessary re-renders
+  const tabContent = useMemo(() => {
+    return (
+      <>
+        <TabsContent value="dashboard" className="h-full">
+          <Dashboard />
+        </TabsContent>
+        
+        <TabsContent value="funding" className="h-full">
+          <FundingPage />
+        </TabsContent>
+        
+        <TabsContent value="projects" className="h-full">
+          <ProjectsPage />
+        </TabsContent>
+        
+        <TabsContent value="analytics" className="h-full">
+          <AnalyticsPage />
+        </TabsContent>
+        
+        <TabsContent value="reports" className="h-full">
+          <ReportsPage />
+        </TabsContent>
+        
+        <TabsContent value="policies" className="h-full">
+          <PoliciesPage />
+        </TabsContent>
+        
+        <TabsContent value="database" className="h-full">
+          <DatabaseQuery />
+        </TabsContent>
+        
+        <TabsContent value="synthetic" className="h-full">
+          <SyntheticDataPage />
+        </TabsContent>
+      </>
+    );
   }, []);
 
   return (
@@ -95,37 +123,7 @@ const ANIPortal = () => {
               </div>
             )}
             
-            <TabsContent value="dashboard" className="h-full">
-              <Dashboard />
-            </TabsContent>
-            
-            <TabsContent value="funding" className="h-full">
-              <FundingPage />
-            </TabsContent>
-            
-            <TabsContent value="projects" className="h-full">
-              <ProjectsPage />
-            </TabsContent>
-            
-            <TabsContent value="analytics" className="h-full">
-              <AnalyticsPage />
-            </TabsContent>
-            
-            <TabsContent value="reports" className="h-full">
-              <ReportsPage />
-            </TabsContent>
-            
-            <TabsContent value="policies" className="h-full">
-              <PoliciesPage />
-            </TabsContent>
-            
-            <TabsContent value="database" className="h-full">
-              <DatabaseQuery />
-            </TabsContent>
-            
-            <TabsContent value="synthetic" className="h-full">
-              <SyntheticDataPage />
-            </TabsContent>
+            {tabContent}
           </Tabs>
         </main>
         
