@@ -684,4 +684,35 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
                   if (resultCount > 0) {
                     assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\nEncontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta.`;
                   } else {
-                    assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão encontrei resultados para sua consulta.
+                    assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão encontrei resultados para sua consulta.`;
+                  }
+                }
+              }
+            } else {
+              // Still couldn't generate SQL, use a generic response
+              assistantResponse = "Não consegui gerar uma consulta SQL apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.";
+            }
+          } else {
+            // Fallback response if Gemini fails to generate SQL
+            assistantResponse = "Desculpe, não consegui processar sua consulta de banco de dados. Por favor, tente novamente com uma pergunta mais específica.";
+          }
+        } catch (sqlGenError) {
+          console.error("Error in SQL generation:", sqlGenError);
+          assistantResponse = "Ocorreu um erro ao tentar gerar uma consulta SQL. Por favor, tente novamente mais tarde.";
+        }
+      }
+    }
+    
+    // Return the final response
+    return new Response(
+      JSON.stringify({ response: assistantResponse }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error:', error.message);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
