@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Database } from "@/integrations/supabase/types";
 
 // Define the Table interface
 interface DatabaseTable {
@@ -23,6 +23,9 @@ interface DatabaseTable {
   }[];
   sampleData?: any[];
 }
+
+// Type for valid table names in our database
+type TableName = keyof Database['public']['Tables'];
 
 // Database schema information
 const databaseSchema: DatabaseTable[] = [
@@ -141,15 +144,21 @@ const DatabasePage: React.FC = () => {
         
         for (let i = 0; i < updatedTables.length; i++) {
           const table = updatedTables[i];
-          const { data, error } = await supabase
-            .from(table.name)
-            .select('*')
-            .limit(5);
-            
-          if (error) {
-            console.error(`Error fetching data from ${table.name}:`, error);
+          
+          // Type check to ensure the table name is valid before querying
+          if (isValidTableName(table.name)) {
+            const { data, error } = await supabase
+              .from(table.name)
+              .select('*')
+              .limit(5);
+              
+            if (error) {
+              console.error(`Error fetching data from ${table.name}:`, error);
+            } else {
+              updatedTables[i] = { ...table, sampleData: data };
+            }
           } else {
-            updatedTables[i] = { ...table, sampleData: data };
+            console.warn(`Table name not found in schema: ${table.name}`);
           }
         }
         
@@ -168,6 +177,11 @@ const DatabasePage: React.FC = () => {
     
     fetchSampleData();
   }, []);
+
+  // Helper function to validate if a table name is in our database schema
+  const isValidTableName = (name: string): name is TableName => {
+    return name in (supabase.from as any)._tables;
+  };
 
   const handleQuestionSubmit = async () => {
     if (!question.trim()) {
