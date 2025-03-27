@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,8 +39,19 @@ export default function DatabaseQuery() {
       const result = await processQuestion(query, language);
       console.log("Query result:", result);
       
-      // Save query to history
-      await saveQueryToHistory(query, language, !!result.visualizationData && !result.error);
+      // Save query to history with explicit true/false for was_successful
+      const wasSuccessful = !!(result.visualizationData && result.visualizationData.length > 0 && !result.error);
+      console.log("Saving query history with success status:", wasSuccessful);
+      
+      const savedQuery = await saveQueryToHistory(
+        query, 
+        language, 
+        wasSuccessful,
+        [], // empty array for created tables initially
+        result.error // pass any error message
+      );
+      
+      console.log("Saved query to history:", savedQuery);
       
       if (result.visualizationData && result.visualizationData.length > 0) {
         setQueryResults(result.visualizationData);
@@ -58,6 +68,9 @@ export default function DatabaseQuery() {
             description: result.error || "Failed to execute query",
             variant: "destructive",
           });
+          
+          // Still save the failed query
+          await saveQueryToHistory(query, language, false, [], result.error);
         }
       } else if (result.isConnectionError) {
         toast({
@@ -95,6 +108,16 @@ export default function DatabaseQuery() {
       }
     } catch (error) {
       console.error("Error processing query:", error);
+      
+      // Save the failed query
+      await saveQueryToHistory(
+        query, 
+        language, 
+        false, 
+        [], 
+        error instanceof Error ? error.message : "Failed to execute query"
+      );
+      
       toast({
         title: "Query Error",
         description: error instanceof Error ? error.message : "Failed to execute query",
@@ -138,7 +161,8 @@ export default function DatabaseQuery() {
       
       if (newCreatedTables.length > 0) {
         // Save the query with information about created tables
-        await saveQueryToHistory(query, language, false, newCreatedTables);
+        const savedQuery = await saveQueryToHistory(query, language, false, newCreatedTables);
+        console.log("Saved query with created tables:", savedQuery);
         
         toast({
           title: language === 'pt' ? "Dados criados com sucesso" : "Data created successfully",

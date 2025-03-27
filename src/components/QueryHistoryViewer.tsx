@@ -33,6 +33,7 @@ export function QueryHistoryViewer() {
   const fetchQueryHistory = async () => {
     setLoading(true);
     try {
+      console.log("Fetching query history from Supabase...");
       // Try to fetch from Supabase first
       const { data, error } = await supabase
         .from('query_history')
@@ -44,15 +45,19 @@ export function QueryHistoryViewer() {
         throw error;
       }
       
+      console.log("Successfully fetched query history from Supabase:", data);
       setQueries(data || []);
     } catch (err) {
+      console.error("Falling back to local storage due to error:", err);
       // Fallback to local storage
       try {
         const localHistory = localStorage.getItem('queryHistory');
         if (localHistory) {
           const parsedHistory = JSON.parse(localHistory);
+          console.log("Using query history from local storage:", parsedHistory);
           setQueries(parsedHistory);
         } else {
+          console.log("No query history found in local storage");
           setQueries([]);
         }
       } catch (localErr) {
