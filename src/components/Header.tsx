@@ -2,39 +2,25 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, LogIn, User, HelpCircle, Languages } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect } from "react";
 import { HamburgerMenu } from "./HamburgerMenu";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Header = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { isLoggedIn, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await logout();
       toast({
         title: "Logged out successfully",
       });
-      navigate("/auth");
+      navigate("/login");
     } catch (error) {
       toast({
         title: "Error logging out",
@@ -44,7 +30,7 @@ export const Header = () => {
   };
 
   const handleLogin = () => {
-    navigate("/auth");
+    navigate("/login");
   };
 
   const goToDashboard = () => {
@@ -82,7 +68,7 @@ export const Header = () => {
           <HelpCircle className="h-4 w-4 mr-2" />
           {t('help')}
         </Button>
-        {isAuthenticated ? (
+        {isLoggedIn ? (
           <Button variant="outline" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">{t('logout')}</span>
