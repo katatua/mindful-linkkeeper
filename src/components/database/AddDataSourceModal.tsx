@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -108,19 +107,15 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: 'Tipo de arquivo não suportado',
+      toast("Tipo de arquivo não suportado", {
         description: 'Por favor, carregue apenas arquivos PDF ou CSV.',
-        variant: 'destructive',
       });
       return false;
     }
 
     if (file.size > maxSize) {
-      toast({
-        title: 'Arquivo muito grande',
+      toast("Arquivo muito grande", {
         description: 'O tamanho máximo do arquivo é 10MB.',
-        variant: 'destructive',
       });
       return false;
     }
@@ -140,7 +135,6 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     console.log('File selected:', selectedFile);
     if (selectedFile && validateFile(selectedFile)) {
       setFile(selectedFile);
-      // Auto-populate file name
       form.setValue('fileName', selectedFile.name.replace(/\.[^/.]+$/, ""));
     } else {
       setFile(null);
@@ -164,24 +158,20 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
       };
       
       if (file.type === 'application/pdf') {
-        // For PDFs we only read a portion as binary data
         const chunk = file.slice(0, 5000);
         reader.readAsText(chunk);
       } else {
-        // For CSV and other text files
         reader.readAsText(file);
       }
     });
   };
 
-  // Function to generate AI description based on file content
   const generateAIDescription = async (fileContent: string, fileName: string): Promise<{
     suggestedName: string;
     suggestedDescription: string;
     suggestedTechnology: string;
   }> => {
     try {
-      // Call the Supabase Edge Function for AI analysis
       const { data, error } = await supabase.functions.invoke('analyze-document', {
         body: {
           content: fileContent,
@@ -229,24 +219,19 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     try {
       setIsUploading(true);
       
-      // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: 'Erro de autenticação',
+        toast("Erro de autenticação", {
           description: 'Você precisa estar autenticado para adicionar fontes de dados.',
-          variant: 'destructive',
         });
         setIsUploading(false);
         return;
       }
 
-      // Prepare file for upload
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
 
-      // Upload file to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
         .upload(fileName, file);
@@ -255,19 +240,14 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
         throw new Error(`Erro ao fazer upload do arquivo: ${uploadError.message}`);
       }
 
-      // Get the public URL for the file
       const fileUrl = supabase.storage.from('files').getPublicUrl(fileName).data.publicUrl;
 
-      // Extract content for AI analysis
-      setIsAnalyzing(true);
       let fileContent = '';
       let sourceName = values.sourceName || '';
       let sourceDescription = values.description || '';
       let sourceTechnology = values.technology || '';
       
-      // Get source info
       if (values.sourceType === 'existing' && values.existingSourceId) {
-        // Use existing source information
         const selectedSource = dataSources.find(src => src.id === values.existingSourceId);
         if (selectedSource) {
           sourceName = selectedSource.nome_sistema;
@@ -275,21 +255,17 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
           sourceTechnology = selectedSource.tecnologia;
         }
       } else if (values.sourceType === 'new') {
-        // For new source, if fields are empty, generate with AI
         if (!sourceName || !sourceDescription || !sourceTechnology) {
           try {
             fileContent = await readFileContent(file);
             
-            // Generate AI descriptions
             const aiResults = await generateAIDescription(fileContent, file.name);
             
-            // Only use AI results for empty fields
             if (!sourceName) sourceName = aiResults.suggestedName;
             if (!sourceDescription) sourceDescription = aiResults.suggestedDescription;
             if (!sourceTechnology) sourceTechnology = aiResults.suggestedTechnology;
           } catch (error) {
             console.error('Error generating source metadata:', error);
-            // Use fallbacks if AI fails
             if (!sourceName) sourceName = file.name.replace(/\.[^/.]+$/, "");
             if (!sourceDescription) sourceDescription = 'Fonte de dados para análise e consulta.';
             if (!sourceTechnology) sourceTechnology = file.type || 'Documento digital';
@@ -297,7 +273,6 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
         }
       }
 
-      // Get any AI analysis if we have file content
       let analysisData = { summary: '', analysis: '', suggestedCategory: '' };
       if (fileContent) {
         try {
@@ -318,7 +293,6 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
         }
       }
 
-      // Create a link entry for the file
       const { error: linkError } = await supabase
         .from('links')
         .insert({
@@ -344,8 +318,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
         throw new Error(`Erro ao criar entrada no banco de dados: ${linkError.message}`);
       }
 
-      toast({
-        title: 'Fonte de dados adicionada',
+      toast("Fonte de dados adicionada", {
         description: 'O arquivo foi carregado e associado à fonte com sucesso.',
       });
       
@@ -357,10 +330,8 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     } catch (error) {
       console.error('Error in upload process:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: 'Erro ao carregar arquivo',
+      toast("Erro ao carregar arquivo", {
         description: `Ocorreu um erro ao processar o arquivo: ${errorMessage}`,
-        variant: 'destructive',
       });
     } finally {
       setIsUploading(false);
@@ -368,7 +339,6 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     }
   };
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!open) {
       form.reset({
