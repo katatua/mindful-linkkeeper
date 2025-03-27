@@ -1,17 +1,20 @@
 
 import React from 'react';
-import { HamburgerMenu } from './HamburgerMenu';
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Database } from 'lucide-react';
 
-export function Header() {
+interface HeaderProps {
+  children?: React.ReactNode;
+}
+
+export function Header({ children }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 relative">
+      {children}
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center">
-          <HamburgerMenu />
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>

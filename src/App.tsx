@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
+import { Layout } from "./components/Layout";
 import Index from "./pages/Index";
 import AddFile from "./pages/AddFile";
 import AddLink from "./pages/AddLink";
@@ -39,29 +40,31 @@ function App() {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<ANIPortal />} />
-                <Route path="/legacy" element={<Index />} />
-                <Route path="/add-file" element={<AddFile />} />
-                <Route path="/add-link" element={<AddLink />} />
-                <Route path="/add-category" element={<AddCategory />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/funding" element={<FundingPage />} />
-                <Route path="/projects" element={<ProjectsPage />} />
-                <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/policies" element={<PoliciesPage />} />
-                <Route path="/database" element={<DatabasePage />} />
-                <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
-                <Route path="/synthetic-data" element={<SyntheticDataPage />} />
-                <Route path="/policies/:policyId" element={<PolicyDetailPage />} />
-                <Route path="/frameworks/:frameworkId" element={<FrameworkDetailPage />} />
-                <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
-                <Route path="/metrics/:metricId" element={<MetricDetailPage />} />
-                <Route path="/policy-guide" element={<PolicyGuidePage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<ANIPortal />} />
+                  <Route path="/legacy" element={<Index />} />
+                  <Route path="/add-file" element={<AddFile />} />
+                  <Route path="/add-link" element={<AddLink />} />
+                  <Route path="/add-category" element={<AddCategory />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/funding" element={<FundingPage />} />
+                  <Route path="/projects" element={<ProjectsPage />} />
+                  <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/policies" element={<PoliciesPage />} />
+                  <Route path="/database" element={<DatabasePage />} />
+                  <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
+                  <Route path="/synthetic-data" element={<SyntheticDataPage />} />
+                  <Route path="/policies/:policyId" element={<PolicyDetailPage />} />
+                  <Route path="/frameworks/:frameworkId" element={<FrameworkDetailPage />} />
+                  <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
+                  <Route path="/metrics/:metricId" element={<MetricDetailPage />} />
+                  <Route path="/policy-guide" element={<PolicyGuidePage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
             </BrowserRouter>
           </LanguageProvider>
         </SidebarProvider>
