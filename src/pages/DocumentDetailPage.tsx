@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Share2, ExternalLink, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ const DocumentDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewerMode, setViewerMode] = useState<'embedded' | 'iframe'>('embedded');
 
   useEffect(() => {
     if (!documentId) return;
@@ -42,17 +43,20 @@ const DocumentDetailPage: React.FC = () => {
           setDocument(data);
           
           // Get the file URL if it's stored in Supabase Storage
-          if (data.url && !data.url.startsWith('http')) {
-            const { data: fileData } = supabase.storage
-              .from('files')
-              .getPublicUrl(data.url);
-              
-            if (fileData) {
-              setPdfUrl(fileData.publicUrl);
-            }
-          } else if (data.url && data.url.startsWith('http')) {
+          if (data.url) {
             // If the URL is already a full URL
-            setPdfUrl(data.url);
+            if (data.url.startsWith('http')) {
+              setPdfUrl(data.url);
+            } else {
+              // If it's a storage path
+              const { data: fileData } = supabase.storage
+                .from('files')
+                .getPublicUrl(data.url);
+                
+              if (fileData) {
+                setPdfUrl(fileData.publicUrl);
+              }
+            }
           }
         } else {
           throw new Error('Document not found');
@@ -146,6 +150,82 @@ const DocumentDetailPage: React.FC = () => {
     return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
   };
 
+  const toggleViewerMode = () => {
+    setViewerMode(prev => prev === 'embedded' ? 'iframe' : 'embedded');
+  };
+
+  const renderDocumentViewer = () => {
+    if (!pdfUrl) return null;
+
+    const fileType = document?.file_metadata?.type || '';
+    const isPdf = fileType.includes('pdf');
+    const isImage = fileType.includes('image');
+    const isText = fileType.includes('text') || fileType.includes('csv');
+
+    if (isPdf) {
+      if (viewerMode === 'embedded') {
+        return (
+          <object
+            data={pdfUrl}
+            type="application/pdf"
+            width="100%"
+            height="600px"
+            className="border rounded"
+          >
+            <p>Seu navegador não suporta visualização de PDF. 
+              <Button variant="link" onClick={() => setViewerMode('iframe')}>
+                Tentar visualização alternativa
+              </Button> ou 
+              <Button variant="link" onClick={handleDownload}>
+                baixar o arquivo
+              </Button>
+            </p>
+          </object>
+        );
+      } else {
+        return (
+          <iframe 
+            src={createGoogleDocsViewerUrl(pdfUrl)} 
+            title="Document Viewer" 
+            width="100%" 
+            height="600px"
+            className="border rounded"
+          />
+        );
+      }
+    } else if (isImage) {
+      return (
+        <div className="flex justify-center p-4 bg-white rounded border">
+          <img 
+            src={pdfUrl} 
+            alt={document?.title || "Document image"} 
+            className="max-w-full max-h-[600px] object-contain"
+          />
+        </div>
+      );
+    } else if (isText) {
+      return (
+        <iframe 
+          src={pdfUrl} 
+          title="Text Document Viewer" 
+          width="100%" 
+          height="600px" 
+          className="border rounded"
+        />
+      );
+    } else {
+      return (
+        <div className="flex items-center justify-center h-full border rounded p-6 text-center">
+          <div>
+            <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <p className="mb-4">Este tipo de arquivo não pode ser visualizado diretamente no navegador.</p>
+            <Button onClick={handleDownload}>Baixar Arquivo</Button>
+          </div>
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-2">
@@ -191,14 +271,17 @@ const DocumentDetailPage: React.FC = () => {
 
             <div className="flex gap-2 mt-3 md:mt-0">
               <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-1" />
                 Download
               </Button>
               <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-1" />
                 Compartilhar
               </Button>
               {pdfUrl && (
                 <Button size="sm" onClick={handleViewDocument}>
-                  Visualizar Documento
+                  <Eye className="h-4 w-4 mr-1" />
+                  Visualizar
                 </Button>
               )}
             </div>
@@ -222,6 +305,35 @@ const DocumentDetailPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Visualizador de documento incorporado na página */}
+          {pdfUrl && (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Visualização do Documento</CardTitle>
+                  <div className="flex gap-2">
+                    {document?.file_metadata?.type?.includes('pdf') && (
+                      <Button size="sm" variant="outline" onClick={toggleViewerMode}>
+                        {viewerMode === 'embedded' ? 'Visualização Google' : 'Visualização Nativa'}
+                      </Button>
+                    )}
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => window.open(pdfUrl, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Abrir em Nova Aba
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {renderDocumentViewer()}
+              </CardContent>
+            </Card>
+          )}
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
             <TabsList>
@@ -265,36 +377,35 @@ const DocumentDetailPage: React.FC = () => {
             </TabsContent>
           </Tabs>
 
+          {/* Dialog para visualização em tela cheia */}
           {pdfUrl && (
             <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-              <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+              <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
-                  <DialogTitle>Visualizador de Documento</DialogTitle>
+                  <DialogTitle>{document?.title}</DialogTitle>
                   <DialogDescription>
-                    Visualize o documento completo aqui.
+                    Visualização completa do documento
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 min-h-[600px] mt-4">
-                  {document?.file_metadata?.type?.includes('pdf') ? (
-                    <iframe 
-                      src={createGoogleDocsViewerUrl(pdfUrl)} 
-                      title="Document Viewer" 
-                      width="100%" 
-                      height="600px"
-                      className="border"
-                    ></iframe>
-                  ) : (
-                    <div className="flex items-center justify-center h-full border rounded p-6 text-center">
-                      <div>
-                        <p className="mb-4">Este tipo de arquivo não pode ser visualizado diretamente no navegador.</p>
-                        <Button onClick={handleDownload}>Baixar Arquivo</Button>
-                      </div>
-                    </div>
-                  )}
+                <div className="flex-1 min-h-[700px] mt-4">
+                  {renderDocumentViewer()}
                 </div>
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={handleCloseViewDialog}>Fechar</Button>
-                </div>
+                <DialogFooter className="mt-4 flex justify-between">
+                  <div>
+                    {document?.file_metadata?.type?.includes('pdf') && (
+                      <Button variant="outline" onClick={toggleViewerMode}>
+                        {viewerMode === 'embedded' ? 'Visualização Google' : 'Visualização Nativa'}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleDownload}>
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                    <Button onClick={handleCloseViewDialog}>Fechar</Button>
+                  </div>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           )}
