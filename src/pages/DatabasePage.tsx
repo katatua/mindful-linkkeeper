@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { generateResponse, suggestedDatabaseQuestions } from "@/utils/aiUtils";
 import { supabase, TableName, getTable } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
-import { Loader2, AlertCircle, Search } from "lucide-react";
+import { Loader2, AlertCircle, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface DatabaseTable {
   name: string;
@@ -152,6 +153,7 @@ const DatabasePage: React.FC = () => {
   const [tables, setTables] = useState<DatabaseTable[]>(databaseSchema);
   const [queryError, setQueryError] = useState<string>("");
   const [loadError, setLoadError] = useState<string>("");
+  const [examplesOpen, setExamplesOpen] = useState<boolean>(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -673,43 +675,62 @@ const DatabasePage: React.FC = () => {
                   </div>
                   
                   <div className="mt-2 space-y-2">
-                    <h3 className="text-sm font-medium text-gray-500">Try these example questions:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedDatabaseQuestions.slice(0, 6).map((q, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
-                          className="cursor-pointer hover:bg-primary/10 transition-colors"
-                          onClick={() => !isLoading && executeQuestion(q)}
-                        >
-                          {q}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {suggestedDatabaseQuestions.slice(6, 12).map((q, index) => (
-                        <Badge 
-                          key={index + 6} 
-                          variant="outline" 
-                          className="cursor-pointer hover:bg-primary/10 transition-colors"
-                          onClick={() => !isLoading && executeQuestion(q)}
-                        >
-                          {q}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {suggestedDatabaseQuestions.slice(12).map((q, index) => (
-                        <Badge 
-                          key={index + 12} 
-                          variant="outline" 
-                          className="cursor-pointer hover:bg-primary/10 transition-colors"
-                          onClick={() => !isLoading && executeQuestion(q)}
-                        >
-                          {q}
-                        </Badge>
-                      ))}
-                    </div>
+                    <Collapsible
+                      open={examplesOpen}
+                      onOpenChange={setExamplesOpen}
+                      className="w-full"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-500">Try these example questions:</h3>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
+                            {examplesOpen ? 
+                              <ChevronUp className="h-4 w-4" /> : 
+                              <ChevronDown className="h-4 w-4" />
+                            }
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
+                      
+                      <CollapsibleContent className="mt-1">
+                        <div className="flex flex-wrap gap-2">
+                          {suggestedDatabaseQuestions.slice(0, 6).map((q, index) => (
+                            <Badge 
+                              key={index} 
+                              variant="outline" 
+                              className="cursor-pointer hover:bg-primary/10 transition-colors"
+                              onClick={() => !isLoading && executeQuestion(q)}
+                            >
+                              {q}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {suggestedDatabaseQuestions.slice(6, 12).map((q, index) => (
+                            <Badge 
+                              key={index + 6} 
+                              variant="outline" 
+                              className="cursor-pointer hover:bg-primary/10 transition-colors"
+                              onClick={() => !isLoading && executeQuestion(q)}
+                            >
+                              {q}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {suggestedDatabaseQuestions.slice(12).map((q, index) => (
+                            <Badge 
+                              key={index + 12} 
+                              variant="outline" 
+                              className="cursor-pointer hover:bg-primary/10 transition-colors"
+                              onClick={() => !isLoading && executeQuestion(q)}
+                            >
+                              {q}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {sqlQuery && (
