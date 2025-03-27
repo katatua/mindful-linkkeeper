@@ -215,14 +215,14 @@ const DocumentDetailPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     
     // Create a temporary anchor element to trigger the download
-    const a = document.createElement('a');
+    const a = window.document.createElement('a');
     a.href = url;
     a.download = `${document.nome}.${document.tipo.toLowerCase()}`;
-    document.body.appendChild(a);
+    window.document.body.appendChild(a);
     a.click();
     
     // Clean up
-    document.body.removeChild(a);
+    window.document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
     toast.success(`Documento "${document.nome}" baixado com sucesso.`);
