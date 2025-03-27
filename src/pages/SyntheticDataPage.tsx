@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +46,8 @@ const SyntheticDataPage: React.FC = () => {
 
   const generateFundingPrograms = async (count: number) => {
     const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation'];
-    const fundingTypes = ['Grant', 'Loan', 'Tax Incentive', 'Equity', 'Hybrid'];
+    // Update funding types to match database constraints
+    const fundingTypes = ['grant', 'loan', 'tax_incentive', 'equity', 'hybrid'];
     const programs = [];
     
     const now = new Date();
