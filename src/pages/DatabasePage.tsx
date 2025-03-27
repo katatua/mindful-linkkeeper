@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -47,6 +46,7 @@ export const DatabasePage: React.FC = () => {
   const [fundingPrograms, setFundingPrograms] = useState<FundingProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTable, setActiveTable] = useState('ani_funding_programs');
   const [tableSchemas, setTableSchemas] = useState<TableSchema[]>([
     {
       tableName: 'ani_funding_programs',
@@ -124,19 +124,62 @@ export const DatabasePage: React.FC = () => {
   const [queryResult, setQueryResult] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const fetchDataFromLocalStorage = () => {
+    try {
+      setLoading(true);
+      
+      // Get the data from localStorage based on active table
+      let data = [];
+      switch (activeTable) {
+        case 'ani_funding_programs':
+          data = JSON.parse(localStorage.getItem('sampleFundingPrograms') || '[]');
+          break;
+        case 'ani_international_collaborations':
+          data = JSON.parse(localStorage.getItem('sampleCollaborations') || '[]');
+          break;
+        case 'ani_metrics':
+          data = JSON.parse(localStorage.getItem('sampleMetrics') || '[]');
+          break;
+        case 'ani_policy_frameworks':
+          data = JSON.parse(localStorage.getItem('samplePolicyFrameworks') || '[]');
+          break;
+        default:
+          data = JSON.parse(localStorage.getItem('sampleFundingPrograms') || '[]');
+      }
+      
+      setFundingPrograms(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data from localStorage');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchFundingPrograms = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('ani_funding_programs')
+      
+      // Try to get data from Supabase first
+      const { data: supabaseData, error: supabaseError } = await supabase
+        .from(activeTable)
         .select('*')
-        .order('application_deadline', { ascending: true });
+        .limit(20);
 
-      if (error) throw error;
-      setFundingPrograms(data || []);
+      if (supabaseError) throw supabaseError;
+      
+      // If we got data from Supabase, use it
+      if (supabaseData && supabaseData.length > 0) {
+        setFundingPrograms(supabaseData);
+      } else {
+        // Otherwise fall back to localStorage data
+        fetchDataFromLocalStorage();
+      }
     } catch (error) {
-      console.error('Error fetching funding programs:', error);
-      setError('Failed to load data. Please try again later.');
+      console.error(`Error fetching data from ${activeTable}:`, error);
+      // Fall back to localStorage
+      fetchDataFromLocalStorage();
     } finally {
       setLoading(false);
     }
@@ -144,7 +187,7 @@ export const DatabasePage: React.FC = () => {
 
   useEffect(() => {
     fetchFundingPrograms();
-  }, []);
+  }, [activeTable]);
 
   const handleQuestionClick = async (question: string) => {
     setActiveQuestion(question);
@@ -174,6 +217,69 @@ export const DatabasePage: React.FC = () => {
     } finally {
       setIsQueryLoading(false);
     }
+  };
+
+  const renderTableContent = () => {
+    if (loading) {
+      return <p className="py-4 text-center">Loading data...</p>;
+    }
+    
+    if (error) {
+      return <p className="py-4 text-center text-red-500">{error}</p>;
+    }
+    
+    if (fundingPrograms.length === 0) {
+      return <p className="py-4 text-center">No data found</p>;
+    }
+    
+    // Get the first item to determine columns
+    const item = fundingPrograms[0];
+    const columns = Object.keys(item);
+    
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map(col => (
+                <TableHead key={col}>{col}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {fundingPrograms.map((item, index) => (
+              <TableRow key={index}>
+                {columns.map(col => (
+                  <TableCell key={col}>
+                    {renderCellValue(item[col])}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+  
+  const renderCellValue = (value: any) => {
+    if (value === null || value === undefined) {
+      return 'N/A';
+    }
+    
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    
+    return value.toString();
+  };
+
+  const handleTableChange = (table: string) => {
+    setActiveTable(table);
   };
 
   return (
@@ -299,139 +405,36 @@ export const DatabasePage: React.FC = () => {
           <TabsContent value="data">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Funding Programs</CardTitle>
-                <Button onClick={fetchFundingPrograms} disabled={loading} size="sm">
-                  Refresh Data
-                </Button>
+                <CardTitle>Database Tables</CardTitle>
+                <div className="flex gap-2">
+                  <Button onClick={fetchFundingPrograms} disabled={loading} size="sm">
+                    Refresh Data
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="table" className="mt-2">
+                <Tabs defaultValue="ani_funding_programs" className="mt-2" onValueChange={handleTableChange}>
                   <TabsList className="mb-4">
-                    <TabsTrigger value="table">Table View</TabsTrigger>
-                    <TabsTrigger value="cards">Card View</TabsTrigger>
+                    <TabsTrigger value="ani_funding_programs">Funding Programs</TabsTrigger>
+                    <TabsTrigger value="ani_metrics">Metrics</TabsTrigger>
+                    <TabsTrigger value="ani_international_collaborations">Int'l Collaborations</TabsTrigger>
+                    <TabsTrigger value="ani_policy_frameworks">Policy Frameworks</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="table">
-                    {loading ? (
-                      <p>Loading data...</p>
-                    ) : error ? (
-                      <p className="text-red-500">{error}</p>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead>Application Deadline</TableHead>
-                              <TableHead>End Date</TableHead>
-                              <TableHead>Total Budget</TableHead>
-                              <TableHead>Sector Focus</TableHead>
-                              <TableHead>Funding Type</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {fundingPrograms.length === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={7} className="text-center">No funding programs found</TableCell>
-                              </TableRow>
-                            ) : (
-                              fundingPrograms.map((program) => (
-                                <TableRow key={program.id}>
-                                  <TableCell className="font-medium">{program.name}</TableCell>
-                                  <TableCell>{program.description || 'N/A'}</TableCell>
-                                  <TableCell>
-                                    {program.application_deadline 
-                                      ? new Date(program.application_deadline).toLocaleDateString() 
-                                      : 'N/A'}
-                                  </TableCell>
-                                  <TableCell>
-                                    {program.end_date 
-                                      ? new Date(program.end_date).toLocaleDateString() 
-                                      : 'N/A'}
-                                  </TableCell>
-                                  <TableCell>
-                                    {program.total_budget
-                                      ? new Intl.NumberFormat('pt-PT', { 
-                                          style: 'currency', 
-                                          currency: 'EUR' 
-                                        }).format(program.total_budget)
-                                      : 'N/A'}
-                                  </TableCell>
-                                  <TableCell>
-                                    {program.sector_focus 
-                                      ? program.sector_focus.join(', ') 
-                                      : 'N/A'}
-                                  </TableCell>
-                                  <TableCell>{program.funding_type || 'N/A'}</TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
+                  <TabsContent value="ani_funding_programs">
+                    {renderTableContent()}
                   </TabsContent>
                   
-                  <TabsContent value="cards">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {loading ? (
-                        <p>Loading data...</p>
-                      ) : error ? (
-                        <p className="text-red-500">{error}</p>
-                      ) : fundingPrograms.length === 0 ? (
-                        <p>No funding programs found</p>
-                      ) : (
-                        fundingPrograms.map((program) => (
-                          <Card key={program.id}>
-                            <CardHeader>
-                              <CardTitle>{program.name}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="text-sm text-gray-600 mb-2">{program.description}</p>
-                              <div className="space-y-2">
-                                <p>
-                                  <strong>Application Deadline:</strong>{' '}
-                                  {program.application_deadline
-                                    ? new Date(program.application_deadline).toLocaleDateString()
-                                    : 'N/A'}
-                                </p>
-                                <p>
-                                  <strong>Program End Date:</strong>{' '}
-                                  {program.end_date
-                                    ? new Date(program.end_date).toLocaleDateString()
-                                    : 'N/A'}
-                                </p>
-                                {program.total_budget && (
-                                  <p>
-                                    <strong>Total Budget:</strong>{' '}
-                                    {new Intl.NumberFormat('pt-PT', { 
-                                      style: 'currency', 
-                                      currency: 'EUR' 
-                                    }).format(program.total_budget)}
-                                  </p>
-                                )}
-                                {program.sector_focus && (
-                                  <p>
-                                    <strong>Sector Focus:</strong>{' '}
-                                    {program.sector_focus.join(', ')}
-                                  </p>
-                                )}
-                                {program.funding_type && (
-                                  <p>
-                                    <strong>Funding Type:</strong>{' '}
-                                    {program.funding_type}
-                                  </p>
-                                )}
-                              </div>
-                              <Button variant="outline" className="mt-4 w-full">
-                                View Details
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        ))
-                      )}
-                    </div>
+                  <TabsContent value="ani_metrics">
+                    {renderTableContent()}
+                  </TabsContent>
+                  
+                  <TabsContent value="ani_international_collaborations">
+                    {renderTableContent()}
+                  </TabsContent>
+                  
+                  <TabsContent value="ani_policy_frameworks">
+                    {renderTableContent()}
                   </TabsContent>
                 </Tabs>
               </CardContent>
