@@ -243,6 +243,11 @@ export const DatabasePage: React.FC = () => {
     setQueryResult(null);
     
     try {
+      toast({
+        title: "Processing query",
+        description: "Executing your question...",
+      });
+      
       const response = await generateResponse(question);
       setQueryResult(response);
 
@@ -252,7 +257,8 @@ export const DatabasePage: React.FC = () => {
       });
     } catch (error) {
       console.error('Error executing query:', error);
-      setQueryResult("Sorry, there was an error processing your query. Please try again.");
+      setQueryResult("Sorry, there was an error processing your query. Please try again. The error was: " + 
+        (error instanceof Error ? error.message : String(error)));
       
       toast({
         title: "Query failed",
@@ -327,15 +333,19 @@ export const DatabasePage: React.FC = () => {
   };
 
   const renderAIModelInfo = () => (
-    <div className="text-sm text-gray-500 mt-2">
-      Current AI Model: {currentAIModel}
+    <div className="text-sm text-gray-500 mt-2 flex items-center">
+      <span className="mr-2">Current AI Model:</span>
+      <Badge variant="outline" className="font-mono">{currentAIModel}</Badge>
     </div>
   );
 
   return (
     <Layout>
       <div className="container mx-auto py-6">
-        <h1 className="text-2xl font-bold mb-4">Database Explorer</h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Database Explorer</h1>
+          {renderAIModelInfo()}
+        </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="mb-4">
@@ -364,7 +374,6 @@ export const DatabasePage: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="flex justify-between items-center">
                       <span>Suggested Questions</span>
-                      <Badge variant="outline" className="ml-2">{currentAIModel}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -394,6 +403,7 @@ export const DatabasePage: React.FC = () => {
                       <div className="flex flex-col items-center justify-center p-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
                         <p className="text-gray-500">Executing query...</p>
+                        <p className="text-sm text-gray-400 mt-2 italic">{activeQuestion}</p>
                       </div>
                     </CardContent>
                   </Card>

@@ -1,196 +1,113 @@
 
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { SendHorizonal, Bot, User, Info } from "lucide-react";
-import { generateResponse, genId } from "@/utils/aiUtils";
-import { useToast } from "@/components/ui/use-toast";
-import { useLanguage } from "@/contexts/LanguageContext";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Send } from 'lucide-react';
+import { generateResponse, genId } from '@/utils/aiUtils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: Date;
+  role: 'user' | 'assistant';
 }
 
-const AIAssistant = () => {
-  const { t, language } = useLanguage();
-  const initialMessage = language === 'en' 
-    ? "Hello! I'm the ANI AI Assistant. How can I help you with innovation information today?"
-    : "Olá! Sou o Assistente de IA da ANI. Como posso ajudá-lo com informações sobre inovação hoje?";
-  
-  const systemInfo = language === 'en'
-    ? "You can ask questions about documents, links or files you've uploaded to the platform. I can also provide general information about innovation, funding, policies, and metrics."
-    : "Pode fazer perguntas sobre os documentos, links ou ficheiros que carregou na plataforma. Também posso fornecer informações gerais sobre inovação, financiamento, políticas e métricas.";
-
-  const INITIAL_MESSAGES: Message[] = [
-    {
-      id: '1',
-      role: 'assistant',
-      content: initialMessage,
-      timestamp: new Date()
-    },
-    {
-      id: '2',
-      role: 'system',
-      content: systemInfo,
-      timestamp: new Date()
-    }
-  ];
-
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+export const AIAssistant: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Update initial messages when language changes
-  useEffect(() => {
-    setMessages(INITIAL_MESSAGES);
-  }, [language]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleSendMessage = async () => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!input.trim()) return;
     
-    // Add user message
-    const userMessageId = genId();
     const userMessage: Message = {
-      id: userMessageId,
-      role: 'user',
+      id: genId(),
       content: input,
-      timestamp: new Date()
+      role: 'user'
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsTyping(true);
+    setInput('');
+    setIsLoading(true);
     
     try {
-      // Get response from the AI
       const response = await generateResponse(input);
+      
       const assistantMessage: Message = {
         id: genId(),
-        role: 'assistant',
         content: response,
-        timestamp: new Date()
+        role: 'assistant'
       };
       
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error getting AI response:', error);
+      console.error('Error getting response:', error);
       toast({
-        title: language === 'en' ? "Error processing response" : "Erro ao processar a resposta",
-        description: language === 'en' 
-          ? "There was a problem querying the knowledge base. Please try again." 
-          : "Ocorreu um problema ao consultar a base de conhecimento. Por favor, tente novamente.",
+        title: "Error",
+        description: "Failed to get a response. Please try again.",
         variant: "destructive",
       });
-      
-      const errorMessage: Message = {
-        id: genId(),
-        role: 'assistant',
-        content: language === 'en'
-          ? "I'm sorry, but I encountered an error processing your request. Please try again later or contact technical support if the problem persists."
-          : "Peço desculpa, mas encontrei um erro ao processar o seu pedido. Por favor, tente novamente mais tarde ou contacte o suporte técnico se o problema persistir.",
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsTyping(false);
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
-      <div className="border-b px-4 py-3 flex items-center gap-2">
-        <Bot className="h-5 w-5 text-primary" />
-        <h3 className="font-medium">{language === 'en' ? 'ANI Assistant' : 'Assistente ANI'}</h3>
-      </div>
-      
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((msg) => (
-            <div 
-              key={msg.id} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {msg.role === 'system' ? (
-                <div className="bg-blue-50 rounded-lg px-4 py-2 max-w-[90%] border border-blue-100 flex gap-2">
-                  <Info className="h-5 w-5 mt-1 text-blue-500 flex-shrink-0" />
-                  <div>
-                    <p className="whitespace-pre-wrap text-sm text-blue-700">{msg.content}</p>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  className={`rounded-lg px-4 py-2 max-w-[80%] flex gap-2 ${
-                    msg.role === 'user' 
-                      ? 'bg-primary text-white ml-auto' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {msg.role === 'assistant' && (
-                    <Bot className="h-5 w-5 mt-1 flex-shrink-0" />
-                  )}
-                  <div>
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                  {msg.role === 'user' && (
-                    <User className="h-5 w-5 mt-1 flex-shrink-0" />
-                  )}
-                </div>
-              )}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>AI Database Assistant</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto">
+          {messages.length === 0 ? (
+            <div className="text-center text-gray-500 py-6">
+              <p>Ask a question about the database, such as:</p>
+              <p className="italic mt-2">
+                "What funding programs are currently active?" or
+                "Show me metrics data for the Lisbon region"
+              </p>
             </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-lg px-4 py-2 text-gray-800">
-                <div className="flex gap-1">
-                  <span className="animate-bounce">●</span>
-                  <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>●</span>
-                  <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>●</span>
-                </div>
+          ) : (
+            messages.map(message => (
+              <div 
+                key={message.id} 
+                className={`p-3 rounded-lg ${
+                  message.role === 'user' 
+                    ? 'bg-blue-100 ml-8' 
+                    : 'bg-gray-100 mr-8'
+                }`}
+              >
+                <p className="text-sm font-semibold mb-1">
+                  {message.role === 'user' ? 'You' : 'AI Assistant'}
+                </p>
+                <div className="whitespace-pre-wrap">{message.content}</div>
               </div>
+            ))
+          )}
+          {isLoading && (
+            <div className="flex justify-center items-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             </div>
           )}
-          
-          <div ref={messagesEndRef} />
         </div>
-      </ScrollArea>
-      
-      <div className="p-4 border-t flex gap-2">
-        <Input
-          placeholder={language === 'en' 
-            ? "Ask about innovation metrics, funding, or policies..." 
-            : "Pergunte sobre métricas de inovação, financiamento ou políticas..."}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSendMessage();
-          }}
-          className="flex-1"
-        />
-        <Button onClick={handleSendMessage} disabled={isTyping || !input.trim()}>
-          <SendHorizonal className="h-5 w-5" />
-        </Button>
-      </div>
-    </div>
+        
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Ask a question about the database..."
+            className="resize-none"
+            disabled={isLoading}
+          />
+          <Button type="submit" size="icon" disabled={isLoading}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
-
-export { AIAssistant };

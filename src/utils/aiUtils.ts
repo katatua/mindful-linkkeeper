@@ -1,65 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
-// Function to get the current AI model from database settings
-export const getCurrentAIModel = async () => {
-  try {
-    const { data, error } = await supabase.rpc('get_database_setting', { setting_key: 'ai_model' });
-    
-    if (error) {
-      console.error('Error fetching AI model:', error);
-      return 'Unknown';
-    }
-    
-    return data || 'Not set';
-  } catch (err) {
-    console.error('Unexpected error fetching AI model:', err);
-    return 'Error retrieving model';
-  }
-};
-
-// Generate a unique ID for messages
-export const genId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
-};
-
-// Generate an AI response using the Supabase edge function
-export const generateResponse = async (prompt: string) => {
-  try {
-    const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { prompt }
-    });
-    
-    if (error) throw error;
-    
-    return data?.response || "Sorry, I couldn't generate a response at this time.";
-  } catch (error) {
-    console.error('Error generating AI response:', error);
-    throw new Error('Failed to generate response');
-  }
-};
-
-// Classify a document using the Supabase edge function
-export const classifyDocument = async (documentInfo: {
-  title: string;
-  summary: string;
-  fileName: string;
-}) => {
-  try {
-    const { data, error } = await supabase.functions.invoke('classify-document', {
-      body: documentInfo
-    });
-    
-    if (error) throw error;
-    
-    return data?.classification || 'uncategorized';
-  } catch (error) {
-    console.error('Error classifying document:', error);
-    return 'uncategorized';
-  }
-};
-
-// Suggested questions for the database explorer
+// Add the missing export for suggestedDatabaseQuestions
 export const suggestedDatabaseQuestions = [
   "What funding programs are available for renewable energy research?",
   "Show me the projects with highest funding amounts in the technology sector",
@@ -77,3 +17,78 @@ export const suggestedDatabaseQuestions = [
   "Who are the top patent holders in the pharmaceutical sector?",
   "What is the distribution of projects across different regions?"
 ];
+
+// Add function to get the current AI model
+export const getCurrentAIModel = async () => {
+  try {
+    const { data, error } = await supabase.rpc('get_database_setting', {
+      setting_key: 'ai_model'
+    });
+    
+    if (error) throw error;
+    return data || 'gemini-1.0-pro';
+  } catch (error) {
+    console.error('Error fetching AI model:', error);
+    return 'gemini-1.0-pro';
+  }
+};
+
+// Add function to generate a unique ID
+export const genId = () => {
+  return Math.random().toString(36).substring(2, 15);
+};
+
+// Add function to handle database queries and AI responses
+export const generateResponse = async (prompt: string) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('gemini-chat', {
+      body: { prompt, chatHistory: [] }
+    });
+
+    if (error) {
+      console.error('Error invoking Gemini Chat function:', error);
+      throw new Error(`Failed to generate response: ${error.message}`);
+    }
+
+    // Extract SQL and results from the response if available
+    let sqlQuery = '';
+    let queryResults = null;
+    
+    if (data && data.response) {
+      const sqlMatch = data.response.match(/<SQL>([\s\S]*?)<\/SQL>/);
+      const resultsMatch = data.response.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
+      
+      if (sqlMatch && sqlMatch[1]) {
+        sqlQuery = sqlMatch[1].trim();
+      }
+      
+      if (resultsMatch && resultsMatch[1]) {
+        try {
+          queryResults = JSON.parse(resultsMatch[1]);
+        } catch (e) {
+          console.error('Failed to parse results JSON:', e);
+          queryResults = [];
+        }
+      }
+      
+      // Clean up the response by removing the SQL and RESULTS tags
+      let cleanResponse = data.response
+        .replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
+        .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
+        .trim();
+        
+      return cleanResponse;
+    }
+    
+    return data.response || 'Sorry, I could not process your query.';
+  } catch (error) {
+    console.error('Error generating response:', error);
+    throw error;
+  }
+};
+
+// Add function to classify documents
+export const classifyDocument = async (text: string) => {
+  // This is a placeholder function - implement actual classification logic here
+  return { category: 'Unclassified', confidence: 1.0 };
+};
