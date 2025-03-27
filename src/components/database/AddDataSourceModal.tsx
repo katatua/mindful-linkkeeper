@@ -142,29 +142,13 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
       }
       console.log('User authenticated:', user.id);
 
-      // First, upload the file to storage
+      // Prepare file for upload
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
       console.log('Preparing to upload file:', fileName);
 
-      // Check if storage bucket exists and create it if not
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const filesBucket = buckets?.find(bucket => bucket.name === 'files');
-      
-      if (!filesBucket) {
-        console.log('Creating files bucket...');
-        const { data: newBucket, error: bucketError } = await supabase.storage.createBucket('files', {
-          public: true
-        });
-        
-        if (bucketError) {
-          console.error('Error creating bucket:', bucketError);
-          throw new Error('Failed to create storage bucket');
-        }
-        console.log('Bucket created:', newBucket);
-      }
-
+      // Upload file to storage
       console.log('Uploading file to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
@@ -172,7 +156,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        throw uploadError;
+        throw new Error(`Erro ao fazer upload do arquivo: ${uploadError.message}`);
       }
       console.log('File uploaded successfully:', uploadData);
 
@@ -184,31 +168,34 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
       setIsAnalyzing(true);
       console.log('Beginning file content extraction for AI analysis...');
       let fileContent = '';
+      let analysisData = { summary: '', analysis: '', suggestedCategory: '' };
+      
       try {
         fileContent = await readFileContent(file);
         console.log('File content extracted, length:', fileContent.length);
+        
+        // Call the AI analysis edge function
+        console.log('Calling analyze-document function...');
+        const { data, error: analysisError } = await supabase.functions.invoke('analyze-document', {
+          body: {
+            content: fileContent,
+            title: file.name,
+            type: file.type,
+            fileUrl: fileUrl
+          }
+        });
+
+        if (analysisError) {
+          console.warn('Warning: Error analyzing document:', analysisError);
+          // Continue without analysis data
+        } else if (data) {
+          analysisData = data;
+          console.log('Analysis complete:', analysisData);
+        }
       } catch (error) {
         console.error('Error reading file content:', error);
         // Continue with limited or no content for analysis
         fileContent = `Unable to read content from ${file.name} (${file.type})`;
-      }
-
-      // Call the AI analysis edge function
-      console.log('Calling analyze-document function...');
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-document', {
-        body: {
-          content: fileContent,
-          title: file.name,
-          type: file.type,
-          fileUrl: fileUrl
-        }
-      });
-
-      if (analysisError) {
-        console.error('Error analyzing document:', analysisError);
-        // Continue without analysis data
-      } else {
-        console.log('Analysis complete:', analysisData);
       }
 
       // Create a link entry for the file
@@ -235,7 +222,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
 
       if (linkError) {
         console.error('Error creating link entry:', linkError);
-        throw linkError;
+        throw new Error(`Erro ao criar entrada no banco de dados: ${linkError.message}`);
       }
       console.log('Database entry created:', linkData);
 
@@ -251,9 +238,10 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
       navigate(`/database?tab=datasources`);
     } catch (error) {
       console.error('Error in upload process:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: 'Erro ao carregar arquivo',
-        description: 'Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.',
+        description: `Ocorreu um erro ao processar o arquivo: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
@@ -281,6 +269,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
                 accept=".pdf,.csv"
                 onChange={handleFileChange}
                 disabled={isUploading || isAnalyzing}
+                className="cursor-pointer"
               />
               <p className="text-xs text-muted-foreground">
                 Formatos aceitos: PDF, CSV. Tamanho máximo: 10MB.
