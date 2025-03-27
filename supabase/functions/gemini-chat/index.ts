@@ -1,9 +1,7 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent";
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -22,32 +20,18 @@ serve(async (req) => {
     const requestData = await req.json();
     const { userMessage, chatHistory, databaseInfo } = requestData;
     
-    // Check if this is a database query request - include both English and Portuguese terms
-    const isDatabaseQuery = userMessage.toLowerCase().includes("database") || 
-                            userMessage.toLowerCase().includes("sql") ||
-                            userMessage.toLowerCase().includes("query") ||
-                            userMessage.toLowerCase().includes("data") ||
-                            userMessage.toLowerCase().includes("find") ||
-                            userMessage.toLowerCase().includes("show") ||
-                            userMessage.toLowerCase().includes("list") ||
-                            userMessage.toLowerCase().includes("get") ||
-                            // Portuguese terms
-                            userMessage.toLowerCase().includes("banco de dados") ||
-                            userMessage.toLowerCase().includes("consulta") ||
-                            userMessage.toLowerCase().includes("dados") ||
-                            userMessage.toLowerCase().includes("encontrar") ||
-                            userMessage.toLowerCase().includes("mostrar") ||
-                            userMessage.toLowerCase().includes("listar") ||
-                            userMessage.toLowerCase().includes("obter") ||
-                            userMessage.toLowerCase().includes("programas") ||
-                            userMessage.toLowerCase().includes("tabela") ||
-                            userMessage.toLowerCase().includes("buscar") ||
-                            userMessage.toLowerCase().includes("abertos") ||
-                            userMessage.toLowerCase().includes("que") ||
-                            userMessage.toLowerCase().includes("estão") ||
-                            userMessage.toLowerCase().includes("ano") ||
-                            userMessage.toLowerCase().includes("year") ||
-                            userMessage.toLowerCase().includes("2024");
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Dynamically fetch the AI model from database settings
+    const { data: aiModelData, error: aiModelError } = await supabase.rpc('get_database_setting', { setting_key: 'ai_model' });
+    
+    if (aiModelError) {
+      console.error('Error fetching AI model:', aiModelError);
+      throw new Error('Could not retrieve AI model configuration');
+    }
+
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModelData}:generateContent`;
 
     // Prepare chat history for Gemini
     const messages = chatHistory.map((msg: any) => ({
@@ -66,8 +50,6 @@ serve(async (req) => {
 
     // Modify the system prompt section to dynamically fetch database settings
     if (isDatabaseQuery) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      
       const { data: databaseTypeResult, error: databaseTypeError } = await supabase.rpc('get_database_setting', { setting_key: 'database_type' });
       const { data: databaseVersionResult, error: databaseVersionError } = await supabase.rpc('get_database_setting', { setting_key: 'database_version' });
       
@@ -179,7 +161,7 @@ serve(async (req) => {
     // Insert system prompt at the beginning
     messages.unshift(systemPrompt);
 
-    // Make request to Gemini API
+    // Make request to Gemini API using dynamically fetched model URL
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
@@ -291,9 +273,6 @@ serve(async (req) => {
           }
           
           console.log("Executing SQL query:", sqlQuery);
-          
-          // Initialize Supabase client with service role key for database access
-          const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
           
           // Execute the SQL query using the custom function
           const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
