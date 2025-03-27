@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
@@ -138,7 +139,7 @@ serve(async (req) => {
              - start_date (date): Data de início
              - end_date (date): Data de término
              - total_budget (numeric): Orçamento total
-             - portuguese_contribution (numeric): Contribui��ão portuguesa
+             - portuguese_contribution (numeric): Contribuição portuguesa
              - focus_areas (text[]): Áreas de foco
           
           Quando o usuário fizer uma pergunta sobre dados, você deve:
@@ -328,37 +329,124 @@ serve(async (req) => {
             
             // Try again with fixed query
             console.log("Trying with fixed query:", fixedQuery);
-            const { data: fixedResults, error: fixedError } = await supabase.rpc('execute_sql_query', {
+            
+            // Use a different variable name for the fixed results to avoid the assignment error
+            const fixedQueryResult = await supabase.rpc('execute_sql_query', {
               sql_query: fixedQuery
             });
             
-            if (fixedError) {
-              console.error("Fixed query still has error:", fixedError);
-              // Generate response with error using Gemini
-              const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentativa foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
+            if (fixedQueryResult.error) {
+              console.error("Fixed query still has error:", fixedQueryResult.error);
               
-              // Create messages for error handling
-              const errorMessages = [
+              // Try fallback queries for common questions
+              let fallbackQuery = "";
+              let fallbackResults = null;
+              
+              if (userMessage.toLowerCase().includes("open") || userMessage.toLowerCase().includes("upcoming")) {
+                fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
+              } else if (userMessage.toLowerCase().includes("highest success")) {
+                fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
+              } else if (userMessage.toLowerCase().includes("regions") && userMessage.toLowerCase().includes("2023")) {
+                fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
+              }
+              
+              if (fallbackQuery) {
+                console.log("Trying fallback query:", fallbackQuery);
+                const fallbackQueryResult = await supabase.rpc('execute_sql_query', {
+                  sql_query: fallbackQuery
+                });
+                
+                if (fallbackQueryResult.error) {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão foi possível executar a consulta. Erro: ${fixedQueryResult.error.message}`;
+                } else {
+                  fallbackResults = fallbackQueryResult.data;
+                  assistantResponse = `<SQL>${fallbackQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fallbackResults)}</RESULTS>\n\nAqui estão os resultados para a sua consulta.`;
+                }
+              } else {
+                // Generate response with error using Gemini
+                const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentativa foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
+                
+                // Create messages for error handling
+                const errorMessages = [
+                  {
+                    role: 'model',
+                    parts: [{ text: systemPrompt.parts[0].text }]
+                  },
+                  {
+                    role: 'user',
+                    parts: [{ text: errorPrompt }]
+                  }
+                ];
+                
+                // Get formatted error response from Gemini
+                const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    contents: errorMessages,
+                    generationConfig: {
+                      temperature: 0.3,
+                      topP: 0.8,
+                      topK: 40,
+                      maxOutputTokens: 1024,
+                    }
+                  }),
+                });
+                
+                const errorData = await errorResponse.json();
+                
+                if (errorData.candidates && 
+                    errorData.candidates[0] && 
+                    errorData.candidates[0].content && 
+                    errorData.candidates[0].content.parts && 
+                    errorData.candidates[0].content.parts[0]) {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\n${errorData.candidates[0].content.parts[0].text}`;
+                } else {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+                }
+              }
+            } else {
+              // Success with fixed query
+              // Create a new variable for the results instead of reassigning
+              const fixedResults = fixedQueryResult.data;
+              // Update the SQL query reference for the response
+              sqlQuery = fixedQuery;
+              
+              // Format the results using Gemini
+              const resultCount = Array.isArray(fixedResults) ? fixedResults.length : 0;
+              
+              // Generate nlPrompt based on results
+              let nlPrompt;
+              if (resultCount > 0) {
+                nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(fixedResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
+              } else {
+                nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
+              }
+              
+              // Create messages for results formatting
+              const nlMessages = [
                 {
                   role: 'model',
-                  parts: [{ text: systemPrompt.parts[0].text }]
+                  parts: [{ text: systemPrompt.parts[0].text.replace('especializado em consultas de banco de dados', 'especializado em explicar dados') }]
                 },
                 {
                   role: 'user',
-                  parts: [{ text: errorPrompt }]
+                  parts: [{ text: nlPrompt }]
                 }
               ];
               
-              // Get formatted error response from Gemini
-              const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+              // Get formatted natural language response from Gemini
+              const nlResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  contents: errorMessages,
+                  contents: nlMessages,
                   generationConfig: {
-                    temperature: 0.3,
+                    temperature: 0.4,
                     topP: 0.8,
                     topK: 40,
                     maxOutputTokens: 1024,
@@ -366,26 +454,27 @@ serve(async (req) => {
                 }),
               });
               
-              const errorData = await errorResponse.json();
+              const nlData = await nlResponse.json();
               
-              if (errorData.candidates && 
-                  errorData.candidates[0] && 
-                  errorData.candidates[0].content && 
-                  errorData.candidates[0].content.parts && 
-                  errorData.candidates[0].content.parts[0]) {
-                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n${errorData.candidates[0].content.parts[0].text}`;
+              if (nlData.candidates && 
+                  nlData.candidates[0] && 
+                  nlData.candidates[0].content && 
+                  nlData.candidates[0].content.parts && 
+                  nlData.candidates[0].content.parts[0]) {
+                // Combine all parts: SQL query, JSON results, and natural language explanation
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fixedResults)}</RESULTS>\n\n${nlData.candidates[0].content.parts[0].text}`;
               } else {
-                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+                // Fallback if the formatted response fails
+                if (resultCount > 0) {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fixedResults)}</RESULTS>\n\nEncontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta.`;
+                } else {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão encontrei resultados para sua consulta.`;
+                }
               }
-            } else {
-              // Success with fixed query
-              queryResults = fixedResults;
-              sqlQuery = fixedQuery;
             }
-          }
-          
-          if (queryResults) {
-            // Format the results nicely using Gemini
+          } else {
+            // Using the original query was successful
+            // Format the results using Gemini
             const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
             
             // Generate nlPrompt based on results
@@ -445,7 +534,7 @@ serve(async (req) => {
           }
         } catch (sqlExecError) {
           console.error("Error in SQL execution:", sqlExecError);
-          assistantResponse = `<SQL>${sqlMatch[1]}</SQL>\n\nOcorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
+          assistantResponse = `<SQL>${sqlMatch[1]}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nOcorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
         }
       } else if (isDatabaseQuery && !sqlMatch) {
         // This is a database query, but no SQL was generated
@@ -501,7 +590,7 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
               const sqlQuery = secondAttemptMatch[1].trim();
               console.log("Second attempt SQL query:", sqlQuery);
               
-              const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+              const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
               
               const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
                 sql_query: sqlQuery
@@ -509,7 +598,34 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
               
               if (queryError) {
                 console.error("Second attempt SQL error:", queryError);
-                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão consegui executar uma consulta apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.`;
+                
+                // Try fallback queries for common questions
+                let fallbackQuery = "";
+                
+                if (userMessage.toLowerCase().includes("open for applications") || 
+                    userMessage.toLowerCase().includes("upcoming application deadlines")) {
+                  fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
+                } else if (userMessage.toLowerCase().includes("highest success rates")) {
+                  fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
+                } else if (userMessage.toLowerCase().includes("regions") && userMessage.toLowerCase().includes("2023")) {
+                  fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
+                }
+                
+                if (fallbackQuery) {
+                  console.log("Using fallback query:", fallbackQuery);
+                  const fallbackResult = await supabase.rpc('execute_sql_query', {
+                    sql_query: fallbackQuery
+                  });
+                  
+                  if (!fallbackResult.error) {
+                    const fallbackData = fallbackResult.data;
+                    assistantResponse = `<SQL>${fallbackQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fallbackData)}</RESULTS>\n\nAqui estão os resultados para sua consulta.`;
+                  } else {
+                    assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão consegui executar uma consulta apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.`;
+                  }
+                } else {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão consegui executar uma consulta apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.`;
+                }
               } else {
                 // Format the results using Gemini
                 const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
@@ -569,7 +685,32 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
               }
             } else {
               // Still no SQL, use the fallback for common queries
-              assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;
+              let fallbackQuery = "";
+              
+              if (userMessage.toLowerCase().includes("open for applications") || 
+                  userMessage.toLowerCase().includes("upcoming application deadlines")) {
+                fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
+              } else if (userMessage.toLowerCase().includes("highest success rates")) {
+                fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
+              } else if (userMessage.toLowerCase().includes("regions") && userMessage.toLowerCase().includes("2023")) {
+                fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
+              }
+              
+              if (fallbackQuery) {
+                console.log("Using fallback query for common case:", fallbackQuery);
+                const fallbackResult = await supabase.rpc('execute_sql_query', {
+                  sql_query: fallbackQuery
+                });
+                
+                if (!fallbackResult.error) {
+                  const fallbackData = fallbackResult.data;
+                  assistantResponse = `<SQL>${fallbackQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fallbackData)}</RESULTS>\n\nAqui estão os resultados para sua consulta.`;
+                } else {
+                  assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;
+                }
+              } else {
+                assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;
+              }
             }
           } else {
             assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -534,12 +535,12 @@ const DatabasePage: React.FC = () => {
               setResults(toResultsArray(parsedResults));
             } catch (parseErr) {
               console.log("Failed to parse results from AI response, executing query directly");
-              const { success, results: queryResults, error: queryErr } = await executeSQL(queryToRun);
+              const { success, results: queryResults, error: sqlError } = await executeSQL(queryToRun);
               
               if (success) {
                 setResults(queryResults);
               } else {
-                setQueryError(queryErr || "Unknown error executing query");
+                setQueryError(sqlError || "Unknown error executing query");
               }
             }
           } else {
