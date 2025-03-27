@@ -6,6 +6,7 @@ import {
   Link as LinkIcon,
   FileUp,
   LogIn,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ const menuItems = [
   { title: "Add File", icon: FileUp, url: "/add-file" },
   { title: "Add Link", icon: LinkIcon, url: "/add-link" },
   { title: "Add Category", icon: FolderPlus, url: "/add-category" },
+  { title: "Database Explorer", icon: Database, url: "/database" },
 ];
 
 export function AppSidebar() {
@@ -73,7 +75,7 @@ export function AppSidebar() {
       <div className="p-4">
         <h3 className="text-sm font-medium text-gray-500 mb-3">Actions</h3>
         <nav className="space-y-1">
-          {isAuthenticated && menuItems.map((item) => (
+          {menuItems.map((item) => (
             <a
               key={item.title}
               href={item.url}
