@@ -14,6 +14,7 @@ import { Database, FileText, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FonteDados } from '@/types/databaseTypes';
+import { Link } from 'react-router-dom';
 
 const initialDataSources: FonteDados[] = [
   {
@@ -194,19 +195,31 @@ VALUES (
                       {source.id === 1 ? (
                         <>
                           <TableRow>
-                            <TableCell>Relatório Técnico ANI 2023</TableCell>
+                            <TableCell>
+                              <Link to="/documents/doc-1" className="text-primary hover:underline">
+                                Relatório Técnico ANI 2023
+                              </Link>
+                            </TableCell>
                             <TableCell>PDF</TableCell>
                             <TableCell>2.4 MB</TableCell>
                             <TableCell>{new Date().toLocaleDateString()}</TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell>Candidatura Projeto X</TableCell>
+                            <TableCell>
+                              <Link to="/documents/doc-2" className="text-primary hover:underline">
+                                Candidatura Projeto X
+                              </Link>
+                            </TableCell>
                             <TableCell>Word</TableCell>
                             <TableCell>1.8 MB</TableCell>
                             <TableCell>{new Date().toLocaleDateString()}</TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell>Questionário Inovação</TableCell>
+                            <TableCell>
+                              <Link to="/documents/doc-3" className="text-primary hover:underline">
+                                Questionário Inovação
+                              </Link>
+                            </TableCell>
                             <TableCell>Excel</TableCell>
                             <TableCell>3.2 MB</TableCell>
                             <TableCell>{new Date().toLocaleDateString()}</TableCell>

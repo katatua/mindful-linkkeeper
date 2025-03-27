@@ -30,3 +30,14 @@ export interface CooperacaoInternacional {
   data_fim?: string;
   outros_detalhes?: string;
 }
+
+export interface DocumentoExtraido {
+  id: string;
+  fonte_id: number;
+  nome: string;
+  tipo: string;
+  tamanho: string;
+  data_extracao: string;
+  conteudo?: string;
+  metadata?: Record<string, any>;
+}
