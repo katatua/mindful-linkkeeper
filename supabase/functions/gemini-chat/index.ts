@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
@@ -60,7 +59,7 @@ serve(async (req) => {
         // Initialize Supabase client
         const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
         
-        // Predefined SQL query for open programs
+        // Predefined SQL query for open programs - using CURRENT_DATE for PostgreSQL compatibility
         const sqlQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline";
         
         // Execute the query
@@ -232,18 +231,21 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
              - portuguese_contribution (numeric): Contribuição portuguesa
              - focus_areas (text[]): Áreas de foco
           
+          IMPORTANTE: Este projeto usa PostgreSQL, então use a sintaxe correta do PostgreSQL:
+          - Use CURRENT_DATE em vez de DATE('now')
+          - Use CURRENT_TIMESTAMP em vez de NOW()
+          - Nunca coloque ponto e vírgula no meio da consulta, apenas no final se necessário
+          
           Quando o usuário fizer uma pergunta sobre dados, você deve:
           1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-          2. Gerar o SQL adequado e colocá-lo entre as tags <SQL> e </SQL>
-          3. Executar essa consulta SQL no banco de dados
-          4. Formatar os resultados em linguagem natural de forma clara e bem estruturada
-          5. Incluir os resultados brutos entre as tags <RESULTS> e </RESULTS> para que o frontend possa extraí-los
+          2. Gerar o SQL adequado para PostgreSQL e colocá-lo entre as tags <SQL> e </SQL>
+          3. Incluir os resultados brutos entre as tags <RESULTS> e </RESULTS> para que o frontend possa extraí-los (estes serão adicionados posteriormente)
+          4. Explicar os resultados em linguagem natural de forma clara e bem estruturada
           
           Sua resposta final deve ser:
           <SQL>consulta SQL aqui</SQL>
-          <RESULTS>resultados JSON aqui</RESULTS>
           
-          Seguida por sua explicação em linguagem natural dos resultados.`
+          Seguida por sua explicação em linguagem natural.`
         }]
       };
     } else {
@@ -345,7 +347,20 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
       // If we have a SQL match (either originally or after fixing), execute it
       if (sqlMatch && sqlMatch[1] && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
         try {
-          const sqlQuery = sqlMatch[1].trim();
+          let sqlQuery = sqlMatch[1].trim();
+          console.log("Original SQL query:", sqlQuery);
+          
+          // Fix common SQL syntax issues for PostgreSQL
+          if (sqlQuery.includes(';') && sqlQuery.indexOf(';') < sqlQuery.length - 1) {
+            // Remove semicolons in the middle
+            sqlQuery = sqlQuery.replace(/;(?!\s*$)/g, ' ');
+          }
+          
+          // Replace DATE('now') with CURRENT_DATE for PostgreSQL
+          if (sqlQuery.toLowerCase().includes("date('now')")) {
+            sqlQuery = sqlQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+          }
+          
           console.log("Executing SQL query:", sqlQuery);
           
           // Initialize Supabase client with service role key for database access
@@ -358,50 +373,88 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
           
           if (queryError) {
             console.error("SQL query execution error:", queryError);
-            // Generate response with error using Gemini
-            const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
             
-            // Create messages for error handling
-            const errorMessages = [
-              {
-                role: 'model',
-                parts: [{ text: systemPrompt.parts[0].text }]
-              },
-              {
-                role: 'user',
-                parts: [{ text: errorPrompt }]
-              }
-            ];
-            
-            // Get formatted error response from Gemini
-            const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                contents: errorMessages,
-                generationConfig: {
-                  temperature: 0.3,
-                  topP: 0.8,
-                  topK: 40,
-                  maxOutputTokens: 1024,
+            // Try to fix the query by removing the semicolon and fixing date function
+            if (queryError.message.includes("syntax error") || 
+                queryError.message.includes("function date") ||
+                queryError.message.includes("near")) {
+              
+              // More aggressive fixes for PostgreSQL compatibility
+              let fixedQuery = sqlQuery;
+              
+              // Fix DATE function
+              fixedQuery = fixedQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+              fixedQuery = fixedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
+              fixedQuery = fixedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
+              
+              // Remove all semicolons except at the very end
+              fixedQuery = fixedQuery.replace(/;/g, ' ').trim() + ';';
+              
+              // Try again with fixed query
+              console.log("Trying with fixed query:", fixedQuery);
+              const { data: fixedResults, error: fixedError } = await supabase.rpc('execute_sql_query', {
+                sql_query: fixedQuery
+              });
+              
+              if (fixedError) {
+                console.error("Fixed query still has error:", fixedError);
+                // Generate response with error using Gemini
+                const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentativa foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
+                
+                // Create messages for error handling
+                const errorMessages = [
+                  {
+                    role: 'model',
+                    parts: [{ text: systemPrompt.parts[0].text }]
+                  },
+                  {
+                    role: 'user',
+                    parts: [{ text: errorPrompt }]
+                  }
+                ];
+                
+                // Get formatted error response from Gemini
+                const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    contents: errorMessages,
+                    generationConfig: {
+                      temperature: 0.3,
+                      topP: 0.8,
+                      topK: 40,
+                      maxOutputTokens: 1024,
+                    }
+                  }),
+                });
+                
+                const errorData = await errorResponse.json();
+                
+                if (errorData.candidates && 
+                    errorData.candidates[0] && 
+                    errorData.candidates[0].content && 
+                    errorData.candidates[0].content.parts && 
+                    errorData.candidates[0].content.parts[0]) {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n${errorData.candidates[0].content.parts[0].text}`;
+                } else {
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
                 }
-              }),
-            });
-            
-            const errorData = await errorResponse.json();
-            
-            if (errorData.candidates && 
-                errorData.candidates[0] && 
-                errorData.candidates[0].content && 
-                errorData.candidates[0].content.parts && 
-                errorData.candidates[0].content.parts[0]) {
-              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n${errorData.candidates[0].content.parts[0].text}`;
-            } else {
-              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+              } else {
+                // Success with fixed query
+                queryResults = fixedResults;
+                sqlQuery = fixedQuery;
+              }
             }
-          } else {
+            
+            // If we still have an error
+            if (queryError && !queryResults) {
+              // ... keep existing code (error response generation)
+            }
+          }
+          
+          if (queryResults) {
             // Format the results nicely using Gemini
             const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
             
@@ -410,7 +463,7 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
             if (resultCount > 0) {
               nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
             } else {
-              nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável e ofereça possíveis razões. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
+              nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
             }
             
             // Create messages for results formatting

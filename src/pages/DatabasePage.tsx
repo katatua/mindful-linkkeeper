@@ -183,9 +183,19 @@ const DatabasePage: React.FC = () => {
     return name in (supabase.from as any)._tables;
   };
 
-  const repairSqlQuery = (query: string, errorMessage: string): string => {
+  const repairSqlQuery = (query: string): string => {
     // Basic SQL repair for common issues
     let repairedQuery = query.trim();
+    
+    // Remove any semicolons in the middle of the query
+    repairedQuery = repairedQuery.replace(/;(?!\s*$)/g, ' ');
+    
+    // Fix DATE('now') to use PostgreSQL's CURRENT_DATE
+    repairedQuery = repairedQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+    
+    // Fix common function name issues
+    repairedQuery = repairedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
+    repairedQuery = repairedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
     
     // If query ends with FROM, add the most likely table based on the columns
     if (repairedQuery.toLowerCase().endsWith('from')) {
@@ -284,6 +294,25 @@ const DatabasePage: React.FC = () => {
         
         if (sqlMatch && sqlMatch[1]) {
           let queryToRun = sqlMatch[1].trim();
+          
+          // Automatically fix common SQL syntax issues
+          if (queryToRun.includes(';') && queryToRun.indexOf(';') < queryToRun.length - 1) {
+            queryToRun = repairSqlQuery(queryToRun);
+            toast({
+              title: "Query automatically fixed",
+              description: "We removed semicolons inside your query and fixed some syntax.",
+            });
+          }
+          
+          // Replace DATE('now') with CURRENT_DATE for PostgreSQL compatibility
+          if (queryToRun.toLowerCase().includes("date('now')")) {
+            queryToRun = queryToRun.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+            toast({
+              title: "Query automatically fixed",
+              description: "We replaced DATE('now') with CURRENT_DATE for PostgreSQL compatibility.",
+            });
+          }
+          
           setSqlQuery(queryToRun);
           
           // If there's a results section, we already have the results from the edge function
@@ -307,7 +336,7 @@ const DatabasePage: React.FC = () => {
                 console.error("SQL execution error:", queryError);
                 
                 // Try to repair the query
-                const repairedQuery = repairSqlQuery(queryToRun, queryError.message);
+                const repairedQuery = repairSqlQuery(queryToRun);
                 if (repairedQuery !== queryToRun) {
                   setSqlQuery(repairedQuery);
                   toast({
