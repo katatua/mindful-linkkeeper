@@ -3,21 +3,21 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Add the missing export for suggestedDatabaseQuestions
 export const suggestedDatabaseQuestions = [
-  "What funding programs are available for renewable energy research?",
-  "Show me the projects with highest funding amounts in the technology sector",
-  "What are the latest innovation metrics for Lisbon region?",
-  "Which international collaborations involve AI research?",
-  "What is the average funding amount for biotech projects?",
-  "List all policy frameworks related to digital transformation",
-  "Which research institutions have the most projects in healthcare?",
-  "What was the funding success rate for startups last year?",
-  "How many international collaborations are there with Germany?",
-  "What metrics show the biggest improvement over the last 5 years?",
-  "Which sectors receive the most funding in the North region?",
-  "What's the timeline for implementing the National Innovation Strategy?",
-  "Are there any funding programs specifically for SMEs?",
-  "Who are the top patent holders in the pharmaceutical sector?",
-  "What is the distribution of projects across different regions?"
+  "Which funding programs include renewable energy in their sector focus?",
+  "List the top 5 projects with highest funding amounts",
+  "Show innovation metrics for the Lisbon region from the last year",
+  "Find international collaborations related to research and development",
+  "What is the average funding amount for projects in the biotech sector?",
+  "Show me all policy frameworks with status 'active'",
+  "Which organizations have the most funded projects?",
+  "List all funding programs with application deadlines in the next 3 months",
+  "Which countries have the most international collaborations with Portugal?",
+  "What metrics have shown improvement in the technology sector?",
+  "Show projects from the North region sorted by funding amount",
+  "What policy frameworks were implemented in the last year?",
+  "Find funding programs specifically targeting small businesses",
+  "Which sectors have the highest average funding amounts?",
+  "Show the distribution of projects across different regions"
 ];
 
 // Add function to get the current AI model

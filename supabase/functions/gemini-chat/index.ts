@@ -86,7 +86,7 @@ serve(async (req) => {
           - Use EXTRACT(YEAR FROM coluna) em vez de strftime('%Y', coluna)
           - Use TO_CHAR(coluna, 'YYYY-MM-DD') para formatação de datas
           - Use CURRENT_TIMESTAMP em vez de NOW()
-          - Nunca coloque ponto e vírgula no meio da consulta, apenas no final se necessário
+          - NUNCA USE ponto e vírgula no final das consultas, isso causa erro
           
           Você tem acesso às seguintes tabelas no banco de dados ${databaseType}:
           
@@ -161,6 +161,7 @@ serve(async (req) => {
              - Use aspas simples para strings
              - Não use aspas duplas para nomes de colunas, a menos que seja absolutamente necessário
              - Verifique cuidadosamente o nome das colunas
+             - NUNCA use ponto e vírgula no final das consultas
           4. Sua resposta final deve ter a seguinte estrutura:
           
           <SQL>consulta SQL aqui</SQL>
@@ -251,6 +252,9 @@ serve(async (req) => {
           // Remove code formatting if present
           sqlQuery = sqlQuery.replace(/```sql\n/g, '').replace(/```/g, '');
           
+          // Remove semicolons from the end of the query which cause errors
+          sqlQuery = sqlQuery.replace(/;$/g, '');
+          
           console.log("Executing SQL query:", sqlQuery);
           
           // Execute the SQL query using the custom function
@@ -261,8 +265,27 @@ serve(async (req) => {
           if (queryError) {
             console.error("SQL query execution error:", queryError);
             
-            // Return the error with the original query
-            assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nOcorreu um erro ao executar a consulta: ${queryError.message}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
+            // Try to fix the query by removing semicolons
+            if (queryError.message.includes("syntax error at or near")) {
+              const fixedQuery = sqlQuery.replace(/;/g, '');
+              console.log("Trying with fixed query:", fixedQuery);
+              
+              const { data: fixedResults, error: fixedError } = await supabase.rpc('execute_sql_query', {
+                sql_query: fixedQuery
+              });
+              
+              if (fixedError) {
+                console.error("Fixed query still has error:", fixedError);
+                // Return the error with the original query
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nOcorreu um erro ao executar a consulta: ${queryError.message}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
+              } else {
+                // Success with the fixed query
+                assistantResponse = `<SQL>${fixedQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fixedResults)}</RESULTS>\n\n${generateResponseText(fixedResults, prompt)}`;
+              }
+            } else {
+              // Return the original error
+              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nOcorreu um erro ao executar a consulta: ${queryError.message}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
+            }
           } else {
             // Success with the query
             assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\n${generateResponseText(queryResults, prompt)}`;

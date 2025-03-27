@@ -67,8 +67,8 @@ export const AIAssistant: React.FC = () => {
             <div className="text-center text-gray-500 py-6">
               <p>Ask a question about the database, such as:</p>
               <p className="italic mt-2">
-                "What funding programs are currently active?" or
-                "Show me metrics data for the Lisbon region"
+                "Which funding programs include renewable energy in their sector focus?" or
+                "Show me projects with the highest funding amounts"
               </p>
             </div>
           ) : (
