@@ -17,9 +17,10 @@ import { Input } from '@/components/ui/input';
 import { suggestedDatabaseQuestions } from '@/utils/aiUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, Database, FileQuestion, Search } from 'lucide-react';
+import { ChevronRight, Database, FileQuestion, Search, Database as DatabaseIcon, FileText } from 'lucide-react';
 import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
+import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 
 interface GenericTableData {
   id?: string;
@@ -307,6 +308,10 @@ export const DatabasePage: React.FC = () => {
               <Search className="w-4 h-4 mr-2" />
               Query Assistant
             </TabsTrigger>
+            <TabsTrigger value="datasources">
+              <FileText className="w-4 h-4 mr-2" />
+              Fontes de Dados
+            </TabsTrigger>
             <TabsTrigger value="schema">
               <Database className="w-4 h-4 mr-2" />
               Database Schema
@@ -371,6 +376,10 @@ export const DatabasePage: React.FC = () => {
                 )}
               </div>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="datasources">
+            <DataSourcesTab />
           </TabsContent>
           
           <TabsContent value="schema">
