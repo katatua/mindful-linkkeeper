@@ -38,6 +38,6 @@ export interface DocumentoExtraido {
   tipo: string;
   tamanho: string;
   data_extracao: string;
-  conteudo?: string;
+  conteudo: string;
   metadata?: Record<string, any>;
 }

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, Eye, FileText, Info, File, FileSpreadsheet } from 'lucide-react';
 import { DocumentoExtraido } from '@/types/databaseTypes';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 // Enhanced sample data with more detailed content
@@ -211,13 +211,13 @@ const DocumentDetailPage: React.FC = () => {
     if (!document) return;
     
     // Create a blob with the document content
-    const blob = new Blob([document.conteudo], { type: 'text/plain' });
+    const blob = new Blob([document.conteudo || ''], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
     // Create a temporary anchor element to trigger the download
     const a = document.createElement('a');
     a.href = url;
-    a.download = document.nome;
+    a.download = `${document.nome}.${document.tipo.toLowerCase()}`;
     document.body.appendChild(a);
     a.click();
     
@@ -402,6 +402,9 @@ const DocumentDetailPage: React.FC = () => {
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{document.nome}</DialogTitle>
+              <DialogDescription>
+                Tipo: {document.tipo} | Tamanho: {document.tamanho} | Data: {document.data_extracao}
+              </DialogDescription>
             </DialogHeader>
             <div className="p-4 bg-white rounded-lg shadow">
               <div className="whitespace-pre-line font-mono text-sm">{document.conteudo}</div>
