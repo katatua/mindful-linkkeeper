@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -306,28 +305,28 @@ const DatabasePage: React.FC = () => {
     try {
       console.log("Executing SQL query:", sqlQuery);
       
-      const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+      const { data: queryResults, error: queryExecutionError } = await supabase.rpc('execute_sql_query', {
         sql_query: sqlQuery
       });
       
-      if (queryError) {
-        console.log("Query error, attempting to repair:", queryError.message);
+      if (queryExecutionError) {
+        console.log("Query error, attempting to repair:", queryExecutionError.message);
         
         const repairedQuery = repairSqlQuery(sqlQuery);
         
         if (repairedQuery !== sqlQuery) {
           console.log("Repaired query:", repairedQuery);
           
-          const { data: repairedResults, error: repairedError } = await supabase.rpc('execute_sql_query', {
+          const { data: repairedResults, error: repairedQueryError } = await supabase.rpc('execute_sql_query', {
             sql_query: repairedQuery
           });
           
-          if (repairedError) {
-            console.error("Repair attempt failed:", repairedError.message);
+          if (repairedQueryError) {
+            console.error("Repair attempt failed:", repairedQueryError.message);
             return { 
               success: false, 
               results: [], 
-              error: repairedError.message
+              error: repairedQueryError.message
             };
           } else {
             console.log("Query repair succeeded");
@@ -340,7 +339,7 @@ const DatabasePage: React.FC = () => {
           return { 
             success: false, 
             results: [], 
-            error: queryError.message
+            error: queryExecutionError.message
           };
         }
       } else {
@@ -349,13 +348,12 @@ const DatabasePage: React.FC = () => {
           results: toResultsArray(queryResults)
         };
       }
-    } catch (err) {
-      // Changed 'error' to 'err' here to avoid the variable redeclaration
-      console.error("Error executing SQL:", err);
+    } catch (sqlExecutionError) {
+      console.error("Error executing SQL:", sqlExecutionError);
       return {
         success: false,
         results: [],
-        error: err.message
+        error: sqlExecutionError instanceof Error ? sqlExecutionError.message : String(sqlExecutionError)
       };
     }
   };
