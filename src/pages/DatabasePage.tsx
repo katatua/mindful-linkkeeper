@@ -145,7 +145,6 @@ const DatabasePage: React.FC = () => {
         for (let i = 0; i < updatedTables.length; i++) {
           const table = updatedTables[i];
           
-          // Type check to ensure the table name is valid before querying
           if (isValidTableName(table.name)) {
             const { data, error } = await supabase
               .from(table.name)
@@ -178,7 +177,6 @@ const DatabasePage: React.FC = () => {
     fetchSampleData();
   }, []);
 
-  // Helper function to validate if a table name is in our database schema
   const isValidTableName = (name: string): name is TableName => {
     return name in (supabase.from as any)._tables;
   };
@@ -199,49 +197,33 @@ const DatabasePage: React.FC = () => {
     setSqlQuery("");
 
     try {
-      // Prepare a detailed prompt with the database schema information
-      const schemaInfo = tables.map(table => {
-        const columnsInfo = table.columns.map(col => 
-          `- ${col.name} (${col.type}): ${col.nullable ? 'Nullable' : 'Not Nullable'}${col.default ? `, Default: ${col.default}` : ''}`
-        ).join('\n');
-        
-        return `${table.name} table:\n${columnsInfo}`;
-      }).join('\n\n');
+      const response = await generateResponse(question);
       
-      const prompt = `Given this database schema:\n\n${schemaInfo}\n\nGenerate a SQL query to answer this question: "${question}"\n\nThe query should:\n1. Use the appropriate table based on the question\n2. Select only necessary columns\n3. Include proper WHERE clauses and JOINs if needed\n4. Order results appropriately\n5. Limit results if returning multiple rows\n6. Return data in a format suitable for visualization\n\nReturn ONLY the SQL query, wrapped in <SQL></SQL> tags.`;
-      
-      // Call the GPT API to generate SQL
-      const response = await generateResponse(prompt);
-      
-      // Extract SQL query from response
-      const sqlMatch = response.match(/<SQL>([\s\S]*?)<\/SQL>/);
-      
-      if (sqlMatch && sqlMatch[1]) {
-        const extractedSql = sqlMatch[1].trim();
-        setSqlQuery(extractedSql);
-        
-        // Execute the SQL query using Supabase
-        const { data, error } = await supabase.rpc('execute_sql_query', {
-          sql_query: extractedSql
-        });
-        
-        if (error) {
-          throw new Error(`SQL execution error: ${error.message}`);
+      if (response) {
+        const sqlMatch = response.match(/<SQL>([\s\S]*?)<\/SQL>/);
+        if (sqlMatch && sqlMatch[1]) {
+          setSqlQuery(sqlMatch[1].trim());
         }
         
-        setResults(data);
+        const resultsMatch = response.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
+        if (resultsMatch && resultsMatch[1]) {
+          try {
+            setResults(JSON.parse(resultsMatch[1].trim()));
+          } catch (error) {
+            console.error("Error parsing results JSON:", error);
+          }
+        }
         
-        // Generate an explanation of the results
-        const explanationPrompt = `The following SQL query was executed: \n\n${extractedSql}\n\nHere are the results:\n${JSON.stringify(data, null, 2)}\n\nPlease provide a concise, clear explanation of these results in plain language. Summarize the key insights and answer the original question: "${question}"`;
-        const explanationResponse = await generateResponse(explanationPrompt);
-        setExplanation(explanationResponse);
+        setExplanation(response.replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
+          .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
+          .trim());
       } else {
-        throw new Error("Couldn't extract a valid SQL query from the response");
+        throw new Error("Received empty response from AI");
       }
     } catch (error) {
       console.error("Error in question handling:", error);
       toast({
-        title: "Error generating or executing SQL",
+        title: "Error processing query",
         description: error.message,
         variant: "destructive"
       });

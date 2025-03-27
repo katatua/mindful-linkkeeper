@@ -130,6 +130,9 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
               data.candidates[0].content.parts && 
               data.candidates[0].content.parts[0]) {
             assistantResponse = data.candidates[0].content.parts[0].text;
+            
+            // Add the SQL query and results in special tags for the frontend to extract
+            assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\n${assistantResponse}`;
           }
           
           return new Response(
@@ -231,16 +234,16 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
           
           Quando o usuário fizer uma pergunta sobre dados, você deve:
           1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-          2. Gerar o SQL adequado sem nenhuma explicação
-          3. Colocar o SQL EXATAMENTE entre as tags <SQL> e </SQL>
-          4. Certifique-se de que a consulta retorne apenas os campos relevantes para a pergunta
-          5. NÃO EXPLIQUE O SQL GERADO, apenas coloque-o entre as tags
+          2. Gerar o SQL adequado e colocá-lo entre as tags <SQL> e </SQL>
+          3. Executar essa consulta SQL no banco de dados
+          4. Formatar os resultados em linguagem natural de forma clara e bem estruturada
+          5. Incluir os resultados brutos entre as tags <RESULTS> e </RESULTS> para que o frontend possa extraí-los
           
-          Por exemplo, se a pergunta for "que funding programs ainda estão abertos?", você deve responder:
+          Sua resposta final deve ser:
+          <SQL>consulta SQL aqui</SQL>
+          <RESULTS>resultados JSON aqui</RESULTS>
           
-          <SQL>SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline</SQL>
-          
-          Não inclua nenhum outro texto na sua resposta além do SQL entre as tags <SQL> e </SQL>.`
+          Seguida por sua explicação em linguagem natural dos resultados.`
         }]
       };
     } else {
@@ -394,9 +397,9 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
                 errorData.candidates[0].content && 
                 errorData.candidates[0].content.parts && 
                 errorData.candidates[0].content.parts[0]) {
-              assistantResponse = errorData.candidates[0].content.parts[0].text;
+              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n${errorData.candidates[0].content.parts[0].text}`;
             } else {
-              assistantResponse = `Encontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
             }
           } else {
             // Format the results nicely using Gemini
@@ -446,19 +449,20 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
                 nlData.candidates[0].content && 
                 nlData.candidates[0].content.parts && 
                 nlData.candidates[0].content.parts[0]) {
-              assistantResponse = nlData.candidates[0].content.parts[0].text;
+              // Combine all parts: SQL query, JSON results, and natural language explanation
+              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\n${nlData.candidates[0].content.parts[0].text}`;
             } else {
               // Fallback if the formatted response fails
               if (resultCount > 0) {
-                assistantResponse = `Encontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta:\n\n\`\`\`json\n${JSON.stringify(queryResults, null, 2)}\n\`\`\``;
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\nEncontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta.`;
               } else {
-                assistantResponse = "Não encontrei resultados para sua consulta.";
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão encontrei resultados para sua consulta.`;
               }
             }
           }
         } catch (sqlExecError) {
           console.error("Error in SQL execution:", sqlExecError);
-          assistantResponse = `Ocorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
+          assistantResponse = `<SQL>${sqlMatch[1]}</SQL>\n\nOcorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
         }
       } else if (isDatabaseQuery && !sqlMatch) {
         // This is a database query, but no SQL was generated
@@ -522,7 +526,7 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
               
               if (queryError) {
                 console.error("Second attempt SQL error:", queryError);
-                assistantResponse = `Não consegui executar uma consulta apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.`;
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão consegui executar uma consulta apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.`;
               } else {
                 // Format the results using Gemini
                 const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
@@ -570,13 +574,13 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
                     nlData.candidates[0].content && 
                     nlData.candidates[0].content.parts && 
                     nlData.candidates[0].content.parts[0]) {
-                  assistantResponse = nlData.candidates[0].content.parts[0].text;
+                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\n${nlData.candidates[0].content.parts[0].text}`;
                 } else {
                   // Fallback
                   if (resultCount > 0) {
-                    assistantResponse = `Encontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta:\n\n\`\`\`json\n${JSON.stringify(queryResults, null, 2)}\n\`\`\``;
+                    assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\nEncontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta.`;
                   } else {
-                    assistantResponse = "Não encontrei resultados para sua consulta.";
+                    assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nNão encontrei resultados para sua consulta.`;
                   }
                 }
               }
