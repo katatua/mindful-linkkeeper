@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -133,7 +132,6 @@ export const DatabasePage: React.FC = () => {
   const [queryResult, setQueryResult] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Get active tab from URL query parameter
   const getActiveTabFromURL = () => {
     const params = new URLSearchParams(location.search);
     return params.get('tab') || 'query';
@@ -141,7 +139,6 @@ export const DatabasePage: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState(getActiveTabFromURL());
 
-  // Update active tab when URL changes
   useEffect(() => {
     setActiveTab(getActiveTabFromURL());
   }, [location.search]);
