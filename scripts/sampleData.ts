@@ -544,4 +544,332 @@ export const samplePolicyFrameworks = [
   }
 ];
 
+// Let's add new sample data tables to support more complex queries
+
+export const sampleResearchers = [
+  {
+    id: "1rs23t45-6789-0rst-uvw0-1234rstu5678",
+    name: "Dr. Maria Santos",
+    institution_id: "9in01s23-4567-8ins-tab8-9012inst3456",
+    specialization: "Renewable Energy",
+    h_index: 32,
+    publication_count: 78,
+    patent_count: 5,
+    email: "maria.santos@renewabletech.pt"
+  },
+  {
+    id: "2st34u56-7890-1stu-vwx1-2345stuv6789",
+    name: "Dr. João Silva",
+    institution_id: "8in90r12-3456-7ins-sab7-8901inst2345",
+    specialization: "Artificial Intelligence",
+    h_index: 41,
+    publication_count: 92,
+    patent_count: 3,
+    email: "joao.silva@aicenter.pt"
+  },
+  {
+    id: "3tu45v67-8901-2tuv-wxy2-3456tuvw7890",
+    name: "Dr. Ana Ferreira",
+    institution_id: "7in89q01-2345-6ins-rab6-7890inst1234",
+    specialization: "Biotechnology",
+    h_index: 38,
+    publication_count: 85,
+    patent_count: 7,
+    email: "ana.ferreira@biotech.pt"
+  },
+  {
+    id: "4uv56w78-9012-3uvw-xyz3-4567uvwx8901",
+    name: "Dr. Miguel Costa",
+    institution_id: "6in78p90-1234-5ins-qab5-6789inst0123",
+    specialization: "Nanotechnology",
+    h_index: 29,
+    publication_count: 65,
+    patent_count: 4,
+    email: "miguel.costa@nanotech.pt"
+  },
+  {
+    id: "5vw67x89-0123-4vwx-yza4-5678vwxy9012",
+    name: "Dr. Sofia Oliveira",
+    institution_id: "5in67o89-0123-4ins-pab4-5678inst9012",
+    specialization: "Quantum Computing",
+    h_index: 35,
+    publication_count: 73,
+    patent_count: 2,
+    email: "sofia.oliveira@quantum.pt"
+  },
+  {
+    id: "6wx78y90-1234-5wxy-zab5-6789wxyz0123",
+    name: "Dr. Rui Almeida",
+    institution_id: "4in56n78-9012-3ins-oab3-4567inst8901",
+    specialization: "Biotech",
+    h_index: 44,
+    publication_count: 112,
+    patent_count: 8,
+    email: "rui.almeida@bioresearch.pt"
+  },
+  {
+    id: "7xy89z01-2345-6xyz-abc6-7890xyza1234",
+    name: "Dr. Laura Martins",
+    institution_id: "3in45m67-8901-2ins-nab2-3456inst7890",
+    specialization: "Renewable Energy",
+    h_index: 31,
+    publication_count: 69,
+    patent_count: 6,
+    email: "laura.martins@solartech.pt"
+  }
+];
+
+export const sampleInstitutions = [
+  {
+    id: "9in01s23-4567-8ins-tab8-9012inst3456",
+    institution_name: "Instituto de Tecnologias Renováveis",
+    type: "Research Institute",
+    region: "Lisbon",
+    founding_date: "1998-03-15",
+    collaboration_count: 24,
+    specialization_areas: ["solar energy", "wind power", "energy storage"],
+    project_history: ["EcoInnovate Phase I", "Green Energy Transition", "Next-Gen Solar Cells"]
+  },
+  {
+    id: "8in90r12-3456-7ins-sab7-8901inst2345",
+    institution_name: "Centro de Inteligência Artificial de Portugal",
+    type: "Research Center",
+    region: "Porto",
+    founding_date: "2005-06-22",
+    collaboration_count: 31,
+    specialization_areas: ["machine learning", "computer vision", "natural language processing"],
+    project_history: ["AI for Health", "Smart City AI Infrastructure", "AI Ethics Framework"]
+  },
+  {
+    id: "7in89q01-2345-6ins-rab6-7890inst1234",
+    institution_name: "Instituto Nacional de Biotecnologia",
+    type: "National Research Institute",
+    region: "Coimbra",
+    founding_date: "1992-11-08",
+    collaboration_count: 28,
+    specialization_areas: ["biomedical research", "pharmaceutical development", "genomics"],
+    project_history: ["Novel Antibiotics Program", "Biomarker Discovery", "Vaccine Development Platform"]
+  },
+  {
+    id: "6in78p90-1234-5ins-qab5-6789inst0123",
+    institution_name: "Centro de Nanotecnologia Aplicada",
+    type: "Research Center",
+    region: "Braga",
+    founding_date: "2007-04-12",
+    collaboration_count: 19,
+    specialization_areas: ["nanomaterials", "nanoelectronics", "nanofabrication"],
+    project_history: ["Advanced Materials Development", "Nano-coatings Research", "Quantum Dots Applications"]
+  },
+  {
+    id: "5in67o89-0123-4ins-pab4-5678inst9012",
+    institution_name: "Instituto Quantum de Lisboa",
+    type: "Research Institute",
+    region: "Lisbon",
+    founding_date: "2012-09-20",
+    collaboration_count: 15,
+    specialization_areas: ["quantum computing", "quantum cryptography", "quantum sensors"],
+    project_history: ["Quantum Algorithms", "Quantum Network Prototype", "Quantum Encryption Standards"]
+  },
+  {
+    id: "4in56n78-9012-3ins-oab3-4567inst8901",
+    institution_name: "Centro de Investigação em Biotecnologia",
+    type: "Research Center",
+    region: "Porto",
+    founding_date: "2001-07-14",
+    collaboration_count: 22,
+    specialization_areas: ["biotech", "bioinformatics", "synthetic biology"],
+    project_history: ["Biotech Innovation Program", "Synthetic Biology Applications", "Gene Therapy Research"]
+  },
+  {
+    id: "3in45m67-8901-2ins-nab2-3456inst7890",
+    institution_name: "Instituto de Energia Solar",
+    type: "Research Institute",
+    region: "Faro",
+    founding_date: "2009-03-08",
+    collaboration_count: 17,
+    specialization_areas: ["photovoltaics", "solar thermal energy", "concentrated solar power"],
+    project_history: ["High-Efficiency Solar Cells", "Solar Energy Storage", "Integrated Solar Systems"]
+  }
+];
+
+export const samplePatentHolders = [
+  {
+    id: "1ph23t45-6789-0pht-xyz0-1234phtz5678",
+    organization_name: "Instituto de Tecnologias Renováveis",
+    institution_id: "9in01s23-4567-8ins-tab8-9012inst3456",
+    sector: "Renewable Energy",
+    country: "Portugal",
+    patent_count: 48,
+    innovation_index: 78.5,
+    year: 2023
+  },
+  {
+    id: "2ph34u56-7890-1phu-yza1-2345phuv6789",
+    organization_name: "Centro de Inteligência Artificial de Portugal",
+    institution_id: "8in90r12-3456-7ins-sab7-8901inst2345",
+    sector: "Technology",
+    country: "Portugal",
+    patent_count: 65,
+    innovation_index: 82.3,
+    year: 2023
+  },
+  {
+    id: "3ph45v67-8901-2phv-zab2-3456phvw7890",
+    organization_name: "Instituto Nacional de Biotecnologia",
+    institution_id: "7in89q01-2345-6ins-rab6-7890inst1234",
+    sector: "Biotech",
+    country: "Portugal",
+    patent_count: 72,
+    innovation_index: 85.9,
+    year: 2023
+  },
+  {
+    id: "4ph56w78-9012-3phw-abc3-4567phwx8901",
+    organization_name: "TechOptimize Inc.",
+    institution_id: null,
+    sector: "Technology",
+    country: "Portugal",
+    patent_count: 31,
+    innovation_index: 67.4,
+    year: 2023
+  },
+  {
+    id: "5ph67x89-0123-4phx-bcd4-5678phxy9012",
+    organization_name: "BioMed Research Institute",
+    institution_id: null,
+    sector: "Biotech",
+    country: "Portugal",
+    patent_count: 39,
+    innovation_index: 71.2,
+    year: 2023
+  },
+  {
+    id: "6ph78y90-1234-5phy-cde5-6789phyz0123",
+    organization_name: "Quantum Finance Technologies",
+    institution_id: null,
+    sector: "Technology",
+    country: "Portugal",
+    patent_count: 25,
+    innovation_index: 64.8,
+    year: 2023
+  },
+  {
+    id: "7ph89z01-2345-6phz-def6-7890phza1234",
+    organization_name: "EV Battery Tech",
+    institution_id: null,
+    sector: "Renewable Energy",
+    country: "Portugal",
+    patent_count: 42,
+    innovation_index: 73.5,
+    year: 2023
+  }
+];
+
+export const sampleFundingApplications = [
+  {
+    id: "1fa23t45-6789-0fat-def0-1234fatd5678",
+    program_id: "1ab23c45-6789-0abc-def0-1234abcd5678",
+    application_date: "2024-08-15",
+    decision_date: "2024-10-30",
+    requested_amount: 650000,
+    approved_amount: 580000,
+    status: "approved",
+    sector: "renewable energy",
+    region: "Lisbon",
+    organization: "Instituto de Tecnologias Renováveis",
+    year: 2024
+  },
+  {
+    id: "2fa34u56-7890-1fau-efg1-2345faue6789",
+    program_id: "2bc34d56-7890-1bcd-efa1-2345bcde6789",
+    application_date: "2024-09-10",
+    decision_date: "2024-11-15",
+    requested_amount: 950000,
+    approved_amount: 800000,
+    status: "approved",
+    sector: "technology",
+    region: "Porto",
+    organization: "Centro de Inteligência Artificial de Portugal",
+    year: 2024
+  },
+  {
+    id: "3fa45v67-8901-2fav-fgh2-3456favf7890",
+    program_id: "3cd45e67-8901-2cde-fab2-3456cdef7890",
+    application_date: "2024-10-05",
+    decision_date: "2024-12-20",
+    requested_amount: 780000,
+    approved_amount: 780000,
+    status: "approved",
+    sector: "biotech",
+    region: "Coimbra",
+    organization: "Instituto Nacional de Biotecnologia",
+    year: 2024
+  },
+  {
+    id: "4fa56w78-9012-3faw-ghi3-4567fawg8901",
+    program_id: "4de56f78-9012-3def-gab3-4567defg8901",
+    application_date: "2024-11-12",
+    decision_date: "2025-01-15",
+    requested_amount: 450000,
+    approved_amount: 0,
+    status: "rejected",
+    sector: "manufacturing",
+    region: "Aveiro",
+    organization: "Manufacturing Innovations Ltd",
+    year: 2024
+  },
+  {
+    id: "5fa67x89-0123-4fax-hij4-5678faxh9012",
+    program_id: "5ef67g89-0123-4efg-hab4-5678efgh9012",
+    application_date: "2024-11-25",
+    decision_date: "2025-01-30",
+    requested_amount: 720000,
+    approved_amount: 650000,
+    status: "approved",
+    sector: "renewable energy",
+    region: "Faro",
+    organization: "Instituto de Energia Solar",
+    year: 2024
+  },
+  {
+    id: "6fa78y90-1234-5fay-ijk5-6789fayi0123",
+    program_id: "6fg78h90-1234-5fgh-iab5-6789fghi0123",
+    application_date: "2024-10-18",
+    decision_date: "2024-12-15",
+    requested_amount: 540000,
+    approved_amount: 480000,
+    status: "approved",
+    sector: "agriculture",
+    region: "Alentejo",
+    organization: "AgriTech Innovations",
+    year: 2024
+  },
+  {
+    id: "7fa89z01-2345-6faz-jkl6-7890fazj1234",
+    program_id: "7gh89i01-2345-6ghi-jab6-7890ghij1234",
+    application_date: "2024-09-22",
+    decision_date: "2024-11-10",
+    requested_amount: 320000,
+    approved_amount: 280000,
+    status: "approved",
+    sector: "technology",
+    region: "Lisbon",
+    organization: "Digital Solutions Portugal",
+    year: 2024
+  },
+  {
+    id: "8fa90a12-3456-7faa-klm7-8901faak2345",
+    program_id: "8hi90j12-3456-7hij-kab7-8901hijk2345",
+    application_date: "2024-10-30",
+    decision_date: "2025-01-05",
+    requested_amount: 680000,
+    approved_amount: 0,
+    status: "pending",
+    sector: "materials science",
+    region: "Braga",
+    organization: "Advanced Materials Research",
+    year: 2024
+  }
+];
+
 // Don't need to export any other sample data from this file.

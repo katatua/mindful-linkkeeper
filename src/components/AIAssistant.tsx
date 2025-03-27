@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle } from 'lucide-react';
-import { generateResponse, genId } from '@/utils/aiUtils';
+import { Send, AlertCircle, HelpCircle } from 'lucide-react';
+import { suggestedDatabaseQuestions, generateResponse, genId } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 interface Message {
   id: string;
@@ -19,6 +20,7 @@ export const AIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { toast } = useToast();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,6 +37,7 @@ export const AIAssistant: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setShowSuggestions(false);
     
     try {
       const response = await generateResponse(input);
@@ -68,13 +71,44 @@ export const AIAssistant: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  const handleSuggestionClick = (question: string) => {
+    setInput(question);
+    setShowSuggestions(false);
+  };
   
   return (
     <Card className="w-full">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>AI Database Assistant</CardTitle>
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={() => setShowSuggestions(!showSuggestions)}
+          aria-label="Show example questions"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent>
+        {showSuggestions && (
+          <div className="mb-4 p-4 bg-slate-50 rounded-md">
+            <h3 className="text-sm font-medium mb-2">Example Questions:</h3>
+            <div className="flex flex-wrap gap-2">
+              {suggestedDatabaseQuestions.slice(0, 8).map((question, index) => (
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-primary/10"
+                  onClick={() => handleSuggestionClick(question)}
+                >
+                  {question}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 py-6">

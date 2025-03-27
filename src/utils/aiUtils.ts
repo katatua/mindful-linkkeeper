@@ -17,7 +17,12 @@ export const suggestedDatabaseQuestions = [
   "What policy frameworks were implemented in 2023?",
   "List funding programs specifically targeting SMEs",
   "Which sectors receive the highest average funding amounts?",
-  "Show me the distribution of innovation metrics across different regions"
+  "Show me the distribution of innovation metrics across different regions",
+  "Which researchers have the highest h-index in biotech?",
+  "Compare the funding success rates between technology and renewable energy sectors",
+  "What institutions have the most international collaborations?",
+  "What is the trend of R&D investment in Portugal over the last 3 years?",
+  "Which funding programs have the highest success rates?"
 ];
 
 // Add function to get the current AI model
@@ -28,10 +33,10 @@ export const getCurrentAIModel = async () => {
     });
     
     if (error) throw error;
-    return data || 'gemini-1.0-pro';
+    return data || 'gemini-2.5-pro-exp-03-25';
   } catch (error) {
     console.error('Error fetching AI model:', error);
-    return 'gemini-1.0-pro';
+    return 'gemini-2.5-pro-exp-03-25';
   }
 };
 
