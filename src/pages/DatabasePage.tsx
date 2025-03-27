@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -133,6 +134,7 @@ const DatabasePage: React.FC = () => {
   const [explanation, setExplanation] = useState<string>("");
   const [sqlQuery, setSqlQuery] = useState<string>("");
   const [tables, setTables] = useState<DatabaseTable[]>(databaseSchema);
+  const [queryError, setQueryError] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -181,6 +183,83 @@ const DatabasePage: React.FC = () => {
     return name in (supabase.from as any)._tables;
   };
 
+  const repairSqlQuery = (query: string, errorMessage: string): string => {
+    // Basic SQL repair for common issues
+    let repairedQuery = query.trim();
+    
+    // If query ends with FROM, add the most likely table based on the columns
+    if (repairedQuery.toLowerCase().endsWith('from')) {
+      // Common column mappings to likely tables
+      const columnTableMap: Record<string, string> = {
+        'name': 'ani_funding_programs',
+        'title': 'ani_projects',
+        'application_deadline': 'ani_funding_programs',
+        'sector': 'ani_projects',
+        'region': 'ani_projects',
+        'start_date': 'ani_projects',
+        'end_date': 'ani_projects',
+        'description': 'ani_funding_programs',
+        'total_budget': 'ani_funding_programs',
+        'value': 'ani_metrics',
+        'category': 'ani_metrics',
+        'program_name': 'ani_international_collaborations',
+        'country': 'ani_international_collaborations'
+      };
+      
+      // Extract columns from the query
+      const columnsMatch = repairedQuery.match(/SELECT\s+([\s\S]+?)\s+FROM/i);
+      if (columnsMatch && columnsMatch[1]) {
+        const columns = columnsMatch[1].split(',').map(col => col.trim().split(' ')[0]);
+        
+        // Find the most likely table based on columns
+        const tableCounts: Record<string, number> = {};
+        for (const col of columns) {
+          if (columnTableMap[col]) {
+            tableCounts[columnTableMap[col]] = (tableCounts[columnTableMap[col]] || 0) + 1;
+          }
+        }
+        
+        let mostLikelyTable = '';
+        let highestCount = 0;
+        for (const [table, count] of Object.entries(tableCounts)) {
+          if (count > highestCount) {
+            mostLikelyTable = table;
+            highestCount = count;
+          }
+        }
+        
+        if (mostLikelyTable) {
+          repairedQuery += ` ${mostLikelyTable}`;
+        } else {
+          // Default to funding programs if we can't determine
+          repairedQuery += ' ani_funding_programs';
+        }
+      } else {
+        // Default to funding programs if we can't parse columns
+        repairedQuery += ' ani_funding_programs';
+      }
+    }
+    
+    // If query doesn't have a WHERE clause but should filter for open programs
+    if (question.toLowerCase().includes('abertos') || 
+        question.toLowerCase().includes('disponíveis') ||
+        question.toLowerCase().includes('ainda estão')) {
+      
+      if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
+          !repairedQuery.toLowerCase().includes('where')) {
+        repairedQuery += ' WHERE application_deadline >= CURRENT_DATE';
+      }
+    }
+    
+    // Add ORDER BY for sorting results if query likely needs it
+    if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
+        !repairedQuery.toLowerCase().includes('order by')) {
+      repairedQuery += ' ORDER BY application_deadline';
+    }
+    
+    return repairedQuery;
+  };
+
   const handleQuestionSubmit = async () => {
     if (!question.trim()) {
       toast({
@@ -195,28 +274,107 @@ const DatabasePage: React.FC = () => {
     setResults(null);
     setExplanation("");
     setSqlQuery("");
+    setQueryError("");
 
     try {
       const response = await generateResponse(question);
       
       if (response) {
         const sqlMatch = response.match(/<SQL>([\s\S]*?)<\/SQL>/);
-        if (sqlMatch && sqlMatch[1]) {
-          setSqlQuery(sqlMatch[1].trim());
-        }
         
-        const resultsMatch = response.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
-        if (resultsMatch && resultsMatch[1]) {
-          try {
-            setResults(JSON.parse(resultsMatch[1].trim()));
-          } catch (error) {
-            console.error("Error parsing results JSON:", error);
+        if (sqlMatch && sqlMatch[1]) {
+          let queryToRun = sqlMatch[1].trim();
+          setSqlQuery(queryToRun);
+          
+          // If there's a results section, we already have the results from the edge function
+          const resultsMatch = response.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
+          
+          if (resultsMatch && resultsMatch[1]) {
+            try {
+              setResults(JSON.parse(resultsMatch[1].trim()));
+            } catch (error) {
+              console.error("Error parsing results JSON:", error);
+              setQueryError("Error parsing results JSON");
+            }
+          } else {
+            // No results section, attempt to execute the query locally
+            try {
+              const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+                sql_query: queryToRun
+              });
+              
+              if (queryError) {
+                console.error("SQL execution error:", queryError);
+                
+                // Try to repair the query
+                const repairedQuery = repairSqlQuery(queryToRun, queryError.message);
+                if (repairedQuery !== queryToRun) {
+                  setSqlQuery(repairedQuery);
+                  toast({
+                    title: "Query automatically corrected",
+                    description: "The SQL query was automatically corrected and executed.",
+                  });
+                  
+                  // Execute the repaired query
+                  const { data: repairedResults, error: repairedError } = await supabase.rpc('execute_sql_query', {
+                    sql_query: repairedQuery
+                  });
+                  
+                  if (repairedError) {
+                    setQueryError(repairedError.message);
+                  } else {
+                    setResults(repairedResults || []);
+                  }
+                } else {
+                  setQueryError(queryError.message);
+                }
+              } else {
+                setResults(queryResults || []);
+              }
+            } catch (error) {
+              console.error("Error executing query:", error);
+              setQueryError(error.message);
+            }
+          }
+        } else {
+          // No SQL found, try to extract intent from question and generate SQL
+          if (question.toLowerCase().includes('abertos') || 
+              question.toLowerCase().includes('disponíveis') ||
+              question.toLowerCase().includes('ainda estão') ||
+              question.toLowerCase().includes('open') ||
+              question.toLowerCase().includes('available')) {
+            
+            // This is likely about open funding programs
+            const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
+            setSqlQuery(generatedQuery);
+            
+            try {
+              const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+                sql_query: generatedQuery
+              });
+              
+              if (queryError) {
+                setQueryError(queryError.message);
+              } else {
+                setResults(queryResults || []);
+                toast({
+                  title: "Query generated automatically",
+                  description: "We automatically generated and executed a SQL query based on your question.",
+                });
+              }
+            } catch (error) {
+              console.error("Error executing generated query:", error);
+              setQueryError(error.message);
+            }
           }
         }
         
-        setExplanation(response.replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
+        // Set explanation
+        const cleanExplanation = response.replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
           .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
-          .trim());
+          .trim();
+          
+        setExplanation(cleanExplanation);
       } else {
         throw new Error("Received empty response from AI");
       }
@@ -365,6 +523,15 @@ const DatabasePage: React.FC = () => {
                       <h3 className="text-lg font-semibold mb-2">Generated SQL Query</h3>
                       <div className="bg-gray-100 p-3 rounded-md overflow-x-auto">
                         <pre className="text-sm">{sqlQuery}</pre>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {queryError && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-2 text-red-500">SQL Error</h3>
+                      <div className="bg-red-50 p-3 rounded-md border border-red-200">
+                        <p className="text-red-600">{queryError}</p>
                       </div>
                     </div>
                   )}
