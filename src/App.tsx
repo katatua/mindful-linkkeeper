@@ -8,16 +8,24 @@ import LoginPage from "./pages/LoginPage";
 // Lazy load components with increased loading delay to reduce CPU spikes
 const ANIPortal = lazy(() => {
   // Add slight delay to prevent rapid loading/unloading
-  return new Promise(resolve => 
-    setTimeout(() => resolve(import("./pages/ANIPortal")), 100)
-  );
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      import("./pages/ANIPortal").then((module) => {
+        resolve({ default: module.default });
+      });
+    }, 100);
+  });
 });
 
 const QueryHistoryPage = lazy(() => {
   // Add slight delay to prevent rapid loading/unloading
-  return new Promise(resolve => 
-    setTimeout(() => resolve(import("./pages/QueryHistoryPage")), 100)
-  );
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      import("./pages/QueryHistoryPage").then((module) => {
+        resolve({ default: module.default });
+      });
+    }, 100);
+  });
 });
 
 // Memoize loading fallback to prevent rerenders
