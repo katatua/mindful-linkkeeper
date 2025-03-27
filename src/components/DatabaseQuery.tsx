@@ -128,7 +128,6 @@ export default function DatabaseQuery() {
     }
   }, [query, toast, processQuestion]);
 
-  // Handle creating missing data
   const handleMissingData = async (queryText: string, language: 'en' | 'pt' = 'en') => {
     try {
       setIsCreatingData(true);
@@ -197,7 +196,6 @@ export default function DatabaseQuery() {
     }
   };
 
-  // Reset state for a new query
   const resetQueryState = () => {
     setDisplayResults(false);
     setQueryResults(null);
@@ -206,7 +204,6 @@ export default function DatabaseQuery() {
     setCreatedTables([]);
   };
 
-  // Handle query input change
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
     // Only reset if we had results before and are changing the query
@@ -215,7 +212,6 @@ export default function DatabaseQuery() {
     }
   };
 
-  // Handle key press event
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !isExecuting && !isCreatingData) {
       handleExecuteQuery();
