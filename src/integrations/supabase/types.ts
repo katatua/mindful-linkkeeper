@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ani_database_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ani_database_status: {
         Row: {
           created_at: string
@@ -1829,6 +1856,12 @@ export type Database = {
           file_metadata: Json
         }
         Returns: unknown
+      }
+      get_database_setting: {
+        Args: {
+          setting_key: string
+        }
+        Returns: string
       }
       gtrgm_compress: {
         Args: {

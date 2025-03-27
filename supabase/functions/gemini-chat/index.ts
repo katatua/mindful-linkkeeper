@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
@@ -61,23 +60,29 @@ serve(async (req) => {
       parts: [{ text: userMessage }]
     });
 
-    // Add system prompt with database schema knowledge if this is a database query
-    let systemPrompt;
-    
+    // Modify the system prompt section to dynamically fetch database settings
     if (isDatabaseQuery) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const { data: databaseTypeResult, error: databaseTypeError } = await supabase.rpc('get_database_setting', { setting_key: 'database_type' });
+      const { data: databaseVersionResult, error: databaseVersionError } = await supabase.rpc('get_database_setting', { setting_key: 'database_version' });
+      
+      const databaseType = databaseTypeResult || 'PostgreSQL';
+      const databaseVersion = databaseVersionResult || '14.x';
+
       systemPrompt = {
         role: 'model',
         parts: [{ 
-          text: `Você é o assistente de IA da ANI (Agência Nacional de Inovação) de Portugal especializado em consultas de banco de dados PostgreSQL.
+          text: `Você é o assistente de IA da ANI (Agência Nacional de Inovação) especializado em consultas de banco de dados ${databaseType} (versão ${databaseVersion}).
           
-          IMPORTANTE: Este projeto usa PostgreSQL (versão 14), então você DEVE usar a sintaxe correta do PostgreSQL:
+          IMPORTANTE: Este projeto usa ${databaseType} (versão ${databaseVersion}), então você DEVE usar a sintaxe correta do ${databaseType}:
           - Use CURRENT_DATE em vez de DATE('now')
           - Use EXTRACT(YEAR FROM coluna) em vez de strftime('%Y', coluna)
           - Use TO_CHAR(coluna, 'YYYY-MM-DD') para formatação de datas
           - Use CURRENT_TIMESTAMP em vez de NOW()
           - Nunca coloque ponto e vírgula no meio da consulta, apenas no final se necessário
           
-          Você tem acesso às seguintes tabelas no banco de dados PostgreSQL:
+          Você tem acesso às seguintes tabelas no banco de dados ${databaseType}:
           
           1. ani_metrics - Armazena dados de métricas diversas
              - id (uuid): Identificador único
@@ -144,7 +149,7 @@ serve(async (req) => {
           
           Quando o usuário fizer uma pergunta sobre dados, você deve:
           1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-          2. Gerar o SQL adequado para PostgreSQL e colocá-lo entre as tags <SQL> e </SQL>
+          2. Gerar o SQL adequado para ${databaseType} e colocá-lo entre as tags <SQL> e </SQL>
           3. Incluir os resultados brutos entre as tags <RESULTS> e </RESULTS> para que o frontend possa extraí-los (estes serão adicionados posteriormente)
           4. Explicar os resultados em linguagem natural de forma clara e bem estruturada
           
@@ -634,7 +639,7 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
                 if (resultCount > 0) {
                   nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
                 } else {
-                  nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A pergunta original foi: "${userMessage}"`;
+                  nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
                 }
                 
                 // Create messages for results formatting
@@ -684,7 +689,7 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
                 }
               }
             } else {
-              // Still no SQL, use the fallback for common queries
+              // Still no SQL, use the fallback for common questions
               let fallbackQuery = "";
               
               if (userMessage.toLowerCase().includes("open for applications") || 
