@@ -1,3 +1,4 @@
+
 /**
  * Dummy data for simulating database responses when the database is not available
  */
@@ -152,148 +153,41 @@ export const dummyFundingPrograms = [
   }
 ];
 
-// Patents data by year
-export const dummyPatentHoldersByYear = {
-  2020: [
-    {
-      id: "1",
-      organization_name: "University of Lisbon",
-      patent_count: 32,
-      innovation_index: 7.8,
-      sector: "Higher Education",
-      year: 2020
-    },
-    {
-      id: "2",
-      organization_name: "University of Porto",
-      patent_count: 28,
-      innovation_index: 7.5,
-      sector: "Higher Education",
-      year: 2020
-    },
-    {
-      id: "3",
-      organization_name: "Pharmaceutical Company X",
-      patent_count: 22,
-      innovation_index: 8.1,
-      sector: "Pharmaceuticals",
-      year: 2020
-    },
-    {
-      id: "4",
-      organization_name: "Tech Solutions Inc.",
-      patent_count: 18,
-      innovation_index: 7.6,
-      sector: "Information Technology",
-      year: 2020
-    }
-  ],
-  2021: [
-    {
-      id: "1",
-      organization_name: "University of Lisbon",
-      patent_count: 38,
-      innovation_index: 8.2,
-      sector: "Higher Education",
-      year: 2021
-    },
-    {
-      id: "2",
-      organization_name: "University of Porto",
-      patent_count: 33,
-      innovation_index: 8.0,
-      sector: "Higher Education",
-      year: 2021
-    },
-    {
-      id: "3",
-      organization_name: "Pharmaceutical Company X",
-      patent_count: 27,
-      innovation_index: 8.5,
-      sector: "Pharmaceuticals",
-      year: 2021
-    },
-    {
-      id: "4",
-      organization_name: "Tech Solutions Inc.",
-      patent_count: 22,
-      innovation_index: 8.2,
-      sector: "Information Technology",
-      year: 2021
-    }
-  ],
-  2022: [
-    {
-      id: "1",
-      organization_name: "University of Lisbon",
-      patent_count: 42,
-      innovation_index: 8.5,
-      sector: "Higher Education",
-      year: 2022
-    },
-    {
-      id: "2",
-      organization_name: "University of Porto",
-      patent_count: 36,
-      innovation_index: 8.2,
-      sector: "Higher Education",
-      year: 2022
-    },
-    {
-      id: "3",
-      organization_name: "Pharmaceutical Company X",
-      patent_count: 31,
-      innovation_index: 8.8,
-      sector: "Pharmaceuticals",
-      year: 2022
-    },
-    {
-      id: "4",
-      organization_name: "Tech Solutions Inc.",
-      patent_count: 25,
-      innovation_index: 8.5,
-      sector: "Information Technology",
-      year: 2022
-    }
-  ],
-  2023: [
-    {
-      id: "1",
-      organization_name: "University of Lisbon",
-      patent_count: 48,
-      innovation_index: 8.7,
-      sector: "Higher Education",
-      year: 2023
-    },
-    {
-      id: "2",
-      organization_name: "University of Porto",
-      patent_count: 42,
-      innovation_index: 8.4,
-      sector: "Higher Education",
-      year: 2023
-    },
-    {
-      id: "3",
-      organization_name: "Pharmaceutical Company X",
-      patent_count: 35,
-      innovation_index: 9.2,
-      sector: "Pharmaceuticals",
-      year: 2023
-    },
-    {
-      id: "4",
-      organization_name: "Tech Solutions Inc.",
-      patent_count: 29,
-      innovation_index: 8.9,
-      sector: "Information Technology",
-      year: 2023
-    }
-  ]
-};
-
-// Use 2023 as default for backward compatibility
-export const dummyPatentHolders = dummyPatentHoldersByYear[2023];
+// Patents data
+export const dummyPatentHolders = [
+  {
+    id: "1",
+    organization_name: "University of Lisbon",
+    patent_count: 48,
+    innovation_index: 8.7,
+    sector: "Higher Education",
+    year: 2023
+  },
+  {
+    id: "2",
+    organization_name: "University of Porto",
+    patent_count: 42,
+    innovation_index: 8.4,
+    sector: "Higher Education",
+    year: 2023
+  },
+  {
+    id: "3",
+    organization_name: "Pharmaceutical Company X",
+    patent_count: 35,
+    innovation_index: 9.2,
+    sector: "Pharmaceuticals",
+    year: 2023
+  },
+  {
+    id: "4",
+    organization_name: "Tech Solutions Inc.",
+    patent_count: 29,
+    innovation_index: 8.9,
+    sector: "Information Technology",
+    year: 2023
+  }
+];
 
 // Projects data
 export const dummyProjects = [
@@ -336,46 +230,30 @@ export const dummyProjects = [
 export const findRelevantDummyData = (query: string): any[] => {
   const queryLower = query.toLowerCase();
   
-  // Extract year information from query
-  const yearMatches = queryLower.match(/\b(20[0-9][0-9])\b/g);
-  const specificYear = yearMatches && yearMatches.length > 0 
-    ? parseInt(yearMatches[0]) 
-    : new Date().getFullYear();
-
-  // Check for year range queries
-  const isYearRangeQuery = (yearMatches && yearMatches.length >= 2) ||
-    queryLower.includes('between') || 
-    queryLower.includes('from') || 
-    queryLower.includes('de') || 
-    queryLower.includes('entre') || 
-    queryLower.includes('a');
-
-  // Patent-specific logic
-  if (queryLower.includes('patent') || queryLower.includes('patente')) {
-    if (dummyPatentHoldersByYear[specificYear]) {
-      return dummyPatentHoldersByYear[specificYear];
-    }
-    
-    // Handle year range queries
-    if (isYearRangeQuery && yearMatches && yearMatches.length >= 2) {
-      const startYear = parseInt(yearMatches[0]);
-      const endYear = parseInt(yearMatches[1]);
-      
-      let combinedData = [];
-      for (let year = startYear; year <= endYear; year++) {
-        if (dummyPatentHoldersByYear[year]) {
-          combinedData = [...combinedData, ...dummyPatentHoldersByYear[year]];
-        }
-      }
-      
-      return combinedData.length > 0 ? combinedData : dummyPatentHolders;
-    }
+  // Check for regional investment queries
+  if ((queryLower.includes('region') || queryLower.includes('região') || queryLower.includes('regiao')) &&
+      (queryLower.includes('investment') || queryLower.includes('investimento'))) {
+    return dummyRegionalInvestment;
   }
-
-  // Similar logic for other data types can be added here
   
-  // Fallback to default data if no specific year match
-  return dummyPatentHolders;
+  // Check for patent-related queries
+  if (queryLower.includes('patent') || queryLower.includes('patente')) {
+    return dummyPatentHolders;
+  }
+  
+  // Check for funding program queries
+  if (queryLower.includes('funding') || queryLower.includes('programa') || 
+      queryLower.includes('financiamento') || queryLower.includes('program')) {
+    return dummyFundingPrograms;
+  }
+  
+  // Check for project queries
+  if (queryLower.includes('project') || queryLower.includes('projeto')) {
+    return dummyProjects;
+  }
+  
+  // Default to metrics data
+  return dummyMetrics;
 };
 
 // Generate natural language responses for dummy data
@@ -384,39 +262,8 @@ export const generateDummyResponse = (query: string, language: 'en' | 'pt' = 'en
   visualizationData?: any[];
 } => {
   const queryLower = query.toLowerCase();
-  const yearMatches = queryLower.match(/\b(20[0-9][0-9])\b/g);
-  const specificYear = yearMatches && yearMatches.length > 0 
-    ? parseInt(yearMatches[0]) 
-    : new Date().getFullYear();
-
-  let patentData = dummyPatentHoldersByYear[specificYear] || dummyPatentHolders;
-  let yearText = specificYear.toString();
   let response = "";
-  let visualizationData: any[] | undefined;
-
-  // Check for year range in patent queries
-  const isYearRangeQuery = (yearMatches && yearMatches.length >= 2) ||
-    queryLower.includes('between') || 
-    queryLower.includes('from') || 
-    queryLower.includes('de') || 
-    queryLower.includes('entre') || 
-    queryLower.includes('a');
-
-  if (isYearRangeQuery && yearMatches && yearMatches.length >= 2) {
-    const startYear = parseInt(yearMatches[0]);
-    const endYear = parseInt(yearMatches[1]);
-    
-    patentData = [];
-    for (let year = startYear; year <= endYear; year++) {
-      if (dummyPatentHoldersByYear[year]) {
-        patentData = [...patentData, ...dummyPatentHoldersByYear[year]];
-      }
-    }
-    
-    yearText = `${startYear} to ${endYear}`;
-  }
-
-  const totalPatents = patentData.reduce((sum, item) => sum + item.patent_count, 0);
+  let visualizationData = undefined;
   
   // R&D investment query
   if (queryLower.includes('r&d') || queryLower.includes('investment') || 
@@ -450,45 +297,14 @@ export const generateDummyResponse = (query: string, language: 'en' | 'pt' = 'en
   
   // Patent query
   else if (queryLower.includes('patent') || queryLower.includes('patente')) {
-    let patentData = dummyPatentHolders;
-    let yearText = "2023";
-    
-    // Check for year-specific patent queries
-    if (specificYear && dummyPatentHoldersByYear[specificYear]) {
-      patentData = dummyPatentHoldersByYear[specificYear];
-      yearText = specificYear.toString();
-    }
-    
-    // Check for year range in patent queries
-    if (queryLower.includes('between') || queryLower.includes('entre') || 
-        (queryLower.includes('from') && queryLower.includes('to')) ||
-        (queryLower.includes('de') && queryLower.includes('a'))) {
-      
-      const yearMatches = queryLower.match(/\b(20[0-9][0-9])\b/g);
-      if (yearMatches && yearMatches.length >= 2) {
-        const startYear = parseInt(yearMatches[0]);
-        const endYear = parseInt(yearMatches[1]);
-        
-        // Combine patent data
-        patentData = [];
-        for (let year = startYear; year <= endYear; year++) {
-          if (dummyPatentHoldersByYear[year]) {
-            patentData = [...patentData, ...dummyPatentHoldersByYear[year]];
-          }
-        }
-        
-        yearText = `${startYear} to ${endYear}`;
-      }
-    }
-    
-    const totalPatents = patentData.reduce((sum, item) => sum + item.patent_count, 0);
+    const totalPatents = dummyPatentHolders.reduce((sum, item) => sum + item.patent_count, 0);
     
     if (language === 'en') {
-      response = `In ${yearText}, there were ${totalPatents} patents filed by top organizations. The University of Lisbon leads with ${patentData[0]?.patent_count || 0} patents, followed by the University of Porto with ${patentData[1]?.patent_count || 0} patents. ${specificYear === 2023 ? "The Patent Growth Rate has been 5.2% over the past year." : ""}`;
+      response = `In 2023, there were ${totalPatents} patents filed by top organizations. The University of Lisbon leads with 48 patents, followed by the University of Porto with 42 patents. The Patent Growth Rate has been 5.2% over the past year.`;
     } else {
-      response = `Em ${yearText}, foram registadas ${totalPatents} patentes pelas principais organizações. A Universidade de Lisboa lidera com ${patentData[0]?.patent_count || 0} patentes, seguida pela Universidade do Porto com ${patentData[1]?.patent_count || 0} patentes. ${specificYear === 2023 ? "A taxa de crescimento de patentes foi de 5,2% no último ano." : ""}`;
+      response = `Em 2023, foram registadas ${totalPatents} patentes pelas principais organizações. A Universidade de Lisboa lidera com 48 patentes, seguida pela Universidade do Porto com 42 patentes. A taxa de crescimento de patentes foi de 5,2% no último ano.`;
     }
-    visualizationData = patentData;
+    visualizationData = dummyPatentHolders;
   }
   
   // Funding programs query

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,43 +38,17 @@ export function useQueryProcessor() {
   const processQuestion = async (question: string, language: 'en' | 'pt' = 'en'): Promise<QueryResult> => {
     try {
       setIsProcessing(true);
-      // Always set lastResult to null when starting a new query
-      setLastResult(null);
-      
       console.log("Processing question:", question);
-      
-      // Extract year information from query for more specific dummy data
-      const extractYearFromQuery = (query: string): number | null => {
-        const yearMatch = query.toLowerCase().match(/\b(20[0-9][0-9])\b/g);
-        return yearMatch && yearMatch.length > 0 ? parseInt(yearMatch[0]) : null;
-      };
-      
-      const queryYear = extractYearFromQuery(question);
-      console.log("Extracted year from query:", queryYear);
       
       // If in offline mode, use dummy data directly
       if (useOfflineMode || (supabase as any).isUsingLocalDb) {
         console.log("Using local/offline mode");
-        
-        // Generate a SQL query for display purposes even in offline mode
-        let sqlQuery = "";
-        try {
-          sqlQuery = await generateSqlFromNaturalLanguage(question);
-          console.log("Generated SQL for offline mode:", sqlQuery);
-        } catch (sqlGenError) {
-          console.error("Error generating SQL in offline mode:", sqlGenError);
-          sqlQuery = `-- Failed to generate SQL: ${sqlGenError instanceof Error ? sqlGenError.message : String(sqlGenError)}`;
-        }
-        
         const dummyResult = generateDummyResponse(question, language);
-        const result = {
+        return {
           response: dummyResult.response,
           visualizationData: dummyResult.visualizationData,
-          sql: sqlQuery || "-- Using local database"
+          sql: "-- Using local database"
         };
-        
-        setLastResult(result);
-        return result;
       }
       
       // First, check if we can connect to the database
@@ -85,40 +60,22 @@ export function useQueryProcessor() {
         if (connError) {
           console.error("Database connection check failed:", connError);
           toggleOfflineMode(true);
-          
-          // Try to generate SQL even if we switch to offline mode
-          let fallbackSql = "";
-          try {
-            fallbackSql = await generateSqlFromNaturalLanguage(question);
-          } catch (e) {
-            fallbackSql = "-- Connection error, using local data";
-          }
-          
           const dummyResult = generateDummyResponse(question, language);
           return {
             response: dummyResult.response,
             visualizationData: dummyResult.visualizationData,
-            sql: fallbackSql,
+            sql: "-- Connection error, using local data",
             isConnectionError: true
           };
         }
       } catch (connErr) {
         console.error("Connection error:", connErr);
         toggleOfflineMode(true);
-        
-        // Try to generate SQL even if we switch to offline mode
-        let fallbackSql = "";
-        try {
-          fallbackSql = await generateSqlFromNaturalLanguage(question);
-        } catch (e) {
-          fallbackSql = "-- Connection error, using local data";
-        }
-        
         const dummyResult = generateDummyResponse(question, language);
         return {
           response: dummyResult.response,
           visualizationData: dummyResult.visualizationData,
-          sql: fallbackSql,
+          sql: "-- Connection error, using local data",
           isConnectionError: true
         };
       }
@@ -210,20 +167,11 @@ export function useQueryProcessor() {
     } catch (error) {
       console.error("Error processing question:", error);
       
-      // Try to generate SQL for display even in error case
-      let errorSql = "";
-      try {
-        errorSql = await generateSqlFromNaturalLanguage(question);
-      } catch (e) {
-        errorSql = `-- Error generating SQL: ${e instanceof Error ? e.message : String(e)}`;
-      }
-      
       // Fallback to dummy data for any error
       const dummyResult = generateDummyResponse(question, language);
       const result: QueryResult = {
         response: dummyResult.response,
         visualizationData: dummyResult.visualizationData,
-        sql: errorSql,
         error: error instanceof Error ? error.message : String(error)
       };
       

@@ -7,7 +7,6 @@ import {
   Book,
   MessageSquare,
   Database,
-  History,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -88,23 +87,6 @@ const SidebarItem = ({ icon, text, active, onClick }: SidebarItemProps) => {
   );
 };
 
-const NavItem = ({ to, label, icon }: { to: string, label: string, icon: React.ReactNode }) => {
-  const navigate = useNavigate();
-  
-  return (
-    <Button
-      variant="ghost"
-      className="justify-start px-4 py-2 w-full font-normal"
-      onClick={() => navigate(to)}
-    >
-      <div className="flex items-center">
-        {icon}
-        <span className="ml-2">{label}</span>
-      </div>
-    </Button>
-  );
-};
-
 const AppSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -147,38 +129,36 @@ const AppSidebar = () => {
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1">
-        <NavItem
-          to="/portal"
-          label={language === 'en' ? 'Dashboard' : 'Dashboard'}
-          icon={<LayoutDashboard className="h-4 w-4" />}
-        />
-        <NavItem
-          to="/portal/discovery"
-          label={language === 'en' ? 'Discovery' : 'Descoberta'}
-          icon={<Compass className="h-4 w-4" />}
-        />
-        <NavItem
-          to="/portal/knowledge"
-          label={language === 'en' ? 'Knowledge Base' : 'Base de Conhecimento'}
-          icon={<Book className="h-4 w-4" />}
-        />
-        <NavItem
-          to="/portal/ai"
-          label={language === 'en' ? 'AI Assistant' : 'Assistente Inteligente'}
-          icon={<MessageSquare className="h-4 w-4" />}
-        />
-        <NavItem
-          to="/portal/database"
-          label={language === 'en' ? 'Database' : 'Base de Dados'}
-          icon={<Database className="h-4 w-4" />}
-        />
-        <NavItem
-          to="/portal/query-history"
-          label={language === 'en' ? 'Query History' : 'Histórico de Consultas'}
-          icon={<History className="h-5 w-5" />}
-        />
-      </div>
+      <SidebarItem
+        icon={<LayoutDashboard className="h-4 w-4" />}
+        text="Dashboard"
+        active={pathname === "/portal"}
+        onClick={() => navigate("/portal")}
+      />
+      <SidebarItem
+        icon={<Compass className="h-4 w-4" />}
+        text="Discovery"
+        active={pathname.includes("/portal/discovery")}
+        onClick={() => navigate("/portal/discovery")}
+      />
+      <SidebarItem
+        icon={<Book className="h-4 w-4" />}
+        text="Knowledge Base"
+        active={pathname.includes("/portal/knowledge")}
+        onClick={() => navigate("/portal/knowledge")}
+      />
+      <SidebarItem
+        icon={<MessageSquare className="h-4 w-4" />}
+        text="AI Assistant"
+        active={pathname.includes("/portal/ai")}
+        onClick={() => navigate("/portal/ai")}
+      />
+      <SidebarItem
+        icon={<Database className="h-4 w-4" />}
+        text="Database"
+        active={pathname.includes('/portal/database')}
+        onClick={() => navigate('/portal/database')}
+      />
 
       <div className="mt-auto p-4">
         <Sheet>
