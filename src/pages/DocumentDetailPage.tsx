@@ -30,6 +30,8 @@ const DocumentDetailPage: React.FC = () => {
       setError(null);
       
       try {
+        console.log(`Fetching document with ID: ${documentId}`);
+        
         // Fetch the document from the links table
         const { data, error } = await supabase
           .from('links')
@@ -37,9 +39,13 @@ const DocumentDetailPage: React.FC = () => {
           .eq('id', documentId)
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching document:', error);
+          throw error;
+        }
         
         if (data) {
+          console.log('Document data fetched:', data);
           setDocument(data);
           
           // Get the file URL if it's stored in Supabase Storage
@@ -47,6 +53,7 @@ const DocumentDetailPage: React.FC = () => {
             // If the URL is already a full URL
             if (data.url.startsWith('http')) {
               setPdfUrl(data.url);
+              console.log('Setting direct URL:', data.url);
             } else {
               // If it's a storage path
               const { data: fileData } = supabase.storage
@@ -55,15 +62,16 @@ const DocumentDetailPage: React.FC = () => {
                 
               if (fileData) {
                 setPdfUrl(fileData.publicUrl);
+                console.log('Setting storage URL:', fileData.publicUrl);
               }
             }
           }
         } else {
           throw new Error('Document not found');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching document:', err);
-        setError('Failed to load document. Please try again later.');
+        setError(`Failed to load document: ${err.message || 'Unknown error'}. Please try again later.`);
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -80,6 +88,7 @@ const DocumentDetailPage: React.FC = () => {
   }, [documentId, toast]);
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'long',
@@ -87,7 +96,7 @@ const DocumentDetailPage: React.FC = () => {
     });
   };
 
-  const formatFileSize = (size: number) => {
+  const formatFileSize = (size?: number) => {
     if (!size) return 'N/A';
     const kb = size / 1024;
     if (kb < 1024) {
@@ -109,9 +118,17 @@ const DocumentDetailPage: React.FC = () => {
   };
 
   const handleDownload = () => {
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
+    if (!pdfUrl) {
+      toast({
+        variant: 'destructive',
+        title: "Erro",
+        description: "Não foi possível baixar o documento. URL não disponível.",
+      });
+      return;
     }
+    
+    // Open the URL in a new tab to download it
+    window.open(pdfUrl, '_blank');
     
     toast({
       title: "Documento baixado",
@@ -121,12 +138,20 @@ const DocumentDetailPage: React.FC = () => {
 
   const handleShare = () => {
     // Copy the current URL to clipboard
-    navigator.clipboard.writeText(window.location.href);
-    
-    toast({
-      title: "Link copiado",
-      description: "O link para este documento foi copiado para a área de transferência.",
-    });
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => {
+        toast({
+          title: "Link copiado",
+          description: "O link para este documento foi copiado para a área de transferência.",
+        });
+      })
+      .catch(err => {
+        toast({
+          variant: 'destructive',
+          title: "Erro",
+          description: "Não foi possível copiar o link.",
+        });
+      });
   };
 
   const handleViewDocument = () => {
@@ -362,7 +387,7 @@ const DocumentDetailPage: React.FC = () => {
                     <div className="space-y-4">
                       <div>
                         <h3 className="text-sm font-medium">Resumo</h3>
-                        <p className="mt-1">{document.ai_summary}</p>
+                        <p className="mt-1">{document.ai_summary || 'Sem resumo disponível'}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium">Análise</h3>

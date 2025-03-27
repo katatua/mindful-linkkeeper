@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -306,7 +305,7 @@ VALUES (
                         <>
                           <TableRow>
                             <TableCell>
-                              <Link to="/documents/doc-1" className="text-primary hover:underline">
+                              <Link to={`/documents/${encodeURIComponent('590f5718-7012-46a2-ae7e-13e24c5d908a')}`} className="text-primary hover:underline">
                                 Relatório Técnico ANI 2023
                               </Link>
                             </TableCell>
@@ -316,7 +315,7 @@ VALUES (
                           </TableRow>
                           <TableRow>
                             <TableCell>
-                              <Link to="/documents/doc-2" className="text-primary hover:underline">
+                              <Link to={`/documents/${encodeURIComponent('590f5718-7012-46a2-ae7e-13e24c5d908a')}`} className="text-primary hover:underline">
                                 Candidatura Projeto X
                               </Link>
                             </TableCell>
@@ -326,7 +325,7 @@ VALUES (
                           </TableRow>
                           <TableRow>
                             <TableCell>
-                              <Link to="/documents/doc-3" className="text-primary hover:underline">
+                              <Link to={`/documents/${encodeURIComponent('590f5718-7012-46a2-ae7e-13e24c5d908a')}`} className="text-primary hover:underline">
                                 Questionário Inovação
                               </Link>
                             </TableCell>
