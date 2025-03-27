@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -320,7 +321,9 @@ const DatabasePage: React.FC = () => {
           
           if (resultsMatch && resultsMatch[1]) {
             try {
-              setResults(JSON.parse(resultsMatch[1].trim()));
+              const parsedResults = JSON.parse(resultsMatch[1].trim());
+              // Ensure we're setting an array to the results state
+              setResults(Array.isArray(parsedResults) ? parsedResults : []);
             } catch (error) {
               console.error("Error parsing results JSON:", error);
               setQueryError("Error parsing results JSON");
@@ -349,13 +352,15 @@ const DatabasePage: React.FC = () => {
                   if (repairedError) {
                     setQueryError(repairedError.message);
                   } else {
-                    setResults(repairedResults || []);
+                    // Ensure we're setting an array to the results state
+                    setResults(Array.isArray(repairedResults) ? repairedResults : []);
                   }
                 } else {
                   setQueryError(queryError.message);
                 }
               } else {
-                setResults(queryResults || []);
+                // Ensure we're setting an array to the results state
+                setResults(Array.isArray(queryResults) ? queryResults : []);
               }
             } catch (error) {
               console.error("Error executing query:", error);
@@ -380,7 +385,8 @@ const DatabasePage: React.FC = () => {
               if (queryError) {
                 setQueryError(queryError.message);
               } else {
-                setResults(queryResults || []);
+                // Ensure we're setting an array to the results state
+                setResults(Array.isArray(queryResults) ? queryResults : []);
                 toast({
                   title: "Query generated automatically",
                   description: "We automatically generated and executed a SQL query based on your question.",
@@ -437,7 +443,8 @@ const DatabasePage: React.FC = () => {
           variant: "destructive"
         });
       } else {
-        setResults(queryResults || []);
+        // Ensure we're setting an array to the results state
+        setResults(Array.isArray(queryResults) ? queryResults : []);
         toast({
           title: "Database connection successful",
           description: `Retrieved ${queryResults?.length || 0} records from the database.`,
