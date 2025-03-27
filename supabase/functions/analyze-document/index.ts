@@ -10,7 +10,7 @@ interface RequestBody {
   content: string;
   title: string;
   type: string;
-  fileUrl?: string; // Optional URL for files like PDFs
+  fileUrl?: string; // URL for files like PDFs
 }
 
 Deno.serve(async (req) => {
@@ -37,8 +37,16 @@ Deno.serve(async (req) => {
 
     // For PDFs specifically, mention this in the prompt
     const isPdf = fileType === 'pdf' || type.toLowerCase().includes('pdf');
-    const pdfContext = isPdf ? 
-      "Note that this is a PDF document, and the content provided might be partial or contain formatting artifacts." : "";
+    const isCSV = fileType === 'csv' || type.toLowerCase().includes('csv');
+    const fileContext = isPdf ? 
+      "Note that this is a PDF document, and the content provided might be partial or contain formatting artifacts." : 
+      isCSV ? 
+      "Note that this is a CSV file containing tabular data." : 
+      "";
+    
+    const contentLength = truncatedContent.length;
+    const contentQualityWarning = contentLength < 1000 ? 
+      "WARNING: The content extracted from this file is very limited. The analysis may be incomplete or inaccurate." : "";
     
     // Create prompt for analysis
     const systemPrompt = `You are an expert document analyzer with deep expertise in innovation, research, and policy documents. 
@@ -48,7 +56,8 @@ Deno.serve(async (req) => {
     3. Give a critical analysis of the document's content, relevance, and potential applications or implications
     4. Suggest an appropriate category for the document from one of these options: Research Report, Policy Document, Funding Information, Technical Documentation, Statistical Data, Case Study, Guidelines, International Collaboration
     
-    ${pdfContext}
+    ${fileContext}
+    ${contentQualityWarning}
     
     Your response must be formatted exactly like this:
     TITLE: [your suggested title]
@@ -128,7 +137,8 @@ Deno.serve(async (req) => {
     console.log('Document analysis complete:', { 
       title: suggestedTitle.substring(0, 40) + "...",
       category: suggestedCategory,
-      summary: summary.substring(0, 50) + "..." 
+      summary: summary.substring(0, 50) + "...",
+      fileUrl: fileUrl ? "Provided" : "Not provided"
     });
 
     return new Response(JSON.stringify({ 

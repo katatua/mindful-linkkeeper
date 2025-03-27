@@ -42,4 +42,5 @@ export interface DocumentoExtraido {
   metadata?: Record<string, any>;
   ai_summary?: string;
   ai_analysis?: string;
+  fileUrl?: string;
 }

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -10,11 +10,13 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, FilePlus } from 'lucide-react';
+import { Database, FileText, FilePlus, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FonteDados } from '@/types/databaseTypes';
+import { FonteDados, DocumentoExtraido } from '@/types/databaseTypes';
 import { Link } from 'react-router-dom';
+import AddDataSourceModal from './AddDataSourceModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const initialDataSources: FonteDados[] = [
   {
@@ -55,13 +57,38 @@ const initialDataSources: FonteDados[] = [
 ];
 
 export const DataSourcesTab: React.FC = () => {
-  const [dataSources] = React.useState<FonteDados[]>(initialDataSources);
+  const [dataSources, setDataSources] = useState<FonteDados[]>(initialDataSources);
+  const [userDocuments, setUserDocuments] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const fetchUserDocuments = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('links')
+        .select('*')
+        .eq('source', 'datasource')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setUserDocuments(data || []);
+    } catch (error) {
+      console.error('Error fetching user documents:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserDocuments();
+  }, []);
   
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Fontes de Dados</h2>
-        <Button>
+        <Button onClick={() => setIsModalOpen(true)}>
           <FilePlus className="mr-2 h-4 w-4" />
           Adicionar Fonte
         </Button>
@@ -71,6 +98,46 @@ export const DataSourcesTab: React.FC = () => {
         Esta seção centraliza todas as fontes de dados fornecidas pela ANI, incluindo suas descrições, 
         dados extraídos e comandos necessários para inserção na base de dados.
       </p>
+      
+      {userDocuments.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">Documentos Carregados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[200px] w-full rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Tamanho</TableHead>
+                    <TableHead>Data Extração</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userDocuments.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell>
+                        <Link to={`/documents/${doc.id}`} className="text-primary hover:underline">
+                          {doc.title}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{doc.file_metadata?.type?.split('/')[1]?.toUpperCase() || 'Documento'}</TableCell>
+                      <TableCell>
+                        {doc.file_metadata?.size 
+                          ? `${(doc.file_metadata.size / (1024 * 1024)).toFixed(2)} MB` 
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
       
       {dataSources.map((source) => (
         <Card key={source.id} className="mb-6">
@@ -318,6 +385,11 @@ VALUES (
           </CardContent>
         </Card>
       ))}
+
+      <AddDataSourceModal 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
     </div>
   );
 };

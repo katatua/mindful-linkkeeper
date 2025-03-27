@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,7 @@ import { ChevronRight, Database, FileQuestion, Search, Database as DatabaseIcon,
 import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
+import { useLocation } from 'react-router-dom';
 
 interface GenericTableData {
   id?: string;
@@ -49,6 +51,7 @@ interface TableSchema {
 }
 
 export const DatabasePage: React.FC = () => {
+  const location = useLocation();
   const [tableData, setTableData] = useState<GenericTableData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +132,19 @@ export const DatabasePage: React.FC = () => {
   const [isQueryLoading, setIsQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Get active tab from URL query parameter
+  const getActiveTabFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || 'query';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getActiveTabFromURL());
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    setActiveTab(getActiveTabFromURL());
+  }, [location.search]);
 
   const fetchDataFromLocalStorage = () => {
     try {
@@ -302,7 +318,7 @@ export const DatabasePage: React.FC = () => {
       <div className="container mx-auto py-6">
         <h1 className="text-2xl font-bold mb-4">Database Explorer</h1>
         
-        <Tabs defaultValue="query">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="mb-4">
             <TabsTrigger value="query">
               <Search className="w-4 h-4 mr-2" />
