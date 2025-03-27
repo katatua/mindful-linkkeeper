@@ -64,26 +64,26 @@ export const HamburgerMenu = () => {
   };
 
   const mainMenuItems = [
-    { title: t('nav.home'), icon: Home, url: "/" },
-    { title: t('nav.funding'), icon: BarChart, url: "/funding" },
-    { title: t('nav.projects'), icon: Folder, url: "/projects" },
-    { title: t('nav.analytics'), icon: BarChart2, url: "/analytics" },
-    { title: t('nav.reports'), icon: FileText, url: "/reports" },
-    { title: t('nav.policies'), icon: BookOpen, url: "/policies" },
+    { title: t('home'), icon: Home, url: "/" },
+    { title: t('funding'), icon: BarChart, url: "/funding" },
+    { title: t('projects'), icon: Folder, url: "/projects" },
+    { title: t('analytics'), icon: BarChart2, url: "/analytics" },
+    { title: t('reports'), icon: FileText, url: "/reports" },
+    { title: t('policies'), icon: BookOpen, url: "/policies" },
   ];
 
   const utilityMenuItems = [
-    { title: t('nav.upload'), icon: FileUp, url: "/add-file" },
-    { title: t('nav.link'), icon: LinkIcon, url: "/add-link" },
-    { title: t('nav.category'), icon: FolderPlus, url: "/add-category" },
-    { title: t('nav.database'), icon: Database, url: "/database" },
-    { title: t('nav.synthetic_data'), icon: BarChart2, url: "/synthetic-data" },
+    { title: t('upload'), icon: FileUp, url: "/add-file" },
+    { title: t('link'), icon: LinkIcon, url: "/add-link" },
+    { title: t('category'), icon: FolderPlus, url: "/add-category" },
+    { title: t('database'), icon: Database, url: "/database" },
+    { title: t('synthetic_data'), icon: BarChart2, url: "/synthetic-data" },
   ];
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="flex">
+        <Button variant="ghost" size="icon" className="flex ml-6">
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>
         </Button>
@@ -91,7 +91,7 @@ export const HamburgerMenu = () => {
       <SheetContent side="left" className="w-[280px] sm:w-[320px] overflow-y-auto">
         <div className="flex flex-col gap-4 py-4">
           <div 
-            className="flex items-center gap-2 pb-4 border-b cursor-pointer" 
+            className="flex items-center gap-4 pb-4 border-b cursor-pointer ml-4" 
             onClick={() => handleNavigation("/")}
           >
             <img 
@@ -103,12 +103,12 @@ export const HamburgerMenu = () => {
           </div>
           
           <div className="space-y-1 pt-2">
-            <h3 className="font-medium text-sm text-muted-foreground px-3 mb-2">{t('nav.main')}</h3>
+            <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2">{t('nav.main')}</h3>
             {mainMenuItems.map((item) => (
               <Button 
                 key={item.url}
                 variant="ghost" 
-                className="w-full justify-start" 
+                className="w-full justify-start px-6" 
                 onClick={() => handleNavigation(item.url)}
               >
                 <item.icon className="h-4 w-4 mr-2" />
@@ -116,12 +116,12 @@ export const HamburgerMenu = () => {
               </Button>
             ))}
             
-            <h3 className="font-medium text-sm text-muted-foreground px-3 mb-2 mt-4">{t('nav.utilities')}</h3>
+            <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2 mt-4">{t('nav.utilities')}</h3>
             {utilityMenuItems.map((item) => (
               <Button 
                 key={item.url}
                 variant="ghost" 
-                className="w-full justify-start" 
+                className="w-full justify-start px-6" 
                 onClick={() => handleNavigation(item.url)}
               >
                 <item.icon className="h-4 w-4 mr-2" />
@@ -130,10 +130,10 @@ export const HamburgerMenu = () => {
             ))}
             
             <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-muted-foreground px-3 mb-2">{t('nav.settings')}</h3>
+              <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2">{t('nav.settings')}</h3>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start" 
+                className="w-full justify-start px-6" 
                 onClick={toggleLanguage}
               >
                 <Languages className="h-4 w-4 mr-2" />
@@ -141,7 +141,7 @@ export const HamburgerMenu = () => {
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start" 
+                className="w-full justify-start px-6" 
                 onClick={() => {}}
               >
                 <User className="h-4 w-4 mr-2" />
@@ -149,7 +149,7 @@ export const HamburgerMenu = () => {
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start" 
+                className="w-full justify-start px-6" 
                 onClick={() => {}}
               >
                 <HelpCircle className="h-4 w-4 mr-2" />
@@ -158,7 +158,7 @@ export const HamburgerMenu = () => {
               {isAuthenticated ? (
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start" 
+                  className="w-full justify-start px-6" 
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
@@ -167,7 +167,7 @@ export const HamburgerMenu = () => {
               ) : (
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start" 
+                  className="w-full justify-start px-6" 
                   onClick={handleLogin}
                 >
                   <LogIn className="h-4 w-4 mr-2" />

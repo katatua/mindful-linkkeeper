@@ -24,14 +24,15 @@ const translations: Record<Language, Record<string, string>> = {
     'logout.error': 'Error logging out',
     
     // Navigation
-    'nav.funding': 'Funding',
-    'nav.projects': 'Projects',
-    'nav.analytics': 'Analytics',
-    'nav.reports': 'Reports',
-    'nav.policies': 'Policies',
-    'nav.upload': 'Upload File',
-    'nav.link': 'Add Link',
-    'nav.category': 'Add Category',
+    'funding': 'Funding',
+    'projects': 'Projects',
+    'analytics': 'Analytics',
+    'reports': 'Reports',
+    'policies': 'Policies',
+    'upload': 'Upload File',
+    'link': 'Add Link',
+    'category': 'Add Category',
+    'home': 'Home',
     
     // Policies
     'policy.search.placeholder': 'Search policies...',
@@ -305,14 +306,15 @@ const translations: Record<Language, Record<string, string>> = {
     'logout.error': 'Erro ao terminar sessão',
     
     // Navigation
-    'nav.funding': 'Financiamento',
-    'nav.projects': 'Projetos',
-    'nav.analytics': 'Análises',
-    'nav.reports': 'Relatórios',
-    'nav.policies': 'Políticas',
-    'nav.upload': 'Carregar Ficheiro',
-    'nav.link': 'Adicionar Link',
-    'nav.category': 'Adicionar Categoria',
+    'funding': 'Financiamento',
+    'projects': 'Projetos',
+    'analytics': 'Análises',
+    'reports': 'Relatórios',
+    'policies': 'Políticas',
+    'upload': 'Carregar Ficheiro',
+    'link': 'Adicionar Link',
+    'category': 'Adicionar Categoria',
+    'home': 'Início',
     
     // Policies
     'policy.search.placeholder': 'Pesquisar políticas...',
@@ -572,42 +574,4 @@ const translations: Record<Language, Record<string, string>> = {
     'reports.resume': 'Retomar',
     'reports.delete': 'Excluir',
     'reports.confirm': 'Confirmar',
-    'reports.cancel': 'Cancelar'
-  }
-};
-
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('en');
-
-  // Save language preference to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('language', language);
-  }, [language]);
-
-  // Load language preference from localStorage on initial load
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pt')) {
-      setLanguage(savedLanguage);
-    }
-  }, []);
-
-  // Translation function
-  const t = (key: string): string => {
-    return translations[language][key] || key;
-  };
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-};
-
-export const useLanguage = (): LanguageContextType => {
-  const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
-};
+    'reports
