@@ -21,6 +21,7 @@ interface DatabaseTable {
     nullable: boolean;
     default?: string;
   }[];
+  sampleData?: any[];
 }
 
 // Database schema information
@@ -124,10 +125,49 @@ const databaseSchema: DatabaseTable[] = [
 const DatabasePage: React.FC = () => {
   const [question, setQuestion] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoadingSampleData, setIsLoadingSampleData] = useState<boolean>(true);
   const [results, setResults] = useState<any>(null);
   const [explanation, setExplanation] = useState<string>("");
   const [sqlQuery, setSqlQuery] = useState<string>("");
+  const [tables, setTables] = useState<DatabaseTable[]>(databaseSchema);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchSampleData = async () => {
+      setIsLoadingSampleData(true);
+      
+      try {
+        const updatedTables = [...tables];
+        
+        for (let i = 0; i < updatedTables.length; i++) {
+          const table = updatedTables[i];
+          const { data, error } = await supabase
+            .from(table.name)
+            .select('*')
+            .limit(5);
+            
+          if (error) {
+            console.error(`Error fetching data from ${table.name}:`, error);
+          } else {
+            updatedTables[i] = { ...table, sampleData: data };
+          }
+        }
+        
+        setTables(updatedTables);
+      } catch (error) {
+        console.error("Error fetching sample data:", error);
+        toast({
+          title: "Error fetching sample data",
+          description: "There was a problem retrieving sample data from the database.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingSampleData(false);
+      }
+    };
+    
+    fetchSampleData();
+  }, []);
 
   const handleQuestionSubmit = async () => {
     if (!question.trim()) {
@@ -146,7 +186,7 @@ const DatabasePage: React.FC = () => {
 
     try {
       // Prepare a detailed prompt with the database schema information
-      const schemaInfo = databaseSchema.map(table => {
+      const schemaInfo = tables.map(table => {
         const columnsInfo = table.columns.map(col => 
           `- ${col.name} (${col.type}): ${col.nullable ? 'Nullable' : 'Not Nullable'}${col.default ? `, Default: ${col.default}` : ''}`
         ).join('\n');
@@ -217,30 +257,72 @@ const DatabasePage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-8">
-                  {databaseSchema.map((table) => (
+                  {tables.map((table) => (
                     <div key={table.name} className="border rounded-lg p-4">
                       <h3 className="text-xl font-semibold mb-2">{table.name}</h3>
                       <p className="text-muted-foreground mb-4">{table.description}</p>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Column Name</TableHead>
-                            <TableHead>Data Type</TableHead>
-                            <TableHead>Nullable</TableHead>
-                            <TableHead>Default Value</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {table.columns.map((column) => (
-                            <TableRow key={`${table.name}-${column.name}`}>
-                              <TableCell className="font-medium">{column.name}</TableCell>
-                              <TableCell>{column.type}</TableCell>
-                              <TableCell>{column.nullable ? 'Yes' : 'No'}</TableCell>
-                              <TableCell>{column.default || '-'}</TableCell>
+                      
+                      <div className="mb-6">
+                        <h4 className="text-lg font-semibold mb-2">Schema</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Column Name</TableHead>
+                              <TableHead>Data Type</TableHead>
+                              <TableHead>Nullable</TableHead>
+                              <TableHead>Default Value</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {table.columns.map((column) => (
+                              <TableRow key={`${table.name}-${column.name}`}>
+                                <TableCell className="font-medium">{column.name}</TableCell>
+                                <TableCell>{column.type}</TableCell>
+                                <TableCell>{column.nullable ? 'Yes' : 'No'}</TableCell>
+                                <TableCell>{column.default || '-'}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-lg font-semibold mb-2">Sample Data</h4>
+                        {isLoadingSampleData ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <span className="ml-2">Loading sample data...</span>
+                          </div>
+                        ) : table.sampleData && table.sampleData.length > 0 ? (
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  {Object.keys(table.sampleData[0]).map((columnName) => (
+                                    <TableHead key={columnName}>{columnName}</TableHead>
+                                  ))}
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {table.sampleData.map((row, i) => (
+                                  <TableRow key={i}>
+                                    {Object.values(row).map((value: any, j) => (
+                                      <TableCell key={j}>
+                                        {value === null ? '-' : 
+                                          typeof value === 'object' ? JSON.stringify(value) : 
+                                          String(value).length > 50 ? `${String(value).substring(0, 50)}...` : 
+                                          String(value)}
+                                      </TableCell>
+                                    ))}
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground italic">No sample data available</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
