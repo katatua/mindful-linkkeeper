@@ -36,6 +36,20 @@ const initialDataSources: FonteDados[] = [
     descricao: "Dados relativos à atribuição de financiamento através de fundos europeus e por fundos nacionais a entidades empresariais e não empresariais.",
     tecnologia: "Outsystems (SQL Server)",
     data_importacao: new Date().toISOString()
+  },
+  {
+    id: 4,
+    nome_sistema: "Instituições de I&D",
+    descricao: "Dados relativos ao mapeamento das entidades que fazem Investigação & Desenvolvimento em Portugal e na Europa.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
+  },
+  {
+    id: 5,
+    nome_sistema: "Dados sobre Cooperação Internacional",
+    descricao: "Dados relativos à Bolsa de Tecnologia e Negócios, onde a procura e a oferta de tecnologias são valorizadas.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
   }
 ];
 
@@ -100,11 +114,27 @@ VALUES (
     'Outsystems (SQL Server)',
     CURRENT_TIMESTAMP
 );`
-                    ) : (
+                    ) : source.id === 3 ? (
                       `INSERT INTO fontes_dados (nome_sistema, descricao, tecnologia, data_importacao)
 VALUES (
     'Dados de projetos financiados por Fundos Europeus e por Fundos Nacionais (rede EUREKA)',
     'Dados relativos à atribuição de financiamento através de fundos europeus e por fundos nacionais a entidades empresariais e não empresariais.',
+    'Outsystems (SQL Server)',
+    CURRENT_TIMESTAMP
+);`
+                    ) : source.id === 4 ? (
+                      `INSERT INTO fontes_dados (nome_sistema, descricao, tecnologia, data_importacao)
+VALUES (
+    'Instituições de I&D',
+    'Dados relativos ao mapeamento das entidades que fazem Investigação & Desenvolvimento em Portugal e na Europa.',
+    'Outsystems (SQL Server)',
+    CURRENT_TIMESTAMP
+);`
+                    ) : (
+                      `INSERT INTO fontes_dados (nome_sistema, descricao, tecnologia, data_importacao)
+VALUES (
+    'Dados sobre Cooperação Internacional',
+    'Dados relativos à Bolsa de Tecnologia e Negócios, onde a procura e a oferta de tecnologias são valorizadas.',
     'Outsystems (SQL Server)',
     CURRENT_TIMESTAMP
 );`
@@ -136,12 +166,26 @@ VALUES (
                             <TableHead>Valor Financiado</TableHead>
                             <TableHead>Entidade</TableHead>
                           </>
-                        ) : (
+                        ) : source.id === 3 ? (
                           <>
                             <TableHead>Projeto ID</TableHead>
                             <TableHead>Nome Projeto</TableHead>
                             <TableHead>Tipo Fundo</TableHead>
                             <TableHead>Valor Financiado</TableHead>
+                          </>
+                        ) : source.id === 4 ? (
+                          <>
+                            <TableHead>Instituição ID</TableHead>
+                            <TableHead>Nome Instituição</TableHead>
+                            <TableHead>Localização</TableHead>
+                            <TableHead>Área de Atividade</TableHead>
+                          </>
+                        ) : (
+                          <>
+                            <TableHead>Cooperação ID</TableHead>
+                            <TableHead>Parceiro</TableHead>
+                            <TableHead>Tipo Interação</TableHead>
+                            <TableHead>Data Início</TableHead>
                           </>
                         )}
                       </TableRow>
@@ -189,7 +233,7 @@ VALUES (
                             <TableCell>Instituto ABC</TableCell>
                           </TableRow>
                         </>
-                      ) : (
+                      ) : source.id === 3 ? (
                         <>
                           <TableRow>
                             <TableCell>EUR-2023-078</TableCell>
@@ -208,6 +252,48 @@ VALUES (
                             <TableCell>Mobilidade Sustentável</TableCell>
                             <TableCell>Europeu</TableCell>
                             <TableCell>€ 185.000</TableCell>
+                          </TableRow>
+                        </>
+                      ) : source.id === 4 ? (
+                        <>
+                          <TableRow>
+                            <TableCell>INST-2023-001</TableCell>
+                            <TableCell>Instituto de Tecnologia Avançada</TableCell>
+                            <TableCell>Lisboa</TableCell>
+                            <TableCell>Tecnologias Emergentes</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>INST-2023-015</TableCell>
+                            <TableCell>Centro de Pesquisa Biomédica</TableCell>
+                            <TableCell>Porto</TableCell>
+                            <TableCell>Saúde e Biotecnologia</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>INST-2022-089</TableCell>
+                            <TableCell>Laboratório de Inovação Digital</TableCell>
+                            <TableCell>Braga</TableCell>
+                            <TableCell>Inteligência Artificial</TableCell>
+                          </TableRow>
+                        </>
+                      ) : (
+                        <>
+                          <TableRow>
+                            <TableCell>COOP-2023-012</TableCell>
+                            <TableCell>TechAlliance GmbH</TableCell>
+                            <TableCell>Transferência Tecnológica</TableCell>
+                            <TableCell>15/03/2023</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>COOP-2023-034</TableCell>
+                            <TableCell>Innovation Partners SA</TableCell>
+                            <TableCell>Projetos Conjuntos</TableCell>
+                            <TableCell>22/05/2023</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>COOP-2022-098</TableCell>
+                            <TableCell>Global Research Network</TableCell>
+                            <TableCell>Investigação Aplicada</TableCell>
+                            <TableCell>10/12/2022</TableCell>
                           </TableRow>
                         </>
                       )}

@@ -13,3 +13,20 @@ export interface DadosExtraidos {
   conteudo: any;
   data_extracao: string;
 }
+
+export interface Instituicao {
+  id: string;
+  nome_instituicao: string;
+  localizacao: string;
+  area_atividade: string;
+  outros_detalhes?: string;
+}
+
+export interface CooperacaoInternacional {
+  id: string;
+  nome_parceiro: string;
+  tipo_interacao: string;
+  data_inicio: string;
+  data_fim?: string;
+  outros_detalhes?: string;
+}
