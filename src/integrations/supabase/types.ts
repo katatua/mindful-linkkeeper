@@ -1392,39 +1392,6 @@ export type Database = {
         }
         Relationships: []
       }
-      query_history: {
-        Row: {
-          created_tables: string[] | null
-          error_message: string | null
-          id: string
-          language: string
-          query_text: string
-          timestamp: string
-          user_id: string | null
-          was_successful: boolean
-        }
-        Insert: {
-          created_tables?: string[] | null
-          error_message?: string | null
-          id?: string
-          language?: string
-          query_text: string
-          timestamp?: string
-          user_id?: string | null
-          was_successful?: boolean
-        }
-        Update: {
-          created_tables?: string[] | null
-          error_message?: string | null
-          id?: string
-          language?: string
-          query_text?: string
-          timestamp?: string
-          user_id?: string | null
-          was_successful?: boolean
-        }
-        Relationships: []
-      }
       subscriber_list_members: {
         Row: {
           created_at: string | null

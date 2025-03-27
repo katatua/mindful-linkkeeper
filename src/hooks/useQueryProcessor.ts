@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { generateDummyResponse } from "@/utils/dummyData";
 import { generateSqlFromNaturalLanguage } from "@/utils/sqlGeneration";
-import { saveQueryToHistory } from "@/utils/queryHistory";
 
 export interface QueryResult {
   response: string;
@@ -55,20 +54,6 @@ export function useQueryProcessor() {
       // If in offline mode, use dummy data directly
       if (useOfflineMode || (supabase as any).isUsingLocalDb) {
         console.log("Using local/offline mode");
-        
-        // Log that we're saving the query to history
-        console.log("Saving offline mode query to history");
-        try {
-          await saveQueryToHistory(
-            question, 
-            language, 
-            true, // offline mode queries are considered successful
-            [],
-            undefined
-          );
-        } catch (historyErr) {
-          console.error("Failed to save offline query to history:", historyErr);
-        }
         
         // Generate a SQL query for display purposes even in offline mode
         let sqlQuery = "";
@@ -183,16 +168,6 @@ export function useQueryProcessor() {
         
         if (error) {
           console.error("Error executing SQL:", error);
-          
-          // Save the failed query to history
-          await saveQueryToHistory(
-            question,
-            language,
-            false,
-            [],
-            `Failed to execute SQL: ${error.message}`
-          );
-          
           throw new Error(`Failed to execute SQL: ${error.message}`);
         }
         
@@ -204,15 +179,6 @@ export function useQueryProcessor() {
           console.error("Error generating natural language response:", nlError);
           nlResponse = `Query executed successfully. Found ${data.result?.length || 0} records.`;
         }
-        
-        // Save successful query to history
-        await saveQueryToHistory(
-          question,
-          language,
-          true,
-          [],
-          undefined
-        );
         
         const queryResult: QueryResult = {
           response: nlResponse,
@@ -243,19 +209,6 @@ export function useQueryProcessor() {
       }
     } catch (error) {
       console.error("Error processing question:", error);
-      
-      // Save the failed query to history
-      try {
-        await saveQueryToHistory(
-          question,
-          language,
-          false,
-          [],
-          error instanceof Error ? error.message : String(error)
-        );
-      } catch (historyErr) {
-        console.error("Failed to save failed query to history:", historyErr);
-      }
       
       // Try to generate SQL for display even in error case
       let errorSql = "";

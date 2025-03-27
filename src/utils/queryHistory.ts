@@ -37,16 +37,6 @@ export const saveQueryToHistory = async (
 
     // Try to use Supabase if connected
     try {
-      // Check for user session using the correct method
-      const { data: session } = await supabase.auth.getSession();
-      const userId = session?.session?.user?.id;
-      
-      if (userId) {
-        newQuery['user_id'] = userId;
-      }
-
-      console.log("Saving query to history:", newQuery);
-      
       const { data, error } = await supabase
         .from('query_history')
         .insert(newQuery)
@@ -58,10 +48,8 @@ export const saveQueryToHistory = async (
         throw error;
       }
 
-      console.log("Successfully saved query to Supabase:", data);
       return data;
     } catch (err) {
-      console.error("Falling back to local storage due to error:", err);
       // Fallback to local storage
       const localQuery = {
         id: crypto.randomUUID(),
@@ -76,7 +64,6 @@ export const saveQueryToHistory = async (
       queries.push(localQuery);
       localStorage.setItem('queryHistory', JSON.stringify(queries));
       
-      console.log("Saved query to local storage:", localQuery);
       return localQuery;
     }
   } catch (error) {

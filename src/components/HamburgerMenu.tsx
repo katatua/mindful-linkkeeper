@@ -1,19 +1,33 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, LogOut, LogIn, User, HelpCircle, Languages, Database, FileCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 export const HamburgerMenu = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
   const { language, setLanguage, t } = useLanguage();
-  const { isLoggedIn, logout } = useAuth();
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -22,11 +36,11 @@ export const HamburgerMenu = () => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await supabase.auth.signOut();
       toast({
         title: t('logout.success'),
       });
-      navigate("/login");
+      navigate("/auth");
       setOpen(false);
     } catch (error) {
       toast({
@@ -37,7 +51,7 @@ export const HamburgerMenu = () => {
   };
 
   const handleLogin = () => {
-    navigate("/login");
+    navigate("/auth");
     setOpen(false);
   };
 
@@ -167,7 +181,7 @@ export const HamburgerMenu = () => {
                 <HelpCircle className="h-4 w-4 mr-2" />
                 {t('help')}
               </Button>
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start" 

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Bot, ServerCrash } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MessageList } from "./ChatComponents/MessageList";
@@ -35,22 +35,14 @@ const AIAssistant = () => {
     isUploading
   } = useChat(language);
 
-  const handleTestConnection = useCallback(async () => {
+  const handleTestConnection = async () => {
     setIsTestingConnection(true);
     try {
       await testDatabaseConnection();
     } finally {
       setIsTestingConnection(false);
     }
-  }, []);
-
-  const toggleThinking = useCallback(() => {
-    setShowThinking(prev => !prev);
-  }, []);
-
-  const toggleDatabaseStatus = useCallback(() => {
-    setShowDatabaseStatus(prev => !prev);
-  }, []);
+  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border shadow-sm">
@@ -74,7 +66,7 @@ const AIAssistant = () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={toggleDatabaseStatus}
+            onClick={() => setShowDatabaseStatus(!showDatabaseStatus)}
             className="flex items-center gap-1 text-xs"
           >
             {showDatabaseStatus ? 
@@ -96,7 +88,7 @@ const AIAssistant = () => {
             </span>
             <button 
               className="text-xs text-blue-700 hover:underline"
-              onClick={toggleThinking}
+              onClick={() => setShowThinking(!showThinking)}
             >
               {showThinking ? 
                 (language === 'en' ? 'Hide thinking' : 'Ocultar raciocínio') : 

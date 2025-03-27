@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { classifyDocument } from "@/utils/aiUtils";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft } from "lucide-react";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -21,6 +20,7 @@ export default function AddFile() {
   const { t } = useLanguage();
 
   const sanitizeFilename = (filename: string): string => {
+    // Remove non-ASCII characters and replace spaces with underscores
     return filename
       .replace(/[^\x00-\x7F]/g, '')
       .replace(/\s+/g, '_')
@@ -40,10 +40,12 @@ export default function AddFile() {
     try {
       setIsUploading(true);
       
+      // Get the current user's ID
       const userResult = await supabase.auth.getUser();
       const user = userResult.data.user;
       if (!user) throw new Error("User not authenticated");
 
+      // First, upload the file to storage
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
@@ -54,14 +56,17 @@ export default function AddFile() {
 
       if (uploadResult.error) throw uploadResult.error;
 
+      // Auto-generate title from filename if not provided
       const displayTitle = title.trim() || file.name.replace(/\.[^/.]+$/, "");
       
+      // Get classification from AI for better organization
       const classification = await classifyDocument({
         title: displayTitle,
         summary,
         fileName: file.name
       });
 
+      // Then, create a link entry for the file
       const linkResult = await supabase
         .from('links')
         .insert({
@@ -98,28 +103,12 @@ export default function AddFile() {
     }
   };
 
-  const handleBack = () => {
-    navigate("/");
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <div className="container mx-auto p-6 flex-1">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center mb-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleBack} 
-              className="mr-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('file.back') || 'Back'}
-            </Button>
-            <h1 className="text-2xl font-bold">{t('file.title')}</h1>
-          </div>
-          
+          <h1 className="text-2xl font-bold mb-6">{t('file.title')}</h1>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Input
@@ -170,4 +159,4 @@ export default function AddFile() {
       </div>
     </div>
   );
-}
+};

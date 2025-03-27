@@ -1,10 +1,11 @@
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/toaster";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import FundingPage from "./FundingPage";
 import ProjectsPage from "./ProjectsPage";
@@ -20,62 +21,36 @@ import DatabaseQuery from "@/components/DatabaseQuery";
 import SyntheticDataPage from "./SyntheticDataPage";
 import { Button } from "@/components/ui/button";
 import { X, MessageCircle } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const ANIPortal = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAssistant, setShowAssistant] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { showVisualization, visualizationData, setShowVisualization } = useVisualization();
-  const { isLoggedIn } = useAuth();
-  
-  const handleCloseVisualization = useCallback(() => {
-    setShowVisualization(false);
-  }, [setShowVisualization]);
-  
-  const toggleAssistant = useCallback(() => {
-    setShowAssistant(prev => !prev);
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Memoize the tabs to prevent unnecessary re-renders
-  const tabContent = useMemo(() => {
-    return (
-      <>
-        <TabsContent value="dashboard" className="h-full">
-          <Dashboard />
-        </TabsContent>
-        
-        <TabsContent value="funding" className="h-full">
-          <FundingPage />
-        </TabsContent>
-        
-        <TabsContent value="projects" className="h-full">
-          <ProjectsPage />
-        </TabsContent>
-        
-        <TabsContent value="analytics" className="h-full">
-          <AnalyticsPage />
-        </TabsContent>
-        
-        <TabsContent value="reports" className="h-full">
-          <ReportsPage />
-        </TabsContent>
-        
-        <TabsContent value="policies" className="h-full">
-          <PoliciesPage />
-        </TabsContent>
-        
-        <TabsContent value="database" className="h-full">
-          <DatabaseQuery />
-        </TabsContent>
-        
-        <TabsContent value="synthetic" className="h-full">
-          <SyntheticDataPage />
-        </TabsContent>
-      </>
-    );
-  }, []);
+  const handleCloseVisualization = () => {
+    setShowVisualization(false);
+  };
+  
+  const toggleAssistant = () => {
+    setShowAssistant(prev => !prev);
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -123,7 +98,37 @@ const ANIPortal = () => {
               </div>
             )}
             
-            {tabContent}
+            <TabsContent value="dashboard" className="h-full">
+              <Dashboard />
+            </TabsContent>
+            
+            <TabsContent value="funding" className="h-full">
+              <FundingPage />
+            </TabsContent>
+            
+            <TabsContent value="projects" className="h-full">
+              <ProjectsPage />
+            </TabsContent>
+            
+            <TabsContent value="analytics" className="h-full">
+              <AnalyticsPage />
+            </TabsContent>
+            
+            <TabsContent value="reports" className="h-full">
+              <ReportsPage />
+            </TabsContent>
+            
+            <TabsContent value="policies" className="h-full">
+              <PoliciesPage />
+            </TabsContent>
+            
+            <TabsContent value="database" className="h-full">
+              <DatabaseQuery />
+            </TabsContent>
+            
+            <TabsContent value="synthetic" className="h-full">
+              <SyntheticDataPage />
+            </TabsContent>
           </Tabs>
         </main>
         

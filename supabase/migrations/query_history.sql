@@ -26,11 +26,6 @@ CREATE POLICY "Authenticated users can insert query history" ON public.query_his
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
--- Create a policy to allow anyone to insert query history (for unauthenticated users)
-CREATE POLICY "Anyone can insert query history" ON public.query_history
-  FOR INSERT
-  WITH CHECK (user_id IS NULL);
-
 -- Update ani_database_status function to track created tables
 CREATE OR REPLACE FUNCTION public.track_dynamic_table_creation()
 RETURNS TRIGGER AS $$
@@ -46,3 +41,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Create trigger for this function (commented out because it would require executing per table)
+-- This would be executed programmatically for each dynamically created table
+-- CREATE TRIGGER track_table_creation AFTER CREATE TABLE ON SCHEMA public
+--   EXECUTE FUNCTION public.track_dynamic_table_creation();

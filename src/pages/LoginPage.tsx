@@ -1,57 +1,38 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
-  const { login } = useAuth();
+  const { language } = useLanguage();
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast({
-          title: "Account created successfully",
-          description: "Please check your email to verify your account",
-        });
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ 
-          email, 
-          password 
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Logged in successfully",
-        });
-        login();
-        navigate("/portal");
-      }
+      const { error } = await login(email, password);
+      
+      if (error) throw error;
+      
+      toast({
+        title: language === 'en' ? "Logged in successfully" : "Login realizado com sucesso",
+      });
+      navigate("/portal");
     } catch (error: any) {
       toast({
-        title: "Authentication error",
+        title: language === 'en' ? "Authentication error" : "Erro de autenticação",
         description: error.message,
         variant: "destructive",
       });
@@ -68,19 +49,23 @@ export default function LoginPage() {
           alt="ANI Logo" 
           className="h-12 w-12 rounded" 
         />
-        <h1 className="text-2xl font-bold">{t('app.title')}</h1>
+        <h1 className="text-2xl font-bold">
+          {language === 'en' ? 'ANI Data Portal' : 'Portal de Dados ANI'}
+        </h1>
       </div>
       
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{isSignUp ? t('auth.signup') : t('auth.login')}</CardTitle>
+          <CardTitle>
+            {language === 'en' ? 'Login' : 'Entrar'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Input
                 type="email"
-                placeholder={t('auth.email')}
+                placeholder={language === 'en' ? 'Email' : 'E-mail'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -89,7 +74,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Input
                 type="password"
-                placeholder={t('auth.password')}
+                placeholder={language === 'en' ? 'Password' : 'Senha'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -97,20 +82,8 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading
-                ? t('auth.loading')
-                : isSignUp
-                ? t('auth.account.create')
-                : t('auth.account.login')}
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="w-full"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp
-                ? t('auth.account.existing')
-                : t('auth.account.need')}
+                ? (language === 'en' ? 'Loading...' : 'Carregando...')
+                : (language === 'en' ? 'Login' : 'Entrar')}
             </Button>
           </form>
         </CardContent>

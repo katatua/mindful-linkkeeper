@@ -1,6 +1,6 @@
 
 import { useChatCore } from "./useChatCore";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +11,7 @@ export const useChat = (language: string) => {
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const navigate = useNavigate();
   
-  const handleFileUpload = useCallback(async (file: File) => {
+  const handleFileUpload = async (file: File) => {
     try {
       setIsUploading(true);
       
@@ -45,7 +45,7 @@ export const useChat = (language: string) => {
           ? `I've uploaded a PDF file: [${file.name}](${fileUrl}). Starting extraction... I'm using the Gemini 2.0 Pro Experimental model for analysis.`
           : `Carreguei um ficheiro PDF: [${file.name}](${fileUrl}). Iniciando extração... Estou usando o modelo Gemini 2.0 Pro Experimental para análise.`;
         
-        await chatCore.handleSendCustomMessage(messageContent);
+        const message = await chatCore.handleSendCustomMessage(messageContent);
         
         toast.success(language === 'en' 
           ? "File uploaded successfully" 
@@ -132,7 +132,7 @@ export const useChat = (language: string) => {
     } finally {
       setIsUploading(false);
     }
-  }, [chatCore, language, navigate]);
+  };
   
   return {
     ...chatCore,

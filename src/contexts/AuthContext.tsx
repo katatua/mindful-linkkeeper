@@ -1,92 +1,88 @@
 
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { supabase } from "@/integrations/supabase/client";
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
+// Define the shape of our auth context
 type AuthContextType = {
   isLoggedIn: boolean;
-  user: any | null; // Add user information
-  login: () => void;
+  user: any | null;
+  login: (email: string, password: string) => Promise<{ error: any | null }>;
   logout: () => Promise<void>;
+  loading: boolean;
 };
 
-const defaultAuthContext: AuthContextType = {
+// Create the context with default values
+export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   user: null,
-  login: () => {},
-  logout: async () => {}
-};
+  login: async () => ({ error: null }),
+  logout: async () => {},
+  loading: true,
+});
 
-export const AuthContext = createContext<AuthContextType>(defaultAuthContext);
+// Custom hook for using the auth context
+export const useAuth = () => useContext(AuthContext);
 
+// Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check initial auth state
   useEffect(() => {
-    let isMounted = true;
-    
-    const checkSession = async () => {
+    // Check current auth state
+    const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (isMounted) {
-          setIsLoggedIn(!!session);
-          setUser(session?.user || null);
-        }
+        setUser(session?.user || null);
       } catch (error) {
-        console.error("Error checking session:", error);
-        if (isMounted) {
-          setIsLoggedIn(false);
-          setUser(null);
-        }
+        console.error('Error checking auth state:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkSession();
+    checkUser();
 
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) {
-        setIsLoggedIn(!!session);
+    // Set up listener for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
         setUser(session?.user || null);
       }
-    });
+    );
 
-    // Cleanup function to unsubscribe and prevent state updates on unmounted component
     return () => {
-      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  const login = useCallback(() => {
-    setIsLoggedIn(true);
-  }, []);
+  // Login function
+  const login = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { error };
+    }
+  };
 
-  const logout = useCallback(async () => {
+  // Logout function
+  const logout = async () => {
     try {
       await supabase.auth.signOut();
-      setIsLoggedIn(false);
-      setUser(null);
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.error('Logout error:', error);
     }
-  }, []);
+  };
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const contextValue = React.useMemo(() => ({
-    isLoggedIn,
+  const value = {
+    isLoggedIn: !!user,
     user,
     login,
-    logout
-  }), [isLoggedIn, user, login, logout]);
+    logout,
+    loading,
+  };
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export const useAuth = () => useContext(AuthContext);
