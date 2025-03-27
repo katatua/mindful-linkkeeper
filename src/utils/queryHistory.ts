@@ -37,9 +37,9 @@ export const saveQueryToHistory = async (
 
     // Try to use Supabase if connected
     try {
-      // Get current user ID if authenticated
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
+      // Check for user session using the correct method
+      const { data: session } = await supabase.auth.getSession();
+      const userId = session?.session?.user?.id;
       
       if (userId) {
         newQuery['user_id'] = userId;
