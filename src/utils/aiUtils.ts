@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,6 +17,12 @@ export interface AIResponse {
   response: string;
   timestamp: Date;
 }
+
+// IMPORTANT: The database used is PostgreSQL
+// All queries must be made with PostgreSQL syntax
+// This includes using CURRENT_DATE instead of DATE('now')
+// Using EXTRACT(YEAR FROM date_column) instead of strftime
+// And NOT including semicolons in the queries
 
 // Function to classify documents via Supabase Edge Function
 export const classifyDocument = async (data: ClassificationRequest): Promise<string> => {
@@ -97,7 +104,7 @@ export const generateResponse = async (userInput: string): Promise<string> => {
           extractYear: 'EXTRACT(YEAR FROM column_name)',
           formatDate: "TO_CHAR(column_name, 'YYYY-MM-DD')"
         },
-        important: "This database uses PostgreSQL. Do NOT use SQLite functions like strftime or DATE('now'). Always use PostgreSQL syntax. DO NOT include semicolons in your SQL queries."
+        important: "This database uses PostgreSQL. DO NOT use SQLite functions like strftime or DATE('now'). Always use PostgreSQL syntax. DO NOT include semicolons in your SQL queries. IMPORTANT: PostgreSQL is the database being used, all queries must use PostgreSQL syntax."
       };
     }
     
