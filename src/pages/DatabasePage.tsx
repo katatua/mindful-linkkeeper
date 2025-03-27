@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,12 +18,13 @@ import { Input } from '@/components/ui/input';
 import { suggestedDatabaseQuestions } from '@/utils/aiUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, Database, FileQuestion, Search, Database as DatabaseIcon, FileText } from 'lucide-react';
+import { Check, ChevronRight, Database, FileQuestion, Search, Database as DatabaseIcon, FileText, History, X } from 'lucide-react';
 import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 import { useLocation } from 'react-router-dom';
 import { getCurrentAIModel } from '@/utils/aiUtils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface GenericTableData {
   id?: string;
@@ -54,6 +56,14 @@ interface QueryResult {
   message: string;
   sqlQuery: string;
   results: any[] | null;
+}
+
+interface QueryHistoryItem {
+  id: string;
+  question: string;
+  timestamp: Date;
+  result: QueryResult;
+  isCorrect: boolean | null;
 }
 
 export const DatabasePage: React.FC = () => {
@@ -137,6 +147,7 @@ export const DatabasePage: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState('');
   const [isQueryLoading, setIsQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
+  const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
   const [currentAIModel, setCurrentAIModel] = useState<string>('Loading...');
   const { toast } = useToast();
 
@@ -163,7 +174,28 @@ export const DatabasePage: React.FC = () => {
     };
     
     fetchAIModel();
+    
+    // Load query history from localStorage
+    const savedHistory = localStorage.getItem('queryHistory');
+    if (savedHistory) {
+      try {
+        const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+        setQueryHistory(parsedHistory);
+      } catch (e) {
+        console.error('Error loading query history:', e);
+      }
+    }
   }, []);
+  
+  // Save query history to localStorage whenever it changes
+  useEffect(() => {
+    if (queryHistory.length > 0) {
+      localStorage.setItem('queryHistory', JSON.stringify(queryHistory));
+    }
+  }, [queryHistory]);
 
   const fetchDataFromLocalStorage = () => {
     try {
@@ -256,6 +288,17 @@ export const DatabasePage: React.FC = () => {
       
       const response = await generateResponse(question);
       setQueryResult(response);
+      
+      // Add to query history
+      const historyItem: QueryHistoryItem = {
+        id: crypto.randomUUID(),
+        question,
+        timestamp: new Date(),
+        result: response,
+        isCorrect: null
+      };
+      
+      setQueryHistory(prev => [historyItem, ...prev]);
 
       toast({
         title: "Query processed",
@@ -264,12 +307,25 @@ export const DatabasePage: React.FC = () => {
     } catch (error) {
       console.error('Error executing query:', error);
       
-      setQueryResult({
+      const errorResult: QueryResult = {
         message: "Sorry, there was an error processing your query. Please try again. The error was: " + 
           (error instanceof Error ? error.message : String(error)),
         sqlQuery: "",
         results: null
-      });
+      };
+      
+      setQueryResult(errorResult);
+      
+      // Add failed query to history too
+      const historyItem: QueryHistoryItem = {
+        id: crypto.randomUUID(),
+        question,
+        timestamp: new Date(),
+        result: errorResult,
+        isCorrect: null
+      };
+      
+      setQueryHistory(prev => [historyItem, ...prev]);
       
       toast({
         title: "Query failed",
@@ -279,6 +335,19 @@ export const DatabasePage: React.FC = () => {
     } finally {
       setIsQueryLoading(false);
     }
+  };
+
+  const markQueryAccuracy = (id: string, isCorrect: boolean) => {
+    setQueryHistory(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, isCorrect } : item
+      )
+    );
+    
+    toast({
+      title: isCorrect ? "Marked as correct" : "Marked as incorrect",
+      description: `Query has been marked as ${isCorrect ? 'correctly' : 'incorrectly'} answered.`,
+    });
   };
 
   const renderTableContent = () => {
@@ -350,6 +419,16 @@ export const DatabasePage: React.FC = () => {
     </div>
   );
 
+  const formatTimestamp = (date: Date) => {
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
@@ -363,6 +442,10 @@ export const DatabasePage: React.FC = () => {
             <TabsTrigger value="query">
               <Search className="w-4 h-4 mr-2" />
               Query Assistant
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="w-4 h-4 mr-2" />
+              Query History
             </TabsTrigger>
             <TabsTrigger value="datasources">
               <FileText className="w-4 h-4 mr-2" />
@@ -472,6 +555,99 @@ export const DatabasePage: React.FC = () => {
                 )}
               </div>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <Card>
+              <CardHeader>
+                <CardTitle>Query History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {queryHistory.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <History className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                    <p>No queries have been executed yet.</p>
+                    <p className="text-sm mt-1">Try asking a question in the Query Assistant tab.</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[600px]">
+                    <div className="space-y-4">
+                      {queryHistory.map((item) => (
+                        <div key={item.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="font-medium">{item.question}</h3>
+                              <p className="text-sm text-gray-500">{formatTimestamp(item.timestamp)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                size="sm" 
+                                variant={item.isCorrect === true ? "default" : "outline"}
+                                className="flex items-center gap-1"
+                                onClick={() => markQueryAccuracy(item.id, true)}
+                              >
+                                <Check className="h-4 w-4" />
+                                <span>Correct</span>
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant={item.isCorrect === false ? "destructive" : "outline"}
+                                className="flex items-center gap-1"
+                                onClick={() => markQueryAccuracy(item.id, false)}
+                              >
+                                <X className="h-4 w-4" />
+                                <span>Incorrect</span>
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-50 p-3 rounded-md">
+                            <div className="whitespace-pre-wrap">{item.result.message}</div>
+                            
+                            {item.result.sqlQuery && (
+                              <div className="mt-3">
+                                <div className="text-xs font-medium text-gray-500 mb-1">SQL Query:</div>
+                                <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-xs overflow-x-auto">
+                                  {item.result.sqlQuery}
+                                </pre>
+                              </div>
+                            )}
+                            
+                            {item.result.results && item.result.results.length > 0 && (
+                              <div className="mt-3">
+                                <div className="text-xs font-medium text-gray-500 mb-1">Results:</div>
+                                <div className="overflow-x-auto border rounded-md">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        {Object.keys(item.result.results[0]).map((column) => (
+                                          <TableHead key={column} className="text-xs">{column}</TableHead>
+                                        ))}
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {item.result.results.map((row, rowIndex) => (
+                                        <TableRow key={rowIndex}>
+                                          {Object.entries(row).map(([column, value]) => (
+                                            <TableCell key={`${rowIndex}-${column}`} className="text-xs">
+                                              {renderCellValue(value)}
+                                            </TableCell>
+                                          ))}
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="datasources">
