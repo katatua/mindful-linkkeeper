@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyDocument } from "@/utils/aiUtils";
-import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { Layout } from "@/components/Layout";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -27,6 +29,15 @@ export default function AddFile() {
   const navigate = useNavigate();
   const { toast: toastNotification } = useToast();
   const { t } = useLanguage();
+  
+  const form = useForm({
+    defaultValues: {
+      file: "",
+      title: "",
+      summary: "",
+      category: ""
+    }
+  });
 
   const sanitizeFilename = (filename: string): string => {
     // Remove non-ASCII characters and replace spaces with underscores
@@ -226,132 +237,161 @@ export default function AddFile() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <div className="container mx-auto p-6 flex-1">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">{t('file.title')}</h1>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="file"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="w-full mb-4"
-              />
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">{t('file.title') || "Add File for AI Analysis"}</h1>
+        <p className="text-muted-foreground mt-2">
+          Upload a document for AI analysis and categorization
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-card border rounded-lg p-6 space-y-6">
+          <div className="grid gap-4">
+            <FormLabel htmlFor="file-upload">Select File</FormLabel>
+            <Input
+              id="file-upload"
+              type="file"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full"
+              accept=".pdf,.csv,.txt,.doc,.docx"
+            />
+            <p className="text-xs text-muted-foreground">
+              Supported formats: PDF, CSV, TXT, DOC, DOCX (max 10MB)
+            </p>
+          </div>
+          
+          {file && (
+            <div className="bg-muted/30 p-4 rounded-md">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <span className="font-medium">{file.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+              </div>
               
-              {file && (
-                <div className="mb-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleAnalyzeFile}
-                    disabled={isAnalyzing}
-                    className="w-full"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t('file.analyzing')}
-                      </>
-                    ) : (
-                      t('file.analyze')
-                    )}
-                  </Button>
-                  
-                  <div className="flex items-center mt-2">
-                    <input
-                      type="checkbox"
-                      id="useAiSuggestions"
-                      checked={useAiSuggestions}
-                      onChange={(e) => setUseAiSuggestions(e.target.checked)}
-                      className="mr-2"
-                    />
-                    <label htmlFor="useAiSuggestions" className="text-sm text-muted-foreground">
-                      {t('file.useAiSuggestions') || "Use AI suggestions automatically"}
-                    </label>
-                  </div>
-                </div>
-              )}
-              
-              {(aiSummary || aiAnalysis || aiTitle || aiCategory) && (
-                <div className="p-4 border rounded-md mb-4 space-y-3 bg-muted/30">
-                  {aiTitle && (
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.title') || "AI Suggested Title"}</h3>
-                      <p className="text-sm mt-1">{aiTitle}</p>
-                    </div>
-                  )}
-                  
-                  {aiCategory && (
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.category') || "AI Suggested Category"}</h3>
-                      <p className="text-sm mt-1">{aiCategory}</p>
-                    </div>
-                  )}
-                  
-                  {aiSummary && (
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.summary') || "AI Summary"}</h3>
-                      <p className="text-sm mt-1">{aiSummary}</p>
-                    </div>
-                  )}
-                  
-                  {aiAnalysis && (
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.analysis') || "AI Analysis"}</h3>
-                      <p className="text-sm mt-1 whitespace-pre-line">{aiAnalysis}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <Input
-                type="text"
-                placeholder={t('file.name')}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full mb-4"
-              />
-              
-              <Textarea
-                placeholder={t('file.summary')}
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                className="w-full mb-4"
-                rows={4}
-              />
-              
-              <Input
-                type="text"
-                placeholder={t('file.category')}
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isUploading}>
-                {isUploading ? (
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleAnalyzeFile}
+                disabled={isAnalyzing}
+                className="w-full mt-2"
+              >
+                {isAnalyzing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('file.uploading')}
+                    {t('file.analyzing') || "Analyzing..."}
                   </>
                 ) : (
-                  t('file.upload')
+                  t('file.analyze') || "Analyze with AI"
                 )}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/database")}
-                disabled={isUploading}
-              >
-                {t('file.cancel')}
-              </Button>
+              
+              <div className="flex items-center mt-2">
+                <input
+                  type="checkbox"
+                  id="useAiSuggestions"
+                  checked={useAiSuggestions}
+                  onChange={(e) => setUseAiSuggestions(e.target.checked)}
+                  className="mr-2"
+                />
+                <label htmlFor="useAiSuggestions" className="text-sm text-muted-foreground">
+                  {t('file.useAiSuggestions') || "Use AI suggestions automatically"}
+                </label>
+              </div>
             </div>
-          </form>
+          )}
+          
+          {(aiSummary || aiAnalysis || aiTitle || aiCategory) && (
+            <div className="p-4 border rounded-md mb-4 space-y-3 bg-muted/20">
+              <h3 className="font-medium text-sm">AI Analysis Results</h3>
+              
+              {aiTitle && (
+                <div>
+                  <h4 className="font-medium text-xs text-muted-foreground">{t('file.ai.title') || "AI Suggested Title"}</h4>
+                  <p className="text-sm mt-1">{aiTitle}</p>
+                </div>
+              )}
+              
+              {aiCategory && (
+                <div>
+                  <h4 className="font-medium text-xs text-muted-foreground">{t('file.ai.category') || "AI Suggested Category"}</h4>
+                  <p className="text-sm mt-1">{aiCategory}</p>
+                </div>
+              )}
+              
+              {aiSummary && (
+                <div>
+                  <h4 className="font-medium text-xs text-muted-foreground">{t('file.ai.summary') || "AI Summary"}</h4>
+                  <p className="text-sm mt-1">{aiSummary}</p>
+                </div>
+              )}
+              
+              {aiAnalysis && (
+                <div>
+                  <h4 className="font-medium text-xs text-muted-foreground">{t('file.ai.analysis') || "AI Analysis"}</h4>
+                  <p className="text-sm mt-1 whitespace-pre-line">{aiAnalysis}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-4 mt-6">
+            <div className="grid gap-2">
+              <FormLabel htmlFor="title">Title</FormLabel>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Document title"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <FormLabel htmlFor="summary">Summary</FormLabel>
+              <Textarea
+                id="summary"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                placeholder="Brief description of the document"
+                rows={4}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <FormLabel htmlFor="category">Category</FormLabel>
+              <Input
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g., 'funding', 'policy', 'technology'"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="flex gap-4">
+          <Button type="submit" disabled={isUploading || !file}>
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('file.uploading') || "Uploading..."}
+              </>
+            ) : (
+              t('file.upload') || "Upload File"
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/database")}
+            disabled={isUploading}
+          >
+            {t('file.cancel') || "Cancel"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
