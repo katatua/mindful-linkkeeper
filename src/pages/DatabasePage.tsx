@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -169,12 +168,12 @@ const DatabasePage: React.FC = () => {
           const table = updatedTables[i];
           
           try {
-            const { data, error } = await getTable(table.name)
+            const { data, error: tableError } = await getTable(table.name)
               .select('*')
               .limit(5);
               
-            if (error) {
-              console.error(`Error fetching data from ${table.name}:`, error);
+            if (tableError) {
+              console.error(`Error fetching data from ${table.name}:`, tableError);
               continue;
             } else {
               updatedTables[i] = { 
@@ -189,8 +188,8 @@ const DatabasePage: React.FC = () => {
         }
         
         setTables(updatedTables);
-      } catch (error) {
-        console.error("Error fetching sample data:", error);
+      } catch (fetchError) {
+        console.error("Error fetching sample data:", fetchError);
         setLoadError("Failed to load sample data from the database. Please check your database connection.");
         toast({
           title: "Error fetching sample data",
@@ -406,23 +405,23 @@ const DatabasePage: React.FC = () => {
               const parsedText = resultsMatch[1].trim();
               let parsedResults = JSON.parse(parsedText);
               setResults(toResultsArray(parsedResults));
-            } catch (parseError) {
+            } catch (parseErr) {
               console.log("Failed to parse results from AI response, executing query directly");
-              const { success, results, error: queryError } = await executeSQL(queryToRun);
+              const { success, results: queryResults, error: queryErr } = await executeSQL(queryToRun);
               
               if (success) {
-                setResults(results);
+                setResults(queryResults);
               } else {
-                setQueryError(queryError || "Unknown error executing query");
+                setQueryError(queryErr || "Unknown error executing query");
               }
             }
           } else {
-            const { success, results, error: queryError } = await executeSQL(queryToRun);
+            const { success, results: sqlResults, error: sqlErr } = await executeSQL(queryToRun);
             
             if (success) {
-              setResults(results);
+              setResults(sqlResults);
             } else {
-              setQueryError(queryError || "Unknown error executing query");
+              setQueryError(sqlErr || "Unknown error executing query");
             }
           }
         } else {
@@ -435,12 +434,12 @@ const DatabasePage: React.FC = () => {
             const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
             setSqlQuery(generatedQuery);
             
-            const { success, results, error: queryError } = await executeSQL(generatedQuery);
+            const { success, results: genResults, error: genErr } = await executeSQL(generatedQuery);
             
             if (success) {
-              setResults(results);
+              setResults(genResults);
             } else {
-              setQueryError(queryError || "Unknown error executing query");
+              setQueryError(genErr || "Unknown error executing query");
             }
           }
         }
@@ -453,11 +452,11 @@ const DatabasePage: React.FC = () => {
       } else {
         throw new Error("Received empty response from AI");
       }
-    } catch (requestError) {
-      console.error("Error in question handling:", requestError);
+    } catch (requestErr) {
+      console.error("Error in question handling:", requestErr);
       toast({
         title: "Error processing query",
-        description: requestError instanceof Error ? requestError.message : String(requestError),
+        description: requestErr instanceof Error ? requestErr.message : String(requestErr),
         variant: "destructive"
       });
     } finally {
@@ -474,28 +473,28 @@ const DatabasePage: React.FC = () => {
       const testQuery = "SELECT * FROM ani_projects LIMIT 5";
       setSqlQuery(testQuery);
       
-      const { success, results, error } = await executeSQL(testQuery);
+      const { success, results: testResults, error: testErr } = await executeSQL(testQuery);
       
       if (!success) {
-        setQueryError(error || "Unknown error");
+        setQueryError(testErr || "Unknown error");
         toast({
           title: "Database connection test failed",
-          description: error,
+          description: testErr,
           variant: "destructive"
         });
       } else {
-        setResults(results);
+        setResults(testResults);
         toast({
           title: "Database connection successful",
-          description: `Retrieved ${results.length} records from the database.`,
+          description: `Retrieved ${testResults.length} records from the database.`,
         });
       }
-    } catch (error) {
-      console.error("Error running test query:", error);
-      setQueryError(error.message);
+    } catch (testError) {
+      console.error("Error running test query:", testError);
+      setQueryError(testError instanceof Error ? testError.message : String(testError));
       toast({
         title: "Test query failed",
-        description: error.message,
+        description: testError instanceof Error ? testError.message : String(testError),
         variant: "destructive"
       });
     } finally {
