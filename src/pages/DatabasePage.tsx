@@ -125,7 +125,7 @@ const DatabasePage: React.FC = () => {
   const [question, setQuestion] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingSampleData, setIsLoadingSampleData] = useState<boolean>(true);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<any[] | null>(null);
   const [explanation, setExplanation] = useState<string>("");
   const [sqlQuery, setSqlQuery] = useState<string>("");
   const [tables, setTables] = useState<DatabaseTable[]>(databaseSchema);
@@ -456,6 +456,22 @@ const DatabasePage: React.FC = () => {
     }
   };
 
+  const hasResults = (): boolean => {
+    return Array.isArray(results) && results.length > 0;
+  };
+
+  const getColumnNames = (): string[] => {
+    if (!hasResults()) return [];
+    return Object.keys(results[0] || {});
+  };
+
+  const getColSpan = (): number => {
+    if (hasResults() && Object.keys(results[0]).length > 0) {
+      return Object.keys(results[0]).length;
+    }
+    return 1;
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
@@ -640,13 +656,15 @@ const DatabasePage: React.FC = () => {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                {Array.isArray(results) && results.length > 0 && Array.isArray(results[0]) && Object.keys(results[0]).map((column) => (
-                                  <TableHead key={column}>{column}</TableHead>
-                                ))}
+                                {hasResults() && 
+                                  getColumnNames().map((column) => (
+                                    <TableHead key={column}>{column}</TableHead>
+                                  ))
+                                }
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {Array.isArray(results) && results.length > 0 ? (
+                              {hasResults() ? (
                                 results.map((row, i) => (
                                   <TableRow key={i}>
                                     {Object.values(row).map((value: any, j) => (
@@ -660,7 +678,7 @@ const DatabasePage: React.FC = () => {
                                 ))
                               ) : (
                                 <TableRow>
-                                  <TableCell colSpan={Array.isArray(results) && results.length > 0 ? Object.keys(results[0]).length : 1} className="text-center py-4">
+                                  <TableCell colSpan={getColSpan()} className="text-center py-4">
                                     No results found
                                   </TableCell>
                                 </TableRow>
