@@ -12,7 +12,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Define the Table interface
 interface DatabaseTable {
   name: string;
   description: string;
@@ -25,10 +24,6 @@ interface DatabaseTable {
   sampleData?: any[];
 }
 
-// Type for valid table names in our database
-// type TableName = keyof Database['public']['Tables'];
-
-// Database schema information
 const databaseSchema: DatabaseTable[] = [
   {
     name: "ani_metrics",
@@ -150,7 +145,6 @@ const DatabasePage: React.FC = () => {
           const table = updatedTables[i];
           
           try {
-            // Use the helper function to safely get the table
             const { data, error } = await getTable(table.name)
               .select('*')
               .limit(5);
@@ -646,13 +640,13 @@ const DatabasePage: React.FC = () => {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                {results.length > 0 && Object.keys(results[0]).map((column) => (
+                                {Array.isArray(results) && results.length > 0 && Array.isArray(results[0]) && Object.keys(results[0]).map((column) => (
                                   <TableHead key={column}>{column}</TableHead>
                                 ))}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {results.length > 0 ? (
+                              {Array.isArray(results) && results.length > 0 ? (
                                 results.map((row, i) => (
                                   <TableRow key={i}>
                                     {Object.values(row).map((value: any, j) => (
@@ -666,7 +660,7 @@ const DatabasePage: React.FC = () => {
                                 ))
                               ) : (
                                 <TableRow>
-                                  <TableCell colSpan={results && results.length > 0 && Array.isArray(results) ? Object.keys(results[0]).length : 1} className="text-center py-4">
+                                  <TableCell colSpan={Array.isArray(results) && results.length > 0 ? Object.keys(results[0]).length : 1} className="text-center py-4">
                                     No results found
                                   </TableCell>
                                 </TableRow>
