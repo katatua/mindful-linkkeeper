@@ -145,6 +145,20 @@ export const DatabasePage: React.FC = () => {
     setActiveTab(getActiveTabFromURL());
   }, [location.search]);
 
+  useEffect(() => {
+    const fetchAIModel = async () => {
+      try {
+        const model = await getCurrentAIModel();
+        setCurrentAIModel(model);
+      } catch (error) {
+        console.error("Error fetching AI model:", error);
+        setCurrentAIModel("Error loading model");
+      }
+    };
+    
+    fetchAIModel();
+  }, []);
+
   const fetchDataFromLocalStorage = () => {
     try {
       setLoading(true);
@@ -348,7 +362,10 @@ export const DatabasePage: React.FC = () => {
               <div className="col-span-1">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Suggested Questions</CardTitle>
+                    <CardTitle className="flex justify-between items-center">
+                      <span>Suggested Questions</span>
+                      <Badge variant="outline" className="ml-2">{currentAIModel}</Badge>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[600px] pr-4">

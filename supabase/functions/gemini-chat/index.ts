@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
@@ -18,7 +19,14 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json();
-    const { userMessage, chatHistory, databaseInfo } = requestData;
+    const { prompt } = requestData;
+    const chatHistory = requestData.chatHistory || [];
+    // Determine if this is a database query based on prompt content or specific flag
+    const isDatabaseQuery = prompt.toLowerCase().includes('database') || 
+                            prompt.toLowerCase().includes('sql') ||
+                            prompt.toLowerCase().includes('query') ||
+                            prompt.toLowerCase().includes('data') ||
+                            prompt.match(/^(show|list|what|which|how many|where|when)/i) !== null;
     
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -34,7 +42,7 @@ serve(async (req) => {
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModelData}:generateContent`;
 
     // Prepare chat history for Gemini
-    const messages = chatHistory.map((msg: any) => ({
+    const messages = chatHistory.map((msg) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
@@ -42,7 +50,7 @@ serve(async (req) => {
     // Add current user message
     messages.push({
       role: 'user',
-      parts: [{ text: userMessage }]
+      parts: [{ text: prompt }]
     });
 
     // Define systemPrompt variable
@@ -330,11 +338,11 @@ serve(async (req) => {
               let fallbackQuery = "";
               let fallbackResults = null;
               
-              if (userMessage.toLowerCase().includes("open") || userMessage.toLowerCase().includes("upcoming")) {
+              if (prompt.toLowerCase().includes("open") || prompt.toLowerCase().includes("upcoming")) {
                 fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
-              } else if (userMessage.toLowerCase().includes("highest success")) {
+              } else if (prompt.toLowerCase().includes("highest success")) {
                 fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
-              } else if (userMessage.toLowerCase().includes("regions") && userMessage.toLowerCase().includes("2023")) {
+              } else if (prompt.toLowerCase().includes("regions") && prompt.toLowerCase().includes("2023")) {
                 fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
               }
               
@@ -408,9 +416,9 @@ serve(async (req) => {
               // Generate nlPrompt based on results
               let nlPrompt;
               if (resultCount > 0) {
-                nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(fixedResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
+                nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(fixedResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${prompt}".`;
               } else {
-                nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
+                nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${prompt}"`;
               }
               
               // Create messages for results formatting
@@ -468,9 +476,9 @@ serve(async (req) => {
             // Generate nlPrompt based on results
             let nlPrompt;
             if (resultCount > 0) {
-              nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
+              nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${prompt}".`;
             } else {
-              nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
+              nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${prompt}"`;
             }
             
             // Create messages for results formatting
@@ -526,10 +534,10 @@ serve(async (req) => {
         }
       } else if (isDatabaseQuery && !sqlMatch) {
         // This is a database query, but no SQL was generated
-        console.error("Failed to generate SQL for query:", userMessage);
+        console.error("Failed to generate SQL for query:", prompt);
         
         // Create special prompt to generate SQL one more time
-        const sqlGenerationPrompt = `Por favor, gere uma consulta SQL para responder à seguinte pergunta: "${userMessage}"
+        const sqlGenerationPrompt = `Por favor, gere uma consulta SQL para responder à seguinte pergunta: "${prompt}"
 
 Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags <SQL> e </SQL>.`;
         
@@ -590,12 +598,12 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
                 // Try fallback queries for common questions
                 let fallbackQuery = "";
                 
-                if (userMessage.toLowerCase().includes("open for applications") || 
-                    userMessage.toLowerCase().includes("upcoming application deadlines")) {
+                if (prompt.toLowerCase().includes("open for applications") || 
+                    prompt.toLowerCase().includes("upcoming application deadlines")) {
                   fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
-                } else if (userMessage.toLowerCase().includes("highest success rates")) {
+                } else if (prompt.toLowerCase().includes("highest success rates")) {
                   fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
-                } else if (userMessage.toLowerCase().includes("regions") && userMessage.toLowerCase().includes("2023")) {
+                } else if (prompt.toLowerCase().includes("regions") && prompt.toLowerCase().includes("2023")) {
                   fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
                 }
                 
@@ -620,9 +628,9 @@ Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags 
                 
                 let nlPrompt;
                 if (resultCount > 0) {
-                  nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
+                  nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${prompt}".`;
                 } else {
-                  nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
+                  nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${prompt}"`;
                 }
                 
                 // Create messages for results formatting
