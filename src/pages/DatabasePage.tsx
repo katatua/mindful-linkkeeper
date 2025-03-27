@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,8 +21,10 @@ interface DatabaseTable {
     nullable: boolean;
     default?: string;
   }[];
-  sampleData?: any[];
+  sampleData?: Record<string, any>[];
 }
+
+type ResultsType = Record<string, any>[];
 
 const databaseSchema: DatabaseTable[] = [
   {
@@ -126,7 +127,7 @@ const DatabasePage: React.FC = () => {
   const [question, setQuestion] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingSampleData, setIsLoadingSampleData] = useState<boolean>(true);
-  const [results, setResults] = useState<any[] | null>(null);
+  const [results, setResults] = useState<ResultsType>([]);
   const [explanation, setExplanation] = useState<string>("");
   const [sqlQuery, setSqlQuery] = useState<string>("");
   const [tables, setTables] = useState<DatabaseTable[]>(databaseSchema);
@@ -154,8 +155,11 @@ const DatabasePage: React.FC = () => {
               console.error(`Error fetching data from ${table.name}:`, error);
               continue;
             } else {
-              updatedTables[i] = { ...table, sampleData: data };
-              console.log(`Fetched sample data for ${table.name}:`, data?.length || 0, "rows");
+              updatedTables[i] = { 
+                ...table, 
+                sampleData: Array.isArray(data) ? data : [] 
+              };
+              console.log(`Fetched sample data for ${table.name}:`, data ? data.length : 0, "rows");
             }
           } catch (err) {
             console.error(`Exception querying ${table.name}:`, err);
@@ -285,7 +289,7 @@ const DatabasePage: React.FC = () => {
     }
 
     setIsLoading(true);
-    setResults(null);
+    setResults([]);
     setExplanation("");
     setSqlQuery("");
     setQueryError("");
@@ -321,9 +325,22 @@ const DatabasePage: React.FC = () => {
           
           if (resultsMatch && resultsMatch[1]) {
             try {
-              const parsedResults = JSON.parse(resultsMatch[1].trim());
-              // Ensure we're setting an array to the results state
-              setResults(Array.isArray(parsedResults) ? parsedResults : []);
+              const parsedText = resultsMatch[1].trim();
+              let parsedResults: unknown;
+              
+              try {
+                parsedResults = JSON.parse(parsedText);
+              } catch (e) {
+                console.error("Failed to parse JSON results:", e);
+                throw new Error("Invalid JSON results format");
+              }
+              
+              if (Array.isArray(parsedResults)) {
+                setResults(parsedResults);
+              } else {
+                console.warn("Results are not an array, setting empty array instead");
+                setResults([]);
+              }
             } catch (error) {
               console.error("Error parsing results JSON:", error);
               setQueryError("Error parsing results JSON");
@@ -352,14 +369,12 @@ const DatabasePage: React.FC = () => {
                   if (repairedError) {
                     setQueryError(repairedError.message);
                   } else {
-                    // Ensure we're setting an array to the results state
                     setResults(Array.isArray(repairedResults) ? repairedResults : []);
                   }
                 } else {
                   setQueryError(queryError.message);
                 }
               } else {
-                // Ensure we're setting an array to the results state
                 setResults(Array.isArray(queryResults) ? queryResults : []);
               }
             } catch (error) {
@@ -385,7 +400,6 @@ const DatabasePage: React.FC = () => {
               if (queryError) {
                 setQueryError(queryError.message);
               } else {
-                // Ensure we're setting an array to the results state
                 setResults(Array.isArray(queryResults) ? queryResults : []);
                 toast({
                   title: "Query generated automatically",
@@ -421,7 +435,7 @@ const DatabasePage: React.FC = () => {
 
   const runTestQuery = async () => {
     setIsLoading(true);
-    setResults(null);
+    setResults([]);
     setQueryError("");
     
     try {
@@ -443,11 +457,11 @@ const DatabasePage: React.FC = () => {
           variant: "destructive"
         });
       } else {
-        // Ensure we're setting an array to the results state
-        setResults(Array.isArray(queryResults) ? queryResults : []);
+        const safeResults = Array.isArray(queryResults) ? queryResults : [];
+        setResults(safeResults);
         toast({
           title: "Database connection successful",
-          description: `Retrieved ${queryResults?.length || 0} records from the database.`,
+          description: `Retrieved ${safeResults.length} records from the database.`,
         });
       }
     } catch (error) {
@@ -464,7 +478,7 @@ const DatabasePage: React.FC = () => {
   };
 
   const hasResults = (): boolean => {
-    return Array.isArray(results) && results.length > 0;
+    return results.length > 0;
   };
 
   const getColumnNames = (): string[] => {
@@ -473,7 +487,7 @@ const DatabasePage: React.FC = () => {
   };
 
   const getColSpan = (): number => {
-    if (hasResults() && Object.keys(results[0]).length > 0) {
+    if (hasResults()) {
       return Object.keys(results[0]).length;
     }
     return 1;
@@ -655,7 +669,7 @@ const DatabasePage: React.FC = () => {
                     </div>
                   )}
                   
-                  {results && (
+                  {results.length > 0 && (
                     <div className="mt-6">
                       <h3 className="text-lg font-semibold mb-2">Results</h3>
                       <div className="border rounded-lg overflow-hidden">
@@ -663,33 +677,42 @@ const DatabasePage: React.FC = () => {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                {hasResults() && 
-                                  getColumnNames().map((column) => (
-                                    <TableHead key={column}>{column}</TableHead>
-                                  ))
-                                }
+                                {getColumnNames().map((column) => (
+                                  <TableHead key={column}>{column}</TableHead>
+                                ))}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {hasResults() ? (
-                                results.map((row, i) => (
-                                  <TableRow key={i}>
-                                    {Object.values(row).map((value: any, j) => (
-                                      <TableCell key={j}>
-                                        {typeof value === 'object' 
-                                          ? JSON.stringify(value) 
-                                          : String(value !== null ? value : '-')}
-                                      </TableCell>
-                                    ))}
-                                  </TableRow>
-                                ))
-                              ) : (
-                                <TableRow>
-                                  <TableCell colSpan={getColSpan()} className="text-center py-4">
-                                    No results found
-                                  </TableCell>
+                              {results.map((row, i) => (
+                                <TableRow key={i}>
+                                  {Object.values(row).map((value: any, j) => (
+                                    <TableCell key={j}>
+                                      {typeof value === 'object' 
+                                        ? JSON.stringify(value) 
+                                        : String(value !== null ? value : '-')}
+                                    </TableCell>
+                                  ))}
                                 </TableRow>
-                              )}
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {results.length === 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-2">Results</h3>
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell colSpan={1} className="text-center py-4">
+                                  No results found
+                                </TableCell>
+                              </TableRow>
                             </TableBody>
                           </Table>
                         </div>
