@@ -87,7 +87,7 @@ export const generateResponse = async (userInput: string): Promise<string> => {
           extractYear: 'EXTRACT(YEAR FROM column_name)',
           formatDate: "TO_CHAR(column_name, 'YYYY-MM-DD')"
         },
-        important: "This database uses PostgreSQL. Do NOT use SQLite functions like strftime or DATE('now'). Always use PostgreSQL syntax."
+        important: "This database uses PostgreSQL. Do NOT use SQLite functions like strftime or DATE('now'). Always use PostgreSQL syntax. DO NOT include semicolons in your SQL queries."
       };
     }
     

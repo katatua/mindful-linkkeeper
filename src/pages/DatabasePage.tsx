@@ -211,7 +211,7 @@ const DatabasePage: React.FC = () => {
   const repairSqlQuery = (query: string): string => {
     let repairedQuery = query.trim();
     
-    repairedQuery = repairedQuery.replace(/;(?!\s*$)/g, ' ');
+    repairedQuery = repairedQuery.replace(/;/g, ' ').trim();
     
     repairedQuery = repairedQuery.replace(/strftime\s*\(\s*['"]%Y['"]\s*,\s*([^)]+)\s*\)/gi, 
       'EXTRACT(YEAR FROM $1)');
@@ -283,7 +283,9 @@ const DatabasePage: React.FC = () => {
     
     if (question.toLowerCase().includes('abertos') || 
         question.toLowerCase().includes('disponíveis') ||
-        question.toLowerCase().includes('ainda estão')) {
+        question.toLowerCase().includes('ainda estão') ||
+        question.toLowerCase().includes('open') ||
+        question.toLowerCase().includes('available')) {
       
       if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
           !repairedQuery.toLowerCase().includes('where')) {
@@ -329,7 +331,7 @@ const DatabasePage: React.FC = () => {
         if (sqlMatch && sqlMatch[1]) {
           let queryToRun = sqlMatch[1].trim();
           
-          if (queryToRun.includes(';') && queryToRun.indexOf(';') < queryToRun.length - 1) {
+          if (queryToRun.includes(';')) {
             queryToRun = repairSqlQuery(queryToRun);
             toast({
               title: "Query automatically fixed",
@@ -697,8 +699,8 @@ const DatabasePage: React.FC = () => {
                           {suggestedDatabaseQuestions.slice(0, 6).map((q, index) => (
                             <Badge 
                               key={index} 
-                              variant="outline" 
-                              className="cursor-pointer hover:bg-primary/10 transition-colors"
+                              variant="clickable" 
+                              className="cursor-pointer"
                               onClick={() => !isLoading && executeQuestion(q)}
                             >
                               {q}
@@ -709,8 +711,8 @@ const DatabasePage: React.FC = () => {
                           {suggestedDatabaseQuestions.slice(6, 12).map((q, index) => (
                             <Badge 
                               key={index + 6} 
-                              variant="outline" 
-                              className="cursor-pointer hover:bg-primary/10 transition-colors"
+                              variant="clickable" 
+                              className="cursor-pointer"
                               onClick={() => !isLoading && executeQuestion(q)}
                             >
                               {q}
@@ -721,8 +723,8 @@ const DatabasePage: React.FC = () => {
                           {suggestedDatabaseQuestions.slice(12).map((q, index) => (
                             <Badge 
                               key={index + 12} 
-                              variant="outline" 
-                              className="cursor-pointer hover:bg-primary/10 transition-colors"
+                              variant="clickable" 
+                              className="cursor-pointer"
                               onClick={() => !isLoading && executeQuestion(q)}
                             >
                               {q}

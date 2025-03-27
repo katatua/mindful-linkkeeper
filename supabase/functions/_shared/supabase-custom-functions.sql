@@ -7,14 +7,18 @@ SECURITY DEFINER
 AS $$
 DECLARE
   result JSONB;
+  clean_query text;
 BEGIN
   -- Validate that the query is a SELECT statement
   IF NOT (lower(btrim(sql_query)) LIKE 'select%') THEN
     RAISE EXCEPTION 'Only SELECT queries are allowed';
   END IF;
   
+  -- Clean the query by removing all semicolons
+  clean_query := regexp_replace(sql_query, ';', '', 'g');
+  
   -- Execute the query and get results as JSON
-  EXECUTE 'SELECT json_agg(t) FROM (' || sql_query || ') t' INTO result;
+  EXECUTE 'SELECT json_agg(t) FROM (' || clean_query || ') t' INTO result;
   
   -- Return empty array instead of null
   RETURN COALESCE(result, '[]'::jsonb);
