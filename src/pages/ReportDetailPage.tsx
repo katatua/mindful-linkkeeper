@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -9,6 +8,28 @@ import { ArrowLeft, Download, Share2, Calendar, FileText, User } from 'lucide-re
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { jsPDF } from 'jspdf';
+import { 
+  BarChart, 
+  Bar, 
+  LineChart, 
+  Line, 
+  PieChart, 
+  Pie, 
+  Cell,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from '@/components/ui/chart';
 
 interface ReportData {
   id: string;
@@ -20,12 +41,45 @@ interface ReportData {
   content: string;
 }
 
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
+
 const ReportDetailPage = () => {
   const { reportId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const performanceData = [
+    { year: 2018, success: 76, patents: 32, publications: 48 },
+    { year: 2019, success: 78, patents: 38, publications: 52 },
+    { year: 2020, success: 82, patents: 42, publications: 58 },
+    { year: 2021, success: 85, patents: 48, publications: 64 },
+    { year: 2022, success: 88, patents: 56, publications: 72 },
+    { year: 2023, success: 92, patents: 62, publications: 78 },
+  ];
+  
+  const fundingData = [
+    { name: 'EU Horizon Europe', value: 42 },
+    { name: 'National Funds', value: 28 },
+    { name: 'Private Investment', value: 18 },
+    { name: 'Regional Programs', value: 12 },
+  ];
+  
+  const regionalData = [
+    { region: 'North', projects: 42, funding: 8.2 },
+    { region: 'Central', projects: 58, funding: 12.5 },
+    { region: 'South', projects: 38, funding: 5.4 },
+    { region: 'Islands', projects: 18, funding: 2.4 },
+  ];
+  
+  const sectorData = [
+    { name: 'Healthcare', value: 32 },
+    { name: 'Digital Tech', value: 28 },
+    { name: 'Energy', value: 18 },
+    { name: 'Manufacturing', value: 14 },
+    { name: 'Agriculture', value: 8 },
+  ];
   
   useEffect(() => {
     const fetchReportDetails = () => {
@@ -283,21 +337,84 @@ const ReportDetailPage = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center min-h-[300px]">
-                  <div className="text-gray-400">Performance Trend Chart</div>
-                  <div className="text-xs text-gray-500 mt-2">Visualization would appear here</div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-gray-700 font-medium mb-4">Performance Trend Chart</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={performanceData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="success" stroke="#8884d8" name="Success Rate %" />
+                        <Line type="monotone" dataKey="patents" stroke="#82ca9d" name="Patents" />
+                        <Line type="monotone" dataKey="publications" stroke="#ffc658" name="Publications" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center min-h-[300px]">
-                  <div className="text-gray-400">Funding Distribution</div>
-                  <div className="text-xs text-gray-500 mt-2">Visualization would appear here</div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-gray-700 font-medium mb-4">Funding Distribution</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={fundingData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {fundingData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center min-h-[300px]">
-                  <div className="text-gray-400">Regional Comparison</div>
-                  <div className="text-xs text-gray-500 mt-2">Visualization would appear here</div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-gray-700 font-medium mb-4">Regional Comparison</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={regionalData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="region" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="projects" fill="#8884d8" name="Projects" />
+                        <Bar dataKey="funding" fill="#82ca9d" name="Funding (€M)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center min-h-[300px]">
-                  <div className="text-gray-400">Sector Analysis</div>
-                  <div className="text-xs text-gray-500 mt-2">Visualization would appear here</div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-gray-700 font-medium mb-4">Sector Analysis</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        layout="vertical" 
+                        data={sectorData} 
+                        margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+                      >
+                        <XAxis type="number" />
+                        <YAxis type="category" dataKey="name" />
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#8884d8" name="Patent Applications" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             </CardContent>
