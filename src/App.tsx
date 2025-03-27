@@ -19,6 +19,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ReportsPage from "./pages/ReportsPage";
+import ReportDetailPage from "./pages/ReportDetailPage";
 import PoliciesPage from "./pages/PoliciesPage";
 import PolicyDetailPage from "./pages/PolicyDetailPage";
 import FrameworkDetailPage from "./pages/FrameworkDetailPage";
@@ -53,6 +54,7 @@ function App() {
                   <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
                   <Route path="/analytics" element={<AnalyticsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/reports/:reportId" element={<ReportDetailPage />} />
                   <Route path="/policies" element={<PoliciesPage />} />
                   <Route path="/database" element={<DatabasePage />} />
                   <Route path="/documents/:documentId" element={<DocumentDetailPage />} />

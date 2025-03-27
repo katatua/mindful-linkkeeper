@@ -6,6 +6,7 @@ import { Calendar, Eye, Share2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { jsPDF } from "jspdf";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Dialog, 
   DialogContent, 
@@ -22,6 +23,7 @@ interface ReportsListProps {
 
 export const ReportsList = ({ searchQuery }: ReportsListProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [currentReport, setCurrentReport] = useState<any>(null);
@@ -151,14 +153,8 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
   };
 
   const handleViewReport = (report: any) => {
-    // Navigate to a detailed report view
-    toast({
-      title: "Viewing report",
-      description: `Opening report: ${report.title}`,
-    });
-    
-    // In a real application, this would navigate to a dedicated report view page
-    window.open(`/reports/view/${report.id}`, '_blank');
+    // Navigate to the report detail page
+    navigate(`/reports/${report.id}`);
   };
 
   const handleShareReport = (report: any) => {
