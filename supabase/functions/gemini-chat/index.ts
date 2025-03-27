@@ -21,7 +21,7 @@ serve(async (req) => {
   try {
     const { userMessage, chatHistory } = await req.json();
     
-    // Check if this is a database query request - Now include Portuguese terms
+    // Check if this is a database query request - include both English and Portuguese terms
     const isDatabaseQuery = userMessage.toLowerCase().includes("database") || 
                             userMessage.toLowerCase().includes("sql") ||
                             userMessage.toLowerCase().includes("query") ||
@@ -39,7 +39,109 @@ serve(async (req) => {
                             userMessage.toLowerCase().includes("listar") ||
                             userMessage.toLowerCase().includes("obter") ||
                             userMessage.toLowerCase().includes("programas") ||
-                            userMessage.toLowerCase().includes("tabela");
+                            userMessage.toLowerCase().includes("tabela") ||
+                            userMessage.toLowerCase().includes("buscar") ||
+                            userMessage.toLowerCase().includes("abertos") ||
+                            userMessage.toLowerCase().includes("que") ||
+                            userMessage.toLowerCase().includes("estão");
+
+    // Common Portuguese queries that need special handling
+    const isOpenProgramsQuery = 
+      userMessage.toLowerCase().includes("programas") && 
+      (userMessage.toLowerCase().includes("abertos") || 
+       userMessage.toLowerCase().includes("disponíveis") ||
+       userMessage.toLowerCase().includes("ainda estão") ||
+       userMessage.toLowerCase().includes("que estão"));
+
+    // For direct SQL parsing, first try to execute without waiting for AI
+    if (isOpenProgramsQuery) {
+      try {
+        console.log("Handling common query for open funding programs");
+        // Initialize Supabase client
+        const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+        
+        // Predefined SQL query for open programs
+        const sqlQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline";
+        
+        // Execute the query
+        const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+          sql_query: sqlQuery
+        });
+        
+        if (queryError) {
+          console.error("SQL query execution error:", queryError);
+          // Continue with AI flow if direct execution fails
+        } else {
+          // Format results for AI processing
+          const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
+          
+          // Pass the data to Gemini for natural language processing
+          const nlPrompt = `Os seguintes programas de financiamento estão abertos (${resultCount} encontrados):
+          
+${JSON.stringify(queryResults, null, 2)}
+
+Por favor, formate e apresente estes dados de maneira clara e concisa em português. Se não houver resultados, explique que não há programas abertos no momento.`;
+
+          // Create a special message history for this response
+          const messages = [
+            {
+              role: 'model',
+              parts: [{ 
+                text: `Você é o assistente de IA da ANI (Agência Nacional de Inovação) de Portugal. 
+                Forneça informações precisas sobre inovação, financiamento de projetos, políticas de inovação, 
+                e métricas relacionadas de maneira clara e acessível. Responda em português.`
+              }]
+            },
+            {
+              role: 'user',
+              parts: [{ text: nlPrompt }]
+            }
+          ];
+
+          // Get formatted natural language response from Gemini
+          const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: messages,
+              generationConfig: {
+                temperature: 0.3,
+                topP: 0.8,
+                topK: 40,
+                maxOutputTokens: 1024,
+              }
+            }),
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(`Gemini API Error: ${JSON.stringify(data)}`);
+          }
+          
+          // Extract response text
+          let assistantResponse = "Desculpe, não consegui processar sua solicitação.";
+          
+          if (data.candidates && 
+              data.candidates[0] && 
+              data.candidates[0].content && 
+              data.candidates[0].content.parts && 
+              data.candidates[0].content.parts[0]) {
+            assistantResponse = data.candidates[0].content.parts[0].text;
+          }
+          
+          return new Response(
+            JSON.stringify({ response: assistantResponse }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (directError) {
+        console.error("Error in direct query handling:", directError);
+        // Continue with AI flow if direct handling fails
+      }
+    }
 
     // Prepare chat history for Gemini
     const messages = chatHistory.map((msg: any) => ({
@@ -129,14 +231,16 @@ serve(async (req) => {
           
           Quando o usuário fizer uma pergunta sobre dados, você deve:
           1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-          2. Gerar o SQL adequado que pode ser executado diretamente na banco de dados PostgreSQL
-          3. Fazer a consulta retornar apenas os campos relevantes para a pergunta
-          4. Fornecer o SQL utilizando a seguinte sintaxe exata: <SQL>SELECT * FROM tabela WHERE condição</SQL>
-          5. Certifique-se de que o código SQL esteja dentro das tags <SQL></SQL> e seja válido para PostgreSQL
+          2. Gerar o SQL adequado sem nenhuma explicação
+          3. Colocar o SQL EXATAMENTE entre as tags <SQL> e </SQL>
+          4. Certifique-se de que a consulta retorne apenas os campos relevantes para a pergunta
+          5. NÃO EXPLIQUE O SQL GERADO, apenas coloque-o entre as tags
           
-          Para perguntas em português como "que funding programs ainda estão abertos?", você deve gerar uma consulta SQL que busque programas com data limite de inscrição no futuro.
+          Por exemplo, se a pergunta for "que funding programs ainda estão abertos?", você deve responder:
           
-          Responda sempre no mesmo idioma da pergunta (Português ou Inglês).`
+          <SQL>SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline</SQL>
+          
+          Não inclua nenhum outro texto na sua resposta além do SQL entre as tags <SQL> e </SQL>.`
         }]
       };
     } else {
@@ -208,7 +312,7 @@ serve(async (req) => {
       assistantResponse = data.candidates[0].content.parts[0].text;
     }
     
-    // For database queries, try to handle queries without proper SQL tags
+    // For database queries, extract and execute SQL
     if (isDatabaseQuery) {
       // Try to extract SQL with the tags first
       let sqlMatch = assistantResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
@@ -228,16 +332,11 @@ serve(async (req) => {
             console.log("Found SQL without tags:", match[0]);
             const extractedSql = match[0].trim().replace(/;$/, ''); // Remove trailing semicolon
             // Insert SQL tags into the response
-            assistantResponse = assistantResponse.replace(
-              extractedSql, 
-              `<SQL>${extractedSql}</SQL>`
-            );
+            assistantResponse = extractedSql;
+            sqlMatch = [null, extractedSql];
             break;
           }
         }
-        
-        // Check if we now have SQL tags
-        sqlMatch = assistantResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
       }
       
       // If we have a SQL match (either originally or after fixing), execute it
@@ -256,65 +355,241 @@ serve(async (req) => {
           
           if (queryError) {
             console.error("SQL query execution error:", queryError);
-            assistantResponse = `Encontrei um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta que tentei executar foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
-          } else {
-            // Format the results nicely
-            const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
-            const resultSummary = resultCount === 1 ? "1 resultado encontrado" : `${resultCount} resultados encontrados`;
+            // Generate response with error using Gemini
+            const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
             
-            // Generate response with results
-            if (resultCount > 0) {
-              const formattedResults = JSON.stringify(queryResults, null, 2);
-              assistantResponse = `Aqui estão os resultados da sua consulta (${resultSummary}):\n\n\`\`\`json\n${formattedResults}\n\`\`\`\n\nA consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+            // Create messages for error handling
+            const errorMessages = [
+              {
+                role: 'model',
+                parts: [{ text: systemPrompt.parts[0].text }]
+              },
+              {
+                role: 'user',
+                parts: [{ text: errorPrompt }]
+              }
+            ];
+            
+            // Get formatted error response from Gemini
+            const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                contents: errorMessages,
+                generationConfig: {
+                  temperature: 0.3,
+                  topP: 0.8,
+                  topK: 40,
+                  maxOutputTokens: 1024,
+                }
+              }),
+            });
+            
+            const errorData = await errorResponse.json();
+            
+            if (errorData.candidates && 
+                errorData.candidates[0] && 
+                errorData.candidates[0].content && 
+                errorData.candidates[0].content.parts && 
+                errorData.candidates[0].content.parts[0]) {
+              assistantResponse = errorData.candidates[0].content.parts[0].text;
             } else {
-              assistantResponse = `Não encontrei resultados para sua consulta. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
+              assistantResponse = `Encontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+            }
+          } else {
+            // Format the results nicely using Gemini
+            const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
+            
+            // Generate nlPrompt based on results
+            let nlPrompt;
+            if (resultCount > 0) {
+              nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
+            } else {
+              nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável e ofereça possíveis razões. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\nA pergunta original foi: "${userMessage}"`;
+            }
+            
+            // Create messages for results formatting
+            const nlMessages = [
+              {
+                role: 'model',
+                parts: [{ text: systemPrompt.parts[0].text.replace('especializado em consultas de banco de dados', 'especializado em explicar dados') }]
+              },
+              {
+                role: 'user',
+                parts: [{ text: nlPrompt }]
+              }
+            ];
+            
+            // Get formatted natural language response from Gemini
+            const nlResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                contents: nlMessages,
+                generationConfig: {
+                  temperature: 0.4,
+                  topP: 0.8,
+                  topK: 40,
+                  maxOutputTokens: 1024,
+                }
+              }),
+            });
+            
+            const nlData = await nlResponse.json();
+            
+            if (nlData.candidates && 
+                nlData.candidates[0] && 
+                nlData.candidates[0].content && 
+                nlData.candidates[0].content.parts && 
+                nlData.candidates[0].content.parts[0]) {
+              assistantResponse = nlData.candidates[0].content.parts[0].text;
+            } else {
+              // Fallback if the formatted response fails
+              if (resultCount > 0) {
+                assistantResponse = `Encontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta:\n\n\`\`\`json\n${JSON.stringify(queryResults, null, 2)}\n\`\`\``;
+              } else {
+                assistantResponse = "Não encontrei resultados para sua consulta.";
+              }
             }
           }
         } catch (sqlExecError) {
           console.error("Error in SQL execution:", sqlExecError);
           assistantResponse = `Ocorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
         }
-      } else if (isDatabaseQuery) {
-        // This is a database query, but no SQL was found or generated
-        // Generate a specific SQL query for the common Portuguese query about open funding programs
-        if (userMessage.toLowerCase().includes("funding") && 
-            userMessage.toLowerCase().includes("program") && 
-            (userMessage.toLowerCase().includes("aberto") || userMessage.toLowerCase().includes("open"))) {
-          
-          const sqlQuery = "SELECT id, name, description, application_deadline FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline";
-          console.log("Executing SQL query:", sqlQuery);
-          
-          try {
-            // Initialize Supabase client
-            const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-            
-            // Execute the SQL query
-            const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
-              sql_query: sqlQuery
-            });
-            
-            if (queryError) {
-              console.error("SQL query execution error:", queryError);
-              assistantResponse = `Encontrei um erro ao executar a consulta SQL: ${queryError.message}`;
-            } else {
-              // Format the results nicely
-              const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
-              const resultSummary = resultCount === 1 ? "1 programa de financiamento aberto encontrado" : `${resultCount} programas de financiamento abertos encontrados`;
-              
-              if (resultCount > 0) {
-                const formattedResults = JSON.stringify(queryResults, null, 2);
-                assistantResponse = `Aqui estão os programas de financiamento que ainda estão abertos (${resultSummary}):\n\n\`\`\`json\n${formattedResults}\n\`\`\`\n\nA consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
-              } else {
-                assistantResponse = `Não encontrei nenhum programa de financiamento aberto. A consulta executada foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\``;
-              }
-            }
-          } catch (sqlExecError) {
-            console.error("Error in SQL execution:", sqlExecError);
-            assistantResponse = `Ocorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
+      } else if (isDatabaseQuery && !sqlMatch) {
+        // This is a database query, but no SQL was generated
+        console.error("Failed to generate SQL for query:", userMessage);
+        
+        // Create special prompt to generate SQL one more time
+        const sqlGenerationPrompt = `Por favor, gere uma consulta SQL para responder à seguinte pergunta: "${userMessage}"
+
+Sua resposta deve conter apenas a consulta SQL, sem explicação, entre as tags <SQL> e </SQL>.`;
+        
+        const sqlGenMessages = [
+          {
+            role: 'model',
+            parts: [{ text: systemPrompt.parts[0].text }]
+          },
+          {
+            role: 'user',
+            parts: [{ text: sqlGenerationPrompt }]
           }
-        } else {
-          // No SQL was found in the response and it's not a common query we can handle
-          assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;
+        ];
+        
+        try {
+          // Try again with a direct SQL generation prompt
+          const sqlGenResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: sqlGenMessages,
+              generationConfig: {
+                temperature: 0.1, // Very low temperature for SQL generation
+                topP: 0.95,
+                topK: 40,
+                maxOutputTokens: 1024,
+              }
+            }),
+          });
+          
+          const sqlGenData = await sqlGenResponse.json();
+          
+          if (sqlGenData.candidates && 
+              sqlGenData.candidates[0] && 
+              sqlGenData.candidates[0].content && 
+              sqlGenData.candidates[0].content.parts && 
+              sqlGenData.candidates[0].content.parts[0]) {
+            
+            const sqlGenOutput = sqlGenData.candidates[0].content.parts[0].text;
+            const secondAttemptMatch = sqlGenOutput.match(/<SQL>([\s\S]*?)<\/SQL>/);
+            
+            if (secondAttemptMatch && secondAttemptMatch[1]) {
+              // We got SQL on second try, execute it
+              const sqlQuery = secondAttemptMatch[1].trim();
+              console.log("Second attempt SQL query:", sqlQuery);
+              
+              const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+              
+              const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+                sql_query: sqlQuery
+              });
+              
+              if (queryError) {
+                console.error("Second attempt SQL error:", queryError);
+                assistantResponse = `Não consegui executar uma consulta apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.`;
+              } else {
+                // Format the results using Gemini
+                const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
+                
+                let nlPrompt;
+                if (resultCount > 0) {
+                  nlPrompt = `Aqui estão os resultados da consulta SQL (${resultCount} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}):\n\n${JSON.stringify(queryResults, null, 2)}\n\nPor favor, formate e apresente estes dados de maneira clara e concisa, explicando o que eles significam em relação à pergunta original: "${userMessage}".`;
+                } else {
+                  nlPrompt = `A consulta SQL não retornou nenhum resultado. Por favor, explique isso de maneira amigável. A pergunta original foi: "${userMessage}"`;
+                }
+                
+                // Create messages for results formatting
+                const nlMessages = [
+                  {
+                    role: 'model',
+                    parts: [{ text: systemPrompt.parts[0].text.replace('especializado em consultas de banco de dados', 'especializado em explicar dados') }]
+                  },
+                  {
+                    role: 'user',
+                    parts: [{ text: nlPrompt }]
+                  }
+                ];
+                
+                // Get formatted natural language response from Gemini
+                const nlResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    contents: nlMessages,
+                    generationConfig: {
+                      temperature: 0.4,
+                      topP: 0.8,
+                      topK: 40,
+                      maxOutputTokens: 1024,
+                    }
+                  }),
+                });
+                
+                const nlData = await nlResponse.json();
+                
+                if (nlData.candidates && 
+                    nlData.candidates[0] && 
+                    nlData.candidates[0].content && 
+                    nlData.candidates[0].content.parts && 
+                    nlData.candidates[0].content.parts[0]) {
+                  assistantResponse = nlData.candidates[0].content.parts[0].text;
+                } else {
+                  // Fallback
+                  if (resultCount > 0) {
+                    assistantResponse = `Encontrei ${resultCount} ${resultCount === 1 ? 'resultado' : 'resultados'} para sua consulta:\n\n\`\`\`json\n${JSON.stringify(queryResults, null, 2)}\n\`\`\``;
+                  } else {
+                    assistantResponse = "Não encontrei resultados para sua consulta.";
+                  }
+                }
+              }
+            } else {
+              // Still no SQL, use the fallback for common queries
+              assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;
+            }
+          } else {
+            assistantResponse = `Não consegui gerar uma consulta SQL para sua pergunta. Por favor, reformule sua pergunta, sendo mais específico sobre qual informação você está buscando no banco de dados.`;
+          }
+        } catch (secondAttemptError) {
+          console.error("Error in second SQL generation attempt:", secondAttemptError);
+          assistantResponse = `Encontrei dificuldades para processar sua consulta. Por favor, reformule sua pergunta de forma mais específica.`;
         }
       }
     }
