@@ -9,6 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { DocumentViewer } from '@/components/documents/DocumentViewer';
+import { DocumentMetadata } from '@/components/documents/DocumentMetadata';
+import { DocumentActions } from '@/components/documents/DocumentActions';
 
 const DocumentDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -56,15 +59,34 @@ const DocumentDetailPage: React.FC = () => {
               console.log('Setting direct URL:', data.url);
             } else {
               // If it's a storage path
-              const { data: fileData } = supabase.storage
-                .from('files')
-                .getPublicUrl(data.url);
-                
-              if (fileData) {
-                setPdfUrl(fileData.publicUrl);
-                console.log('Setting storage URL:', fileData.publicUrl);
+              try {
+                const { data: fileData } = supabase.storage
+                  .from('files')
+                  .getPublicUrl(data.url);
+                  
+                if (fileData) {
+                  setPdfUrl(fileData.publicUrl);
+                  console.log('Setting storage URL:', fileData.publicUrl);
+                } else {
+                  throw new Error('File URL could not be generated');
+                }
+              } catch (urlError) {
+                console.error('Error generating URL:', urlError);
+                setPdfUrl(null);
+                toast({
+                  variant: 'destructive',
+                  title: 'Error',
+                  description: 'Could not generate document URL.',
+                });
               }
             }
+          } else {
+            setPdfUrl(null);
+            toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Document has no associated file.',
+            });
           }
         } else {
           throw new Error('Document not found');
@@ -87,81 +109,6 @@ const DocumentDetailPage: React.FC = () => {
     window.scrollTo(0, 0);
   }, [documentId, toast]);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatFileSize = (size?: number) => {
-    if (!size) return 'N/A';
-    const kb = size / 1024;
-    if (kb < 1024) {
-      return `${kb.toFixed(2)} KB`;
-    } else {
-      return `${(kb / 1024).toFixed(2)} MB`;
-    }
-  };
-
-  const getFileType = (fileMetadata: any) => {
-    if (!fileMetadata || !fileMetadata.type) return 'Documento';
-    
-    if (fileMetadata.type.includes('pdf')) return 'PDF';
-    if (fileMetadata.type.includes('csv')) return 'CSV';
-    if (fileMetadata.type.includes('excel') || fileMetadata.type.includes('spreadsheet')) return 'Excel';
-    if (fileMetadata.type.includes('word') || fileMetadata.type.includes('document')) return 'Word';
-    
-    return fileMetadata.type.split('/')[1]?.toUpperCase() || 'Documento';
-  };
-
-  const handleDownload = () => {
-    if (!pdfUrl) {
-      toast({
-        variant: 'destructive',
-        title: "Erro",
-        description: "Não foi possível baixar o documento. URL não disponível.",
-      });
-      return;
-    }
-    
-    // Open the URL in a new tab to download it
-    window.open(pdfUrl, '_blank');
-    
-    toast({
-      title: "Documento baixado",
-      description: `${document?.title} foi baixado com sucesso.`,
-    });
-  };
-
-  const handleShare = () => {
-    // Copy the current URL to clipboard
-    navigator.clipboard.writeText(window.location.href)
-      .then(() => {
-        toast({
-          title: "Link copiado",
-          description: "O link para este documento foi copiado para a área de transferência.",
-        });
-      })
-      .catch(err => {
-        toast({
-          variant: 'destructive',
-          title: "Erro",
-          description: "Não foi possível copiar o link.",
-        });
-      });
-  };
-
-  const handleViewDocument = () => {
-    setViewDialogOpen(true);
-  };
-
-  const handleCloseViewDialog = () => {
-    setViewDialogOpen(false);
-  };
-
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
   };
@@ -171,84 +118,8 @@ const DocumentDetailPage: React.FC = () => {
     navigate('/database?tab=datasources');
   };
 
-  const createGoogleDocsViewerUrl = (url: string) => {
-    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-  };
-
   const toggleViewerMode = () => {
     setViewerMode(prev => prev === 'embedded' ? 'iframe' : 'embedded');
-  };
-
-  const renderDocumentViewer = () => {
-    if (!pdfUrl) return null;
-
-    const fileType = document?.file_metadata?.type || '';
-    const isPdf = fileType.includes('pdf');
-    const isImage = fileType.includes('image');
-    const isText = fileType.includes('text') || fileType.includes('csv');
-
-    if (isPdf) {
-      if (viewerMode === 'embedded') {
-        return (
-          <object
-            data={pdfUrl}
-            type="application/pdf"
-            width="100%"
-            height="600px"
-            className="border rounded"
-          >
-            <p>Seu navegador não suporta visualização de PDF. 
-              <Button variant="link" onClick={() => setViewerMode('iframe')}>
-                Tentar visualização alternativa
-              </Button> ou 
-              <Button variant="link" onClick={handleDownload}>
-                baixar o arquivo
-              </Button>
-            </p>
-          </object>
-        );
-      } else {
-        return (
-          <iframe 
-            src={createGoogleDocsViewerUrl(pdfUrl)} 
-            title="Document Viewer" 
-            width="100%" 
-            height="600px"
-            className="border rounded"
-          />
-        );
-      }
-    } else if (isImage) {
-      return (
-        <div className="flex justify-center p-4 bg-white rounded border">
-          <img 
-            src={pdfUrl} 
-            alt={document?.title || "Document image"} 
-            className="max-w-full max-h-[600px] object-contain"
-          />
-        </div>
-      );
-    } else if (isText) {
-      return (
-        <iframe 
-          src={pdfUrl} 
-          title="Text Document Viewer" 
-          width="100%" 
-          height="600px" 
-          className="border rounded"
-        />
-      );
-    } else {
-      return (
-        <div className="flex items-center justify-center h-full border rounded p-6 text-center">
-          <div>
-            <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <p className="mb-4">Este tipo de arquivo não pode ser visualizado diretamente no navegador.</p>
-            <Button onClick={handleDownload}>Baixar Arquivo</Button>
-          </div>
-        </div>
-      );
-    }
   };
 
   return (
@@ -288,76 +159,36 @@ const DocumentDetailPage: React.FC = () => {
               <h1 className="text-2xl font-bold">{document?.title}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">
-                  {getFileType(document?.file_metadata)}
+                  {document?.file_metadata?.type ? 
+                    (document.file_metadata.type.includes('pdf') ? 'PDF' : 
+                     document.file_metadata.type.includes('csv') ? 'CSV' : 
+                     document.file_metadata.type.includes('excel') ? 'Excel' : 
+                     document.file_metadata.type.includes('word') ? 'Word' : 
+                     document.file_metadata.type.split('/')[1]?.toUpperCase() || 'Documento') : 
+                    'Documento'}
                 </Badge>
                 <span className="text-sm text-gray-500">{document?.id && `ID: ${document.id.substring(0, 8)}...`}</span>
               </div>
             </div>
 
-            <div className="flex gap-2 mt-3 md:mt-0">
-              <Button variant="outline" size="sm" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-1" />
-                Download
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share2 className="h-4 w-4 mr-1" />
-                Compartilhar
-              </Button>
-              {pdfUrl && (
-                <Button size="sm" onClick={handleViewDocument}>
-                  <Eye className="h-4 w-4 mr-1" />
-                  Visualizar
-                </Button>
-              )}
-            </div>
+            <DocumentActions 
+              document={document} 
+              pdfUrl={pdfUrl} 
+              onView={() => setViewDialogOpen(true)}
+              toast={toast}
+            />
           </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Categoria</span>
-                  <p className="text-sm">{document?.category || 'Não categorizado'}</p>
-                </div>
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Data de Carregamento</span>
-                  <p className="text-sm">{formatDate(document?.created_at)}</p>
-                </div>
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Tamanho</span>
-                  <p className="text-sm">{document?.file_metadata?.size ? formatFileSize(document.file_metadata.size) : 'N/A'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <DocumentMetadata document={document} />
 
           {/* Visualizador de documento incorporado na página */}
           {pdfUrl && (
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Visualização do Documento</CardTitle>
-                  <div className="flex gap-2">
-                    {document?.file_metadata?.type?.includes('pdf') && (
-                      <Button size="sm" variant="outline" onClick={toggleViewerMode}>
-                        {viewerMode === 'embedded' ? 'Visualização Google' : 'Visualização Nativa'}
-                      </Button>
-                    )}
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => window.open(pdfUrl, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      Abrir em Nova Aba
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {renderDocumentViewer()}
-              </CardContent>
-            </Card>
+            <DocumentViewer 
+              document={document}
+              pdfUrl={pdfUrl}
+              viewerMode={viewerMode}
+              onToggleViewerMode={toggleViewerMode}
+            />
           )}
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
@@ -413,7 +244,13 @@ const DocumentDetailPage: React.FC = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 min-h-[700px] mt-4">
-                  {renderDocumentViewer()}
+                  <DocumentViewer 
+                    document={document}
+                    pdfUrl={pdfUrl}
+                    viewerMode={viewerMode}
+                    onToggleViewerMode={toggleViewerMode}
+                    fullscreen
+                  />
                 </div>
                 <DialogFooter className="mt-4 flex justify-between">
                   <div>
@@ -424,11 +261,22 @@ const DocumentDetailPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleDownload}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        if (pdfUrl) {
+                          window.open(pdfUrl, '_blank');
+                          toast({
+                            title: "Documento baixado",
+                            description: `${document?.title} foi baixado com sucesso.`,
+                          });
+                        }
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-1" />
                       Download
                     </Button>
-                    <Button onClick={handleCloseViewDialog}>Fechar</Button>
+                    <Button onClick={() => setViewDialogOpen(false)}>Fechar</Button>
                   </div>
                 </DialogFooter>
               </DialogContent>
