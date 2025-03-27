@@ -429,6 +429,89 @@ export const DatabasePage: React.FC = () => {
     });
   };
 
+  // Add a safe rendering function to handle potentially undefined values
+  const safeRenderHistoryItem = (item: QueryHistoryItem) => {
+    if (!item || !item.result) {
+      return (
+        <div className="border rounded-lg p-4">
+          <div className="text-red-500">Error: Invalid history item</div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={item.id} className="border rounded-lg p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="font-medium">{item.question}</h3>
+            <p className="text-sm text-gray-500">{formatTimestamp(item.timestamp)}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant={item.isCorrect === true ? "default" : "outline"}
+              className="flex items-center gap-1"
+              onClick={() => markQueryAccuracy(item.id, true)}
+            >
+              <Check className="h-4 w-4" />
+              <span>Correct</span>
+            </Button>
+            <Button 
+              size="sm" 
+              variant={item.isCorrect === false ? "destructive" : "outline"}
+              className="flex items-center gap-1"
+              onClick={() => markQueryAccuracy(item.id, false)}
+            >
+              <X className="h-4 w-4" />
+              <span>Incorrect</span>
+            </Button>
+          </div>
+        </div>
+        
+        <div className="bg-gray-50 p-3 rounded-md">
+          <div className="whitespace-pre-wrap">{item.result.message}</div>
+          
+          {item.result.sqlQuery && (
+            <div className="mt-3">
+              <div className="text-xs font-medium text-gray-500 mb-1">SQL Query:</div>
+              <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-xs overflow-x-auto">
+                {item.result.sqlQuery}
+              </pre>
+            </div>
+          )}
+          
+          {item.result.results && item.result.results.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs font-medium text-gray-500 mb-1">Results:</div>
+              <div className="overflow-x-auto border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {Object.keys(item.result.results[0]).map((column) => (
+                        <TableHead key={column} className="text-xs">{column}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {item.result.results.map((row, rowIndex) => (
+                      <TableRow key={rowIndex}>
+                        {Object.entries(row).map(([column, value]) => (
+                          <TableCell key={`${rowIndex}-${column}`} className="text-xs">
+                            {renderCellValue(value)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
@@ -572,77 +655,7 @@ export const DatabasePage: React.FC = () => {
                 ) : (
                   <ScrollArea className="h-[600px]">
                     <div className="space-y-4">
-                      {queryHistory.map((item) => (
-                        <div key={item.id} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h3 className="font-medium">{item.question}</h3>
-                              <p className="text-sm text-gray-500">{formatTimestamp(item.timestamp)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant={item.isCorrect === true ? "default" : "outline"}
-                                className="flex items-center gap-1"
-                                onClick={() => markQueryAccuracy(item.id, true)}
-                              >
-                                <Check className="h-4 w-4" />
-                                <span>Correct</span>
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant={item.isCorrect === false ? "destructive" : "outline"}
-                                className="flex items-center gap-1"
-                                onClick={() => markQueryAccuracy(item.id, false)}
-                              >
-                                <X className="h-4 w-4" />
-                                <span>Incorrect</span>
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-gray-50 p-3 rounded-md">
-                            <div className="whitespace-pre-wrap">{item.result.message}</div>
-                            
-                            {item.result.sqlQuery && (
-                              <div className="mt-3">
-                                <div className="text-xs font-medium text-gray-500 mb-1">SQL Query:</div>
-                                <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-xs overflow-x-auto">
-                                  {item.result.sqlQuery}
-                                </pre>
-                              </div>
-                            )}
-                            
-                            {item.result.results && item.result.results.length > 0 && (
-                              <div className="mt-3">
-                                <div className="text-xs font-medium text-gray-500 mb-1">Results:</div>
-                                <div className="overflow-x-auto border rounded-md">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        {Object.keys(item.result.results[0]).map((column) => (
-                                          <TableHead key={column} className="text-xs">{column}</TableHead>
-                                        ))}
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {item.result.results.map((row, rowIndex) => (
-                                        <TableRow key={rowIndex}>
-                                          {Object.entries(row).map(([column, value]) => (
-                                            <TableCell key={`${rowIndex}-${column}`} className="text-xs">
-                                              {renderCellValue(value)}
-                                            </TableCell>
-                                          ))}
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                      {queryHistory.map((item) => safeRenderHistoryItem(item))}
                     </div>
                   </ScrollArea>
                 )}
