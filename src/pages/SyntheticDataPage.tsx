@@ -205,6 +205,69 @@ const SyntheticDataPage: React.FC = () => {
     return VALID_TABLES.includes(tableName);
   };
 
+  // Function to generate and insert initial sample data for all tables
+  const generateInitialSampleData = async () => {
+    try {
+      setIsGenerating(true);
+      
+      // Generate data for each table
+      const fundingPrograms = await generateFundingPrograms(5);
+      const projects = await generateProjects(5);
+      const metrics = await generateMetrics(5);
+      const collaborations = await generateCollaborations(5);
+      
+      // Insert funding programs
+      const { error: fundingError } = await supabase
+        .from('ani_funding_programs')
+        .insert(fundingPrograms);
+        
+      if (fundingError) {
+        console.error('Error inserting funding programs:', fundingError);
+      }
+      
+      // Insert projects
+      const { error: projectsError } = await supabase
+        .from('ani_projects')
+        .insert(projects);
+        
+      if (projectsError) {
+        console.error('Error inserting projects:', projectsError);
+      }
+      
+      // Insert metrics
+      const { error: metricsError } = await supabase
+        .from('ani_metrics')
+        .insert(metrics);
+        
+      if (metricsError) {
+        console.error('Error inserting metrics:', metricsError);
+      }
+      
+      // Insert collaborations
+      const { error: collabsError } = await supabase
+        .from('ani_international_collaborations')
+        .insert(collaborations);
+        
+      if (collabsError) {
+        console.error('Error inserting collaborations:', collabsError);
+      }
+      
+      toast({
+        title: "Sample data initialized",
+        description: "Basic sample data has been generated for all tables",
+      });
+    } catch (error) {
+      console.error('Error generating initial sample data:', error);
+      toast({
+        title: "Error initializing sample data",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const onSubmit = async (values: SyntheticDataFormValues) => {
     try {
       setIsGenerating(true);
@@ -258,6 +321,45 @@ const SyntheticDataPage: React.FC = () => {
     }
   };
 
+  // Check if sample data exists
+  React.useEffect(() => {
+    const checkSampleData = async () => {
+      try {
+        // Check if any table has data
+        let hasData = false;
+        
+        for (const table of VALID_TABLES) {
+          const { data, error } = await supabase
+            .from(table)
+            .select('id')
+            .limit(1);
+            
+          if (error) {
+            console.error(`Error checking ${table}:`, error);
+            continue;
+          }
+          
+          if (data && data.length > 0) {
+            hasData = true;
+            break;
+          }
+        }
+        
+        // If no data exists in any table, suggest generating sample data
+        if (!hasData) {
+          toast({
+            title: "No sample data detected",
+            description: "It appears there's no sample data in the database. You can use the 'Initialize Sample Data' button to generate some basic records.",
+          });
+        }
+      } catch (error) {
+        console.error('Error checking for sample data:', error);
+      }
+    };
+    
+    checkSampleData();
+  }, [toast]);
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
@@ -307,16 +409,34 @@ const SyntheticDataPage: React.FC = () => {
                 </div>
               </div>
               
-              <Button type="submit" disabled={isGenerating} className="w-full md:w-auto">
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate Data"
-                )}
-              </Button>
+              <div className="flex flex-col md:flex-row gap-4">
+                <Button type="submit" disabled={isGenerating}>
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Data"
+                  )}
+                </Button>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={generateInitialSampleData}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Initializing...
+                    </>
+                  ) : (
+                    "Initialize Sample Data"
+                  )}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

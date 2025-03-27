@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { generateResponse } from "@/utils/aiUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Define the Table interface
 interface DatabaseTable {
@@ -134,11 +135,13 @@ const DatabasePage: React.FC = () => {
   const [sqlQuery, setSqlQuery] = useState<string>("");
   const [tables, setTables] = useState<DatabaseTable[]>(databaseSchema);
   const [queryError, setQueryError] = useState<string>("");
+  const [loadError, setLoadError] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchSampleData = async () => {
       setIsLoadingSampleData(true);
+      setLoadError("");
       
       try {
         const updatedTables = [...tables];
@@ -146,7 +149,7 @@ const DatabasePage: React.FC = () => {
         for (let i = 0; i < updatedTables.length; i++) {
           const table = updatedTables[i];
           
-          if (isValidTableName(table.name)) {
+          try {
             const { data, error } = await supabase
               .from(table.name)
               .select('*')
@@ -154,17 +157,20 @@ const DatabasePage: React.FC = () => {
               
             if (error) {
               console.error(`Error fetching data from ${table.name}:`, error);
+              continue;
             } else {
               updatedTables[i] = { ...table, sampleData: data };
+              console.log(`Fetched sample data for ${table.name}:`, data?.length || 0, "rows");
             }
-          } else {
-            console.warn(`Table name not found in schema: ${table.name}`);
+          } catch (err) {
+            console.error(`Exception querying ${table.name}:`, err);
           }
         }
         
         setTables(updatedTables);
       } catch (error) {
         console.error("Error fetching sample data:", error);
+        setLoadError("Failed to load sample data from the database. Please check your database connection.");
         toast({
           title: "Error fetching sample data",
           description: "There was a problem retrieving sample data from the database.",
@@ -178,8 +184,8 @@ const DatabasePage: React.FC = () => {
     fetchSampleData();
   }, []);
 
-  const isValidTableName = (name: string): name is TableName => {
-    return name in (supabase.from as any)._tables;
+  const isValidTableName = (name: string): boolean => {
+    return tables.some(table => table.name === name);
   };
 
   const repairSqlQuery = (query: string): string => {
@@ -413,12 +419,63 @@ const DatabasePage: React.FC = () => {
     }
   };
 
+  const runTestQuery = async () => {
+    setIsLoading(true);
+    setResults(null);
+    setQueryError("");
+    
+    try {
+      const testQuery = "SELECT * FROM ani_projects LIMIT 5";
+      setSqlQuery(testQuery);
+      
+      console.log("Running test query:", testQuery);
+      
+      const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
+        sql_query: testQuery
+      });
+      
+      if (queryError) {
+        console.error("Test query error:", queryError);
+        setQueryError(queryError.message);
+        toast({
+          title: "Database connection test failed",
+          description: queryError.message,
+          variant: "destructive"
+        });
+      } else {
+        setResults(queryResults || []);
+        toast({
+          title: "Database connection successful",
+          description: `Retrieved ${queryResults?.length || 0} records from the database.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error running test query:", error);
+      setQueryError(error.message);
+      toast({
+        title: "Test query failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
         <h1 className="text-3xl font-bold mb-6">Database Explorer</h1>
         
-        <Tabs defaultValue="query" className="w-full">
+        {loadError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{loadError}</AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs defaultValue="schema" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="schema">Database Schema</TabsTrigger>
             <TabsTrigger value="query">Query Database</TabsTrigger>
@@ -433,6 +490,19 @@ const DatabasePage: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Button onClick={runTestQuery} disabled={isLoading} variant="outline" size="sm">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      "Test Database Connection"
+                    )}
+                  </Button>
+                </div>
+                
                 <div className="space-y-8">
                   {tables.map((table) => (
                     <div key={table.name} className="border rounded-lg p-4">
@@ -497,7 +567,16 @@ const DatabasePage: React.FC = () => {
                             </Table>
                           </div>
                         ) : (
-                          <p className="text-muted-foreground italic">No sample data available</p>
+                          <div className="text-muted-foreground italic p-4 bg-muted/20 rounded-md">
+                            <p className="flex items-center gap-2 mb-2">
+                              <AlertCircle className="h-4 w-4" />
+                              No sample data available
+                            </p>
+                            <p className="text-sm">
+                              You can generate sample data using the Synthetic Data Generator page. This will help with testing 
+                              and development, allowing you to explore data and run queries.
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
