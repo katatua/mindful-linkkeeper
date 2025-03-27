@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'pt';
@@ -24,6 +25,9 @@ const translations: Record<Language, Record<string, string>> = {
     'logout.error': 'Error logging out',
     
     // Navigation
+    'main': 'Main',
+    'utilities': 'Utilities',
+    'settings': 'Settings',
     'funding': 'Funding',
     'projects': 'Projects',
     'analytics': 'Analytics',
@@ -33,6 +37,8 @@ const translations: Record<Language, Record<string, string>> = {
     'link': 'Add Link',
     'category': 'Add Category',
     'home': 'Home',
+    'database': 'Database',
+    'synthetic_data': 'Synthetic Data',
     
     // Policies
     'policy.search.placeholder': 'Search policies...',
@@ -306,6 +312,9 @@ const translations: Record<Language, Record<string, string>> = {
     'logout.error': 'Erro ao terminar sessão',
     
     // Navigation
+    'main': 'Principal',
+    'utilities': 'Utilidades',
+    'settings': 'Definições',
     'funding': 'Financiamento',
     'projects': 'Projetos',
     'analytics': 'Análises',
@@ -315,6 +324,8 @@ const translations: Record<Language, Record<string, string>> = {
     'link': 'Adicionar Link',
     'category': 'Adicionar Categoria',
     'home': 'Início',
+    'database': 'Base de Dados',
+    'synthetic_data': 'Dados Sintéticos',
     
     // Policies
     'policy.search.placeholder': 'Pesquisar políticas...',
@@ -574,4 +585,41 @@ const translations: Record<Language, Record<string, string>> = {
     'reports.resume': 'Retomar',
     'reports.delete': 'Excluir',
     'reports.confirm': 'Confirmar',
-    'reports
+    'reports.cancel': 'Cancelar'
+  }
+};
+
+export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
+  const [language, setLanguage] = useState<Language>('en');
+  
+  // Initialize language from localStorage if available
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') as Language;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pt')) {
+      setLanguage(savedLanguage);
+    }
+  }, []);
+  
+  // Save language to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+  
+  const t = (key: string): string => {
+    return translations[language][key] || key;
+  };
+  
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}

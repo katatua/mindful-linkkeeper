@@ -103,7 +103,7 @@ export const HamburgerMenu = () => {
           </div>
           
           <div className="space-y-1 pt-2">
-            <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2">{t('nav.main')}</h3>
+            <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2">{t('main')}</h3>
             {mainMenuItems.map((item) => (
               <Button 
                 key={item.url}
@@ -116,7 +116,7 @@ export const HamburgerMenu = () => {
               </Button>
             ))}
             
-            <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2 mt-4">{t('nav.utilities')}</h3>
+            <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2 mt-4">{t('utilities')}</h3>
             {utilityMenuItems.map((item) => (
               <Button 
                 key={item.url}
@@ -130,7 +130,7 @@ export const HamburgerMenu = () => {
             ))}
             
             <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2">{t('nav.settings')}</h3>
+              <h3 className="font-medium text-sm text-muted-foreground px-6 mb-2">{t('settings')}</h3>
               <Button 
                 variant="ghost" 
                 className="w-full justify-start px-6" 
