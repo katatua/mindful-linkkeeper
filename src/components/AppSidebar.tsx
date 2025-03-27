@@ -64,7 +64,7 @@ export function AppSidebar() {
   };
 
   return (
-    <div className={`w-64 h-full bg-white border-r transition-all ${isOpen ? '' : 'w-0 overflow-hidden'}`}>
+    <div className={`fixed h-full bg-white border-r transition-all duration-300 ${isOpen ? 'w-64' : 'w-0 -translate-x-full'}`}>
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">ANI Portal</h2>

@@ -16,7 +16,7 @@ export function Layout({ children }: LayoutProps) {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <AppSidebar />
-        <main className={`flex-1 overflow-auto ${isOpen ? 'ml-0' : 'ml-0'}`}>
+        <main className={`flex-1 overflow-auto transition-all duration-300 ${isOpen ? 'ml-64' : 'ml-0'}`}>
           {children}
         </main>
       </div>
