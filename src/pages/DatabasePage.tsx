@@ -1,17 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { generateResponse } from "@/utils/aiUtils";
+import { generateResponse, suggestedDatabaseQuestions } from "@/utils/aiUtils";
 import { supabase, TableName, getTable } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface DatabaseTable {
   name: string;
@@ -25,24 +25,19 @@ interface DatabaseTable {
   sampleData?: Record<string, any>[];
 }
 
-// Define a type that explicitly matches what we expect for results
 type ResultsType = Record<string, any>[];
 
-// Type guard to check if a value is a Record<string, any>
 function isRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-// Convert any JSON data to ResultsType safely
 function toResultsArray(data: any): ResultsType {
   if (!data) return [];
   
   if (Array.isArray(data)) {
-    // Make sure each item in the array is a Record<string, any>
     return data.filter(item => isRecord(item)) as ResultsType;
   }
   
-  // If it's a single object, wrap it in an array
   if (isRecord(data)) {
     return [data];
   }
@@ -312,14 +307,19 @@ const DatabasePage: React.FC = () => {
       return;
     }
 
+    await executeQuestion(question);
+  };
+
+  const executeQuestion = async (questionText: string) => {
     setIsLoading(true);
     setResults([]);
     setExplanation("");
     setSqlQuery("");
     setQueryError("");
+    setQuestion(questionText);
 
     try {
-      const response = await generateResponse(question);
+      const response = await generateResponse(questionText);
       
       if (response) {
         const sqlMatch = response.match(/<SQL>([\s\S]*?)<\/SQL>/);
@@ -402,11 +402,11 @@ const DatabasePage: React.FC = () => {
             }
           }
         } else {
-          if (question.toLowerCase().includes('abertos') || 
-              question.toLowerCase().includes('disponíveis') ||
-              question.toLowerCase().includes('ainda estão') ||
-              question.toLowerCase().includes('open') ||
-              question.toLowerCase().includes('available')) {
+          if (questionText.toLowerCase().includes('abertos') || 
+              questionText.toLowerCase().includes('disponíveis') ||
+              questionText.toLowerCase().includes('ainda estão') ||
+              questionText.toLowerCase().includes('open') ||
+              questionText.toLowerCase().includes('available')) {
             
             const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
             setSqlQuery(generatedQuery);
@@ -664,9 +664,52 @@ const DatabasePage: React.FC = () => {
                           Processing...
                         </>
                       ) : (
-                        "Generate SQL & Run Query"
+                        <>
+                          <Search className="mr-2 h-4 w-4" />
+                          Generate SQL & Run Query
+                        </>
                       )}
                     </Button>
+                  </div>
+                  
+                  <div className="mt-2 space-y-2">
+                    <h3 className="text-sm font-medium text-gray-500">Try these example questions:</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedDatabaseQuestions.slice(0, 6).map((q, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-primary/10 transition-colors"
+                          onClick={() => !isLoading && executeQuestion(q)}
+                        >
+                          {q}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {suggestedDatabaseQuestions.slice(6, 12).map((q, index) => (
+                        <Badge 
+                          key={index + 6} 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-primary/10 transition-colors"
+                          onClick={() => !isLoading && executeQuestion(q)}
+                        >
+                          {q}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {suggestedDatabaseQuestions.slice(12).map((q, index) => (
+                        <Badge 
+                          key={index + 12} 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-primary/10 transition-colors"
+                          onClick={() => !isLoading && executeQuestion(q)}
+                        >
+                          {q}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                   
                   {sqlQuery && (

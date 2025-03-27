@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -119,3 +118,22 @@ export const generateResponse = async (userInput: string): Promise<string> => {
 export const genId = (): string => {
   return Date.now().toString() + Math.random().toString(36).substring(2, 9);
 };
+
+// List of suggested database questions
+export const suggestedDatabaseQuestions = [
+  "What funding programs are currently open for applications?",
+  "Show me all funding programs with application deadlines in 2024",
+  "Which funding programs have the highest success rates?",
+  "List all R&D projects in the healthcare sector",
+  "What is the total budget allocated to innovation programs in the last year?",
+  "Show me international collaborations with Germany",
+  "Which regions have received the most funding in 2023?",
+  "What are the upcoming application deadlines for funding programs?",
+  "Show me all projects with funding amounts greater than 1 million euros",
+  "List all policy frameworks implemented after 2022",
+  "Which sectors receive the most innovation funding?",
+  "What are the top 5 funding programs by total budget?",
+  "Show me all metrics related to patent applications",
+  "List all international collaborations focused on renewable energy",
+  "What is the average review time for funding applications?"
+];
