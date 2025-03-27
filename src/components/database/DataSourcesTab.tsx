@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, FilePlus, Upload, RefreshCw } from 'lucide-react';
+import { Database, FileText, FilePlus, Upload, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FonteDados, DocumentoExtraido } from '@/types/databaseTypes';
