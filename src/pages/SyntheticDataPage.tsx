@@ -17,6 +17,14 @@ interface SyntheticDataFormValues {
   count: number;
 }
 
+// Define valid table names to avoid checking against supabase.from._tables
+const VALID_TABLES = [
+  'ani_funding_programs',
+  'ani_projects',
+  'ani_metrics',
+  'ani_international_collaborations'
+];
+
 const SyntheticDataPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -192,6 +200,11 @@ const SyntheticDataPage: React.FC = () => {
     return collaborations;
   };
 
+  // Simple function to check if a table name is valid
+  const isValidTableName = (tableName: string): boolean => {
+    return VALID_TABLES.includes(tableName);
+  };
+
   const onSubmit = async (values: SyntheticDataFormValues) => {
     try {
       setIsGenerating(true);
@@ -216,6 +229,11 @@ const SyntheticDataPage: React.FC = () => {
       }
       
       // Insert data into the database
+      if (!isValidTableName(values.table)) {
+        throw new Error(`Invalid table name: ${values.table}`);
+      }
+      
+      console.log(`Inserting ${data.length} records into ${values.table}`);
       const { error } = await supabase
         .from(values.table)
         .insert(data);
