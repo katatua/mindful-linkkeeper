@@ -666,7 +666,7 @@ const DatabasePage: React.FC = () => {
                                 ))
                               ) : (
                                 <TableRow>
-                                  <TableCell colSpan={results.length > 0 ? Object.keys(results[0]).length : 1} className="text-center py-4">
+                                  <TableCell colSpan={results && results.length > 0 && Array.isArray(results) ? Object.keys(results[0]).length : 1} className="text-center py-4">
                                     No results found
                                   </TableCell>
                                 </TableRow>

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getTable } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -16,7 +16,6 @@ interface SyntheticDataFormValues {
   count: number;
 }
 
-// Define valid table names to avoid checking against supabase.from._tables
 const VALID_TABLES = [
   'ani_funding_programs',
   'ani_projects',
@@ -53,7 +52,6 @@ const SyntheticDataPage: React.FC = () => {
 
   const generateFundingPrograms = async (count: number) => {
     const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation'];
-    // Update funding types to match database constraints
     const fundingTypes = ['grant', 'loan', 'tax_incentive', 'equity', 'hybrid'];
     const programs = [];
     
@@ -82,7 +80,7 @@ const SyntheticDataPage: React.FC = () => {
         eligibility_criteria: 'Organizations must be registered in Portugal and have at least 2 years of operation.',
         application_process: 'Online application through ANI portal with required documentation.',
         review_time_days: generateRandomAmount(30, 90),
-        success_rate: Math.random() * 0.7 + 0.1, // 10% to 80% success rate
+        success_rate: Math.random() * 0.7 + 0.1,
       };
       
       programs.push(program);
@@ -189,7 +187,7 @@ const SyntheticDataPage: React.FC = () => {
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
         total_budget: totalBudget,
-        portuguese_contribution: Math.floor(totalBudget * (Math.random() * 0.4 + 0.2)), // 20-60% of total
+        portuguese_contribution: Math.floor(totalBudget * (Math.random() * 0.4 + 0.2)),
         focus_areas: [getRandomItem(focusAreas), getRandomItem(focusAreas)].filter((v, i, a) => a.indexOf(v) === i),
       };
       
@@ -199,23 +197,19 @@ const SyntheticDataPage: React.FC = () => {
     return collaborations;
   };
 
-  // Simple function to check if a table name is valid
   const isValidTableName = (tableName: string): boolean => {
     return VALID_TABLES.includes(tableName);
   };
 
-  // Function to generate and insert initial sample data for all tables
   const generateInitialSampleData = async () => {
     try {
       setIsGenerating(true);
       
-      // Generate data for each table
       const fundingPrograms = await generateFundingPrograms(5);
       const projects = await generateProjects(5);
       const metrics = await generateMetrics(5);
       const collaborations = await generateCollaborations(5);
       
-      // Insert funding programs
       const { error: fundingError } = await supabase
         .from('ani_funding_programs')
         .insert(fundingPrograms);
@@ -224,7 +218,6 @@ const SyntheticDataPage: React.FC = () => {
         console.error('Error inserting funding programs:', fundingError);
       }
       
-      // Insert projects
       const { error: projectsError } = await supabase
         .from('ani_projects')
         .insert(projects);
@@ -233,7 +226,6 @@ const SyntheticDataPage: React.FC = () => {
         console.error('Error inserting projects:', projectsError);
       }
       
-      // Insert metrics
       const { error: metricsError } = await supabase
         .from('ani_metrics')
         .insert(metrics);
@@ -242,7 +234,6 @@ const SyntheticDataPage: React.FC = () => {
         console.error('Error inserting metrics:', metricsError);
       }
       
-      // Insert collaborations
       const { error: collabsError } = await supabase
         .from('ani_international_collaborations')
         .insert(collaborations);
@@ -272,7 +263,6 @@ const SyntheticDataPage: React.FC = () => {
       setIsGenerating(true);
       let data = [];
       
-      // Generate data based on selected table
       switch (values.table) {
         case 'ani_funding_programs':
           data = await generateFundingPrograms(values.count);
@@ -290,7 +280,6 @@ const SyntheticDataPage: React.FC = () => {
           throw new Error('Unsupported table type');
       }
       
-      // Insert data into the database
       if (!isValidTableName(values.table)) {
         throw new Error(`Invalid table name: ${values.table}`);
       }
@@ -319,11 +308,9 @@ const SyntheticDataPage: React.FC = () => {
     }
   };
 
-  // Check if sample data exists
   React.useEffect(() => {
     const checkSampleData = async () => {
       try {
-        // Check if any table has data
         let hasData = false;
         
         for (const table of VALID_TABLES) {
@@ -342,7 +329,6 @@ const SyntheticDataPage: React.FC = () => {
           }
         }
         
-        // If no data exists in any table, suggest generating sample data
         if (!hasData) {
           toast({
             title: "No sample data detected",
