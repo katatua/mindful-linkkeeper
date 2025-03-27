@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,36 +21,33 @@ import DatabaseQuery from "@/components/DatabaseQuery";
 import SyntheticDataPage from "./SyntheticDataPage";
 import { Button } from "@/components/ui/button";
 import { X, MessageCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ANIPortal = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAssistant, setShowAssistant] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { showVisualization, visualizationData, setShowVisualization } = useVisualization();
+  const { isLoggedIn } = useAuth();
 
-  useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
+  const handleCloseVisualization = useCallback(() => {
+    setShowVisualization(false);
+  }, [setShowVisualization]);
+  
+  const toggleAssistant = useCallback(() => {
+    setShowAssistant(prev => !prev);
   }, []);
 
-  const handleCloseVisualization = () => {
-    setShowVisualization(false);
-  };
-  
-  const toggleAssistant = () => {
-    setShowAssistant(prev => !prev);
-  };
+  // This effect ensures we only run the necessary operations once
+  useEffect(() => {
+    // No need to check auth state here since it's handled in AuthContext
+    
+    // Add any cleanup operations needed for this component
+    return () => {
+      // Cleanup code if needed
+    };
+  }, []);
 
   return (
     <div className="h-screen flex flex-col">

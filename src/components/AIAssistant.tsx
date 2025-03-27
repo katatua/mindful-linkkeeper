@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bot, ServerCrash } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MessageList } from "./ChatComponents/MessageList";
