@@ -10,6 +10,7 @@ interface RequestBody {
   content: string;
   title: string;
   type: string;
+  fileUrl?: string; // Optional URL for files like PDFs
 }
 
 Deno.serve(async (req) => {
@@ -19,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { content, title, type } = await req.json() as RequestBody;
+    const { content, title, type, fileUrl } = await req.json() as RequestBody;
     
     // Limit content to a reasonable size for API calls
     const truncatedContent = content.length > 15000 
@@ -33,6 +34,11 @@ Deno.serve(async (req) => {
     } else if (type.includes('/')) {
       fileType = type.split('/').pop()?.toLowerCase() || "";
     }
+
+    // For PDFs specifically, mention this in the prompt
+    const isPdf = fileType === 'pdf' || type.toLowerCase().includes('pdf');
+    const pdfContext = isPdf ? 
+      "Note that this is a PDF document, and the content provided might be partial or contain formatting artifacts." : "";
     
     // Create prompt for analysis
     const systemPrompt = `You are an expert document analyzer with deep expertise in innovation, research, and policy documents. 
@@ -41,6 +47,8 @@ Deno.serve(async (req) => {
     2. Provide a clear, concise summary (maximum 150 words)
     3. Give a critical analysis of the document's content, relevance, and potential applications or implications
     4. Suggest an appropriate category for the document from one of these options: Research Report, Policy Document, Funding Information, Technical Documentation, Statistical Data, Case Study, Guidelines, International Collaboration
+    
+    ${pdfContext}
     
     Your response must be formatted exactly like this:
     TITLE: [your suggested title]
@@ -127,7 +135,8 @@ Deno.serve(async (req) => {
       suggestedTitle,
       suggestedCategory,
       summary, 
-      analysis
+      analysis,
+      fileUrl // Return the file URL if provided
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

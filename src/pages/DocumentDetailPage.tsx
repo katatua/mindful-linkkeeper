@@ -200,6 +200,7 @@ const DocumentDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Simulate fetching document data
@@ -209,6 +210,16 @@ const DocumentDetailPage: React.FC = () => {
     // Simulating API delay
     const timer = setTimeout(() => {
       setDocument(foundDocument);
+      
+      // Generate PDF URL if type is PDF
+      if (foundDocument && foundDocument.tipo.toLowerCase() === 'pdf') {
+        // In a real app, this would be a URL to the actual PDF file
+        // For now, we'll use a placeholder URL
+        setPdfUrl(`/api/documents/${foundDocument.id}/download`);
+      } else {
+        setPdfUrl(null);
+      }
+      
       setLoading(false);
     }, 500);
     
@@ -291,7 +302,7 @@ const DocumentDetailPage: React.FC = () => {
           <Link to="/database">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para Database
+              Voltar para Fontes de Dados
             </Button>
           </Link>
         </div>
@@ -455,9 +466,23 @@ const DocumentDetailPage: React.FC = () => {
                 Tipo: {document.tipo} | Tamanho: {document.tamanho} | Data: {document.data_extracao}
               </DialogDescription>
             </DialogHeader>
-            <div className="p-4 bg-white rounded-lg shadow">
-              <div className="whitespace-pre-line font-mono text-sm">{document.conteudo}</div>
-            </div>
+            {document.tipo.toLowerCase() === 'pdf' ? (
+              <div className="w-full h-[60vh] bg-gray-100 rounded-lg overflow-hidden">
+                <iframe 
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.conteudo)}&embedded=true`} 
+                  className="w-full h-full border-0"
+                  title={document.nome}
+                  onError={() => toast.error("Falha ao carregar o documento PDF.")}
+                ></iframe>
+                <div className="p-4 text-center text-sm text-gray-500">
+                  Se o documento não carregar, tente o botão de Download para visualizar offline.
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-white rounded-lg shadow">
+                <div className="whitespace-pre-line font-mono text-sm">{document.conteudo}</div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
