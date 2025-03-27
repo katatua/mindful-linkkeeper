@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -232,6 +233,13 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
 
+      // Create storage bucket if it doesn't exist
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('files');
+      if (bucketError && bucketError.message.includes('does not exist')) {
+        console.log('Bucket does not exist, creating...');
+        await supabase.storage.createBucket('files', { public: true });
+      }
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
         .upload(fileName, file);
@@ -273,10 +281,31 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
         }
       }
 
-      let analysisData = { summary: '', analysis: '', suggestedCategory: '' };
+      // Create an insert object with only fields that exist in the database
+      const insertData = {
+        title: values.fileName || file.name.replace(/\.[^/.]+$/, ""),
+        url: fileUrl,
+        source: 'datasource',
+        summary: sourceDescription,
+        category: sourceTechnology,
+        file_metadata: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          source_name: sourceName,
+          source_type: values.sourceType,
+          source_id: values.sourceType === 'existing' ? values.existingSourceId : null
+        },
+        user_id: user.id
+      };
+
+      // Check if AI analysis results are available from the edge function
+      let aiSummary = null;
+      let aiAnalysis = null;
+      
       if (fileContent) {
         try {
-          const { data, error: analysisError } = await supabase.functions.invoke('analyze-document', {
+          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-document', {
             body: {
               content: fileContent,
               title: file.name,
@@ -285,34 +314,28 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
             }
           });
 
-          if (!analysisError && data) {
-            analysisData = data;
+          if (!analysisError && analysisData) {
+            aiSummary = analysisData.summary || null;
+            aiAnalysis = analysisData.analysis || null;
+            
+            // Only add AI fields if they exist in the table schema
+            if (aiSummary) {
+              insertData['ai_summary'] = aiSummary;
+            }
+            if (aiAnalysis) {
+              insertData['ai_analysis'] = aiAnalysis;
+            }
           }
         } catch (error) {
           console.error('Error analyzing document:', error);
         }
       }
 
+      console.log('Inserting data into links table:', insertData);
+      
       const { error: linkError } = await supabase
         .from('links')
-        .insert({
-          title: values.fileName || file.name.replace(/\.[^/.]+$/, ""),
-          url: fileUrl,
-          source: 'datasource',
-          summary: sourceDescription,
-          category: sourceTechnology,
-          file_metadata: {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            source_name: sourceName,
-            source_type: values.sourceType,
-            source_id: values.sourceType === 'existing' ? values.existingSourceId : null
-          },
-          ai_summary: analysisData?.summary || null,
-          ai_analysis: analysisData?.analysis || null,
-          user_id: user.id
-        });
+        .insert(insertData);
 
       if (linkError) {
         throw new Error(`Erro ao criar entrada no banco de dados: ${linkError.message}`);
