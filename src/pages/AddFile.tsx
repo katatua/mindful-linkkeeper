@@ -21,6 +21,9 @@ export default function AddFile() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSummary, setAiSummary] = useState("");
   const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiTitle, setAiTitle] = useState("");
+  const [aiCategory, setAiCategory] = useState("");
+  const [useAiSuggestions, setUseAiSuggestions] = useState(true);
   const navigate = useNavigate();
   const { toast: toastNotification } = useToast();
   const { t } = useLanguage();
@@ -33,7 +36,12 @@ export default function AddFile() {
       .replace(/[^a-zA-Z0-9._-]/g, '');
   };
 
-  const generateAiAnalysis = async (fileContent: string, fileName: string, fileType: string): Promise<{summary: string, analysis: string}> => {
+  const generateAiAnalysis = async (fileContent: string, fileName: string, fileType: string): Promise<{
+    suggestedTitle: string,
+    suggestedCategory: string,
+    summary: string,
+    analysis: string
+  }> => {
     try {
       setIsAnalyzing(true);
       
@@ -49,12 +57,16 @@ export default function AddFile() {
       if (error) throw error;
       
       return {
+        suggestedTitle: data.suggestedTitle || fileName.replace(/\.[^/.]+$/, ""),
+        suggestedCategory: data.suggestedCategory || "",
         summary: data.summary || "No summary generated",
         analysis: data.analysis || "No analysis generated"
       };
     } catch (error) {
       console.error('Error generating AI analysis:', error);
       return {
+        suggestedTitle: fileName.replace(/\.[^/.]+$/, ""),
+        suggestedCategory: "",
         summary: "Failed to generate summary",
         analysis: "Failed to generate analysis"
       };
@@ -96,14 +108,19 @@ export default function AddFile() {
       const fileContent = await readFileContent(file);
       
       // Generate AI analysis
-      const { summary, analysis } = await generateAiAnalysis(fileContent, file.name, file.type);
+      const { suggestedTitle, suggestedCategory, summary, analysis } = 
+        await generateAiAnalysis(fileContent, file.name, file.type);
       
       // Update state with AI results
+      setAiTitle(suggestedTitle);
+      setAiCategory(suggestedCategory);
       setAiSummary(summary);
       setAiAnalysis(analysis);
       
-      // Auto-populate summary field if it's empty
-      if (!summary.trim()) {
+      // Auto-populate fields with AI suggestions if enabled
+      if (useAiSuggestions) {
+        setTitle(suggestedTitle);
+        setCategory(suggestedCategory);
         setSummary(summary);
       }
       
@@ -144,15 +161,10 @@ export default function AddFile() {
 
       if (uploadError) throw uploadError;
 
-      // Auto-generate title from filename if not provided
-      const displayTitle = title.trim() || file.name.replace(/\.[^/.]+$/, "");
-      
-      // Get classification from AI for better organization
-      const classification = await classifyDocument({
-        title: displayTitle,
-        summary,
-        fileName: file.name
-      });
+      // Use either user-provided or AI-suggested values
+      const displayTitle = title.trim() || aiTitle || file.name.replace(/\.[^/.]+$/, "");
+      const displayCategory = category.trim() || aiCategory || null;
+      const displaySummary = summary.trim() || aiSummary || null;
       
       // If AI analysis hasn't been performed yet, do it now
       let finalAiSummary = aiSummary;
@@ -170,6 +182,13 @@ export default function AddFile() {
         }
       }
 
+      // Get classification from AI for better organization
+      const classification = await classifyDocument({
+        title: displayTitle,
+        summary: displaySummary || "",
+        fileName: file.name
+      });
+      
       // Then, create a link entry for the file
       const { error: linkError } = await supabase
         .from('links')
@@ -177,8 +196,8 @@ export default function AddFile() {
           title: displayTitle,
           url: fileName,
           source: 'file',
-          summary: summary || null,
-          category: category || null,
+          summary: displaySummary,
+          category: displayCategory,
           classification,
           file_metadata: {
             name: file.name,
@@ -193,7 +212,7 @@ export default function AddFile() {
       if (linkError) throw linkError;
 
       toast.success(t('file.success'));
-      navigate("/");
+      navigate("/database");
     } catch (error) {
       console.error('Error uploading file:', error);
       toastNotification({
@@ -238,21 +257,48 @@ export default function AddFile() {
                       t('file.analyze')
                     )}
                   </Button>
+                  
+                  <div className="flex items-center mt-2">
+                    <input
+                      type="checkbox"
+                      id="useAiSuggestions"
+                      checked={useAiSuggestions}
+                      onChange={(e) => setUseAiSuggestions(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <label htmlFor="useAiSuggestions" className="text-sm text-muted-foreground">
+                      {t('file.useAiSuggestions') || "Use AI suggestions automatically"}
+                    </label>
+                  </div>
                 </div>
               )}
               
-              {(aiSummary || aiAnalysis) && (
+              {(aiSummary || aiAnalysis || aiTitle || aiCategory) && (
                 <div className="p-4 border rounded-md mb-4 space-y-3 bg-muted/30">
+                  {aiTitle && (
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.title') || "AI Suggested Title"}</h3>
+                      <p className="text-sm mt-1">{aiTitle}</p>
+                    </div>
+                  )}
+                  
+                  {aiCategory && (
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.category') || "AI Suggested Category"}</h3>
+                      <p className="text-sm mt-1">{aiCategory}</p>
+                    </div>
+                  )}
+                  
                   {aiSummary && (
                     <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.summary')}</h3>
+                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.summary') || "AI Summary"}</h3>
                       <p className="text-sm mt-1">{aiSummary}</p>
                     </div>
                   )}
                   
                   {aiAnalysis && (
                     <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.analysis')}</h3>
+                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.analysis') || "AI Analysis"}</h3>
                       <p className="text-sm mt-1 whitespace-pre-line">{aiAnalysis}</p>
                     </div>
                   )}
@@ -297,7 +343,7 @@ export default function AddFile() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/database")}
                 disabled={isUploading}
               >
                 {t('file.cancel')}
@@ -308,4 +354,4 @@ export default function AddFile() {
       </div>
     </div>
   );
-};
+}

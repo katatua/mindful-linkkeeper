@@ -305,7 +305,7 @@ const DocumentDetailPage: React.FC = () => {
         <div className="mb-6">
           <Link to="/database" className="inline-flex items-center text-primary hover:underline">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para Database
+            Voltar para Fontes de Dados
           </Link>
         </div>
 

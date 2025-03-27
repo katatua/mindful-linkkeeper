@@ -37,8 +37,16 @@ Deno.serve(async (req) => {
     // Create prompt for analysis
     const systemPrompt = `You are an expert document analyzer with deep expertise in innovation, research, and policy documents. 
     Your task is to analyze the provided document (a ${fileType} file titled "${title}") and:
-    1. Provide a clear, concise summary (maximum 150 words)
-    2. Give a critical analysis of the document's content, relevance, and potential applications or implications
+    1. Suggest a clear, descriptive title for the document (maximum 60 characters)
+    2. Provide a clear, concise summary (maximum 150 words)
+    3. Give a critical analysis of the document's content, relevance, and potential applications or implications
+    4. Suggest an appropriate category for the document from one of these options: Research Report, Policy Document, Funding Information, Technical Documentation, Statistical Data, Case Study, Guidelines, International Collaboration
+    
+    Your response must be formatted exactly like this:
+    TITLE: [your suggested title]
+    CATEGORY: [your suggested category]
+    SUMMARY: [your summary]
+    ANALYSIS: [your critical analysis]
     
     Focus on extracting key insights, highlighting strengths and limitations, and identifying potential applications or relevance 
     to innovation policies, funding opportunities, or research priorities.`;
@@ -68,7 +76,7 @@ Deno.serve(async (req) => {
           }
         ],
         temperature: 0.3,
-        max_tokens: 1000,
+        max_tokens: 1200,
       }),
     });
 
@@ -81,24 +89,43 @@ Deno.serve(async (req) => {
     const data = await response.json();
     const analysisText = data.choices[0].message.content.trim();
     
-    // Extract summary and analysis from the text
+    // Extract title, category, summary and analysis from the text
+    let suggestedTitle = "";
+    let suggestedCategory = "";
     let summary = "";
     let analysis = "";
     
-    if (analysisText.includes("Summary:")) {
-      const parts = analysisText.split(/Analysis:|Critical Analysis:|Key Analysis:/i);
-      summary = parts[0].replace(/Summary:/i, "").trim();
-      analysis = parts.length > 1 ? parts[1].trim() : "";
-    } else {
-      // If not explicitly formatted, use the first paragraph as summary
+    // Extract sections using regex
+    const titleMatch = analysisText.match(/TITLE:\s*(.*?)(?=\n*CATEGORY:|$)/s);
+    const categoryMatch = analysisText.match(/CATEGORY:\s*(.*?)(?=\n*SUMMARY:|$)/s);
+    const summaryMatch = analysisText.match(/SUMMARY:\s*(.*?)(?=\n*ANALYSIS:|$)/s);
+    const analysisMatch = analysisText.match(/ANALYSIS:\s*(.*?)$/s);
+    
+    if (titleMatch && titleMatch[1]) suggestedTitle = titleMatch[1].trim();
+    if (categoryMatch && categoryMatch[1]) suggestedCategory = categoryMatch[1].trim();
+    if (summaryMatch && summaryMatch[1]) summary = summaryMatch[1].trim();
+    if (analysisMatch && analysisMatch[1]) analysis = analysisMatch[1].trim();
+    
+    // Fallbacks if regex fails
+    if (!suggestedTitle) suggestedTitle = title.replace(/\.[^/.]+$/, ""); // Use original filename without extension
+    if (!suggestedCategory) suggestedCategory = "Research Report"; // Default category
+    
+    if (!summary && !analysis && analysisText) {
+      // If the AI didn't follow the format, use a simpler approach
       const paragraphs = analysisText.split("\n\n");
-      summary = paragraphs[0].trim();
-      analysis = paragraphs.slice(1).join("\n\n").trim();
+      summary = paragraphs[0]?.trim() || "No summary generated";
+      analysis = paragraphs.slice(1).join("\n\n").trim() || "No analysis generated";
     }
 
-    console.log('Document analysis complete:', { title, summary: summary.substring(0, 50) + "..." });
+    console.log('Document analysis complete:', { 
+      title: suggestedTitle.substring(0, 40) + "...",
+      category: suggestedCategory,
+      summary: summary.substring(0, 50) + "..." 
+    });
 
     return new Response(JSON.stringify({ 
+      suggestedTitle,
+      suggestedCategory,
       summary, 
       analysis
     }), {
@@ -108,6 +135,8 @@ Deno.serve(async (req) => {
     console.error('Error in analyze-document function:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
+      suggestedTitle: "",
+      suggestedCategory: "",
       summary: "Failed to generate summary due to an error.",
       analysis: "The document analysis could not be completed. Please try again later."
     }), {
