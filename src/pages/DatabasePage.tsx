@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -190,7 +189,6 @@ export const DatabasePage: React.FC = () => {
     }
   }, []);
   
-  // Save query history to localStorage whenever it changes
   useEffect(() => {
     if (queryHistory.length > 0) {
       localStorage.setItem('queryHistory', JSON.stringify(queryHistory));
@@ -429,14 +427,9 @@ export const DatabasePage: React.FC = () => {
     });
   };
 
-  // Add a safe rendering function to handle potentially undefined values
   const safeRenderHistoryItem = (item: QueryHistoryItem) => {
-    if (!item || !item.result) {
-      return (
-        <div className="border rounded-lg p-4">
-          <div className="text-red-500">Error: Invalid history item</div>
-        </div>
-      );
+    if (!item || !item.question || !item.result) {
+      return null;
     }
 
     return (
@@ -655,7 +648,11 @@ export const DatabasePage: React.FC = () => {
                 ) : (
                   <ScrollArea className="h-[600px]">
                     <div className="space-y-4">
-                      {queryHistory.map((item) => safeRenderHistoryItem(item))}
+                      {queryHistory
+                        .filter(item => item && item.question && item.result)
+                        .map((item) => safeRenderHistoryItem(item))
+                        .filter(Boolean)
+                      }
                     </div>
                   </ScrollArea>
                 )}

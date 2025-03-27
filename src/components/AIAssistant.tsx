@@ -62,6 +62,25 @@ export const AIAssistant: React.FC = () => {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Create history item to save in localStorage
+      const historyItem = {
+        id: assistantMessage.id,
+        question: input,
+        timestamp: new Date(),
+        result: {
+          message: response.message,
+          sqlQuery: response.sqlQuery,
+          results: response.results
+        },
+        isCorrect: null
+      };
+      
+      // Save to localStorage
+      const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
+      const updatedHistory = [historyItem, ...existingHistory];
+      localStorage.setItem('queryHistory', JSON.stringify(updatedHistory));
+      
     } catch (error) {
       console.error('Error getting response:', error);
       
