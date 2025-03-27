@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -297,8 +296,7 @@ const SyntheticDataPage: React.FC = () => {
       }
       
       console.log(`Inserting ${data.length} records into ${values.table}`);
-      const { error } = await supabase
-        .from(values.table)
+      const { error } = await getTable(values.table)
         .insert(data);
       
       if (error) {
@@ -329,8 +327,7 @@ const SyntheticDataPage: React.FC = () => {
         let hasData = false;
         
         for (const table of VALID_TABLES) {
-          const { data, error } = await supabase
-            .from(table)
+          const { data, error } = await getTable(table)
             .select('id')
             .limit(1);
             

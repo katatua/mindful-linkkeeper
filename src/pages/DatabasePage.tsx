@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateResponse } from "@/utils/aiUtils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, TableName, getTable } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,7 +26,7 @@ interface DatabaseTable {
 }
 
 // Type for valid table names in our database
-type TableName = keyof Database['public']['Tables'];
+// type TableName = keyof Database['public']['Tables'];
 
 // Database schema information
 const databaseSchema: DatabaseTable[] = [
@@ -150,8 +150,8 @@ const DatabasePage: React.FC = () => {
           const table = updatedTables[i];
           
           try {
-            const { data, error } = await supabase
-              .from(table.name)
+            // Use the helper function to safely get the table
+            const { data, error } = await getTable(table.name)
               .select('*')
               .limit(5);
               
@@ -666,7 +666,7 @@ const DatabasePage: React.FC = () => {
                                 ))
                               ) : (
                                 <TableRow>
-                                  <TableCell colSpan={Object.keys(results[0] || {}).length} className="text-center py-4">
+                                  <TableCell colSpan={results.length > 0 ? Object.keys(results[0]).length : 1} className="text-center py-4">
                                     No results found
                                   </TableCell>
                                 </TableRow>
