@@ -9,6 +9,7 @@ import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
 import { ScheduledReports } from "@/components/reports/ScheduledReports";
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
 
 const ReportsPage = () => {
   const { toast } = useToast();
@@ -116,6 +117,53 @@ const ReportsPage = () => {
     }));
   };
 
+  const handleDownloadPDF = (report: any) => {
+    toast({
+      title: "Downloading report",
+      description: `Preparing ${report.title} for download`,
+    });
+    
+    setTimeout(() => {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      pdf.setFontSize(22);
+      pdf.text(report.title, 20, 30);
+      
+      pdf.setFontSize(12);
+      pdf.text(`Report Type: ${report.description}`, 20, 45);
+      pdf.text(`Date: ${report.date}`, 20, 55);
+      pdf.text(`Author: ${report.author}`, 20, 65);
+      
+      pdf.setFontSize(16);
+      pdf.text("Executive Summary", 20, 85);
+      
+      pdf.setFontSize(12);
+      const content = "This is an automatically generated report summary. The full content would include detailed analytics, charts, and comprehensive data analysis relevant to the selected report type.";
+      const contentLines = pdf.splitTextToSize(content, 170);
+      pdf.text(contentLines, 20, 95);
+      
+      pdf.save(`${report.title.replace(/\s+/g, '-')}.pdf`);
+      
+      toast({
+        title: "Download complete",
+        description: `Report "${report.title}" has been downloaded.`,
+      });
+    }, 500);
+  };
+
+  const handleShareReport = (report: any) => {
+    toast({
+      title: "Report shared",
+      description: `A sharing link for "${report.title}" has been copied to clipboard`,
+    });
+    
+    navigator.clipboard.writeText(`https://ani-portal.example.com/shared-reports/${report.title.replace(/\s+/g, '-')}`);
+  };
+
   const handleChartClick = (chartId: string, category: string, chartType: string) => {
     navigate(`/visualization/${category}/${chartType}/${chartId}`);
   };
@@ -182,11 +230,11 @@ const ReportsPage = () => {
                 </CardContent>
                 <CardFooter className="pt-2">
                   <div className="flex justify-between items-center w-full">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(report)}>
                       <Download className="h-4 w-4 mr-1" />
                       PDF
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleShareReport(report)}>
                       <Share2 className="h-4 w-4 mr-1" />
                       Share
                     </Button>
