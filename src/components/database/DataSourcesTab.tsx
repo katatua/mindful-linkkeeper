@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -175,7 +176,7 @@ export const DataSourcesTab: React.FC = () => {
             </p>
             <Button onClick={() => setIsModalOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
-              Adicionar Documento
+              Adicionar Fonte
             </Button>
           </div>
         </Card>

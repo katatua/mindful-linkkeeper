@@ -1,14 +1,31 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, FileText, Upload } from 'lucide-react';
+import { Loader2, FileText, Upload, Database as DatabaseIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { toast } from 'sonner';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+// Schema for form validation
+const formSchema = z.object({
+  sourceType: z.enum(['new', 'existing']),
+  existingSourceId: z.number().optional(),
+  sourceName: z.string().optional(),
+  description: z.string().optional(),
+  technology: z.string().optional(),
+  fileName: z.string().optional(),
+});
 
 interface AddDataSourceModalProps {
   open: boolean;
@@ -16,18 +33,75 @@ interface AddDataSourceModalProps {
   onSuccess?: () => void;
 }
 
+// Define a type for initial data sources
+interface DataSource {
+  id: number;
+  nome_sistema: string;
+  descricao: string;
+  tecnologia: string;
+  data_importacao: string;
+}
+
+const initialDataSources: DataSource[] = [
+  {
+    id: 1,
+    nome_sistema: "Diversas origens distribuídas por vários repositórios/sistemas de armazenamento",
+    descricao: "Candidaturas de projetos; projetos; pareceres de peritos; respostas a questionários; representações; relatórios diversos; estudos; etc.",
+    tecnologia: "Documentos PDF; Documentos Word; Documentos Excel; Outros formatos office; Outros documentos em formato open source",
+    data_importacao: new Date().toISOString()
+  },
+  {
+    id: 2,
+    nome_sistema: "Dados de projetos financiados por Fundos Europeus de gestão centralizada (Horizonte Europa, Programa Europa Digital)",
+    descricao: "Dados relativos à atribuição de financiamento através de fundos europeus de gestão centralizada a entidades empresariais e não empresariais.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
+  },
+  {
+    id: 3,
+    nome_sistema: "Dados de projetos financiados por Fundos Europeus e por Fundos Nacionais (rede EUREKA)",
+    descricao: "Dados relativos à atribuição de financiamento através de fundos europeus e por fundos nacionais a entidades empresariais e não empresariais.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
+  },
+  {
+    id: 4,
+    nome_sistema: "Instituições de I&D",
+    descricao: "Dados relativos ao mapeamento das entidades que fazem Investigação & Desenvolvimento em Portugal e na Europa.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
+  },
+  {
+    id: 5,
+    nome_sistema: "Dados sobre Cooperação Internacional",
+    descricao: "Dados relativos à Bolsa de Tecnologia e Negócios, onde a procura e a oferta de tecnologias são valorizadas.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
+  }
+];
+
 const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ 
   open, 
   onOpenChange, 
   onSuccess 
 }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const { toast } = useToast();
+  const { toast: toastNotification } = useToast();
   const navigate = useNavigate();
+  const [dataSources] = useState<DataSource[]>(initialDataSources);
+  
+  // Initialize form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      sourceType: 'new',
+      sourceName: '',
+      description: '',
+      technology: '',
+    }
+  });
 
   const validateFile = (file: File): boolean => {
     const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.ms-excel'];
@@ -66,10 +140,8 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     console.log('File selected:', selectedFile);
     if (selectedFile && validateFile(selectedFile)) {
       setFile(selectedFile);
-      // Auto-populate name if not already set
-      if (!name) {
-        setName(selectedFile.name.replace(/\.[^/.]+$/, ""));
-      }
+      // Auto-populate file name
+      form.setValue('fileName', selectedFile.name.replace(/\.[^/.]+$/, ""));
     } else {
       setFile(null);
     }
@@ -102,12 +174,51 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Submit button clicked, file:', file);
+  // Function to generate AI description based on file content
+  const generateAIDescription = async (fileContent: string, fileName: string): Promise<{
+    suggestedName: string;
+    suggestedDescription: string;
+    suggestedTechnology: string;
+  }> => {
+    try {
+      // Call the Supabase Edge Function for AI analysis
+      const { data, error } = await supabase.functions.invoke('analyze-document', {
+        body: {
+          content: fileContent,
+          title: fileName,
+          type: file?.type || 'unknown'
+        }
+      });
+      
+      if (error) {
+        console.error('Error generating AI description:', error);
+        return {
+          suggestedName: fileName,
+          suggestedDescription: 'Fonte de dados para análise e consulta.',
+          suggestedTechnology: file?.type || 'Documento digital'
+        };
+      }
+      
+      return {
+        suggestedName: data.suggestedTitle || fileName,
+        suggestedDescription: data.summary || 'Fonte de dados para análise e consulta.',
+        suggestedTechnology: data.suggestedCategory || (file?.type || 'Documento digital')
+      };
+    } catch (error) {
+      console.error('Error in AI description generation:', error);
+      return {
+        suggestedName: fileName,
+        suggestedDescription: 'Fonte de dados para análise e consulta.',
+        suggestedTechnology: file?.type || 'Documento digital'
+      };
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('Form submitted with values:', values);
     
     if (!file) {
-      toast({
+      toastNotification({
         title: 'Arquivo necessário',
         description: 'Por favor, selecione um arquivo para carregar.',
         variant: 'destructive',
@@ -115,23 +226,12 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
       return;
     }
 
-    if (!name.trim()) {
-      toast({
-        title: 'Nome necessário',
-        description: 'Por favor, forneça um nome para a fonte de dados.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     try {
       setIsUploading(true);
-      console.log('Starting upload process...');
       
       // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('No authenticated user found');
         toast({
           title: 'Erro de autenticação',
           description: 'Você precisa estar autenticado para adicionar fontes de dados.',
@@ -140,95 +240,113 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
         setIsUploading(false);
         return;
       }
-      console.log('User authenticated:', user.id);
 
       // Prepare file for upload
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
-      console.log('Preparing to upload file:', fileName);
 
       // Upload file to storage
-      console.log('Uploading file to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
         .upload(fileName, file);
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
         throw new Error(`Erro ao fazer upload do arquivo: ${uploadError.message}`);
       }
-      console.log('File uploaded successfully:', uploadData);
 
       // Get the public URL for the file
       const fileUrl = supabase.storage.from('files').getPublicUrl(fileName).data.publicUrl;
-      console.log('File public URL:', fileUrl);
 
       // Extract content for AI analysis
       setIsAnalyzing(true);
-      console.log('Beginning file content extraction for AI analysis...');
       let fileContent = '';
-      let analysisData = { summary: '', analysis: '', suggestedCategory: '' };
+      let sourceName = values.sourceName || '';
+      let sourceDescription = values.description || '';
+      let sourceTechnology = values.technology || '';
       
-      try {
-        fileContent = await readFileContent(file);
-        console.log('File content extracted, length:', fileContent.length);
-        
-        // Call the AI analysis edge function
-        console.log('Calling analyze-document function...');
-        const { data, error: analysisError } = await supabase.functions.invoke('analyze-document', {
-          body: {
-            content: fileContent,
-            title: file.name,
-            type: file.type,
-            fileUrl: fileUrl
-          }
-        });
-
-        if (analysisError) {
-          console.warn('Warning: Error analyzing document:', analysisError);
-          // Continue without analysis data
-        } else if (data) {
-          analysisData = data;
-          console.log('Analysis complete:', analysisData);
+      // Get source info
+      if (values.sourceType === 'existing' && values.existingSourceId) {
+        // Use existing source information
+        const selectedSource = dataSources.find(src => src.id === values.existingSourceId);
+        if (selectedSource) {
+          sourceName = selectedSource.nome_sistema;
+          sourceDescription = selectedSource.descricao;
+          sourceTechnology = selectedSource.tecnologia;
         }
-      } catch (error) {
-        console.error('Error reading file content:', error);
-        // Continue with limited or no content for analysis
-        fileContent = `Unable to read content from ${file.name} (${file.type})`;
+      } else if (values.sourceType === 'new') {
+        // For new source, if fields are empty, generate with AI
+        if (!sourceName || !sourceDescription || !sourceTechnology) {
+          try {
+            fileContent = await readFileContent(file);
+            
+            // Generate AI descriptions
+            const aiResults = await generateAIDescription(fileContent, file.name);
+            
+            // Only use AI results for empty fields
+            if (!sourceName) sourceName = aiResults.suggestedName;
+            if (!sourceDescription) sourceDescription = aiResults.suggestedDescription;
+            if (!sourceTechnology) sourceTechnology = aiResults.suggestedTechnology;
+          } catch (error) {
+            console.error('Error generating source metadata:', error);
+            // Use fallbacks if AI fails
+            if (!sourceName) sourceName = file.name.replace(/\.[^/.]+$/, "");
+            if (!sourceDescription) sourceDescription = 'Fonte de dados para análise e consulta.';
+            if (!sourceTechnology) sourceTechnology = file.type || 'Documento digital';
+          }
+        }
+      }
+
+      // Get any AI analysis if we have file content
+      let analysisData = { summary: '', analysis: '', suggestedCategory: '' };
+      if (fileContent) {
+        try {
+          const { data, error: analysisError } = await supabase.functions.invoke('analyze-document', {
+            body: {
+              content: fileContent,
+              title: file.name,
+              type: file.type,
+              fileUrl: fileUrl
+            }
+          });
+
+          if (!analysisError && data) {
+            analysisData = data;
+          }
+        } catch (error) {
+          console.error('Error analyzing document:', error);
+        }
       }
 
       // Create a link entry for the file
-      console.log('Creating database entry...');
-      const { data: linkData, error: linkError } = await supabase
+      const { error: linkError } = await supabase
         .from('links')
         .insert({
-          title: name.trim(),
+          title: values.fileName || file.name.replace(/\.[^/.]+$/, ""),
           url: fileUrl,
           source: 'datasource',
-          summary: description.trim() || (analysisData?.summary || ''),
-          category: analysisData?.suggestedCategory || 'Research Document',
+          summary: sourceDescription,
+          category: sourceTechnology,
           file_metadata: {
             name: file.name,
             size: file.size,
-            type: file.type
+            type: file.type,
+            source_name: sourceName,
+            source_type: values.sourceType,
+            source_id: values.sourceType === 'existing' ? values.existingSourceId : null
           },
           ai_summary: analysisData?.summary || null,
           ai_analysis: analysisData?.analysis || null,
           user_id: user.id
-        })
-        .select()
-        .single();
+        });
 
       if (linkError) {
-        console.error('Error creating link entry:', linkError);
         throw new Error(`Erro ao criar entrada no banco de dados: ${linkError.message}`);
       }
-      console.log('Database entry created:', linkData);
 
       toast({
         title: 'Fonte de dados adicionada',
-        description: 'O arquivo foi carregado e analisado com sucesso.',
+        description: 'O arquivo foi carregado e associado à fonte com sucesso.',
       });
       
       onOpenChange(false);
@@ -250,6 +368,23 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
     }
   };
 
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      form.reset({
+        sourceType: 'new',
+        existingSourceId: undefined,
+        sourceName: '',
+        description: '',
+        technology: '',
+        fileName: ''
+      });
+      setFile(null);
+    }
+  }, [open, form]);
+
+  const sourceType = form.watch('sourceType');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -259,74 +394,190 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({
             Carregue um arquivo PDF ou CSV para adicionar às fontes de dados.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="file">Arquivo</Label>
-              <Input
-                id="file"
-                type="file"
-                accept=".pdf,.csv"
-                onChange={handleFileChange}
-                disabled={isUploading || isAnalyzing}
-                className="cursor-pointer"
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid gap-4 py-2">
+              <FormField
+                control={form.control}
+                name="sourceType"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <FormLabel>Tipo de Fonte</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="existing" id="existing" />
+                          <Label htmlFor="existing">Selecionar fonte existente</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="new" id="new" />
+                          <Label htmlFor="new">Criar nova fonte</Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                  </FormItem>
+                )}
               />
-              <p className="text-xs text-muted-foreground">
-                Formatos aceitos: PDF, CSV. Tamanho máximo: 10MB.
-              </p>
-            </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome da Fonte</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nome da fonte de dados"
-                disabled={isUploading || isAnalyzing}
-                required
-              />
-            </div>
+              {sourceType === 'existing' && (
+                <FormField
+                  control={form.control}
+                  name="existingSourceId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Selecione a Fonte</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        defaultValue={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma fonte de dados" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {dataSources.map((source) => (
+                            <SelectItem key={source.id} value={source.id.toString()}>
+                              {source.nome_sistema}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              )}
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descrição da fonte de dados"
-                disabled={isUploading || isAnalyzing}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isUploading || isAnalyzing}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isUploading || isAnalyzing || !file}
-            >
-              {(isUploading || isAnalyzing) ? (
+              {sourceType === 'new' && (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isAnalyzing ? 'Analisando...' : 'Carregando...'}
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Adicionar Fonte
+                  <FormField
+                    control={form.control}
+                    name="sourceName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Fonte</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nome da fonte de dados"
+                            {...field}
+                            disabled={isUploading || isAnalyzing}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Se vazio, será gerado automaticamente após o upload do arquivo.
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Descrição da fonte de dados"
+                            {...field}
+                            disabled={isUploading || isAnalyzing}
+                            rows={3}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Se vazio, será gerado automaticamente após o upload do arquivo.
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="technology"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tecnologia</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Tecnologia utilizada (ex: PDF, CSV, SQL)"
+                            {...field}
+                            disabled={isUploading || isAnalyzing}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
-            </Button>
-          </DialogFooter>
-        </form>
+
+              <div className="grid gap-2">
+                <Label htmlFor="file" className="font-medium">Arquivo</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  accept=".pdf,.csv"
+                  onChange={handleFileChange}
+                  disabled={isUploading || isAnalyzing}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formatos aceitos: PDF, CSV. Tamanho máximo: 10MB.
+                </p>
+              </div>
+
+              {file && (
+                <FormField
+                  control={form.control}
+                  name="fileName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Documento</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nome do documento"
+                          {...field}
+                          disabled={isUploading || isAnalyzing}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <DialogFooter className="mt-4 pt-4 border-t flex justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isUploading || isAnalyzing}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isUploading || isAnalyzing || !file}
+              >
+                {(isUploading || isAnalyzing) ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isAnalyzing ? 'Analisando...' : 'Carregando...'}
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Adicionar Fonte
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
