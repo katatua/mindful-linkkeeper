@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -349,6 +350,7 @@ const DatabasePage: React.FC = () => {
         };
       }
     } catch (err) {
+      // Changed 'error' to 'err' here to avoid the variable redeclaration
       console.error("Error executing SQL:", err);
       return {
         success: false,
