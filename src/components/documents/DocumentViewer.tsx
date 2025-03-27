@@ -158,7 +158,8 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           </div>
         </div>
       );
-    } else if (fileType === 'text' || fileType === 'csv') {
+    } else if (fileType === 'text') {
+      // Fixed: Changed from comparing to 'csv' to using 'text' which is what our getFileType function returns
       return (
         <div className="relative">
           {renderLoading()}
