@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,7 +25,30 @@ interface DatabaseTable {
   sampleData?: Record<string, any>[];
 }
 
+// Define a type that explicitly matches what we expect for results
 type ResultsType = Record<string, any>[];
+
+// Type guard to check if a value is a Record<string, any>
+function isRecord(value: any): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// Convert any JSON data to ResultsType safely
+function toResultsArray(data: any): ResultsType {
+  if (!data) return [];
+  
+  if (Array.isArray(data)) {
+    // Make sure each item in the array is a Record<string, any>
+    return data.filter(item => isRecord(item)) as ResultsType;
+  }
+  
+  // If it's a single object, wrap it in an array
+  if (isRecord(data)) {
+    return [data];
+  }
+  
+  return [];
+}
 
 const databaseSchema: DatabaseTable[] = [
   {
@@ -157,7 +181,7 @@ const DatabasePage: React.FC = () => {
             } else {
               updatedTables[i] = { 
                 ...table, 
-                sampleData: Array.isArray(data) ? data : [] 
+                sampleData: Array.isArray(data) ? data.map(item => ({ ...item })) : [] 
               };
               console.log(`Fetched sample data for ${table.name}:`, data ? data.length : 0, "rows");
             }
@@ -326,7 +350,7 @@ const DatabasePage: React.FC = () => {
           if (resultsMatch && resultsMatch[1]) {
             try {
               const parsedText = resultsMatch[1].trim();
-              let parsedResults: unknown;
+              let parsedResults: any;
               
               try {
                 parsedResults = JSON.parse(parsedText);
@@ -335,12 +359,7 @@ const DatabasePage: React.FC = () => {
                 throw new Error("Invalid JSON results format");
               }
               
-              if (Array.isArray(parsedResults)) {
-                setResults(parsedResults);
-              } else {
-                console.warn("Results are not an array, setting empty array instead");
-                setResults([]);
-              }
+              setResults(toResultsArray(parsedResults));
             } catch (error) {
               console.error("Error parsing results JSON:", error);
               setQueryError("Error parsing results JSON");
@@ -369,13 +388,13 @@ const DatabasePage: React.FC = () => {
                   if (repairedError) {
                     setQueryError(repairedError.message);
                   } else {
-                    setResults(Array.isArray(repairedResults) ? repairedResults : []);
+                    setResults(toResultsArray(repairedResults));
                   }
                 } else {
                   setQueryError(queryError.message);
                 }
               } else {
-                setResults(Array.isArray(queryResults) ? queryResults : []);
+                setResults(toResultsArray(queryResults));
               }
             } catch (error) {
               console.error("Error executing query:", error);
@@ -400,7 +419,7 @@ const DatabasePage: React.FC = () => {
               if (queryError) {
                 setQueryError(queryError.message);
               } else {
-                setResults(Array.isArray(queryResults) ? queryResults : []);
+                setResults(toResultsArray(queryResults));
                 toast({
                   title: "Query generated automatically",
                   description: "We automatically generated and executed a SQL query based on your question.",
@@ -457,11 +476,10 @@ const DatabasePage: React.FC = () => {
           variant: "destructive"
         });
       } else {
-        const safeResults = Array.isArray(queryResults) ? queryResults : [];
-        setResults(safeResults);
+        setResults(toResultsArray(queryResults));
         toast({
           title: "Database connection successful",
-          description: `Retrieved ${safeResults.length} records from the database.`,
+          description: `Retrieved ${results.length} records from the database.`,
         });
       }
     } catch (error) {
