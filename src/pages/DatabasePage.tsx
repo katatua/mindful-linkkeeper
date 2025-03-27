@@ -21,6 +21,11 @@ import { ChevronRight, Database, FileQuestion, Search } from 'lucide-react';
 import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 
+interface GenericTableData {
+  id: string;
+  [key: string]: any;
+}
+
 interface FundingProgram {
   id: string;
   name: string;
@@ -43,7 +48,7 @@ interface TableSchema {
 }
 
 export const DatabasePage: React.FC = () => {
-  const [fundingPrograms, setFundingPrograms] = useState<FundingProgram[]>([]);
+  const [tableData, setTableData] = useState<GenericTableData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTable, setActiveTable] = useState('ani_funding_programs');
@@ -128,7 +133,6 @@ export const DatabasePage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the data from localStorage based on active table
       let data = [];
       switch (activeTable) {
         case 'ani_funding_programs':
@@ -143,11 +147,14 @@ export const DatabasePage: React.FC = () => {
         case 'ani_policy_frameworks':
           data = JSON.parse(localStorage.getItem('samplePolicyFrameworks') || '[]');
           break;
+        case 'ani_projects':
+          data = JSON.parse(localStorage.getItem('sampleProjects') || '[]');
+          break;
         default:
           data = JSON.parse(localStorage.getItem('sampleFundingPrograms') || '[]');
       }
       
-      setFundingPrograms(data);
+      setTableData(data);
       setError(null);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -161,24 +168,19 @@ export const DatabasePage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Try to get data from Supabase first
-      const { data: supabaseData, error: supabaseError } = await supabase
-        .from(activeTable)
+      const { data: supabaseData, error: supabaseError } = await getTable(activeTable)
         .select('*')
         .limit(20);
 
       if (supabaseError) throw supabaseError;
       
-      // If we got data from Supabase, use it
       if (supabaseData && supabaseData.length > 0) {
-        setFundingPrograms(supabaseData);
+        setTableData(supabaseData);
       } else {
-        // Otherwise fall back to localStorage data
         fetchDataFromLocalStorage();
       }
     } catch (error) {
       console.error(`Error fetching data from ${activeTable}:`, error);
-      // Fall back to localStorage
       fetchDataFromLocalStorage();
     } finally {
       setLoading(false);
@@ -195,11 +197,9 @@ export const DatabasePage: React.FC = () => {
     setQueryResult(null);
     
     try {
-      // Use the AI assistant to generate a response to the question
       const response = await generateResponse(question);
       setQueryResult(response);
 
-      // Show success toast
       toast({
         title: "Query processed",
         description: "The query has been executed successfully.",
@@ -208,7 +208,6 @@ export const DatabasePage: React.FC = () => {
       console.error('Error executing query:', error);
       setQueryResult("Sorry, there was an error processing your query. Please try again.");
       
-      // Show error toast
       toast({
         title: "Query failed",
         description: "Failed to process the query. Please try again.",
@@ -228,12 +227,11 @@ export const DatabasePage: React.FC = () => {
       return <p className="py-4 text-center text-red-500">{error}</p>;
     }
     
-    if (fundingPrograms.length === 0) {
+    if (tableData.length === 0) {
       return <p className="py-4 text-center">No data found</p>;
     }
     
-    // Get the first item to determine columns
-    const item = fundingPrograms[0];
+    const item = tableData[0];
     const columns = Object.keys(item);
     
     return (
@@ -247,7 +245,7 @@ export const DatabasePage: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fundingPrograms.map((item, index) => (
+            {tableData.map((item, index) => (
               <TableRow key={index}>
                 {columns.map(col => (
                   <TableCell key={col}>
@@ -417,6 +415,7 @@ export const DatabasePage: React.FC = () => {
                   <TabsList className="mb-4">
                     <TabsTrigger value="ani_funding_programs">Funding Programs</TabsTrigger>
                     <TabsTrigger value="ani_metrics">Metrics</TabsTrigger>
+                    <TabsTrigger value="ani_projects">Projects</TabsTrigger>
                     <TabsTrigger value="ani_international_collaborations">Int'l Collaborations</TabsTrigger>
                     <TabsTrigger value="ani_policy_frameworks">Policy Frameworks</TabsTrigger>
                   </TabsList>
@@ -426,6 +425,10 @@ export const DatabasePage: React.FC = () => {
                   </TabsContent>
                   
                   <TabsContent value="ani_metrics">
+                    {renderTableContent()}
+                  </TabsContent>
+                  
+                  <TabsContent value="ani_projects">
                     {renderTableContent()}
                   </TabsContent>
                   
