@@ -76,7 +76,13 @@ export const generateResponse = async (userInput: string): Promise<string> => {
                           userInput.toLowerCase().includes("applications") ||
                           userInput.toLowerCase().includes("upcoming") ||
                           userInput.toLowerCase().includes("deadlines") ||
-                          userInput.toLowerCase().includes("regions");
+                          userInput.toLowerCase().includes("regions") ||
+                          // Add additional patterns for open applications
+                          userInput.toLowerCase().includes("open for applications") ||
+                          userInput.toLowerCase().includes("currently open") ||
+                          userInput.toLowerCase().includes("available funding") ||
+                          userInput.toLowerCase().includes("can apply") ||
+                          userInput.toLowerCase().includes("active programs");
 
     // Add user message to chat history (limited to last 20 messages for context)
     chatHistory.push({
@@ -103,6 +109,10 @@ export const generateResponse = async (userInput: string): Promise<string> => {
           currentDate: 'CURRENT_DATE',
           extractYear: 'EXTRACT(YEAR FROM column_name)',
           formatDate: "TO_CHAR(column_name, 'YYYY-MM-DD')"
+        },
+        // Add specific info about funding programs logic
+        fundingProgramsInfo: {
+          openApplications: "To check for open funding programs, a program is considered open for applications if end_date is greater than CURRENT_DATE. Example query: SELECT * FROM ani_funding_programs WHERE end_date > CURRENT_DATE ORDER BY application_deadline ASC;"
         },
         important: "This database uses PostgreSQL. DO NOT use SQLite functions like strftime or DATE('now'). Always use PostgreSQL syntax. DO NOT include semicolons in your SQL queries. IMPORTANT: PostgreSQL is the database being used, all queries must use PostgreSQL syntax."
       };
