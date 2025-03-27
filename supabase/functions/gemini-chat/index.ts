@@ -34,6 +34,7 @@ async function executeQuery(query: string): Promise<{ data: any; error: any }> {
       return { data: null, error };
     }
 
+    console.log("Query executed successfully, data:", data ? data.slice(0, 2) : "no data");
     return { data, error: null };
   } catch (error) {
     console.error("Error executing query:", error);
@@ -53,6 +54,55 @@ async function getAIModel(): Promise<string> {
     console.error('Error fetching AI model:', error);
     return 'gemini-2.5-pro-exp-03-25';
   }
+}
+
+function formatNaturalLanguageResponse(message: string, results: any[] | null): string {
+  if (!results || results.length === 0) {
+    return message + "\n\nNão foram encontrados resultados para esta consulta.";
+  }
+
+  // Extract a sample of results for the summary
+  const resultCount = results.length;
+  const sampleSize = Math.min(resultCount, 3);
+  const sample = results.slice(0, sampleSize);
+  
+  // Format key points from the results
+  let keyPoints = "";
+  
+  // For a small number of results, list them directly
+  if (resultCount <= 10) {
+    sample.forEach((item, index) => {
+      const itemDesc = Object.entries(item)
+        .filter(([key, value]) => value !== null && value !== undefined)
+        .map(([key, value]) => {
+          // Format array values nicely
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(', ')}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join(', ');
+      keyPoints += `\n• Resultado ${index + 1}: ${itemDesc}`;
+    });
+    
+    if (resultCount > sampleSize) {
+      keyPoints += `\n... e mais ${resultCount - sampleSize} resultados.`;
+    }
+  } else {
+    // For many results, just summarize
+    keyPoints = `Foram encontrados ${resultCount} resultados.`;
+    
+    // Add a brief summary of the first few results
+    sample.forEach((item, index) => {
+      const keys = Object.keys(item);
+      const mainKey = keys[0] || "item";
+      keyPoints += `\n• ${mainKey}: ${item[mainKey]}`;
+    });
+    
+    keyPoints += `\n... e mais ${resultCount - sampleSize} resultados.`;
+  }
+  
+  return `${message}\n\n**Resumo dos Resultados:**\n${keyPoints}`;
 }
 
 serve(async (req) => {
@@ -90,36 +140,35 @@ The database contains the following tables:
    - id, program_name, country, partnership_type, focus_areas (array), start_date, end_date, total_budget
 
 When users ask questions about the database, you should:
-1. Determine what they are looking for
-2. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
-3. Format your response to be clear and helpful
+1. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
+2. Format your response to be clear, concise and helpful, focusing on insights from the data
+3. Always present the information in Portuguese, as this is a Portuguese database
 
 DO NOT include semicolons (;) at the end of your SQL queries as they cause errors in the execution.
 
 Wrap your SQL in <SQL>your query here</SQL> tags
-Wrap the results in <RESULTS>your results here</RESULTS> tags
 
 If you can't answer a question or generate a valid SQL query, explain why in Portuguese.
 For SQL queries, make sure to REMOVE ANY SEMICOLONS from the end of the query.
 
+Your main goal is to provide CLEAR INSIGHTS about the data, not just raw data. Explain patterns, notable details, and summarize the information.
+
 Here are examples of questions users might ask and how to respond:
 1. Q: "Show me funding programs for renewable energy"
-   A: Let me find funding programs related to renewable energy.
+   A: Aqui estão os programas de financiamento relacionados à energia renovável:
       <SQL>
       SELECT name, description, total_budget, application_deadline
       FROM ani_funding_programs
       WHERE 'renewable energy' = ANY(sector_focus)
       </SQL>
-      <RESULTS>[results here]</RESULTS>
       
 2. Q: "What is the average funding amount for biotech projects?"
-   A: Here's the average funding amount for biotech projects:
+   A: O valor médio de financiamento para projetos de biotecnologia é:
       <SQL>
       SELECT AVG(funding_amount)
       FROM ani_projects
       WHERE sector ILIKE 'biotech'
       </SQL>
-      <RESULTS>[results here]</RESULTS>
     `;
 
     // Construct the conversation
@@ -177,36 +226,46 @@ Here are examples of questions users might ask and how to respond:
         const errorMessage = queryError.message || "Unknown database error";
         console.log("Query execution error:", errorMessage);
         
-        aiResponse = aiResponse.replace(
-          /<RESULTS>[\s\S]*?<\/RESULTS>/,
-          `<RESULTS>[]</RESULTS>`
-        );
+        // Create an explanatory message
+        const errorResponse = `Ocorreu um erro ao executar a consulta: ${errorMessage}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
         
-        // Add error message after the results
-        aiResponse += `\n\nOcorreu um erro ao executar a consulta: ${errorMessage}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
+        // Return the response with the SQL query and error message
+        return new Response(JSON.stringify({ 
+          response: aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, `<SQL>${sqlQuery}</SQL>`),
+          sqlQuery: sqlQuery,
+          results: null,
+          error: errorMessage
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       } else {
-        // If successful, include the results in the response
-        const formattedResults = JSON.stringify(queryResult || []);
-        console.log("Query execution results:", formattedResults.substring(0, 100) + (formattedResults.length > 100 ? "..." : ""));
+        // If successful, format the results in a natural language response
+        const formattedResults = queryResult || [];
+        console.log("Query execution results count:", formattedResults.length);
         
-        // Replace the RESULTS placeholder with actual results
-        if (aiResponse.includes("<RESULTS>")) {
-          aiResponse = aiResponse.replace(
-            /<RESULTS>[\s\S]*?<\/RESULTS>/,
-            `<RESULTS>${formattedResults}</RESULTS>`
-          );
-        } else {
-          // If there's no RESULTS placeholder, add it after the SQL
-          aiResponse = aiResponse.replace(
-            /<\/SQL>/,
-            `</SQL>\n\n<RESULTS>${formattedResults}</RESULTS>`
-          );
-        }
+        // Remove the SQL tags from the AI response to prepare for formatting
+        const cleanResponse = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, '').trim();
+        
+        // Create a formatted natural language response with insights from the data
+        const naturalLanguageResponse = formatNaturalLanguageResponse(cleanResponse, formattedResults);
+        
+        // Return the response with the SQL query and results
+        return new Response(JSON.stringify({ 
+          response: naturalLanguageResponse,
+          sqlQuery: sqlQuery,
+          results: formattedResults
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
-    // Return the final response
-    return new Response(JSON.stringify({ response: aiResponse }), {
+    // Return the response (if no SQL was found)
+    return new Response(JSON.stringify({ 
+      response: aiResponse,
+      sqlQuery: '',
+      results: null
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
@@ -214,6 +273,9 @@ Here are examples of questions users might ask and how to respond:
     return new Response(
       JSON.stringify({
         error: `Failed to generate response: ${error.message || "Unknown error"}`,
+        response: "Desculpe, houve um erro ao processar sua consulta. Por favor, tente novamente com uma pergunta diferente.",
+        sqlQuery: "",
+        results: null
       }),
       {
         status: 500,

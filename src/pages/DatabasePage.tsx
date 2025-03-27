@@ -61,7 +61,11 @@ interface QueryHistoryItem {
   id: string;
   question: string;
   timestamp: Date;
-  result: QueryResult;
+  result: {
+    message: string;
+    sqlQuery: string;
+    results: any[] | null;
+  };
   isCorrect: boolean | null;
 }
 
@@ -174,7 +178,6 @@ export const DatabasePage: React.FC = () => {
     
     fetchAIModel();
     
-    // Load query history from localStorage
     const savedHistory = localStorage.getItem('queryHistory');
     if (savedHistory) {
       try {
@@ -182,9 +185,15 @@ export const DatabasePage: React.FC = () => {
           ...item,
           timestamp: new Date(item.timestamp)
         }));
-        setQueryHistory(parsedHistory);
+        
+        const validHistory = parsedHistory.filter((item: any) => 
+          item && item.question && item.result && typeof item.result === 'object'
+        );
+        
+        setQueryHistory(validHistory);
       } catch (e) {
         console.error('Error loading query history:', e);
+        localStorage.setItem('queryHistory', JSON.stringify([]));
       }
     }
   }, []);
@@ -287,7 +296,6 @@ export const DatabasePage: React.FC = () => {
       const response = await generateResponse(question);
       setQueryResult(response);
       
-      // Add to query history
       const historyItem: QueryHistoryItem = {
         id: crypto.randomUUID(),
         question,
@@ -314,7 +322,6 @@ export const DatabasePage: React.FC = () => {
       
       setQueryResult(errorResult);
       
-      // Add failed query to history too
       const historyItem: QueryHistoryItem = {
         id: crypto.randomUUID(),
         question,
@@ -486,7 +493,7 @@ export const DatabasePage: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {item.result.results.map((row, rowIndex) => (
+                    {item.result.results.slice(0, 5).map((row, rowIndex) => (
                       <TableRow key={rowIndex}>
                         {Object.entries(row).map(([column, value]) => (
                           <TableCell key={`${rowIndex}-${column}`} className="text-xs">
@@ -497,6 +504,11 @@ export const DatabasePage: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+                {item.result.results.length > 5 && (
+                  <div className="text-xs text-gray-500 p-2 text-center border-t">
+                    Showing 5 of {item.result.results.length} results
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -639,7 +651,7 @@ export const DatabasePage: React.FC = () => {
                 <CardTitle>Query History</CardTitle>
               </CardHeader>
               <CardContent>
-                {queryHistory.length === 0 ? (
+                {!queryHistory.length ? (
                   <div className="text-center py-8 text-gray-500">
                     <History className="h-12 w-12 mx-auto mb-2 opacity-30" />
                     <p>No queries have been executed yet.</p>

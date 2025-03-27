@@ -77,9 +77,13 @@ export const AIAssistant: React.FC = () => {
       };
       
       // Save to localStorage
-      const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
-      const updatedHistory = [historyItem, ...existingHistory];
-      localStorage.setItem('queryHistory', JSON.stringify(updatedHistory));
+      try {
+        const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
+        const updatedHistory = [historyItem, ...existingHistory];
+        localStorage.setItem('queryHistory', JSON.stringify(updatedHistory));
+      } catch (err) {
+        console.error('Error saving to localStorage:', err);
+      }
       
     } catch (error) {
       console.error('Error getting response:', error);
@@ -128,7 +132,7 @@ export const AIAssistant: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {results.map((row, rowIndex) => (
+            {results.slice(0, 10).map((row, rowIndex) => (
               <TableRow key={rowIndex}>
                 {columns.map(column => (
                   <TableCell key={`${rowIndex}-${column}`}>
@@ -139,6 +143,11 @@ export const AIAssistant: React.FC = () => {
             ))}
           </TableBody>
         </Table>
+        {results.length > 10 && (
+          <div className="text-xs text-gray-500 p-2 text-center border-t">
+            Showing 10 of {results.length} results
+          </div>
+        )}
       </div>
     );
   };
@@ -236,11 +245,37 @@ export const AIAssistant: React.FC = () => {
                       </div>
                     )}
                     
-                    {message.results && (
+                    {message.results && message.results.length > 0 && (
                       <div className="mt-3">
                         <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
                           <Database className="h-4 w-4" />
                           <span>Results:</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs h-6 ml-auto"
+                            onClick={() => {
+                              try {
+                                const jsonStr = JSON.stringify(message.results, null, 2);
+                                const blob = new Blob([jsonStr], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
+                                a.href = url;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              } catch (e) {
+                                console.error('Error downloading results:', e);
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to download results.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            Download JSON
+                          </Button>
                         </div>
                         {renderResults(message.results)}
                       </div>

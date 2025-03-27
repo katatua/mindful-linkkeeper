@@ -57,65 +57,31 @@ export const generateResponse = async (prompt: string) => {
       throw new Error(`Failed to generate response: ${error.message}`);
     }
 
-    // Extract SQL and results from the response if available
-    let sqlQuery = '';
-    let queryResults = null;
-    
-    if (data && data.response) {
-      const sqlMatch = data.response.match(/<SQL>([\s\S]*?)<\/SQL>/);
-      const resultsMatch = data.response.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
+    // Store query history in the database
+    try {
+      const userResponse = await supabase.auth.getUser();
+      const userId = userResponse.data?.user?.id;
       
-      if (sqlMatch && sqlMatch[1]) {
-        sqlQuery = sqlMatch[1].trim();
-      }
-      
-      if (resultsMatch && resultsMatch[1]) {
-        try {
-          queryResults = JSON.parse(resultsMatch[1]);
-        } catch (e) {
-          console.error('Failed to parse results JSON:', e);
-          queryResults = [];
-        }
-      }
-      
-      // Clean up the response by removing the SQL and RESULTS tags
-      let cleanResponse = data.response
-        .replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
-        .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
-        .trim();
-        
-      // Store query history in the database
-      try {
-        const user = await supabase.auth.getUser();
-        const userId = user?.data?.user?.id;
-        
-        const { error: historyError } = await supabase.from('query_history').insert({
-          query_text: prompt,
-          user_id: userId || null,
-          was_successful: true,
-          language: 'en',
-          error_message: null,
-          created_tables: null
-        });
+      const { error: historyError } = await supabase.from('query_history').insert({
+        query_text: prompt,
+        user_id: userId || null,
+        was_successful: true,
+        language: 'en',
+        error_message: null,
+        created_tables: null
+      });
 
-        if (historyError) {
-          console.error('Error storing query history:', historyError);
-        }
-      } catch (historyStoreError) {
-        console.error('Error storing query history:', historyStoreError);
+      if (historyError) {
+        console.error('Error storing query history:', historyError);
       }
-      
-      return {
-        message: cleanResponse,
-        sqlQuery: sqlQuery,
-        results: queryResults
-      };
+    } catch (historyStoreError) {
+      console.error('Error storing query history:', historyStoreError);
     }
     
     return {
       message: data.response || 'Sorry, I could not process your query.',
-      sqlQuery: '',
-      results: null
+      sqlQuery: data.sqlQuery || '',
+      results: data.results || null
     };
   } catch (error) {
     console.error('Error generating response:', error);
