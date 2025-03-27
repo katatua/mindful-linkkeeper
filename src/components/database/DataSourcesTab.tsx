@@ -13,16 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Database, FileText, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FonteDados } from '@/types/databaseTypes';
 
-interface DataSource {
-  id: number;
-  nome_sistema: string;
-  descricao: string;
-  tecnologia: string;
-  data_importacao?: string;
-}
-
-const initialDataSources: DataSource[] = [
+const initialDataSources: FonteDados[] = [
   {
     id: 1,
     nome_sistema: "Diversas origens distribuídas por vários repositórios/sistemas de armazenamento",
@@ -36,11 +29,18 @@ const initialDataSources: DataSource[] = [
     descricao: "Dados relativos à atribuição de financiamento através de fundos europeus de gestão centralizada a entidades empresariais e não empresariais.",
     tecnologia: "Outsystems (SQL Server)",
     data_importacao: new Date().toISOString()
+  },
+  {
+    id: 3,
+    nome_sistema: "Dados de projetos financiados por Fundos Europeus e por Fundos Nacionais (rede EUREKA)",
+    descricao: "Dados relativos à atribuição de financiamento através de fundos europeus e por fundos nacionais a entidades empresariais e não empresariais.",
+    tecnologia: "Outsystems (SQL Server)",
+    data_importacao: new Date().toISOString()
   }
 ];
 
 export const DataSourcesTab: React.FC = () => {
-  const [dataSources] = React.useState<DataSource[]>(initialDataSources);
+  const [dataSources] = React.useState<FonteDados[]>(initialDataSources);
   
   return (
     <div className="space-y-6">
@@ -92,11 +92,19 @@ VALUES (
     'Documentos PDF; Documentos Word; Documentos Excel; Outros formatos office; Outros documentos em formato open source',
     CURRENT_TIMESTAMP
 );`
-                    ) : (
+                    ) : source.id === 2 ? (
                       `INSERT INTO fontes_dados (nome_sistema, descricao, tecnologia, data_importacao)
 VALUES (
     'Dados de projetos financiados por Fundos Europeus de gestão centralizada (Horizonte Europa, Programa Europa Digital)',
     'Dados relativos à atribuição de financiamento através de fundos europeus de gestão centralizada a entidades empresariais e não empresariais.',
+    'Outsystems (SQL Server)',
+    CURRENT_TIMESTAMP
+);`
+                    ) : (
+                      `INSERT INTO fontes_dados (nome_sistema, descricao, tecnologia, data_importacao)
+VALUES (
+    'Dados de projetos financiados por Fundos Europeus e por Fundos Nacionais (rede EUREKA)',
+    'Dados relativos à atribuição de financiamento através de fundos europeus e por fundos nacionais a entidades empresariais e não empresariais.',
     'Outsystems (SQL Server)',
     CURRENT_TIMESTAMP
 );`
@@ -121,12 +129,19 @@ VALUES (
                             <TableHead>Tamanho</TableHead>
                             <TableHead>Data Extração</TableHead>
                           </>
-                        ) : (
+                        ) : source.id === 2 ? (
                           <>
                             <TableHead>Projeto ID</TableHead>
                             <TableHead>Nome Projeto</TableHead>
                             <TableHead>Valor Financiado</TableHead>
                             <TableHead>Entidade</TableHead>
+                          </>
+                        ) : (
+                          <>
+                            <TableHead>Projeto ID</TableHead>
+                            <TableHead>Nome Projeto</TableHead>
+                            <TableHead>Tipo Fundo</TableHead>
+                            <TableHead>Valor Financiado</TableHead>
                           </>
                         )}
                       </TableRow>
@@ -153,7 +168,7 @@ VALUES (
                             <TableCell>{new Date().toLocaleDateString()}</TableCell>
                           </TableRow>
                         </>
-                      ) : (
+                      ) : source.id === 2 ? (
                         <>
                           <TableRow>
                             <TableCell>HE-2023-001</TableCell>
@@ -172,6 +187,27 @@ VALUES (
                             <TableCell>Eficiência Energética</TableCell>
                             <TableCell>€ 180.000</TableCell>
                             <TableCell>Instituto ABC</TableCell>
+                          </TableRow>
+                        </>
+                      ) : (
+                        <>
+                          <TableRow>
+                            <TableCell>EUR-2023-078</TableCell>
+                            <TableCell>Energia Renovável</TableCell>
+                            <TableCell>Europeu</TableCell>
+                            <TableCell>€ 275.000</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>EUR-2023-102</TableCell>
+                            <TableCell>Tecnologias Verdes</TableCell>
+                            <TableCell>Nacional</TableCell>
+                            <TableCell>€ 120.000</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>EUR-2022-045</TableCell>
+                            <TableCell>Mobilidade Sustentável</TableCell>
+                            <TableCell>Europeu</TableCell>
+                            <TableCell>€ 185.000</TableCell>
                           </TableRow>
                         </>
                       )}
