@@ -1,5 +1,6 @@
 
 import { Calendar, ExternalLink, Tag, FileText } from "lucide-react";
+import { Link as RouterLink } from "react-router-dom";
 
 interface LinkCardProps {
   title: string;
@@ -10,6 +11,7 @@ interface LinkCardProps {
   classification?: string;
   category?: string;
   isGrid: boolean;
+  id?: string;
 }
 
 export const LinkCard = ({ 
@@ -20,7 +22,8 @@ export const LinkCard = ({
   fileName, 
   classification,
   category,
-  isGrid 
+  isGrid,
+  id
 }: LinkCardProps) => {
   const getHostname = (url: string) => {
     try {
@@ -32,6 +35,7 @@ export const LinkCard = ({
   };
 
   const hostname = getHostname(url);
+  const isDocument = fileName || id;
 
   return (
     <div
@@ -45,9 +49,15 @@ export const LinkCard = ({
         }`}
       >
         <div className={isGrid ? "mb-3" : "flex-1"}>
-          <h3 className="font-medium text-gray-900 group-hover:text-gray-700 transition-colors">
-            {title}
-          </h3>
+          {isDocument && id ? (
+            <RouterLink to={`/documents/${id}`} className="font-medium text-gray-900 group-hover:text-primary transition-colors">
+              {title}
+            </RouterLink>
+          ) : (
+            <h3 className="font-medium text-gray-900 group-hover:text-gray-700 transition-colors">
+              {title}
+            </h3>
+          )}
           <a
             href={url.startsWith('http') ? url : `https://${url}`}
             target="_blank"
