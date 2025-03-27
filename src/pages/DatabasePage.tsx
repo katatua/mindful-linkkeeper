@@ -22,7 +22,7 @@ import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 
 interface GenericTableData {
-  id: string;
+  id?: string;
   [key: string]: any;
 }
 
@@ -154,7 +154,8 @@ export const DatabasePage: React.FC = () => {
           data = JSON.parse(localStorage.getItem('sampleFundingPrograms') || '[]');
       }
       
-      setTableData(data);
+      const processedData = ensureValidData(data);
+      setTableData(processedData);
       setError(null);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -162,6 +163,20 @@ export const DatabasePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const ensureValidData = (data: any[]): GenericTableData[] => {
+    if (!data) return [];
+    
+    return data.filter(item => item && typeof item === 'object').map(item => {
+      if (!item.id && (item.project_id || item.researcher_id)) {
+        return {
+          ...item,
+          id: item.project_id + '-' + item.researcher_id
+        };
+      }
+      return item;
+    });
   };
 
   const fetchFundingPrograms = async () => {
@@ -175,7 +190,8 @@ export const DatabasePage: React.FC = () => {
       if (supabaseError) throw supabaseError;
       
       if (supabaseData && supabaseData.length > 0) {
-        setTableData(supabaseData);
+        const processedData = ensureValidData(supabaseData);
+        setTableData(processedData);
       } else {
         fetchDataFromLocalStorage();
       }
