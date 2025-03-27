@@ -1,5 +1,4 @@
-
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and sample data
 export const suggestedDatabaseQuestions = [
@@ -84,6 +83,26 @@ export const generateResponse = async (prompt: string) => {
         .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
         .trim();
         
+      // Store query history
+      try {
+        const { error: historyError } = await supabase.from('query_history').insert({
+          question: prompt,
+          query_result: {
+            message: cleanResponse,
+            sqlQuery: sqlQuery,
+            results: queryResults
+          },
+          is_correct: null,
+          user_id: supabase.auth.getUser()?.data?.user?.id || null
+        });
+
+        if (historyError) {
+          console.error('Error storing query history:', historyError);
+        }
+      } catch (historyStoreError) {
+        console.error('Error storing query history:', historyStoreError);
+      }
+      
       return {
         message: cleanResponse,
         sqlQuery: sqlQuery,
