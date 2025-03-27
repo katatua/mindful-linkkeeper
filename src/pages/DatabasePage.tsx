@@ -50,6 +50,12 @@ interface TableSchema {
   }[];
 }
 
+interface QueryResult {
+  message: string;
+  sqlQuery: string;
+  results: any[] | null;
+}
+
 export const DatabasePage: React.FC = () => {
   const location = useLocation();
   const [tableData, setTableData] = useState<GenericTableData[]>([]);
@@ -130,7 +136,7 @@ export const DatabasePage: React.FC = () => {
   ]);
   const [activeQuestion, setActiveQuestion] = useState('');
   const [isQueryLoading, setIsQueryLoading] = useState(false);
-  const [queryResult, setQueryResult] = useState<string | null>(null);
+  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [currentAIModel, setCurrentAIModel] = useState<string>('Loading...');
   const { toast } = useToast();
 
@@ -257,8 +263,13 @@ export const DatabasePage: React.FC = () => {
       });
     } catch (error) {
       console.error('Error executing query:', error);
-      setQueryResult("Sorry, there was an error processing your query. Please try again. The error was: " + 
-        (error instanceof Error ? error.message : String(error)));
+      
+      setQueryResult({
+        message: "Sorry, there was an error processing your query. Please try again. The error was: " + 
+          (error instanceof Error ? error.message : String(error)),
+        sqlQuery: "",
+        results: null
+      });
       
       toast({
         title: "Query failed",
@@ -415,7 +426,44 @@ export const DatabasePage: React.FC = () => {
                     <CardContent>
                       <div className="bg-gray-50 p-4 rounded-md border">
                         <div className="font-semibold mb-2 text-primary">{activeQuestion}</div>
-                        <div className="whitespace-pre-wrap">{queryResult}</div>
+                        <div className="whitespace-pre-wrap">{queryResult.message}</div>
+                        
+                        {queryResult.sqlQuery && (
+                          <div className="mt-4">
+                            <div className="text-sm font-medium text-gray-500 mb-1">SQL Query:</div>
+                            <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                              {queryResult.sqlQuery}
+                            </pre>
+                          </div>
+                        )}
+                        
+                        {queryResult.results && queryResult.results.length > 0 && (
+                          <div className="mt-4">
+                            <div className="text-sm font-medium text-gray-500 mb-1">Results:</div>
+                            <div className="overflow-x-auto border rounded-md">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    {Object.keys(queryResult.results[0]).map((column) => (
+                                      <TableHead key={column}>{column}</TableHead>
+                                    ))}
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {queryResult.results.map((row, rowIndex) => (
+                                    <TableRow key={rowIndex}>
+                                      {Object.entries(row).map(([column, value]) => (
+                                        <TableCell key={`${rowIndex}-${column}`}>
+                                          {renderCellValue(value)}
+                                        </TableCell>
+                                      ))}
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
