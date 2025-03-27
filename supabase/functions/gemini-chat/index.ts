@@ -18,7 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    const { userMessage, chatHistory } = await req.json();
+    const requestData = await req.json();
+    const { userMessage, chatHistory, databaseInfo } = requestData;
     
     // Check if this is a database query request - include both English and Portuguese terms
     const isDatabaseQuery = userMessage.toLowerCase().includes("database") || 
@@ -42,108 +43,10 @@ serve(async (req) => {
                             userMessage.toLowerCase().includes("buscar") ||
                             userMessage.toLowerCase().includes("abertos") ||
                             userMessage.toLowerCase().includes("que") ||
-                            userMessage.toLowerCase().includes("estão");
-
-    // Common Portuguese queries that need special handling
-    const isOpenProgramsQuery = 
-      userMessage.toLowerCase().includes("programas") && 
-      (userMessage.toLowerCase().includes("abertos") || 
-       userMessage.toLowerCase().includes("disponíveis") ||
-       userMessage.toLowerCase().includes("ainda estão") ||
-       userMessage.toLowerCase().includes("que estão"));
-
-    // For direct SQL parsing, first try to execute without waiting for AI
-    if (isOpenProgramsQuery) {
-      try {
-        console.log("Handling common query for open funding programs");
-        // Initialize Supabase client
-        const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-        
-        // Predefined SQL query for open programs - using CURRENT_DATE for PostgreSQL compatibility
-        const sqlQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline";
-        
-        // Execute the query
-        const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
-          sql_query: sqlQuery
-        });
-        
-        if (queryError) {
-          console.error("SQL query execution error:", queryError);
-          // Continue with AI flow if direct execution fails
-        } else {
-          // Format results for AI processing
-          const resultCount = Array.isArray(queryResults) ? queryResults.length : 0;
-          
-          // Pass the data to Gemini for natural language processing
-          const nlPrompt = `Os seguintes programas de financiamento estão abertos (${resultCount} encontrados):
-          
-${JSON.stringify(queryResults, null, 2)}
-
-Por favor, formate e apresente estes dados de maneira clara e concisa em português. Se não houver resultados, explique que não há programas abertos no momento.`;
-
-          // Create a special message history for this response
-          const messages = [
-            {
-              role: 'model',
-              parts: [{ 
-                text: `Você é o assistente de IA da ANI (Agência Nacional de Inovação) de Portugal. 
-                Forneça informações precisas sobre inovação, financiamento de projetos, políticas de inovação, 
-                e métricas relacionadas de maneira clara e acessível. Responda em português.`
-              }]
-            },
-            {
-              role: 'user',
-              parts: [{ text: nlPrompt }]
-            }
-          ];
-
-          // Get formatted natural language response from Gemini
-          const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: messages,
-              generationConfig: {
-                temperature: 0.3,
-                topP: 0.8,
-                topK: 40,
-                maxOutputTokens: 1024,
-              }
-            }),
-          });
-
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(`Gemini API Error: ${JSON.stringify(data)}`);
-          }
-          
-          // Extract response text
-          let assistantResponse = "Desculpe, não consegui processar sua solicitação.";
-          
-          if (data.candidates && 
-              data.candidates[0] && 
-              data.candidates[0].content && 
-              data.candidates[0].content.parts && 
-              data.candidates[0].content.parts[0]) {
-            assistantResponse = data.candidates[0].content.parts[0].text;
-            
-            // Add the SQL query and results in special tags for the frontend to extract
-            assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\n${assistantResponse}`;
-          }
-          
-          return new Response(
-            JSON.stringify({ response: assistantResponse }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch (directError) {
-        console.error("Error in direct query handling:", directError);
-        // Continue with AI flow if direct handling fails
-      }
-    }
+                            userMessage.toLowerCase().includes("estão") ||
+                            userMessage.toLowerCase().includes("ano") ||
+                            userMessage.toLowerCase().includes("year") ||
+                            userMessage.toLowerCase().includes("2024");
 
     // Prepare chat history for Gemini
     const messages = chatHistory.map((msg: any) => ({
@@ -233,6 +136,8 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
           
           IMPORTANTE: Este projeto usa PostgreSQL, então use a sintaxe correta do PostgreSQL:
           - Use CURRENT_DATE em vez de DATE('now')
+          - Use EXTRACT(YEAR FROM coluna) em vez de strftime('%Y', coluna)
+          - Use TO_CHAR(coluna, 'YYYY-MM-DD') para formatação de datas
           - Use CURRENT_TIMESTAMP em vez de NOW()
           - Nunca coloque ponto e vírgula no meio da consulta, apenas no final se necessário
           
@@ -356,9 +261,23 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
             sqlQuery = sqlQuery.replace(/;(?!\s*$)/g, ' ');
           }
           
-          // Replace DATE('now') with CURRENT_DATE for PostgreSQL
-          if (sqlQuery.toLowerCase().includes("date('now')")) {
-            sqlQuery = sqlQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+          // Fix date functions for PostgreSQL
+          sqlQuery = sqlQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+          sqlQuery = sqlQuery.replace(/strftime\s*\(\s*['"]%Y['"]\s*,\s*([^)]+)\s*\)/gi, 'EXTRACT(YEAR FROM $1)');
+          
+          // Fix ordering issues - ORDER BY should be outside WHERE clause
+          const whereOrderByMatch = sqlQuery.match(/WHERE\s+(.*?)\s*ORDER\s+BY\s+(.*?)(?:$|LIMIT|GROUP)/i);
+          if (whereOrderByMatch) {
+            const wherePart = whereOrderByMatch[1];
+            const orderByPart = whereOrderByMatch[2];
+            
+            // Reconstruct the query with proper ORDER BY placement
+            const beforeWhere = sqlQuery.substring(0, sqlQuery.toLowerCase().indexOf('where'));
+            const afterOrderBy = sqlQuery.substring(
+              sqlQuery.toLowerCase().indexOf('order by') + 'order by'.length + orderByPart.length
+            );
+            
+            sqlQuery = `${beforeWhere} WHERE ${wherePart} ORDER BY ${orderByPart}${afterOrderBy}`;
           }
           
           console.log("Executing SQL query:", sqlQuery);
@@ -374,83 +293,94 @@ Por favor, formate e apresente estes dados de maneira clara e concisa em portugu
           if (queryError) {
             console.error("SQL query execution error:", queryError);
             
-            // Try to fix the query by removing the semicolon and fixing date function
-            if (queryError.message.includes("syntax error") || 
-                queryError.message.includes("function date") ||
-                queryError.message.includes("near")) {
+            // Try to fix the query by applying more transformations
+            let fixedQuery = sqlQuery;
+            
+            // Fix DATE function
+            fixedQuery = fixedQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
+            fixedQuery = fixedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
+            fixedQuery = fixedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
+            fixedQuery = fixedQuery.replace(/strftime\s*\(\s*['"]%Y['"]\s*,\s*([^)]+)\s*\)/gi, 'EXTRACT(YEAR FROM $1)');
+            
+            // Fix year comparison to be numeric (PostgreSQL expects integer for year extraction)
+            fixedQuery = fixedQuery.replace(/EXTRACT\(YEAR FROM (.*?)\)\s*=\s*['"](\d{4})['"]/gi, 'EXTRACT(YEAR FROM $1) = $2');
+            
+            // Remove all semicolons except at the very end
+            fixedQuery = fixedQuery.replace(/;/g, ' ').trim();
+            
+            // Make sure ORDER BY is outside WHERE clause
+            if (fixedQuery.toLowerCase().includes('where') && 
+                fixedQuery.toLowerCase().includes('order by')) {
+              const whereIndex = fixedQuery.toLowerCase().indexOf('where');
+              const orderByIndex = fixedQuery.toLowerCase().indexOf('order by');
               
-              // More aggressive fixes for PostgreSQL compatibility
-              let fixedQuery = sqlQuery;
-              
-              // Fix DATE function
-              fixedQuery = fixedQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
-              fixedQuery = fixedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
-              fixedQuery = fixedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
-              
-              // Remove all semicolons except at the very end
-              fixedQuery = fixedQuery.replace(/;/g, ' ').trim() + ';';
-              
-              // Try again with fixed query
-              console.log("Trying with fixed query:", fixedQuery);
-              const { data: fixedResults, error: fixedError } = await supabase.rpc('execute_sql_query', {
-                sql_query: fixedQuery
-              });
-              
-              if (fixedError) {
-                console.error("Fixed query still has error:", fixedError);
-                // Generate response with error using Gemini
-                const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentativa foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
+              if (orderByIndex > whereIndex) {
+                const beforeWhere = fixedQuery.substring(0, whereIndex);
+                const wherePart = fixedQuery.substring(whereIndex + 'where'.length, orderByIndex);
+                const orderByPart = fixedQuery.substring(orderByIndex);
                 
-                // Create messages for error handling
-                const errorMessages = [
-                  {
-                    role: 'model',
-                    parts: [{ text: systemPrompt.parts[0].text }]
-                  },
-                  {
-                    role: 'user',
-                    parts: [{ text: errorPrompt }]
-                  }
-                ];
-                
-                // Get formatted error response from Gemini
-                const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    contents: errorMessages,
-                    generationConfig: {
-                      temperature: 0.3,
-                      topP: 0.8,
-                      topK: 40,
-                      maxOutputTokens: 1024,
-                    }
-                  }),
-                });
-                
-                const errorData = await errorResponse.json();
-                
-                if (errorData.candidates && 
-                    errorData.candidates[0] && 
-                    errorData.candidates[0].content && 
-                    errorData.candidates[0].content.parts && 
-                    errorData.candidates[0].content.parts[0]) {
-                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n${errorData.candidates[0].content.parts[0].text}`;
-                } else {
-                  assistantResponse = `<SQL>${sqlQuery}</SQL>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+                // Check if there's anything between WHERE and ORDER BY that ends with semicolon
+                if (wherePart.trim().endsWith(';')) {
+                  fixedQuery = `${beforeWhere} WHERE ${wherePart.trim().slice(0, -1)} ${orderByPart}`;
                 }
-              } else {
-                // Success with fixed query
-                queryResults = fixedResults;
-                sqlQuery = fixedQuery;
               }
             }
             
-            // If we still have an error
-            if (queryError && !queryResults) {
-              // ... keep existing code (error response generation)
+            // Try again with fixed query
+            console.log("Trying with fixed query:", fixedQuery);
+            const { data: fixedResults, error: fixedError } = await supabase.rpc('execute_sql_query', {
+              sql_query: fixedQuery
+            });
+            
+            if (fixedError) {
+              console.error("Fixed query still has error:", fixedError);
+              // Generate response with error using Gemini
+              const errorPrompt = `Ocorreu um erro ao executar a consulta SQL: ${queryError.message}\n\nA consulta tentativa foi:\n\`\`\`sql\n${sqlQuery}\n\`\`\`\n\nPor favor, explique este erro em termos simples e sugira possíveis soluções.`;
+              
+              // Create messages for error handling
+              const errorMessages = [
+                {
+                  role: 'model',
+                  parts: [{ text: systemPrompt.parts[0].text }]
+                },
+                {
+                  role: 'user',
+                  parts: [{ text: errorPrompt }]
+                }
+              ];
+              
+              // Get formatted error response from Gemini
+              const errorResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  contents: errorMessages,
+                  generationConfig: {
+                    temperature: 0.3,
+                    topP: 0.8,
+                    topK: 40,
+                    maxOutputTokens: 1024,
+                  }
+                }),
+              });
+              
+              const errorData = await errorResponse.json();
+              
+              if (errorData.candidates && 
+                  errorData.candidates[0] && 
+                  errorData.candidates[0].content && 
+                  errorData.candidates[0].content.parts && 
+                  errorData.candidates[0].content.parts[0]) {
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n${errorData.candidates[0].content.parts[0].text}`;
+              } else {
+                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\nEncontrei um erro ao executar a consulta SQL: ${queryError.message}`;
+              }
+            } else {
+              // Success with fixed query
+              queryResults = fixedResults;
+              sqlQuery = fixedQuery;
             }
           }
           

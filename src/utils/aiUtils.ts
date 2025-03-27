@@ -49,6 +49,19 @@ export const generateResponse = async (userInput: string): Promise<string> => {
   try {
     console.log('Calling Gemini API with message:', userInput);
     
+    // Check if this is a database query to provide a better system prompt
+    const isDatabaseQuery = userInput.toLowerCase().includes("database") || 
+                            userInput.toLowerCase().includes("sql") ||
+                            userInput.toLowerCase().includes("query") ||
+                            userInput.toLowerCase().includes("data") ||
+                            userInput.toLowerCase().includes("banco de dados") ||
+                            userInput.toLowerCase().includes("consulta") ||
+                            userInput.toLowerCase().includes("encontrar") ||
+                            userInput.toLowerCase().includes("programas") ||
+                            userInput.toLowerCase().includes("ano") ||
+                            userInput.toLowerCase().includes("year") ||
+                            userInput.toLowerCase().includes("2024");
+
     // Add user message to chat history (limited to last 20 messages for context)
     chatHistory.push({
       role: 'user',
@@ -59,12 +72,27 @@ export const generateResponse = async (userInput: string): Promise<string> => {
       chatHistory = chatHistory.slice(chatHistory.length - 20);
     }
     
+    // Prepare the request body with additional context if it's a database query
+    const requestBody: any = { 
+      userMessage: userInput,
+      chatHistory: chatHistory.slice(0, -1) // Send previous messages as context
+    };
+    
+    // If this is a database query, add extra information about PostgreSQL
+    if (isDatabaseQuery) {
+      requestBody.databaseInfo = {
+        type: 'PostgreSQL',
+        dateFunctions: {
+          currentDate: 'CURRENT_DATE',
+          extractYear: 'EXTRACT(YEAR FROM column_name)',
+          formatDate: "TO_CHAR(column_name, 'YYYY-MM-DD')"
+        }
+      };
+    }
+    
     // Call the Gemini edge function using the imported Supabase client
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { 
-        userMessage: userInput,
-        chatHistory: chatHistory.slice(0, -1) // Send previous messages as context
-      }
+      body: requestBody
     });
     
     if (error) {

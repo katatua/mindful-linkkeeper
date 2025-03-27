@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -184,22 +183,19 @@ const DatabasePage: React.FC = () => {
   };
 
   const repairSqlQuery = (query: string): string => {
-    // Basic SQL repair for common issues
     let repairedQuery = query.trim();
     
-    // Remove any semicolons in the middle of the query
     repairedQuery = repairedQuery.replace(/;(?!\s*$)/g, ' ');
     
-    // Fix DATE('now') to use PostgreSQL's CURRENT_DATE
+    repairedQuery = repairedQuery.replace(/strftime\s*\(\s*['"]%Y['"]\s*,\s*([^)]+)\s*\)/gi, 
+      'EXTRACT(YEAR FROM $1)');
+    
     repairedQuery = repairedQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
     
-    // Fix common function name issues
     repairedQuery = repairedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
     repairedQuery = repairedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
     
-    // If query ends with FROM, add the most likely table based on the columns
     if (repairedQuery.toLowerCase().endsWith('from')) {
-      // Common column mappings to likely tables
       const columnTableMap: Record<string, string> = {
         'name': 'ani_funding_programs',
         'title': 'ani_projects',
@@ -216,12 +212,10 @@ const DatabasePage: React.FC = () => {
         'country': 'ani_international_collaborations'
       };
       
-      // Extract columns from the query
       const columnsMatch = repairedQuery.match(/SELECT\s+([\s\S]+?)\s+FROM/i);
       if (columnsMatch && columnsMatch[1]) {
         const columns = columnsMatch[1].split(',').map(col => col.trim().split(' ')[0]);
         
-        // Find the most likely table based on columns
         const tableCounts: Record<string, number> = {};
         for (const col of columns) {
           if (columnTableMap[col]) {
@@ -241,16 +235,26 @@ const DatabasePage: React.FC = () => {
         if (mostLikelyTable) {
           repairedQuery += ` ${mostLikelyTable}`;
         } else {
-          // Default to funding programs if we can't determine
           repairedQuery += ' ani_funding_programs';
         }
       } else {
-        // Default to funding programs if we can't parse columns
         repairedQuery += ' ani_funding_programs';
       }
     }
     
-    // If query doesn't have a WHERE clause but should filter for open programs
+    const whereOrderByMatch = repairedQuery.match(/WHERE\s+(.*?)\s*ORDER\s+BY\s+(.*?)(?:$|LIMIT|GROUP)/i);
+    if (whereOrderByMatch) {
+      const wherePart = whereOrderByMatch[1];
+      const orderByPart = whereOrderByMatch[2];
+      
+      const beforeWhere = repairedQuery.substring(0, repairedQuery.toLowerCase().indexOf('where'));
+      const afterOrderBy = repairedQuery.substring(
+        repairedQuery.toLowerCase().indexOf('order by') + 'order by'.length + orderByPart.length
+      );
+      
+      repairedQuery = `${beforeWhere} WHERE ${wherePart} ORDER BY ${orderByPart}${afterOrderBy}`;
+    }
+    
     if (question.toLowerCase().includes('abertos') || 
         question.toLowerCase().includes('disponíveis') ||
         question.toLowerCase().includes('ainda estão')) {
@@ -261,7 +265,6 @@ const DatabasePage: React.FC = () => {
       }
     }
     
-    // Add ORDER BY for sorting results if query likely needs it
     if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
         !repairedQuery.toLowerCase().includes('order by')) {
       repairedQuery += ' ORDER BY application_deadline';
@@ -295,7 +298,6 @@ const DatabasePage: React.FC = () => {
         if (sqlMatch && sqlMatch[1]) {
           let queryToRun = sqlMatch[1].trim();
           
-          // Automatically fix common SQL syntax issues
           if (queryToRun.includes(';') && queryToRun.indexOf(';') < queryToRun.length - 1) {
             queryToRun = repairSqlQuery(queryToRun);
             toast({
@@ -304,7 +306,6 @@ const DatabasePage: React.FC = () => {
             });
           }
           
-          // Replace DATE('now') with CURRENT_DATE for PostgreSQL compatibility
           if (queryToRun.toLowerCase().includes("date('now')")) {
             queryToRun = queryToRun.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
             toast({
@@ -315,7 +316,6 @@ const DatabasePage: React.FC = () => {
           
           setSqlQuery(queryToRun);
           
-          // If there's a results section, we already have the results from the edge function
           const resultsMatch = response.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
           
           if (resultsMatch && resultsMatch[1]) {
@@ -326,7 +326,6 @@ const DatabasePage: React.FC = () => {
               setQueryError("Error parsing results JSON");
             }
           } else {
-            // No results section, attempt to execute the query locally
             try {
               const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
                 sql_query: queryToRun
@@ -335,7 +334,6 @@ const DatabasePage: React.FC = () => {
               if (queryError) {
                 console.error("SQL execution error:", queryError);
                 
-                // Try to repair the query
                 const repairedQuery = repairSqlQuery(queryToRun);
                 if (repairedQuery !== queryToRun) {
                   setSqlQuery(repairedQuery);
@@ -344,7 +342,6 @@ const DatabasePage: React.FC = () => {
                     description: "The SQL query was automatically corrected and executed.",
                   });
                   
-                  // Execute the repaired query
                   const { data: repairedResults, error: repairedError } = await supabase.rpc('execute_sql_query', {
                     sql_query: repairedQuery
                   });
@@ -366,14 +363,12 @@ const DatabasePage: React.FC = () => {
             }
           }
         } else {
-          // No SQL found, try to extract intent from question and generate SQL
           if (question.toLowerCase().includes('abertos') || 
               question.toLowerCase().includes('disponíveis') ||
               question.toLowerCase().includes('ainda estão') ||
               question.toLowerCase().includes('open') ||
               question.toLowerCase().includes('available')) {
             
-            // This is likely about open funding programs
             const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
             setSqlQuery(generatedQuery);
             
@@ -398,7 +393,6 @@ const DatabasePage: React.FC = () => {
           }
         }
         
-        // Set explanation
         const cleanExplanation = response.replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
           .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
           .trim();
