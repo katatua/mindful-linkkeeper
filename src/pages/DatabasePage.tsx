@@ -19,6 +19,8 @@ import { suggestedDatabaseQuestions } from '@/utils/aiUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, Database, FileQuestion, Search } from 'lucide-react';
+import { generateResponse } from '@/utils/aiUtils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface FundingProgram {
   id: string;
@@ -118,6 +120,9 @@ export const DatabasePage: React.FC = () => {
     }
   ]);
   const [activeQuestion, setActiveQuestion] = useState('');
+  const [isQueryLoading, setIsQueryLoading] = useState(false);
+  const [queryResult, setQueryResult] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchFundingPrograms = async () => {
     try {
@@ -141,8 +146,34 @@ export const DatabasePage: React.FC = () => {
     fetchFundingPrograms();
   }, []);
 
-  const handleQuestionClick = (question: string) => {
+  const handleQuestionClick = async (question: string) => {
     setActiveQuestion(question);
+    setIsQueryLoading(true);
+    setQueryResult(null);
+    
+    try {
+      // Use the AI assistant to generate a response to the question
+      const response = await generateResponse(question);
+      setQueryResult(response);
+
+      // Show success toast
+      toast({
+        title: "Query processed",
+        description: "The query has been executed successfully.",
+      });
+    } catch (error) {
+      console.error('Error executing query:', error);
+      setQueryResult("Sorry, there was an error processing your query. Please try again.");
+      
+      // Show error toast
+      toast({
+        title: "Query failed",
+        description: "Failed to process the query. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsQueryLoading(false);
+    }
   };
 
   return (
@@ -194,7 +225,30 @@ export const DatabasePage: React.FC = () => {
                 </Card>
               </div>
               <div className="col-span-2">
-                <AIAssistant />
+                {isQueryLoading ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                        <p className="text-gray-500">Executing query...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : queryResult ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Query Result</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-gray-50 p-4 rounded-md border">
+                        <div className="font-semibold mb-2 text-primary">{activeQuestion}</div>
+                        <div className="whitespace-pre-wrap">{queryResult}</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <AIAssistant />
+                )}
               </div>
             </div>
           </TabsContent>
