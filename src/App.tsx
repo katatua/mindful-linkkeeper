@@ -5,19 +5,9 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import LoginPage from "./pages/LoginPage";
 
-// Define the correct component module type
-type ComponentModule = { default: React.ComponentType<any> };
-
-// Lazy load components with a more efficient approach
-const ANIPortal = lazy(() => 
-  import("./pages/ANIPortal")
-    .then(module => ({ default: module.default }))
-);
-
-const QueryHistoryPage = lazy(() => 
-  import("./pages/QueryHistoryPage")
-    .then(module => ({ default: module.default }))
-);
+// Lazy load components without any artificial delay
+const ANIPortal = lazy(() => import("./pages/ANIPortal"));
+const QueryHistoryPage = lazy(() => import("./pages/QueryHistoryPage"));
 
 // Memoize loading fallback to prevent rerenders
 const LoadingFallback = memo(() => (
