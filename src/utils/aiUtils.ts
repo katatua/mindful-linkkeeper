@@ -82,11 +82,13 @@ export const generateResponse = async (userInput: string): Promise<string> => {
     if (isDatabaseQuery) {
       requestBody.databaseInfo = {
         type: 'PostgreSQL',
+        version: '14.x',
         dateFunctions: {
           currentDate: 'CURRENT_DATE',
           extractYear: 'EXTRACT(YEAR FROM column_name)',
           formatDate: "TO_CHAR(column_name, 'YYYY-MM-DD')"
-        }
+        },
+        important: "This database uses PostgreSQL. Do NOT use SQLite functions like strftime or DATE('now'). Always use PostgreSQL syntax."
       };
     }
     
