@@ -22,6 +22,7 @@ import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 import { useLocation } from 'react-router-dom';
+import { getCurrentAIModel } from '@/utils/aiUtils';
 
 interface GenericTableData {
   id?: string;
@@ -130,6 +131,7 @@ export const DatabasePage: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState('');
   const [isQueryLoading, setIsQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState<string | null>(null);
+  const [currentAIModel, setCurrentAIModel] = useState<string>('Loading...');
   const { toast } = useToast();
 
   const getActiveTabFromURL = () => {
@@ -309,6 +311,12 @@ export const DatabasePage: React.FC = () => {
   const handleTableChange = (table: string) => {
     setActiveTable(table);
   };
+
+  const renderAIModelInfo = () => (
+    <div className="text-sm text-gray-500 mt-2">
+      Current AI Model: {currentAIModel}
+    </div>
+  );
 
   return (
     <Layout>
