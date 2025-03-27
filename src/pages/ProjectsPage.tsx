@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Filter, Download, Plus, Users, CalendarClock, BarChart2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 // Project type definition
 interface Project {
@@ -25,6 +26,7 @@ interface Project {
 const ProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Sample projects data based on ANI's real projects
   const projects: Project[] = [
@@ -150,6 +152,10 @@ const ProjectsPage = () => {
     pendingProjects: projects.filter(p => p.status === 'Pending').length,
     totalBudget: "€28.8M",
     avgCompletion: Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)
+  };
+
+  const handleViewDetails = (projectId: string) => {
+    navigate(`/projects/${projectId}`);
   };
 
   const handleDownload = () => {
@@ -322,7 +328,13 @@ const ProjectsPage = () => {
                   
                   <div className="flex gap-2 mt-4 lg:mt-0">
                     <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">{project.budget}</Badge>
-                    <Button variant="outline" size="sm">View Details</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewDetails(project.id)}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -388,7 +400,13 @@ const ProjectsPage = () => {
                     
                     <div className="flex gap-2 mt-4 lg:mt-0">
                       <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">{project.budget}</Badge>
-                      <Button variant="outline" size="sm">View Details</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewDetails(project.id)}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -448,7 +466,13 @@ const ProjectsPage = () => {
                     
                     <div className="flex gap-2 mt-4 lg:mt-0">
                       <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">{project.budget}</Badge>
-                      <Button variant="outline" size="sm">View Details</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewDetails(project.id)}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -495,7 +519,13 @@ const ProjectsPage = () => {
                     
                     <div className="flex gap-2 mt-4 lg:mt-0">
                       <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">{project.budget}</Badge>
-                      <Button variant="outline" size="sm">View Details</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewDetails(project.id)}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
