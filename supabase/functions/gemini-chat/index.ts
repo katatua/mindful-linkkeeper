@@ -1,15 +1,59 @@
 
+// deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import * as GoogleAuth from "https://deno.land/x/googlejwtsa@v0.1.5/mod.ts";
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const googleApiKey = Deno.env.get('GEMINI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
+// Create a Supabase client with the service role key
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+async function executeQuery(query: string): Promise<{ data: any; error: any }> {
+  try {
+    console.log("Executing SQL query:", query);
+
+    // Remove semicolons from the end of the query which can cause issues
+    const cleanQuery = query.trim().replace(/;$/, '');
+    
+    // Execute the query using the SQL function that only allows SELECT
+    const { data, error } = await supabase.rpc('execute_sql_query', {
+      sql_query: cleanQuery
+    });
+
+    if (error) {
+      console.error("SQL query execution error:", error);
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error("Error executing query:", error);
+    return { data: null, error };
+  }
+}
+
+async function getAIModel(): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc('get_database_setting', {
+      setting_key: 'ai_model'
+    });
+    
+    if (error) throw error;
+    return data || 'gemini-2.5-pro-exp-03-25';
+  } catch (error) {
+    console.error('Error fetching AI model:', error);
+    return 'gemini-2.5-pro-exp-03-25';
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -18,369 +62,153 @@ serve(async (req) => {
   }
 
   try {
-    const requestData = await req.json();
-    const { prompt } = requestData;
-    const chatHistory = requestData.chatHistory || [];
+    // Parse the request body
+    const { prompt, chatHistory = [] } = await req.json();
     
-    // Determine if this is a database query based on prompt content
-    const isDatabaseQuery = prompt.toLowerCase().includes('database') || 
-                            prompt.toLowerCase().includes('sql') ||
-                            prompt.toLowerCase().includes('query') ||
-                            prompt.toLowerCase().includes('data') ||
-                            prompt.toLowerCase().includes('show me') ||
-                            prompt.toLowerCase().includes('metrics') ||
-                            prompt.toLowerCase().includes('funding') ||
-                            prompt.toLowerCase().includes('projects') ||
-                            prompt.toLowerCase().includes('collaborations') ||
-                            prompt.toLowerCase().match(/^(show|list|what|which|how many|where|when)/i) !== null;
-    
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
-    // Dynamically fetch the AI model from database settings
-    const { data: aiModelData, error: aiModelError } = await supabase.rpc('get_database_setting', { setting_key: 'ai_model' });
-    
-    if (aiModelError) {
-      console.error('Error fetching AI model:', aiModelError);
-      throw new Error('Could not retrieve AI model configuration');
-    }
-
-    // Default to a stable model if none is found
-    const model = aiModelData || "gemini-1.5-flash-001";
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-
-    // Prepare chat history for Gemini
-    const messages = [];
-    
-    // Add chat history if available
-    if (Array.isArray(chatHistory) && chatHistory.length > 0) {
-      messages.push(...chatHistory.map((msg) => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      })));
-    }
-    
-    // Add current user message
-    messages.push({
-      role: 'user',
-      parts: [{ text: prompt }]
-    });
-
-    // Define system prompt based on query type
-    let systemPrompt;
-
-    if (isDatabaseQuery) {
-      const { data: databaseTypeResult } = await supabase.rpc('get_database_setting', { setting_key: 'database_type' });
-      const { data: databaseVersionResult } = await supabase.rpc('get_database_setting', { setting_key: 'database_version' });
-      
-      const databaseType = databaseTypeResult || 'PostgreSQL';
-      const databaseVersion = databaseVersionResult || '14.x';
-
-      systemPrompt = {
-        role: 'model',
-        parts: [{ 
-          text: `Você é o assistente de IA da ANI (Agência Nacional de Inovação) especializado em consultas de banco de dados ${databaseType} (versão ${databaseVersion}).
-          
-          IMPORTANTE: Este projeto usa ${databaseType} (versão ${databaseVersion}), então você DEVE usar a sintaxe correta do ${databaseType}:
-          - Use CURRENT_DATE em vez de DATE('now')
-          - Use EXTRACT(YEAR FROM coluna) em vez de strftime('%Y', coluna)
-          - Use TO_CHAR(coluna, 'YYYY-MM-DD') para formatação de datas
-          - Use CURRENT_TIMESTAMP em vez de NOW()
-          - NUNCA USE ponto e vírgula no final das consultas, isso causa erro
-          
-          Você tem acesso às seguintes tabelas no banco de dados ${databaseType}:
-          
-          1. ani_metrics - Armazena dados de métricas diversas
-             - id (uuid): Identificador único
-             - name (text): Nome da métrica
-             - category (text): Categoria da métrica
-             - value (numeric): Valor da métrica
-             - unit (text): Unidade de medida
-             - measurement_date (date): Data da medição
-             - region (text): Região
-             - sector (text): Setor
-             - source (text): Fonte dos dados
-             - description (text): Descrição detalhada
-          
-          2. ani_funding_programs - Armazena informações sobre programas de financiamento
-             - id (uuid): Identificador único
-             - name (text): Nome do programa
-             - description (text): Descrição do programa
-             - total_budget (numeric): Orçamento total disponível
-             - start_date (date): Data de início
-             - end_date (date): Data de término
-             - application_deadline (date): Prazo para inscrições
-             - next_call_date (date): Data da próxima chamada
-             - funding_type (text): Tipo de financiamento
-             - sector_focus (text[]): Setores alvo
-             - eligibility_criteria (text): Quem pode se candidatar
-             - application_process (text): Como se candidatar
-             - review_time_days (integer): Tempo de revisão da candidatura
-             - success_rate (numeric): Taxa de sucesso
-          
-          3. ani_projects - Contém informações sobre projetos
-             - id (uuid): Identificador único
-             - title (text): Título do projeto
-             - description (text): Descrição do projeto
-             - start_date (date): Data de início
-             - end_date (date): Data de término
-             - funding_amount (numeric): Valor financiado
-             - status (text): Status do projeto
-             - sector (text): Setor
-             - region (text): Região
-             - organization (text): Organização líder
-             - contact_email (text): Email de contato
-             - contact_phone (text): Telefone de contato
-          
-          4. ani_policy_frameworks - Armazena dados sobre estruturas de políticas
-             - id (uuid): Identificador único
-             - title (text): Título
-             - description (text): Descrição
-             - scope (text): Escopo
-             - implementation_date (date): Data de implementação
-             - status (text): Status
-             - key_objectives (text[]): Objetivos principais
-             - related_legislation (text): Legislação relacionada
-          
-          5. ani_international_collaborations - Rastreia parcerias internacionais
-             - id (uuid): Identificador único
-             - program_name (text): Nome do programa
-             - country (text): País
-             - partnership_type (text): Tipo de parceria
-             - start_date (date): Data de início
-             - end_date (date): Data de término
-             - total_budget (numeric): Orçamento total
-             - portuguese_contribution (numeric): Contribuição portuguesa
-             - focus_areas (text[]): Áreas de foco
-          
-          Quando o usuário fizer uma pergunta sobre dados, você deve:
-          1. Analisar a pergunta para entender qual consulta SQL seria apropriada
-          2. Gerar o SQL adequado para ${databaseType} e colocá-lo entre as tags <SQL> e </SQL>
-          3. Tentar evitar erros comuns:
-             - Use "ILIKE '%texto%'" para buscas case-insensitive em vez de LIKE
-             - Use aspas simples para strings
-             - Não use aspas duplas para nomes de colunas, a menos que seja absolutamente necessário
-             - Verifique cuidadosamente o nome das colunas
-             - NUNCA use ponto e vírgula no final das consultas
-          4. Sua resposta final deve ter a seguinte estrutura:
-          
-          <SQL>consulta SQL aqui</SQL>
-          
-          Seguida por sua explicação em linguagem natural.`
-        }]
-      };
-    } else {
-      systemPrompt = {
-        role: 'model',
-        parts: [{ 
-          text: `Você é o assistente de IA da ANI (Agência Nacional de Inovação) de Portugal. 
-          Forneça informações precisas sobre inovação, financiamento de projetos, políticas de inovação, 
-          e métricas relacionadas. Se você não tiver informações específicas sobre algo, diga isso claramente 
-          e ofereça ajudar com o que sabe. Mantenha um tom profissional mas acessível. 
-          Responda no mesmo idioma da pergunta (Português ou Inglês).`
-        }]
-      };
-    }
-    
-    // Insert system prompt at the beginning
-    messages.unshift(systemPrompt);
-
+    // Get the AI model to use
+    const model = await getAIModel();
     console.log(`Making request to Gemini API with model: ${model}`);
-    
-    // Make request to Gemini API
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: messages,
-        generationConfig: {
-          temperature: isDatabaseQuery ? 0.2 : 0.7,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 1024,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      }),
-    });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('Gemini API error:', data);
-      throw new Error(`Gemini API Error: ${JSON.stringify(data)}`);
-    }
-    
-    // Extract response text
-    let assistantResponse = "Desculpe, não consegui processar sua solicitação.";
-    
-    if (data.candidates && 
-        data.candidates[0] && 
-        data.candidates[0].content && 
-        data.candidates[0].content.parts && 
-        data.candidates[0].content.parts[0]) {
-      assistantResponse = data.candidates[0].content.parts[0].text;
-    }
-    
-    // For database queries, extract and execute SQL
-    if (isDatabaseQuery) {
-      try {
-        // Extract SQL query
-        const sqlMatch = assistantResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
-        
-        if (sqlMatch && sqlMatch[1]) {
-          let sqlQuery = sqlMatch[1].trim();
-          
-          // Remove code formatting if present
-          sqlQuery = sqlQuery.replace(/```sql\n/g, '').replace(/```/g, '');
-          
-          // Remove semicolons from the end of the query which cause errors
-          sqlQuery = sqlQuery.replace(/;$/g, '');
-          
-          console.log("Executing SQL query:", sqlQuery);
-          
-          // Execute the SQL query using the custom function
-          const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
-            sql_query: sqlQuery
-          });
-          
-          if (queryError) {
-            console.error("SQL query execution error:", queryError);
-            
-            // Try to fix the query by removing semicolons
-            if (queryError.message.includes("syntax error at or near")) {
-              const fixedQuery = sqlQuery.replace(/;/g, '');
-              console.log("Trying with fixed query:", fixedQuery);
-              
-              const { data: fixedResults, error: fixedError } = await supabase.rpc('execute_sql_query', {
-                sql_query: fixedQuery
-              });
-              
-              if (fixedError) {
-                console.error("Fixed query still has error:", fixedError);
-                // Return the error with the original query
-                assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nOcorreu um erro ao executar a consulta: ${queryError.message}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
-              } else {
-                // Success with the fixed query
-                assistantResponse = `<SQL>${fixedQuery}</SQL>\n\n<RESULTS>${JSON.stringify(fixedResults)}</RESULTS>\n\n${generateResponseText(fixedResults, prompt)}`;
-              }
-            } else {
-              // Return the original error
-              assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>[]</RESULTS>\n\nOcorreu um erro ao executar a consulta: ${queryError.message}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
-            }
-          } else {
-            // Success with the query
-            assistantResponse = `<SQL>${sqlQuery}</SQL>\n\n<RESULTS>${JSON.stringify(queryResults)}</RESULTS>\n\n${generateResponseText(queryResults, prompt)}`;
-          }
-        } else {
-          assistantResponse = "Não consegui gerar uma consulta SQL apropriada para sua pergunta. Por favor, reformule sua pergunta sendo mais específico sobre quais dados você está buscando.";
-        }
-      } catch (sqlExecError) {
-        console.error("Error in SQL execution:", sqlExecError);
-        assistantResponse = `Ocorreu um erro ao processar sua consulta: ${sqlExecError.message}`;
-      }
-    }
-    
-    return new Response(
-      JSON.stringify({ response: assistantResponse }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+    // Create a system prompt that explains the database schema
+    const systemPrompt = `
+You are an AI database assistant that helps users query and understand data in a research and innovation database.
+
+The database contains the following tables:
+1. ani_funding_programs - Information about funding programs for research and innovation
+2. ani_projects - Details about specific research projects
+3. ani_metrics - Innovation and research metrics data
+4. ani_policy_frameworks - Policy frameworks related to innovation
+5. ani_international_collaborations - International research partnerships
+
+When users ask questions about the database, you should:
+1. Determine what they are looking for
+2. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
+3. Format your response to be clear and helpful
+
+DO NOT include semicolons (;) at the end of your SQL queries as they cause errors in the execution.
+
+Wrap your SQL in <SQL>your query here</SQL> tags
+Wrap the results in <RESULTS>your results here</RESULTS> tags
+
+If you can't answer a question or generate a valid SQL query, explain why in Portuguese.
+For SQL queries, make sure to REMOVE ANY SEMICOLONS from the end of the query.
+
+Here are examples of questions users might ask and how to respond:
+1. Q: "Show me funding programs for renewable energy"
+   A: Let me find funding programs related to renewable energy.
+      <SQL>
+      SELECT name, description, total_budget, application_deadline
+      FROM ani_funding_programs
+      WHERE 'renewable energy' = ANY(sector_focus)
+      </SQL>
+      <RESULTS>[results here]</RESULTS>
+      
+2. Q: "What is the average funding amount for biotech projects?"
+   A: Here's the average funding amount for biotech projects:
+      <SQL>
+      SELECT AVG(funding_amount)
+      FROM ani_projects
+      WHERE sector ILIKE 'biotech'
+      </SQL>
+      <RESULTS>[results here]</RESULTS>
+    `;
+
+    // Construct the conversation
+    const messages = [
+      { role: "user", parts: [{ text: systemPrompt }] },
+      // Include chat history
+      ...chatHistory.map((msg: any) => ({
+        role: msg.role,
+        parts: [{ text: msg.content }],
+      })),
+      // Add the new user prompt
+      { role: "user", parts: [{ text: prompt }] },
+    ];
+
+    // Make request to Google Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${googleApiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: messages,
+          generationConfig: {
+            temperature: 0.4,
+            topP: 0.9,
+            topK: 40,
+            maxOutputTokens: 2048,
+          },
+        }),
       }
     );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Gemini API error:", error);
+      throw new Error(`Gemini API Error: ${JSON.stringify(error)}`);
+    }
+
+    const result = await response.json();
+    let aiResponse = result.candidates[0].content.parts[0].text;
+
+    // Extract SQL query if present in the response
+    const sqlMatch = aiResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
+    if (sqlMatch && sqlMatch[1]) {
+      const sqlQuery = sqlMatch[1].trim();
+      
+      // Execute the SQL query
+      const { data: queryResult, error: queryError } = await executeQuery(sqlQuery);
+      
+      if (queryError) {
+        // If there's an error, include it in the response
+        const errorMessage = queryError.message || "Unknown database error";
+        // If there was an error, try to fix it and retry
+        console.log("Fixed query still has error:", queryError);
+        
+        aiResponse = aiResponse.replace(
+          /<RESULTS>[\s\S]*?<\/RESULTS>/,
+          `<RESULTS>[]</RESULTS>`
+        );
+        
+        // Add error message after the results
+        aiResponse += `\n\nOcorreu um erro ao executar a consulta: ${errorMessage}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
+      } else {
+        // If successful, include the results in the response
+        const formattedResults = JSON.stringify(queryResult || []);
+        
+        // Replace the RESULTS placeholder with actual results
+        if (aiResponse.includes("<RESULTS>")) {
+          aiResponse = aiResponse.replace(
+            /<RESULTS>[\s\S]*?<\/RESULTS>/,
+            `<RESULTS>${formattedResults}</RESULTS>`
+          );
+        } else {
+          // If there's no RESULTS placeholder, add it after the SQL
+          aiResponse = aiResponse.replace(
+            /<\/SQL>/,
+            `</SQL>\n\n<RESULTS>${formattedResults}</RESULTS>`
+          );
+        }
+      }
+    }
+
+    // Return the final response
+    return new Response(JSON.stringify({ response: aiResponse }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error('Error processing request:', error);
-    
+    console.error("Error processing request:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      JSON.stringify({
+        error: `Failed to generate response: ${error.message || "Unknown error"}`,
       }),
-      { 
+      {
         status: 500,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }
 });
-
-// Helper function to generate a human-readable response based on SQL results
-function generateResponseText(results: any[], originalQuestion: string): string {
-  if (!Array.isArray(results) || results.length === 0) {
-    return "Não foram encontrados resultados que correspondam à sua consulta.";
-  }
-  
-  // Count the results
-  const count = results.length;
-  
-  // Basic response for results found
-  let response = `Encontrei ${count} ${count === 1 ? 'resultado' : 'resultados'} para sua consulta.\n\n`;
-  
-  // Add a simple summary of the data
-  if (count <= 5) {
-    // For small result sets, we can be more detailed
-    response += `Aqui está o resultado completo:\n\n`;
-    results.forEach((item, index) => {
-      response += `**Item ${index+1}:**\n`;
-      Object.entries(item).forEach(([key, value]) => {
-        response += `- ${key}: ${formatValue(value)}\n`;
-      });
-      response += '\n';
-    });
-  } else {
-    // For larger result sets, summarize the first few
-    response += `Aqui estão os primeiros ${Math.min(count, 3)} resultados:\n\n`;
-    for (let i = 0; i < Math.min(count, 3); i++) {
-      response += `**Item ${i+1}:**\n`;
-      Object.entries(results[i]).forEach(([key, value]) => {
-        response += `- ${key}: ${formatValue(value)}\n`;
-      });
-      response += '\n';
-    }
-    
-    if (count > 3) {
-      response += `... e mais ${count - 3} ${count - 3 === 1 ? 'resultado' : 'resultados'}.`;
-    }
-  }
-  
-  return response;
-}
-
-// Helper function to format values for display
-function formatValue(value: any): string {
-  if (value === null || value === undefined) {
-    return 'N/A';
-  }
-  
-  if (Array.isArray(value)) {
-    return value.join(', ');
-  }
-  
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-  
-  return String(value);
-}

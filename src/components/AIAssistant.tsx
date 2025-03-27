@@ -3,14 +3,16 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send } from 'lucide-react';
+import { Send, AlertCircle } from 'lucide-react';
 import { generateResponse, genId } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant';
+  error?: boolean;
 }
 
 export const AIAssistant: React.FC = () => {
@@ -46,6 +48,17 @@ export const AIAssistant: React.FC = () => {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error getting response:', error);
+      
+      // Add error message to the chat
+      const errorMessage: Message = {
+        id: genId(),
+        content: `Failed to get a response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or rephrase your question.`,
+        role: 'assistant',
+        error: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
       toast({
         title: "Error",
         description: "Failed to get a response. Please try again.",
@@ -62,13 +75,13 @@ export const AIAssistant: React.FC = () => {
         <CardTitle>AI Database Assistant</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto">
+        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 py-6">
               <p>Ask a question about the database, such as:</p>
               <p className="italic mt-2">
                 "Which funding programs include renewable energy in their sector focus?" or
-                "Show me projects with the highest funding amounts"
+                "Show me projects with the highest funding amounts in the technology sector"
               </p>
             </div>
           ) : (
@@ -78,13 +91,22 @@ export const AIAssistant: React.FC = () => {
                 className={`p-3 rounded-lg ${
                   message.role === 'user' 
                     ? 'bg-blue-100 ml-8' 
-                    : 'bg-gray-100 mr-8'
+                    : message.error 
+                      ? 'bg-red-50 border border-red-200 mr-8' 
+                      : 'bg-gray-100 mr-8'
                 }`}
               >
                 <p className="text-sm font-semibold mb-1">
                   {message.role === 'user' ? 'You' : 'AI Assistant'}
                 </p>
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                {message.error ? (
+                  <Alert variant="destructive" className="bg-transparent border-none p-0">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    <AlertDescription className="whitespace-pre-wrap">{message.content}</AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                )}
               </div>
             ))
           )}

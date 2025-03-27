@@ -52,6 +52,58 @@ export const sampleFundingPrograms = [
     sector_focus: ["technology", "manufacturing", "services"],
     eligibility_criteria: "Small and medium enterprises with fewer than 250 employees",
     success_rate: 30
+  },
+  {
+    id: "5ef67g89-0123-4efg-hab4-5678efgh9012",
+    name: "Green Energy Innovation Fund",
+    description: "Funding for projects developing new renewable energy technologies",
+    total_budget: 7500000,
+    start_date: "2025-03-01",
+    end_date: "2026-09-30",
+    application_deadline: "2025-01-31",
+    funding_type: "grant",
+    sector_focus: ["renewable energy", "energy efficiency", "sustainable power"],
+    eligibility_criteria: "Organizations focused on renewable energy solutions",
+    success_rate: 28
+  },
+  {
+    id: "6fg78h90-1234-5fgh-iab5-6789fghi0123",
+    name: "Sustainable Agriculture Research Initiative",
+    description: "Supporting innovative approaches to sustainable farming and agriculture",
+    total_budget: 4500000,
+    start_date: "2025-02-01",
+    end_date: "2026-07-31",
+    application_deadline: "2024-12-31",
+    funding_type: "research grant",
+    sector_focus: ["agriculture", "sustainability", "food production"],
+    eligibility_criteria: "Agricultural research institutions and technology companies",
+    success_rate: 32
+  },
+  {
+    id: "7gh89i01-2345-6ghi-jab6-7890ghij1234",
+    name: "SME Digital Transformation Support",
+    description: "Helping small businesses adopt digital technologies and processes",
+    total_budget: 2800000,
+    start_date: "2025-01-15",
+    end_date: "2025-12-15",
+    application_deadline: "2024-12-01",
+    funding_type: "voucher",
+    sector_focus: ["digital transformation", "SMEs", "technology adoption"],
+    eligibility_criteria: "Small and medium enterprises seeking to digitalize operations",
+    success_rate: 45
+  },
+  {
+    id: "8hi90j12-3456-7hij-kab7-8901hijk2345",
+    name: "Advanced Materials Research Grant",
+    description: "Funding for development of new materials with industrial applications",
+    total_budget: 6000000,
+    start_date: "2025-04-01",
+    end_date: "2027-03-31",
+    application_deadline: "2025-02-15",
+    funding_type: "research grant",
+    sector_focus: ["materials science", "manufacturing", "nanotechnology"],
+    eligibility_criteria: "Research institutions with focus on materials science",
+    success_rate: 22
   }
 ];
 
@@ -115,6 +167,90 @@ export const sampleProjects = [
     sector: "technology",
     region: "Porto",
     organization: "Quantum Finance Technologies"
+  },
+  {
+    id: "0jk12l34-5678-9jkl-mab9-0123jklm4567",
+    title: "Sustainable Biofuel Production from Algae",
+    description: "Researching efficient methods to produce biofuels from algae cultivation",
+    funding_amount: 850000,
+    start_date: "2025-03-01",
+    end_date: "2026-08-31",
+    status: "approved",
+    sector: "biotech",
+    region: "Algarve",
+    organization: "AlgaeFuel Research Center"
+  },
+  {
+    id: "1kl23m45-6789-0klm-nab0-1234klmn5678",
+    title: "AI-Enhanced Medical Imaging Diagnostics",
+    description: "Developing machine learning algorithms for improved medical image analysis",
+    funding_amount: 1100000,
+    start_date: "2025-04-15",
+    end_date: "2027-04-14",
+    status: "approved",
+    sector: "healthcare",
+    region: "Porto",
+    organization: "Medical AI Solutions"
+  },
+  {
+    id: "2lm34n56-7890-1lmn-oab1-2345lmno6789",
+    title: "Precision Agriculture Drone System",
+    description: "Creating an automated drone system for monitoring and treating crops",
+    funding_amount: 680000,
+    start_date: "2025-05-01",
+    end_date: "2026-10-31",
+    status: "approved",
+    sector: "agriculture",
+    region: "Alentejo",
+    organization: "AgriTech Innovations"
+  },
+  {
+    id: "3mn45o67-8901-2mno-pab2-3456mnop7890",
+    title: "Advanced Electric Vehicle Battery Technology",
+    description: "Research into high-capacity, fast-charging batteries for electric vehicles",
+    funding_amount: 1800000,
+    start_date: "2025-06-15",
+    end_date: "2027-12-14",
+    status: "approved",
+    sector: "renewable energy",
+    region: "Norte",
+    organization: "EV Battery Tech"
+  },
+  {
+    id: "4no56p78-9012-3nop-qab3-4567nopq8901",
+    title: "Neural Interface for Prosthetic Limbs",
+    description: "Developing advanced neural interfaces for more intuitive prosthetic control",
+    funding_amount: 1350000,
+    start_date: "2025-07-01",
+    end_date: "2027-06-30",
+    status: "approved",
+    sector: "biotech",
+    region: "Coimbra",
+    organization: "Neural Prosthetics Lab"
+  },
+  {
+    id: "5op67q89-0123-4opq-rab4-5678opqr9012",
+    title: "Blockchain for Supply Chain Transparency",
+    description: "Implementing blockchain technology for end-to-end supply chain tracking",
+    funding_amount: 900000,
+    start_date: "2025-03-15",
+    end_date: "2026-09-14",
+    status: "approved",
+    sector: "technology",
+    region: "Lisbon",
+    organization: "BlockChain Supply Solutions"
+  },
+  {
+    id: "6pq78r90-1234-5pqr-sab5-6789pqrs0123",
+    title: "Offshore Wind Energy Optimization",
+    description: "Research into more efficient offshore wind turbine configurations",
+    funding_amount: 1650000,
+    start_date: "2025-04-01",
+    end_date: "2027-03-31",
+    status: "approved",
+    sector: "renewable energy",
+    region: "Norte",
+    organization: "Offshore Wind Technologies"
   }
 ];
 
@@ -173,6 +309,72 @@ export const sampleMetrics = [
     region: "National",
     sector: "All",
     source: "Digital Economy Report"
+  },
+  {
+    id: "5op67q89-0123-4opq-rab4-5678opqr9012",
+    name: "Research Publication Output",
+    category: "Innovation",
+    value: 1250,
+    unit: "count",
+    measurement_date: "2024-06-30",
+    region: "Lisbon",
+    sector: "Academia",
+    source: "Research Council"
+  },
+  {
+    id: "6pq78r90-1234-5pqr-sab5-6789pqrs0123",
+    name: "Technology Adoption Rate",
+    category: "Digitalization",
+    value: 76.3,
+    unit: "percent",
+    measurement_date: "2024-06-30",
+    region: "Lisbon",
+    sector: "Business",
+    source: "Technology Survey 2024"
+  },
+  {
+    id: "7qr89s01-2345-6qrs-tab6-7890qrst1234",
+    name: "Innovation Collaboration Index",
+    category: "Innovation",
+    value: 62.8,
+    unit: "score",
+    measurement_date: "2024-06-30",
+    region: "Lisbon",
+    sector: "All",
+    source: "Innovation Observatory"
+  },
+  {
+    id: "8rs90t12-3456-7rst-uab7-8901rstu2345",
+    name: "AI Implementation Rate",
+    category: "Digitalization",
+    value: 34.2,
+    unit: "percent",
+    measurement_date: "2024-06-30",
+    region: "Lisbon",
+    sector: "Technology",
+    source: "AI Survey 2024"
+  },
+  {
+    id: "9st01u23-4567-8stu-vab8-9012stuv3456",
+    name: "Green Technology Investment",
+    category: "Sustainability",
+    value: 890,
+    unit: "million EUR",
+    measurement_date: "2024-06-30",
+    region: "Lisbon",
+    sector: "Renewable Energy",
+    source: "Green Investment Report"
+  },
+  {
+    id: "0tu12v34-5678-9tuv-wab9-0123tuvw4567",
+    name: "Research Success Rate",
+    category: "Innovation",
+    value: 28.5,
+    unit: "percent",
+    measurement_date: "2024-06-30",
+    region: "Lisbon",
+    sector: "Research",
+    source: "Research Funding Agency"
   }
 ];
 
@@ -220,6 +422,50 @@ export const sampleCollaborations = [
     total_budget: 18000000,
     portuguese_contribution: 4000000,
     focus_areas: ["AI research", "machine learning", "natural language processing"]
+  },
+  {
+    id: "9st01u23-4567-8stu-vab8-9012stuv3456",
+    program_name: "Nordic-Iberian Renewable Energy Collaboration",
+    country: "Sweden",
+    partnership_type: "Research and Industry",
+    start_date: "2024-02-01",
+    end_date: "2026-01-31",
+    total_budget: 8500000,
+    portuguese_contribution: 1800000,
+    focus_areas: ["renewable energy", "clean technology", "energy efficiency"]
+  },
+  {
+    id: "0tu12v34-5678-9tuv-wab9-0123tuvw4567",
+    program_name: "European Digital Health Initiative",
+    country: "Netherlands",
+    partnership_type: "Research and Innovation",
+    start_date: "2024-04-01",
+    end_date: "2027-03-31",
+    total_budget: 14000000,
+    portuguese_contribution: 3200000,
+    focus_areas: ["digital health", "telemedicine", "health informatics"]
+  },
+  {
+    id: "1uv23w45-6789-0uvw-xab0-1234uvwx5678",
+    program_name: "Smart Manufacturing Consortium",
+    country: "Germany",
+    partnership_type: "Industry and Research",
+    start_date: "2024-06-01",
+    end_date: "2027-05-31",
+    total_budget: 16500000,
+    portuguese_contribution: 3800000,
+    focus_areas: ["industry 4.0", "automation", "digital manufacturing"]
+  },
+  {
+    id: "2vw34x56-7890-1vwx-yab1-2345vwxy6789",
+    program_name: "Southern European Agritech Network",
+    country: "Italy",
+    partnership_type: "Research",
+    start_date: "2024-03-15",
+    end_date: "2026-09-14",
+    total_budget: 7500000,
+    portuguese_contribution: 1500000,
+    focus_areas: ["agricultural technology", "precision farming", "sustainable agriculture"]
   }
 ];
 
@@ -259,5 +505,43 @@ export const samplePolicyFrameworks = [
     implementation_date: "2023-09-01",
     status: "active",
     key_objectives: ["ethical AI", "algorithmic transparency", "data protection", "AI skills"]
+  },
+  {
+    id: "3wx45y67-8901-2wxy-zab2-3456wxyz7890",
+    title: "Research Excellence Program",
+    description: "Framework to enhance research quality and international competitiveness",
+    scope: "National",
+    implementation_date: "2023-07-01",
+    status: "active",
+    key_objectives: ["research funding", "international collaboration", "talent attraction", "knowledge transfer"]
+  },
+  {
+    id: "4xy56z78-9012-3xyz-aab3-4567xyza8901",
+    title: "Digital Transformation Acceleration Plan",
+    description: "Comprehensive strategy for accelerating digital transformation across all sectors",
+    scope: "National",
+    implementation_date: "2023-04-01",
+    status: "active",
+    key_objectives: ["business digitalization", "digital public services", "digital infrastructure", "digital skills"]
+  },
+  {
+    id: "5yz67a89-0123-4yza-bab4-5678yzab9012",
+    title: "SME Innovation Support Framework",
+    description: "Policy framework for enhancing innovation capacity in small and medium enterprises",
+    scope: "National",
+    implementation_date: "2023-03-01",
+    status: "active",
+    key_objectives: ["financing instruments", "innovation vouchers", "technology adoption", "entrepreneurship"]
+  },
+  {
+    id: "6za78b90-1234-5zab-cab5-6789zabc0123",
+    title: "Open Science National Strategy",
+    description: "Framework for promoting open access to scientific research and data",
+    scope: "National",
+    implementation_date: "2023-10-01",
+    status: "active",
+    key_objectives: ["open access", "research data management", "citizen science", "open innovation"]
   }
 ];
+
+// Don't need to export any other sample data from this file.

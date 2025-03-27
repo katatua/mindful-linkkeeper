@@ -1,23 +1,23 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Add the missing export for suggestedDatabaseQuestions
+// Update the suggested questions to better match our database schema and sample data
 export const suggestedDatabaseQuestions = [
   "Which funding programs include renewable energy in their sector focus?",
-  "List the top 5 projects with highest funding amounts",
-  "Show innovation metrics for the Lisbon region from the last year",
-  "Find international collaborations related to research and development",
+  "Show me the top 5 projects with highest funding amounts in the technology sector",
+  "What are the innovation metrics for the Lisbon region from 2024?",
+  "Which international collaborations focus on AI research?",
   "What is the average funding amount for projects in the biotech sector?",
-  "Show me all policy frameworks with status 'active'",
-  "Which organizations have the most funded projects?",
-  "List all funding programs with application deadlines in the next 3 months",
+  "Which policy frameworks have 'active' status?",
+  "What organizations have the most funded projects in Porto?",
+  "List all funding programs with application deadlines in the next 6 months",
   "Which countries have the most international collaborations with Portugal?",
-  "What metrics have shown improvement in the technology sector?",
-  "Show projects from the North region sorted by funding amount",
-  "What policy frameworks were implemented in the last year?",
-  "Find funding programs specifically targeting small businesses",
-  "Which sectors have the highest average funding amounts?",
-  "Show the distribution of projects across different regions"
+  "What technology metrics have shown improvement in the last year?",
+  "Show me projects from the North region sorted by funding amount",
+  "What policy frameworks were implemented in 2023?",
+  "List funding programs specifically targeting SMEs",
+  "Which sectors receive the highest average funding amounts?",
+  "Show me the distribution of innovation metrics across different regions"
 ];
 
 // Add function to get the current AI model
@@ -89,7 +89,7 @@ export const generateResponse = async (prompt: string) => {
   }
 };
 
-// Update classifyDocument to accept an object with document properties
+// Update interface for document classification
 export interface DocumentToClassify {
   title: string;
   summary?: string;
