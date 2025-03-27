@@ -24,6 +24,7 @@ import VisualizationDetailPage from "./pages/VisualizationDetailPage";
 import MetricDetailPage from "./pages/MetricDetailPage";
 import PolicyGuidePage from "./pages/PolicyGuidePage";
 import DatabasePage from "./pages/DatabasePage";
+import SyntheticDataPage from "./pages/SyntheticDataPage";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/policies" element={<PoliciesPage />} />
                 <Route path="/database" element={<DatabasePage />} />
+                <Route path="/synthetic-data" element={<SyntheticDataPage />} />
                 <Route path="/policies/:policyId" element={<PolicyDetailPage />} />
                 <Route path="/frameworks/:frameworkId" element={<FrameworkDetailPage />} />
                 <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />

@@ -7,6 +7,7 @@ import {
   FileUp,
   LogIn,
   Database,
+  BarChart2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +21,7 @@ const menuItems = [
   { title: "Add Link", icon: LinkIcon, url: "/add-link" },
   { title: "Add Category", icon: FolderPlus, url: "/add-category" },
   { title: "Database Explorer", icon: Database, url: "/database" },
+  { title: "Generate Test Data", icon: BarChart2, url: "/synthetic-data" },
 ];
 
 export function AppSidebar() {
