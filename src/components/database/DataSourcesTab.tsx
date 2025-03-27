@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Database, FileText, FilePlus, Upload, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FonteDados, DocumentoExtraido } from '@/types/databaseTypes';
+import { FonteDados } from '@/types/databaseTypes';
 import { Link } from 'react-router-dom';
 import AddDataSourceModal from './AddDataSourceModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,8 +78,26 @@ export const DataSourcesTab: React.FC = () => {
         console.error('Error fetching documents:', error);
         throw error;
       }
+      
       console.log('Documents fetched:', data?.length || 0);
-      setUserDocuments(data || []);
+      
+      const processedData = data?.map(doc => {
+        if (doc.url && !doc.url.startsWith('http')) {
+          try {
+            const publicUrl = supabase.storage
+              .from('files')
+              .getPublicUrl(doc.url).data.publicUrl;
+            
+            return { ...doc, resolvedUrl: publicUrl };
+          } catch (e) {
+            console.error('Error generating URL for', doc.title, e);
+            return { ...doc, resolvedUrl: null };
+          }
+        }
+        return { ...doc, resolvedUrl: doc.url };
+      }) || [];
+      
+      setUserDocuments(processedData);
     } catch (error) {
       console.error('Error in fetchUserDocuments:', error);
       toast({
@@ -101,6 +119,52 @@ export const DataSourcesTab: React.FC = () => {
   useEffect(() => {
     fetchUserDocuments();
   }, []);
+  
+  const renderDocumentLink = (doc: any) => {
+    if (!doc.id) return doc.title || 'Documento sem título';
+    
+    return (
+      <Link 
+        to={`/documents/${doc.id}`} 
+        className="text-primary hover:underline"
+        onClick={(e) => {
+          if (!doc.url && !doc.resolvedUrl) {
+            e.preventDefault();
+            toast({
+              variant: 'destructive',
+              title: "Erro",
+              description: "Este documento não possui um arquivo associado.",
+            });
+          }
+        }}
+      >
+        {doc.title || 'Documento sem título'}
+      </Link>
+    );
+  };
+
+  const getDocumentType = (doc: any) => {
+    if (!doc.file_metadata?.type) return 'Documento';
+    const type = doc.file_metadata.type;
+    
+    if (type.includes('pdf')) return 'PDF';
+    if (type.includes('csv')) return 'CSV';
+    if (type.includes('excel') || type.includes('spreadsheet')) return 'Excel';
+    if (type.includes('word') || type.includes('document')) return 'Word';
+    
+    return type.split('/')[1]?.toUpperCase() || 'Documento';
+  };
+
+  const formatFileSize = (size?: number) => {
+    if (!size) return 'N/A';
+    
+    const kb = size / 1024;
+    if (kb < 1024) {
+      return `${kb.toFixed(2)} KB`;
+    } else {
+      return `${(kb / 1024).toFixed(2)} MB`;
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -143,17 +207,15 @@ export const DataSourcesTab: React.FC = () => {
                   {userDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell>
-                        <Link to={`/documents/${doc.id}`} className="text-primary hover:underline">
-                          {doc.title}
-                        </Link>
+                        {renderDocumentLink(doc)}
                       </TableCell>
-                      <TableCell>{doc.file_metadata?.type?.split('/')[1]?.toUpperCase() || 'Documento'}</TableCell>
+                      <TableCell>{getDocumentType(doc)}</TableCell>
                       <TableCell>
-                        {doc.file_metadata?.size 
-                          ? `${(doc.file_metadata.size / (1024 * 1024)).toFixed(2)} MB` 
-                          : 'N/A'}
+                        {formatFileSize(doc.file_metadata?.size)}
                       </TableCell>
-                      <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'N/A'}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
