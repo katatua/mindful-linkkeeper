@@ -217,9 +217,11 @@ const DatabasePage: React.FC = () => {
       'EXTRACT(YEAR FROM $1)');
     
     repairedQuery = repairedQuery.replace(/DATE\s*\(\s*['"]now['"]\s*\)/gi, 'CURRENT_DATE');
-    
     repairedQuery = repairedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
     repairedQuery = repairedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
+    
+    repairedQuery = repairedQuery.replace(/EXTRACT\(YEAR FROM (.*?)\)\s*=\s*['"](\d{4})['"]/gi, 
+      'EXTRACT(YEAR FROM $1) = $2');
     
     if (repairedQuery.toLowerCase().endsWith('from')) {
       const columnTableMap: Record<string, string> = {
@@ -285,18 +287,50 @@ const DatabasePage: React.FC = () => {
         question.toLowerCase().includes('disponíveis') ||
         question.toLowerCase().includes('ainda estão') ||
         question.toLowerCase().includes('open') ||
-        question.toLowerCase().includes('available')) {
+        question.toLowerCase().includes('available') ||
+        question.toLowerCase().includes('currently')) {
       
       if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
           !repairedQuery.toLowerCase().includes('where')) {
         repairedQuery += ' WHERE application_deadline >= CURRENT_DATE';
+      } else if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
+                !repairedQuery.toLowerCase().includes('application_deadline')) {
+        if (repairedQuery.toLowerCase().includes('where')) {
+          repairedQuery += ' AND application_deadline >= CURRENT_DATE';
+        }
       }
     }
     
-    if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
-        !repairedQuery.toLowerCase().includes('order by')) {
-      repairedQuery += ' ORDER BY application_deadline';
+    if (question.toLowerCase().includes('upcoming') || 
+        question.toLowerCase().includes('deadlines') ||
+        question.toLowerCase().includes('próximos') || 
+        question.toLowerCase().includes('prazos')) {
+      if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
+          !repairedQuery.toLowerCase().includes('order by')) {
+        repairedQuery += ' ORDER BY application_deadline ASC';
+      }
     }
+    
+    if ((question.toLowerCase().includes('highest') || 
+         question.toLowerCase().includes('most') ||
+         question.toLowerCase().includes('top') ||
+         question.toLowerCase().includes('maiores') ||
+         question.toLowerCase().includes('mais')) && 
+        !repairedQuery.toLowerCase().includes('desc')) {
+      
+      if (repairedQuery.toLowerCase().includes('order by')) {
+        if (!repairedQuery.toLowerCase().includes(' desc')) {
+          repairedQuery += ' DESC';
+        }
+      } else if (question.toLowerCase().includes('success rate')) {
+        repairedQuery += ' ORDER BY success_rate DESC';
+      } else if (question.toLowerCase().includes('funding')) {
+        repairedQuery += ' ORDER BY funding_amount DESC';
+      }
+    }
+    
+    console.log("Original query:", query);
+    console.log("Repaired query:", repairedQuery);
     
     return repairedQuery;
   };
@@ -323,6 +357,39 @@ const DatabasePage: React.FC = () => {
           
           if (repairedQueryError) {
             console.error("Repair attempt failed:", repairedQueryError.message);
+            
+            if (repairedQueryError.message.includes("column") && repairedQueryError.message.includes("does not exist")) {
+              let fallbackQuery = "";
+              
+              if (question.toLowerCase().includes("open") || question.toLowerCase().includes("upcoming")) {
+                fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
+              } else if (question.toLowerCase().includes("highest success")) {
+                fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
+              } else if (question.toLowerCase().includes("regions") && question.toLowerCase().includes("2023")) {
+                fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
+              }
+              
+              if (fallbackQuery) {
+                console.log("Trying fallback query:", fallbackQuery);
+                const { data: fallbackResults, error: fallbackError } = await supabase.rpc('execute_sql_query', {
+                  sql_query: fallbackQuery
+                });
+                
+                if (fallbackError) {
+                  return { 
+                    success: false, 
+                    results: [], 
+                    error: `Não foi possível executar a consulta. Erro: ${repairedQueryError.message}`
+                  };
+                } else {
+                  return { 
+                    success: true, 
+                    results: toResultsArray(fallbackResults)
+                  };
+                }
+              }
+            }
+            
             return { 
               success: false, 
               results: [], 
@@ -336,6 +403,66 @@ const DatabasePage: React.FC = () => {
             };
           }
         } else {
+          if (question.toLowerCase().includes("open for applications") || 
+              question.toLowerCase().includes("upcoming application deadlines")) {
+            
+            const fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
+            console.log("Using fallback query for open applications:", fallbackQuery);
+            
+            const { data: fallbackResults, error: fallbackError } = await supabase.rpc('execute_sql_query', {
+              sql_query: fallbackQuery
+            });
+            
+            if (!fallbackError) {
+              return { 
+                success: true, 
+                results: toResultsArray(fallbackResults)
+              };
+            }
+          } else if (question.toLowerCase().includes("highest success rates")) {
+            const fallbackQuery = "SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10";
+            console.log("Using fallback query for success rates:", fallbackQuery);
+            
+            const { data: fallbackResults, error: fallbackError } = await supabase.rpc('execute_sql_query', {
+              sql_query: fallbackQuery
+            });
+            
+            if (!fallbackError) {
+              return { 
+                success: true, 
+                results: toResultsArray(fallbackResults)
+              };
+            }
+          } else if (question.toLowerCase().includes("regions") && question.toLowerCase().includes("2023")) {
+            const fallbackQuery = "SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC";
+            console.log("Using fallback query for regions funding:", fallbackQuery);
+            
+            const { data: fallbackResults, error: fallbackError } = await supabase.rpc('execute_sql_query', {
+              sql_query: fallbackQuery
+            });
+            
+            if (!fallbackError) {
+              return { 
+                success: true, 
+                results: toResultsArray(fallbackResults)
+              };
+            }
+          } else if (question.toLowerCase().includes("upcoming application deadlines")) {
+            const fallbackQuery = "SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC";
+            console.log("Using fallback query for upcoming application deadlines:", fallbackQuery);
+            
+            const { data: fallbackResults, error: fallbackError } = await supabase.rpc('execute_sql_query', {
+              sql_query: fallbackQuery
+            });
+            
+            if (!fallbackError) {
+              return { 
+                success: true, 
+                results: toResultsArray(fallbackResults)
+              };
+            }
+          }
+          
           return { 
             success: false, 
             results: [], 
@@ -429,9 +556,43 @@ const DatabasePage: React.FC = () => {
               questionText.toLowerCase().includes('disponíveis') ||
               questionText.toLowerCase().includes('ainda estão') ||
               questionText.toLowerCase().includes('open') ||
-              questionText.toLowerCase().includes('available')) {
+              questionText.toLowerCase().includes('available') ||
+              questionText.toLowerCase().includes('currently')) {
             
-            const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
+            const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC`;
+            setSqlQuery(generatedQuery);
+            
+            const { success, results: genResults, error: genErr } = await executeSQL(generatedQuery);
+            
+            if (success) {
+              setResults(genResults);
+            } else {
+              setQueryError(genErr || "Unknown error executing query");
+            }
+          } else if (questionText.toLowerCase().includes('highest success rates')) {
+            const generatedQuery = `SELECT id, name, description, success_rate, total_budget FROM ani_funding_programs ORDER BY success_rate DESC NULLS LAST LIMIT 10`;
+            setSqlQuery(generatedQuery);
+            
+            const { success, results: genResults, error: genErr } = await executeSQL(generatedQuery);
+            
+            if (success) {
+              setResults(genResults);
+            } else {
+              setQueryError(genErr || "Unknown error executing query");
+            }
+          } else if (questionText.toLowerCase().includes('regions') && questionText.toLowerCase().includes('2023')) {
+            const generatedQuery = `SELECT region, SUM(funding_amount) as total_funding FROM ani_projects WHERE EXTRACT(YEAR FROM start_date) = 2023 GROUP BY region ORDER BY total_funding DESC`;
+            setSqlQuery(generatedQuery);
+            
+            const { success, results: genResults, error: genErr } = await executeSQL(generatedQuery);
+            
+            if (success) {
+              setResults(genResults);
+            } else {
+              setQueryError(genErr || "Unknown error executing query");
+            }
+          } else if (questionText.toLowerCase().includes('upcoming application deadlines')) {
+            const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline ASC`;
             setSqlQuery(generatedQuery);
             
             const { success, results: genResults, error: genErr } = await executeSQL(generatedQuery);

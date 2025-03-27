@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -51,16 +50,26 @@ export const generateResponse = async (userInput: string): Promise<string> => {
     
     // Check if this is a database query to provide a better system prompt
     const isDatabaseQuery = userInput.toLowerCase().includes("database") || 
-                            userInput.toLowerCase().includes("sql") ||
-                            userInput.toLowerCase().includes("query") ||
-                            userInput.toLowerCase().includes("data") ||
-                            userInput.toLowerCase().includes("banco de dados") ||
-                            userInput.toLowerCase().includes("consulta") ||
-                            userInput.toLowerCase().includes("encontrar") ||
-                            userInput.toLowerCase().includes("programas") ||
-                            userInput.toLowerCase().includes("ano") ||
-                            userInput.toLowerCase().includes("year") ||
-                            userInput.toLowerCase().includes("2024");
+                          userInput.toLowerCase().includes("sql") ||
+                          userInput.toLowerCase().includes("query") ||
+                          userInput.toLowerCase().includes("data") ||
+                          userInput.toLowerCase().includes("banco de dados") ||
+                          userInput.toLowerCase().includes("consulta") ||
+                          userInput.toLowerCase().includes("encontrar") ||
+                          userInput.toLowerCase().includes("programas") ||
+                          userInput.toLowerCase().includes("ano") ||
+                          userInput.toLowerCase().includes("year") ||
+                          userInput.toLowerCase().includes("2024") ||
+                          userInput.toLowerCase().includes("2023") ||
+                          userInput.toLowerCase().includes("abertos") ||
+                          userInput.toLowerCase().includes("open") ||
+                          userInput.toLowerCase().includes("funding") ||
+                          userInput.toLowerCase().includes("highest") ||
+                          userInput.toLowerCase().includes("most") ||
+                          userInput.toLowerCase().includes("applications") ||
+                          userInput.toLowerCase().includes("upcoming") ||
+                          userInput.toLowerCase().includes("deadlines") ||
+                          userInput.toLowerCase().includes("regions");
 
     // Add user message to chat history (limited to last 20 messages for context)
     chatHistory.push({
