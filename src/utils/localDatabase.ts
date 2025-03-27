@@ -1,3 +1,4 @@
+
 /**
  * Local Database Utilities
  * 
@@ -5,7 +6,6 @@
  * that simulates Supabase. It's used for development when Supabase connection is not available.
  */
 import { v4 as uuidv4 } from 'uuid';
-import { DATABASE_TABLES } from './databaseUtils';
 
 // Sample data for the database
 const mockData = {
@@ -94,14 +94,6 @@ const mockData = {
       updated_at: new Date().toISOString()
     }
   ],
-  ani_institutions: [],
-  ani_researchers: [],
-  ani_projects_researchers: [],
-  ani_patent_holders: [],
-  ani_funding_programs: [],
-  ani_funding_applications: [],
-  ani_international_collaborations: [],
-  ani_policy_frameworks: [],
   pdf_reports: [
     {
       id: "report-1",
@@ -113,13 +105,6 @@ const mockData = {
     }
   ]
 };
-
-// Make sure all database tables exist in the initial mockData
-DATABASE_TABLES.forEach(table => {
-  if (!mockData[table]) {
-    mockData[table] = [];
-  }
-});
 
 // Initialize the local database with mock data
 export const initializeLocalDatabase = () => {
@@ -175,9 +160,9 @@ export const localDatabase = {
       }
       
       const newItem = {
-        id: data.id || `${table}-${uuidv4()}`,
+        id: `${table}-${uuidv4()}`,
         ...data,
-        created_at: data.created_at || new Date().toISOString(),
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
@@ -188,43 +173,6 @@ export const localDatabase = {
     } catch (error) {
       console.error(`Error inserting into ${table}:`, error);
       return null;
-    }
-  },
-  clear: (table: string) => {
-    try {
-      const dbJson = localStorage.getItem('localDatabase');
-      if (!dbJson) return false;
-      
-      const db = JSON.parse(dbJson);
-      
-      if (db[table]) {
-        db[table] = [];
-        localStorage.setItem('localDatabase', JSON.stringify(db));
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Error clearing table ${table}:`, error);
-      return false;
-    }
-  },
-  clearAll: () => {
-    try {
-      const dbJson = localStorage.getItem('localDatabase');
-      if (!dbJson) return false;
-      
-      const db = JSON.parse(dbJson);
-      
-      // Clear all tables but keep their structure
-      Object.keys(db).forEach(table => {
-        db[table] = [];
-      });
-      
-      localStorage.setItem('localDatabase', JSON.stringify(db));
-      return true;
-    } catch (error) {
-      console.error('Error clearing all tables:', error);
-      return false;
     }
   }
 };

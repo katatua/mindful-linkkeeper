@@ -1,7 +1,6 @@
 
 // Utility functions for interacting with the Supabase database
 import { supabase } from "@/integrations/supabase/client";
-import { localDatabase, initializeLocalDatabase } from "@/utils/localDatabase";
 
 // List of database tables for management UI
 export const DATABASE_TABLES = [
@@ -42,33 +41,12 @@ export const executeQuery = async (query: Promise<any>) => {
   }
 };
 
-// Detect if we're using the local database
-const isUsingLocalDatabase = () => {
-  // Check if Supabase client is actually the mock client
-  return (supabase as any).isUsingLocalDb === true || 
-         (supabase as any)._supabaseUrl === undefined ||
-         import.meta.env.DEV && !import.meta.env.VITE_SUPABASE_URL;
-};
-
 // Utility function to check database status
 export const checkDatabaseStatus = async (): Promise<Record<string, number>> => {
   try {
     const tables = DATABASE_TABLES;
-    const usingLocalDb = isUsingLocalDatabase();
     
-    if (usingLocalDb) {
-      console.log("Using local database for status check");
-      // Get status from local database
-      const localDb = JSON.parse(localStorage.getItem('localDatabase') || '{}');
-      
-      return tables.reduce((acc, table) => {
-        const tableData = localDb[table] || [];
-        acc[table] = tableData.length;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-    
-    // Get counts from all tables in Supabase
+    // Get counts from all tables
     const statusPromises = tables.map(async (table) => {
       try {
         const { data, error } = await supabase
@@ -97,174 +75,11 @@ export const checkDatabaseStatus = async (): Promise<Record<string, number>> => 
   }
 };
 
-// Generate sample data for local database
-const generateLocalSampleData = (tableName: string, count: number = 20) => {
-  const records = [];
-  
-  for (let i = 0; i < count; i++) {
-    let record: Record<string, any> = { id: `${tableName}-${i+1}` };
-    
-    // Add fields based on table name
-    if (tableName === 'ani_metrics') {
-      const categories = ['Investment', 'Output', 'Impact', 'Collaboration', 'Innovation'];
-      const regions = ['Norte', 'Centro', 'Lisboa', 'Alentejo', 'Algarve'];
-      const units = ['Count', 'EUR', 'Percentage', 'Score'];
-      
-      record = {
-        ...record,
-        name: `Metric ${i+1}`,
-        value: Math.floor(Math.random() * 1000000) / 100,
-        unit: units[Math.floor(Math.random() * units.length)],
-        category: categories[Math.floor(Math.random() * categories.length)],
-        region: regions[Math.floor(Math.random() * regions.length)],
-        measurement_date: new Date(2020 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    } 
-    else if (tableName === 'ani_projects') {
-      const statuses = ['active', 'completed', 'pending', 'cancelled'];
-      const sectors = ['Healthcare', 'Technology', 'Energy', 'Agriculture', 'Education'];
-      const regions = ['Norte', 'Centro', 'Lisboa', 'Alentejo', 'Algarve'];
-      
-      record = {
-        ...record,
-        title: `Project ${i+1}: Innovation in ${sectors[Math.floor(Math.random() * sectors.length)]}`,
-        description: `This is a sample project description for Project ${i+1}`,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        sector: sectors[Math.floor(Math.random() * sectors.length)],
-        region: regions[Math.floor(Math.random() * regions.length)],
-        funding_amount: Math.floor(Math.random() * 50000) * 100,
-        start_date: new Date(2020 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-        end_date: new Date(2023 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-    else if (tableName === 'ani_institutions') {
-      const types = ['University', 'Research Center', 'Company', 'Government', 'Non-profit'];
-      const regions = ['Norte', 'Centro', 'Lisboa', 'Alentejo', 'Algarve'];
-      
-      record = {
-        ...record,
-        institution_name: `Institution ${i+1}`,
-        type: types[Math.floor(Math.random() * types.length)],
-        region: regions[Math.floor(Math.random() * regions.length)],
-        founding_date: new Date(1900 + Math.floor(Math.random() * 120), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-        specialization_areas: ['AI', 'Biotechnology', 'Renewable Energy'].slice(0, Math.floor(Math.random() * 3) + 1),
-        collaboration_count: Math.floor(Math.random() * 50),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-    else if (tableName === 'ani_researchers') {
-      const specializations = ['AI', 'Biotechnology', 'Renewable Energy', 'Agriculture', 'Medicine'];
-      
-      record = {
-        ...record,
-        name: `Researcher ${i+1}`,
-        email: `researcher${i+1}@example.com`,
-        specialization: specializations[Math.floor(Math.random() * specializations.length)],
-        publication_count: Math.floor(Math.random() * 100),
-        patent_count: Math.floor(Math.random() * 10),
-        h_index: Math.floor(Math.random() * 40),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-    else if (tableName === 'ani_database_status') {
-      record = {
-        ...record,
-        table_name: DATABASE_TABLES[i % DATABASE_TABLES.length],
-        record_count: Math.floor(Math.random() * 100),
-        status: 'populated',
-        last_populated: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-    else {
-      // Generic record for other tables
-      record = {
-        ...record,
-        name: `Record ${i+1}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-    
-    records.push(record);
-  }
-  
-  return records;
-};
-
-// Populate local database with sample data
-const populateLocalDatabase = async (progressCallback?: (info: string) => void) => {
-  try {
-    if (progressCallback) {
-      progressCallback("Starting local database population process...");
-    }
-    
-    // Initialize an empty database structure
-    let localDb: Record<string, any[]> = {};
-    
-    // Process tables one by one
-    for (const table of DATABASE_TABLES) {
-      try {
-        if (progressCallback) {
-          progressCallback(`Populating ${table}...`);
-        }
-        
-        // Generate sample data for this table
-        const sampleData = generateLocalSampleData(table, 25);
-        
-        // Store in the local database object
-        localDb[table] = sampleData;
-        
-        if (progressCallback) {
-          progressCallback(`Successfully populated ${table} with ${sampleData.length} records`);
-        }
-        
-      } catch (err) {
-        console.error(`Error processing table ${table}:`, err);
-        if (progressCallback) {
-          progressCallback(`Error processing ${table}: ${err instanceof Error ? err.message : "Unknown error"}`);
-        }
-      }
-    }
-    
-    // Store the populated database in localStorage
-    localStorage.setItem('localDatabase', JSON.stringify(localDb));
-    
-    // Final status update
-    if (progressCallback) {
-      progressCallback("Local database population completed!");
-    }
-    
-    return { success: true, message: "Local database populated successfully" };
-  } catch (error) {
-    console.error("Error populating local database:", error);
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : "Unknown error occurred"
-    };
-  }
-};
-
 // Function to populate the database with sample data
 export const populateDatabase = async (progressCallback?: (info: string) => void) => {
   try {
     if (progressCallback) {
       progressCallback("Starting database population process...");
-    }
-    
-    // Check if we're using local database
-    const usingLocalDb = isUsingLocalDatabase();
-    
-    if (usingLocalDb) {
-      console.log("Using local database for population");
-      return populateLocalDatabase(progressCallback);
     }
     
     // Process tables one by one using the generate-synthetic-data function

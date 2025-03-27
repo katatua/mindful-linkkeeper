@@ -2,10 +2,26 @@
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Search, Loader2 } from "lucide-react";
 import { useQueryProcessor } from '@/hooks/useQueryProcessor';
 import { SQLResponseDisplay } from './ChatComponents/SQLResponseDisplay';
+
+// Define the types for the query result
+interface QuerySuccess {
+  success: true;
+  data: any;
+  sql: string;
+  interpretation: string;
+}
+
+interface QueryError {
+  success: false;
+  error: any;
+}
+
+type QueryResult = QuerySuccess | QueryError;
 
 export default function DatabaseQuery() {
   const [query, setQuery] = useState('');
@@ -15,7 +31,7 @@ export default function DatabaseQuery() {
   const [sqlStatement, setSqlStatement] = useState('');
   const [naturalLanguageResponse, setNaturalLanguageResponse] = useState('');
   const { toast } = useToast();
-  const { processQuestion } = useQueryProcessor();
+  const { processQuery } = useQueryProcessor();
 
   const handleExecuteQuery = async () => {
     if (!query.trim()) return;
@@ -23,37 +39,24 @@ export default function DatabaseQuery() {
     setIsExecuting(true);
     setDisplayResults(false);
     
-    try {
-      const result = await processQuestion(query);
-      
-      if (result.visualizationData) {
-        setQueryResults(result.visualizationData);
-        setSqlStatement(result.sql || '');
-        setNaturalLanguageResponse(result.response || '');
-        setDisplayResults(true);
-      } else if (result.error) {
-        toast({
-          title: "Query Error",
-          description: result.error || "Failed to execute query",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "No Results",
-          description: "The query did not return any results",
-          variant: "default",
-        });
-      }
-    } catch (error) {
-      console.error("Error processing query:", error);
+    const result = await processQuery(query) as QueryResult;
+    
+    if (result.success) {
+      setQueryResults(result.data);
+      setSqlStatement(result.sql || '');
+      setNaturalLanguageResponse(result.interpretation || '');
+      setDisplayResults(true);
+    } else {
+      // Use type assertion to tell TypeScript that result is a QueryError
+      const errorResult = result as QueryError;
       toast({
         title: "Query Error",
-        description: error instanceof Error ? error.message : "Failed to execute query",
+        description: String(errorResult.error) || "Failed to execute query",
         variant: "destructive",
       });
-    } finally {
-      setIsExecuting(false);
     }
+    
+    setIsExecuting(false);
   };
 
   const renderResults = () => {
@@ -83,7 +86,7 @@ export default function DatabaseQuery() {
             {queryResults.map((row, index) => (
               <tr key={index}>
                 {headers.map((header) => (
-                  <td key={`${index}-${header}`} className="px-6 py-4 whitespace-nowrap text-sm leading-5 text-gray-900">
+                  <td key={`${index}-${header}`} className="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-900">
                     {row[header]?.toString() || 'N/A'}
                   </td>
                 ))}

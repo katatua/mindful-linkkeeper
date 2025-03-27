@@ -1,9 +1,11 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { generateDummyResponse } from "@/utils/dummyData";
+import { executeQuery } from "@/utils/queryExecution";
 import { generateSqlFromNaturalLanguage } from "@/utils/sqlGeneration";
+import { toast } from "sonner";
+import { isMetricsQuery } from "@/utils/queryDetection";
+import { dynamicQueryService } from "@/services/dynamicQueryService";
+import { generateDummyResponse } from "@/utils/dummyData";
 
 export interface QueryResult {
   response: string;
@@ -17,6 +19,11 @@ export function useQueryProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState<QueryResult | null>(null);
   const [useOfflineMode, setUseOfflineMode] = useState(false);
+  const [query, setQuery] = useState<string>('');
+  const [sqlQuery, setSqlQuery] = useState<string>('');
+  const [results, setResults] = useState<any[]>([]);
+  const [interpretation, setInterpretation] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   /**
    * Toggle between online and offline mode
@@ -33,189 +40,369 @@ export function useQueryProcessor() {
   };
 
   /**
-   * Process a question using NL to SQL conversion and execute it
+   * Execute a SQL query directly with improved connection error handling
    */
-  const processQuestion = async (question: string, language: 'en' | 'pt' = 'en'): Promise<QueryResult> => {
+  const executeQueryDirectly = async (sql: string): Promise<QueryResult> => {
     try {
       setIsProcessing(true);
-      console.log("Processing question:", question);
       
-      // If in offline mode, use dummy data directly
-      if (useOfflineMode || (supabase as any).isUsingLocalDb) {
-        console.log("Using local/offline mode");
-        const dummyResult = generateDummyResponse(question, language);
-        return {
+      // If in offline mode, use dummy data
+      if (useOfflineMode) {
+        console.log("Using offline mode, returning dummy data");
+        const dummyResult = generateDummyResponse(sql);
+        const queryResult: QueryResult = {
           response: dummyResult.response,
           visualizationData: dummyResult.visualizationData,
-          sql: "-- Using local database"
+          sql
         };
+        setLastResult(queryResult);
+        return queryResult;
       }
       
-      // First, check if we can connect to the database
+      // Check for connectivity to Supabase before executing the query
       try {
-        const { error: connError } = await supabase
-          .from('ani_database_status')
-          .select('count(*)', { count: 'exact', head: true });
-          
+        const { data: connCheck, error: connError } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
+        
         if (connError) {
           console.error("Database connection check failed:", connError);
+          console.log("Switching to offline mode due to connection error");
           toggleOfflineMode(true);
-          const dummyResult = generateDummyResponse(question, language);
+          const dummyResult = generateDummyResponse(sql);
           return {
             response: dummyResult.response,
             visualizationData: dummyResult.visualizationData,
-            sql: "-- Connection error, using local data",
+            sql,
             isConnectionError: true
           };
         }
       } catch (connErr) {
-        console.error("Connection error:", connErr);
+        console.error("Connection check error:", connErr);
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(sql);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          sql,
+          isConnectionError: true
+        };
+      }
+      
+      const result = await executeQuery(sql);
+      
+      const queryResult: QueryResult = {
+        response: result.response,
+        visualizationData: result.visualizationData,
+        sql
+      };
+      
+      setLastResult(queryResult);
+      return queryResult;
+    } catch (error) {
+      console.error("Error executing query:", error);
+      
+      // Determine if this is a connection error
+      const isConnectionError = error instanceof Error && (
+        error.message?.includes('Failed to send a request') || 
+        error.message?.includes('network error') ||
+        error.message?.includes('connection') ||
+        error.message?.includes('timeout')
+      );
+      
+      if (isConnectionError) {
+        console.log("Connection error detected, using dummy data");
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(sql);
+        const errorResult: QueryResult = {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          sql,
+          error: error instanceof Error ? error.message : String(error),
+          isConnectionError: true
+        };
+        setLastResult(errorResult);
+        return errorResult;
+      }
+      
+      const errorResult: QueryResult = {
+        response: `Error executing query: ${error instanceof Error ? error.message : String(error)}`,
+        sql,
+        error: error instanceof Error ? error.message : String(error),
+        isConnectionError
+      };
+      
+      // Log additional information for debugging
+      console.log("Error details:", {
+        errorType: error.constructor?.name,
+        stack: error instanceof Error ? error.stack : '',
+        isConnectionError
+      });
+      
+      setLastResult(errorResult);
+      return errorResult;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Process a natural language question to SQL and execute it
+   */
+  const processNaturalLanguageQuery = async (question: string): Promise<QueryResult> => {
+    try {
+      setIsProcessing(true);
+      
+      // If in offline mode, use dummy data
+      if (useOfflineMode) {
+        console.log("Using offline mode, returning dummy data");
+        const dummyResult = generateDummyResponse(question);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData
+        };
+      }
+      
+      // First generate SQL from the natural language question
+      const sql = await generateSqlFromNaturalLanguage(question);
+      
+      if (!sql) {
+        throw new Error("Failed to generate SQL query from question");
+      }
+      
+      console.log("Generated SQL from natural language:", sql);
+      
+      // Execute the generated SQL
+      return await executeQueryDirectly(sql);
+    } catch (error) {
+      console.error("Error processing natural language query:", error);
+      
+      // If this appears to be a connection error, use dummy data
+      const isConnectionError = error instanceof Error && (
+        error.message?.includes('connection') || 
+        error.message?.includes('network') ||
+        error.message?.includes('Failed to send')
+      );
+      
+      if (isConnectionError) {
+        console.log("Connection error detected, using dummy data");
+        toggleOfflineMode(true);
+        const dummyResult = generateDummyResponse(question);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData,
+          error: error instanceof Error ? error.message : String(error),
+          isConnectionError: true
+        };
+      }
+      
+      toast.error("Failed to process question", {
+        description: error instanceof Error ? error.message : String(error)
+      });
+      
+      const errorResult: QueryResult = {
+        response: `Error processing question: ${error instanceof Error ? error.message : String(error)}`,
+        error: error instanceof Error ? error.message : String(error),
+        isConnectionError: error instanceof Error && error.message?.includes('connection')
+      };
+      
+      setLastResult(errorResult);
+      return errorResult;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Process a question using the dynamic query service with improved error handling
+   */
+  const processQuestion = async (question: string, language: 'en' | 'pt' = 'en'): Promise<QueryResult> => {
+    try {
+      setIsProcessing(true);
+      
+      // If in offline mode, use dummy data directly
+      if (useOfflineMode) {
+        console.log("Using offline mode, returning dummy data");
+        const dummyResult = generateDummyResponse(question, language);
+        return {
+          response: dummyResult.response,
+          visualizationData: dummyResult.visualizationData
+        };
+      }
+      
+      // Attempt connection check
+      let connectionOk = true;
+      try {
+        const { error: connError } = await supabase.from('ani_database_status').select('count(*)', { count: 'exact', head: true });
+        if (connError) {
+          console.error("Database connection check failed:", connError);
+          connectionOk = false;
+        }
+      } catch (connCheckError) {
+        console.error("Connection check error:", connCheckError);
+        connectionOk = false;
+      }
+      
+      // If connection is down, use dummy data
+      if (!connectionOk) {
+        console.log("Connection is down, using dummy data response");
         toggleOfflineMode(true);
         const dummyResult = generateDummyResponse(question, language);
         return {
           response: dummyResult.response,
           visualizationData: dummyResult.visualizationData,
-          sql: "-- Connection error, using local data",
           isConnectionError: true
         };
       }
       
-      // Generate SQL from the natural language question
-      let sqlQuery;
       try {
-        console.log("Generating SQL from natural language question");
-        const { data, error } = await supabase.functions.invoke('generate-sql', {
-          body: { 
-            question,
-            language
-          }
-        });
-        
-        if (error) {
-          console.error("Error generating SQL:", error);
-          throw new Error(`Failed to generate SQL: ${error.message}`);
-        }
-        
-        if (!data?.sql) {
-          console.warn("No SQL was generated");
-          throw new Error("No SQL was generated for your question");
-        }
-        
-        sqlQuery = data.sql;
-        console.log("Generated SQL:", sqlQuery);
-      } catch (sqlGenError) {
-        console.error("Error generating SQL:", sqlGenError);
-        sqlQuery = await generateSqlFromNaturalLanguage(question);
-        console.log("Using fallback SQL generation:", sqlQuery);
-      }
-      
-      if (!sqlQuery) {
-        throw new Error("Could not generate SQL query");
-      }
-      
-      // Execute the SQL query
-      try {
-        console.log("Executing SQL query:", sqlQuery);
-        const { data, error } = await supabase.functions.invoke('execute-sql', {
-          body: { 
-            sqlQuery,
-            operation: 'query'
-          }
-        });
-        
-        if (error) {
-          console.error("Error executing SQL:", error);
-          throw new Error(`Failed to execute SQL: ${error.message}`);
-        }
-        
-        // Generate natural language response from results
-        let nlResponse;
-        try {
-          nlResponse = await generateNaturalLanguageInterpretation(question, sqlQuery, data.result || []);
-        } catch (nlError) {
-          console.error("Error generating natural language response:", nlError);
-          nlResponse = `Query executed successfully. Found ${data.result?.length || 0} records.`;
-        }
+        // Attempt to process with dynamic query service
+        const result = await dynamicQueryService.processQuestion(question, language);
         
         const queryResult: QueryResult = {
-          response: nlResponse,
-          visualizationData: data.result || [],
-          sql: sqlQuery
+          response: result.response,
+          visualizationData: result.visualizationData,
+          sql: result.sql
         };
         
         setLastResult(queryResult);
         return queryResult;
-      } catch (execError) {
-        console.error("Error executing SQL:", execError);
+      } catch (error) {
+        console.error("Error in dynamicQueryService:", error);
         
-        // If it's a connection error, use dummy data
-        if (execError instanceof Error && 
-            (execError.message?.includes('connection') || 
-            execError.message?.includes('network'))) {
+        // Check if this is a connection error
+        const isConnectionError = error instanceof Error && (
+          error.message?.includes('Failed to send a request') || 
+          error.message?.includes('network error') ||
+          error.message?.includes('connection') ||
+          error.message?.includes('timeout')
+        );
+        
+        // Enhanced error logging
+        console.log("Query processing error details:", {
+          errorType: error.constructor?.name,
+          stack: error instanceof Error ? error.stack : '',
+          message: error instanceof Error ? error.message : '',
+          isConnectionError
+        });
+        
+        if (isConnectionError) {
+          console.log("Connection error detected, using dummy data");
           toggleOfflineMode(true);
           const dummyResult = generateDummyResponse(question, language);
           return {
             response: dummyResult.response,
             visualizationData: dummyResult.visualizationData,
-            sql: sqlQuery,
+            error: error instanceof Error ? error.message : String(error),
             isConnectionError: true
           };
         }
         
-        throw execError;
+        // For non-connection errors, still return an error
+        const errorResult: QueryResult = {
+          response: `Error processing question: ${error instanceof Error ? error.message : String(error)}`,
+          error: error instanceof Error ? error.message : String(error),
+          isConnectionError
+        };
+        setLastResult(errorResult);
+        return errorResult;
       }
     } catch (error) {
       console.error("Error processing question:", error);
       
       // Fallback to dummy data for any error
       const dummyResult = generateDummyResponse(question, language);
-      const result: QueryResult = {
+      const errorResult: QueryResult = {
         response: dummyResult.response,
         visualizationData: dummyResult.visualizationData,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        isConnectionError: error instanceof Error && 
+          (error.message?.includes('connection') || error.message?.includes('network'))
       };
       
-      setLastResult(result);
-      return result;
+      setLastResult(errorResult);
+      return errorResult;
     } finally {
       setIsProcessing(false);
     }
   };
-  
+
   /**
-   * Generate a natural language interpretation of query results
+   * Process a query using the Supabase functions
    */
-  const generateNaturalLanguageInterpretation = async (
-    question: string,
-    sqlQuery: string,
-    results: any[]
-  ): Promise<string> => {
+  const processQuery = async (question: string) => {
     try {
-      if (!results || results.length === 0) {
-        return "The query did not return any results.";
+      setIsProcessing(true);
+      setQuery(question);
+
+      // Generate SQL from the question
+      const generateResponse = await supabase.functions.invoke('generate-sql', {
+        body: { question }
+      });
+
+      if (generateResponse.error) {
+        setError(generateResponse.error.message);
+        setIsProcessing(false);
+        return { success: false, error: generateResponse.error.message };
       }
-      
-      // For small result sets, generate a simpler response
-      if (results.length <= 5) {
-        return `Here are the results for your query about ${question.toLowerCase()}: ${results.length} records found.`;
+
+      const { sql } = generateResponse.data;
+      setSqlQuery(sql);
+
+      // Execute the SQL query
+      const executeResponse = await supabase.functions.invoke('execute-sql', {
+        body: { sqlQuery: sql }
+      });
+
+      if (executeResponse.error) {
+        setError(executeResponse.error.message);
+        setIsProcessing(false);
+        return { success: false, error: executeResponse.error.message };
       }
-      
-      const { data, error } = await supabase.functions.invoke('interpret-results', {
+
+      // Get the results
+      const result = executeResponse.data.result;
+      setResults(result);
+
+      // Interpret the results in natural language
+      const interpretResponse = await supabase.functions.invoke('interpret-results', {
         body: { 
-          question,
-          sqlQuery,
-          results: results.slice(0, 20) // Limit to first 20 results for interpretation
+          question, 
+          sql,
+          results: result 
         }
       });
-      
-      if (error) {
-        throw new Error(`Error interpreting results: ${error.message}`);
+
+      // Store the natural language interpretation
+      if (!interpretResponse.error) {
+        setInterpretation(interpretResponse.data.interpretation);
+      } else {
+        // Default interpretation if AI interpretation fails
+        setInterpretation(`Query executed successfully. Found ${result.length} results.`);
       }
-      
-      return data.interpretation || `Found ${results.length} records matching your query.`;
+
+      setIsProcessing(false);
+      return { 
+        success: true, 
+        data: result, 
+        sql, 
+        interpretation: interpretResponse.data?.interpretation || `Query executed successfully. Found ${result.length} results.`
+      };
     } catch (error) {
-      console.error("Error generating natural language interpretation:", error);
-      return `Found ${results.length} records matching your query.`;
+      console.error("Error processing query:", error);
+      
+      // Fallback to dummy data for any error
+      const dummyResult = generateDummyResponse(question);
+      const errorResult: QueryResult = {
+        response: dummyResult.response,
+        visualizationData: dummyResult.visualizationData,
+        error: error instanceof Error ? error.message : String(error),
+        isConnectionError: error instanceof Error && 
+          (error.message?.includes('connection') || error.message?.includes('network'))
+      };
+      
+      setLastResult(errorResult);
+      return errorResult;
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -224,7 +411,11 @@ export function useQueryProcessor() {
     lastResult,
     useOfflineMode,
     toggleOfflineMode,
+    executeQuery: executeQueryDirectly,
+    processNaturalLanguageQuery,
+    isMetricsQuery,
+    generateSqlFromNaturalLanguage,
     processQuestion,
-    generateSqlFromNaturalLanguage
+    processQuery
   };
-}
+};

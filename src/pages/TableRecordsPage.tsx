@@ -17,14 +17,8 @@ const TableRecordsPage = () => {
   const [columns, setColumns] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLocalDatabase, setIsLocalDatabase] = useState(false);
 
   useEffect(() => {
-    // Check if we're using a local database
-    setIsLocalDatabase((supabase as any).isUsingLocalDb === true || 
-                       (supabase as any)._supabaseUrl === undefined ||
-                       import.meta.env.DEV && !import.meta.env.VITE_SUPABASE_URL);
-    
     if (tableName) {
       fetchTableRecords(tableName);
     }
@@ -35,43 +29,21 @@ const TableRecordsPage = () => {
     setError(null);
 
     try {
-      // If using local database, fetch from localStorage
-      if ((supabase as any).isUsingLocalDb || import.meta.env.DEV && !import.meta.env.VITE_SUPABASE_URL) {
-        console.log("Fetching from local database");
-        const localDb = localStorage.getItem('localDatabase');
-        
-        if (localDb) {
-          const parsedDb = JSON.parse(localDb);
-          const tableData = parsedDb[table] || [];
-          setRecords(tableData);
-          
-          if (tableData.length > 0) {
-            setColumns(Object.keys(tableData[0]));
-          } else {
-            setColumns([]);
-          }
-        } else {
-          setRecords([]);
-          setColumns([]);
-        }
-      } else {
-        // Fetch from Supabase
-        const { data, error } = await supabase
-          .from(table)
-          .select('*')
-          .limit(100);
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .limit(100);
 
-        if (error) {
-          console.error("Error fetching table records:", error);
-          setError(error.message);
-          toast.error(`Failed to fetch records from ${table}`);
-        } else if (data) {
-          setRecords(data);
-          if (data.length > 0) {
-            setColumns(Object.keys(data[0]));
-          } else {
-            setColumns([]);
-          }
+      if (error) {
+        console.error("Error fetching table records:", error);
+        setError(error.message);
+        toast.error(`Failed to fetch records from ${table}`);
+      } else if (data) {
+        setRecords(data);
+        if (data.length > 0) {
+          setColumns(Object.keys(data[0]));
+        } else {
+          setColumns([]);
         }
       }
     } catch (err) {
@@ -109,12 +81,7 @@ const TableRecordsPage = () => {
           <Button variant="outline" size="icon" onClick={handleGoBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold">{tableName} Records</h1>
-            {isLocalDatabase && (
-              <p className="text-sm text-muted-foreground">From local in-memory database</p>
-            )}
-          </div>
+          <h1 className="text-3xl font-bold">{tableName} Records</h1>
         </div>
       </div>
 
