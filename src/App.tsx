@@ -14,6 +14,7 @@ const ANIPortal = lazy(() => {
 });
 
 const QueryHistoryPage = lazy(() => {
+  // Add slight delay to prevent rapid loading/unloading
   return new Promise(resolve => 
     setTimeout(() => resolve(import("./pages/QueryHistoryPage")), 100)
   );
