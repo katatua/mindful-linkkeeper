@@ -37,57 +37,53 @@ const ANIPortal = () => {
 
   return (
     <div className="h-screen flex flex-col">
-      <Header />
+      <main className="flex-grow overflow-auto bg-gray-50">
+        <Tabs defaultValue="dashboard" className="h-full">
+          <div className="container mx-auto py-4">
+            <TabsList>
+              <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
+              <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
+              <TabsTrigger value="projects">{t('projects.tab')}</TabsTrigger>
+              <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>
+              <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
+              <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <TabsContent value="dashboard" className="h-full">
+            <Dashboard />
+          </TabsContent>
+          
+          <TabsContent value="funding" className="h-full">
+            <FundingPage />
+          </TabsContent>
+          
+          <TabsContent value="projects" className="h-full">
+            <ProjectsPage />
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="h-full">
+            <AnalyticsPage />
+          </TabsContent>
+          
+          <TabsContent value="reports" className="h-full">
+            <ReportsPage />
+          </TabsContent>
+          
+          <TabsContent value="policies" className="h-full">
+            <PoliciesPage />
+          </TabsContent>
+        </Tabs>
+      </main>
       
-      <div className="flex flex-1 overflow-hidden">
-        <main className="flex-grow overflow-auto bg-gray-50">
-          <Tabs defaultValue="dashboard" className="h-full">
-            <div className="container mx-auto py-4">
-              <TabsList>
-                <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
-                <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
-                <TabsTrigger value="projects">{t('projects.tab')}</TabsTrigger>
-                <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>
-                <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
-                <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="dashboard" className="h-full">
-              <Dashboard />
-            </TabsContent>
-            
-            <TabsContent value="funding" className="h-full">
-              <FundingPage />
-            </TabsContent>
-            
-            <TabsContent value="projects" className="h-full">
-              <ProjectsPage />
-            </TabsContent>
-            
-            <TabsContent value="analytics" className="h-full">
-              <AnalyticsPage />
-            </TabsContent>
-            
-            <TabsContent value="reports" className="h-full">
-              <ReportsPage />
-            </TabsContent>
-            
-            <TabsContent value="policies" className="h-full">
-              <PoliciesPage />
-            </TabsContent>
-          </Tabs>
-        </main>
-        
-        <div className="w-96 border-l flex flex-col bg-white">
-          <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-            <h3 className="font-medium flex items-center gap-2">
-              {t('assistant.title')}
-            </h3>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <AIAssistant />
-          </div>
+      <div className="w-96 border-l flex flex-col bg-white fixed top-14 right-0 bottom-0">
+        <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+          <h3 className="font-medium flex items-center gap-2">
+            {t('assistant.title')}
+          </h3>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <AIAssistant />
         </div>
       </div>
       

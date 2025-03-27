@@ -1,9 +1,7 @@
 
 import React from 'react';
-import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
-import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Database } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   children?: React.ReactNode;
@@ -15,36 +13,7 @@ export function Header({ children }: HeaderProps) {
       {children}
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center">
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <Link to="/" className={navigationMenuTriggerStyle()}>
-                  Home
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link to="/projects" className={navigationMenuTriggerStyle()}>
-                  Projects
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link to="/policies" className={navigationMenuTriggerStyle()}>
-                  Policies
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link to="/analytics" className={navigationMenuTriggerStyle()}>
-                  Analytics
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link to="/database" className={navigationMenuTriggerStyle()}>
-                  <Database className="mr-2 h-4 w-4" />
-                  Database
-                </Link>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          <span className="font-semibold text-lg">ANI Portal</span>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" asChild>

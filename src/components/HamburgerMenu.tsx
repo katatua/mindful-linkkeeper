@@ -2,7 +2,11 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, LogIn, User, HelpCircle, Languages } from "lucide-react";
+import { 
+  Menu, LogOut, LogIn, User, HelpCircle, Languages, 
+  FileUp, Link as LinkIcon, FolderPlus, Database, 
+  BarChart2, Home, Folder, BarChart, FileText, BookOpen
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -59,6 +63,23 @@ export const HamburgerMenu = () => {
     setLanguage(language === 'en' ? 'pt' : 'en');
   };
 
+  const mainMenuItems = [
+    { title: t('nav.home'), icon: Home, url: "/" },
+    { title: t('nav.funding'), icon: BarChart, url: "/funding" },
+    { title: t('nav.projects'), icon: Folder, url: "/projects" },
+    { title: t('nav.analytics'), icon: BarChart2, url: "/analytics" },
+    { title: t('nav.reports'), icon: FileText, url: "/reports" },
+    { title: t('nav.policies'), icon: BookOpen, url: "/policies" },
+  ];
+
+  const utilityMenuItems = [
+    { title: t('nav.upload'), icon: FileUp, url: "/add-file" },
+    { title: t('nav.link'), icon: LinkIcon, url: "/add-link" },
+    { title: t('nav.category'), icon: FolderPlus, url: "/add-category" },
+    { title: t('nav.database'), icon: Database, url: "/database" },
+    { title: t('nav.synthetic_data'), icon: BarChart2, url: "/synthetic-data" },
+  ];
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -67,7 +88,7 @@ export const HamburgerMenu = () => {
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+      <SheetContent side="left" className="w-[280px] sm:w-[320px] overflow-y-auto">
         <div className="flex flex-col gap-4 py-4">
           <div 
             className="flex items-center gap-2 pb-4 border-b cursor-pointer" 
@@ -81,65 +102,35 @@ export const HamburgerMenu = () => {
             <span className="font-medium">{t('app.title')}</span>
           </div>
           
-          <div className="space-y-3 pt-2">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/funding")}
-            >
-              {t('nav.funding')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/projects")}
-            >
-              {t('nav.projects')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/analytics")}
-            >
-              {t('nav.analytics')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/reports")}
-            >
-              {t('nav.reports')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/policies")}
-            >
-              {t('nav.policies')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/add-file")}
-            >
-              {t('nav.upload')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/add-link")}
-            >
-              {t('nav.link')}
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start" 
-              onClick={() => handleNavigation("/add-category")}
-            >
-              {t('nav.category')}
-            </Button>
+          <div className="space-y-1 pt-2">
+            <h3 className="font-medium text-sm text-muted-foreground px-3 mb-2">{t('nav.main')}</h3>
+            {mainMenuItems.map((item) => (
+              <Button 
+                key={item.url}
+                variant="ghost" 
+                className="w-full justify-start" 
+                onClick={() => handleNavigation(item.url)}
+              >
+                <item.icon className="h-4 w-4 mr-2" />
+                {item.title}
+              </Button>
+            ))}
+            
+            <h3 className="font-medium text-sm text-muted-foreground px-3 mb-2 mt-4">{t('nav.utilities')}</h3>
+            {utilityMenuItems.map((item) => (
+              <Button 
+                key={item.url}
+                variant="ghost" 
+                className="w-full justify-start" 
+                onClick={() => handleNavigation(item.url)}
+              >
+                <item.icon className="h-4 w-4 mr-2" />
+                {item.title}
+              </Button>
+            ))}
             
             <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-muted-foreground px-3 mb-2">{t('nav.settings')}</h3>
               <Button 
                 variant="ghost" 
                 className="w-full justify-start" 
