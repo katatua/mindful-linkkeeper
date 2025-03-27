@@ -63,13 +63,16 @@ export function AppSidebar() {
     navigate("/auth");
   };
 
+  // If sidebar is not open, don't render anything
+  if (!isOpen) return null;
+
   return (
-    <div className={`fixed h-full bg-white border-r transition-all duration-300 ${isOpen ? 'w-64' : 'w-0 -translate-x-full'}`}>
+    <div className="fixed h-full z-40 bg-white border-r shadow-lg w-64">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">ANI Portal</h2>
           <Button variant="ghost" size="sm" onClick={toggle}>
-            {isOpen ? "←" : "→"}
+            ←
           </Button>
         </div>
       </div>
