@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,12 +21,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// Define schema for form validation
 const formSchema = z.object({
   title: z.string().optional(),
   summary: z.string().optional(),
   category: z.string().optional(),
-  // File is handled separately since it's not a standard form field
 });
 
 export default function AddFile() {
@@ -43,7 +40,6 @@ export default function AddFile() {
   const { toast: toastNotification } = useToast();
   const { t } = useLanguage();
   
-  // Initialize form with react-hook-form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,7 +50,6 @@ export default function AddFile() {
   });
 
   const sanitizeFilename = (filename: string): string => {
-    // Remove non-ASCII characters and replace spaces with underscores
     return filename
       .replace(/[^\x00-\x7F]/g, '')
       .replace(/\s+/g, '_')
@@ -70,7 +65,6 @@ export default function AddFile() {
     try {
       setIsAnalyzing(true);
       
-      // Call the Supabase Edge Function for AI analysis
       const { data, error } = await supabase.functions.invoke('analyze-document', {
         body: {
           content: fileContent,
@@ -129,20 +123,16 @@ export default function AddFile() {
     try {
       setIsAnalyzing(true);
       
-      // Read the file content
       const fileContent = await readFileContent(file);
       
-      // Generate AI analysis
       const { suggestedTitle, suggestedCategory, summary, analysis } = 
         await generateAiAnalysis(fileContent, file.name, file.type);
       
-      // Update state with AI results
       setAiTitle(suggestedTitle);
       setAiCategory(suggestedCategory);
       setAiSummary(summary);
       setAiAnalysis(analysis);
       
-      // Auto-populate fields with AI suggestions if enabled
       if (useAiSuggestions) {
         form.setValue("title", suggestedTitle);
         form.setValue("category", suggestedCategory);
@@ -170,11 +160,9 @@ export default function AddFile() {
     try {
       setIsUploading(true);
       
-      // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // First, upload the file to storage
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
@@ -185,12 +173,10 @@ export default function AddFile() {
 
       if (uploadError) throw uploadError;
 
-      // Use either user-provided or AI-suggested values
       const displayTitle = values.title?.trim() || aiTitle || file.name.replace(/\.[^/.]+$/, "");
       const displayCategory = values.category?.trim() || aiCategory || null;
       const displaySummary = values.summary?.trim() || aiSummary || null;
       
-      // If AI analysis hasn't been performed yet, do it now
       let finalAiSummary = aiSummary;
       let finalAiAnalysis = aiAnalysis;
       
@@ -202,18 +188,15 @@ export default function AddFile() {
           finalAiAnalysis = analysis;
         } catch (error) {
           console.error('Error generating AI analysis during submission:', error);
-          // Continue with submission even if analysis fails
         }
       }
 
-      // Get classification from AI for better organization
       const classification = await classifyDocument({
         title: displayTitle,
         summary: displaySummary || "",
         fileName: file.name
       });
       
-      // Then, create a link entry for the file
       const { error: linkError } = await supabase
         .from('links')
         .insert({
@@ -222,7 +205,7 @@ export default function AddFile() {
           source: 'file',
           summary: displaySummary,
           category: displayCategory,
-          classification,
+          classification: classification,
           file_metadata: {
             name: file.name,
             size: file.size,

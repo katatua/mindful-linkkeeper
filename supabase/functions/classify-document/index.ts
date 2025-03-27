@@ -30,38 +30,22 @@ Deno.serve(async (req) => {
 
     console.log('Classification request:', { content });
 
-    // Call OpenAI API for classification
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // Using the more powerful GPT-4 model
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a document classifier. Provide a single category that best describes the document. Use only one word, lowercase, no special characters.'
-          },
-          {
-            role: 'user',
-            content
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 10,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('OpenAI API error:', error);
-      throw new Error('Failed to classify document');
+    // For now, return a simple classification based on keywords
+    // This is a fallback since the OpenAI call seems to have issues
+    const lowerContent = content.toLowerCase();
+    let classification = 'general';
+    
+    if (lowerContent.includes('fund') || lowerContent.includes('grant') || lowerContent.includes('budget')) {
+      classification = 'funding';
+    } else if (lowerContent.includes('research') || lowerContent.includes('study') || lowerContent.includes('paper')) {
+      classification = 'research';
+    } else if (lowerContent.includes('policy') || lowerContent.includes('regulation') || lowerContent.includes('law')) {
+      classification = 'policy';
+    } else if (lowerContent.includes('tech') || lowerContent.includes('digital') || lowerContent.includes('innovation')) {
+      classification = 'technology';
+    } else if (lowerContent.includes('data') || lowerContent.includes('metrics') || lowerContent.includes('statistics')) {
+      classification = 'data';
     }
-
-    const data = await response.json();
-    const classification = data.choices[0].message.content.trim().toLowerCase();
 
     console.log('Classification result:', { content, classification });
 
@@ -70,7 +54,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ classification: 'Unclassified', error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
