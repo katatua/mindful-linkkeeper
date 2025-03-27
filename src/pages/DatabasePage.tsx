@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -348,12 +349,12 @@ const DatabasePage: React.FC = () => {
           results: toResultsArray(queryResults)
         };
       }
-    } catch (sqlExecutionError) {
-      console.error("Error executing SQL:", sqlExecutionError);
+    } catch (execError) {
+      console.error("Error executing SQL:", execError);
       return {
         success: false,
         results: [],
-        error: sqlExecutionError instanceof Error ? sqlExecutionError.message : String(sqlExecutionError)
+        error: execError instanceof Error ? execError.message : String(execError)
       };
     }
   };
@@ -405,23 +406,23 @@ const DatabasePage: React.FC = () => {
               const parsedText = resultsMatch[1].trim();
               let parsedResults = JSON.parse(parsedText);
               setResults(toResultsArray(parsedResults));
-            } catch (error) {
+            } catch (parseError) {
               console.log("Failed to parse results from AI response, executing query directly");
-              const { success, results, error } = await executeSQL(queryToRun);
+              const { success, results, error: queryError } = await executeSQL(queryToRun);
               
               if (success) {
                 setResults(results);
               } else {
-                setQueryError(error || "Unknown error executing query");
+                setQueryError(queryError || "Unknown error executing query");
               }
             }
           } else {
-            const { success, results, error } = await executeSQL(queryToRun);
+            const { success, results, error: queryError } = await executeSQL(queryToRun);
             
             if (success) {
               setResults(results);
             } else {
-              setQueryError(error || "Unknown error executing query");
+              setQueryError(queryError || "Unknown error executing query");
             }
           }
         } else {
@@ -434,12 +435,12 @@ const DatabasePage: React.FC = () => {
             const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
             setSqlQuery(generatedQuery);
             
-            const { success, results, error } = await executeSQL(generatedQuery);
+            const { success, results, error: queryError } = await executeSQL(generatedQuery);
             
             if (success) {
               setResults(results);
             } else {
-              setQueryError(error || "Unknown error executing query");
+              setQueryError(queryError || "Unknown error executing query");
             }
           }
         }
@@ -452,11 +453,11 @@ const DatabasePage: React.FC = () => {
       } else {
         throw new Error("Received empty response from AI");
       }
-    } catch (error) {
-      console.error("Error in question handling:", error);
+    } catch (requestError) {
+      console.error("Error in question handling:", requestError);
       toast({
         title: "Error processing query",
-        description: error.message,
+        description: requestError instanceof Error ? requestError.message : String(requestError),
         variant: "destructive"
       });
     } finally {
