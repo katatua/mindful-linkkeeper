@@ -5,10 +5,13 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import LoginPage from "./pages/LoginPage";
 
+// Define the correct component module type
+type ComponentModule = { default: React.ComponentType<any> };
+
 // Lazy load components with increased loading delay to reduce CPU spikes
 const ANIPortal = lazy(() => {
   // Add slight delay to prevent rapid loading/unloading
-  return new Promise((resolve) => {
+  return new Promise<ComponentModule>((resolve) => {
     setTimeout(() => {
       import("./pages/ANIPortal").then((module) => {
         resolve({ default: module.default });
@@ -19,7 +22,7 @@ const ANIPortal = lazy(() => {
 
 const QueryHistoryPage = lazy(() => {
   // Add slight delay to prevent rapid loading/unloading
-  return new Promise((resolve) => {
+  return new Promise<ComponentModule>((resolve) => {
     setTimeout(() => {
       import("./pages/QueryHistoryPage").then((module) => {
         resolve({ default: module.default });
