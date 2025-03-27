@@ -8,28 +8,16 @@ import LoginPage from "./pages/LoginPage";
 // Define the correct component module type
 type ComponentModule = { default: React.ComponentType<any> };
 
-// Lazy load components with increased loading delay to reduce CPU spikes
-const ANIPortal = lazy(() => {
-  // Add slight delay to prevent rapid loading/unloading
-  return new Promise<ComponentModule>((resolve) => {
-    setTimeout(() => {
-      import("./pages/ANIPortal").then((module) => {
-        resolve({ default: module.default });
-      });
-    }, 100);
-  });
-});
+// Lazy load components with a more efficient approach
+const ANIPortal = lazy(() => 
+  import("./pages/ANIPortal")
+    .then(module => ({ default: module.default }))
+);
 
-const QueryHistoryPage = lazy(() => {
-  // Add slight delay to prevent rapid loading/unloading
-  return new Promise<ComponentModule>((resolve) => {
-    setTimeout(() => {
-      import("./pages/QueryHistoryPage").then((module) => {
-        resolve({ default: module.default });
-      });
-    }, 100);
-  });
-});
+const QueryHistoryPage = lazy(() => 
+  import("./pages/QueryHistoryPage")
+    .then(module => ({ default: module.default }))
+);
 
 // Memoize loading fallback to prevent rerenders
 const LoadingFallback = memo(() => (
