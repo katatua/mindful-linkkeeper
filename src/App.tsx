@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import FundingPage from "./pages/FundingPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ReportsPage from "./pages/ReportsPage";
 import PoliciesPage from "./pages/PoliciesPage";
@@ -46,6 +47,7 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/funding" element={<FundingPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/policies" element={<PoliciesPage />} />
