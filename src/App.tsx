@@ -1,10 +1,11 @@
 
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import LoginPage from "./pages/LoginPage";
 import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
 // Simple lazy loading without any artificial delays or transformations
 const ANIPortal = lazy(() => import("./pages/ANIPortal"));
@@ -26,9 +27,10 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/portal/*" element={<ANIPortal />} />
               <Route path="/portal" element={<ANIPortal />} />
+              <Route path="/portal/*" element={<ANIPortal />} />
               <Route path="/portal/query-history" element={<QueryHistoryPage />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
