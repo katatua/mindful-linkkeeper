@@ -117,6 +117,7 @@ export function QueryHistoryViewer() {
             size="sm" 
             onClick={fetchQueryHistory}
             disabled={loading}
+            aria-label={language === 'en' ? 'Refresh query history' : 'Atualizar histórico de consultas'}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {language === 'en' ? 'Refresh' : 'Atualizar'}
