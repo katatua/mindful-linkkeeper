@@ -84,10 +84,18 @@ export const generateResponse = async (prompt: string) => {
         .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
         .trim();
         
-      return cleanResponse;
+      return {
+        message: cleanResponse,
+        sqlQuery: sqlQuery,
+        results: queryResults
+      };
     }
     
-    return data.response || 'Sorry, I could not process your query.';
+    return {
+      message: data.response || 'Sorry, I could not process your query.',
+      sqlQuery: '',
+      results: null
+    };
   } catch (error) {
     console.error('Error generating response:', error);
     throw error;

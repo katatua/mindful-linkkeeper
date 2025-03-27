@@ -167,6 +167,7 @@ Here are examples of questions users might ask and how to respond:
     const sqlMatch = aiResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
     if (sqlMatch && sqlMatch[1]) {
       const sqlQuery = sqlMatch[1].trim();
+      console.log("Extracted SQL query:", sqlQuery);
       
       // Execute the SQL query
       const { data: queryResult, error: queryError } = await executeQuery(sqlQuery);
@@ -174,8 +175,7 @@ Here are examples of questions users might ask and how to respond:
       if (queryError) {
         // If there's an error, include it in the response
         const errorMessage = queryError.message || "Unknown database error";
-        // If there was an error, try to fix it and retry
-        console.log("Fixed query still has error:", queryError);
+        console.log("Query execution error:", errorMessage);
         
         aiResponse = aiResponse.replace(
           /<RESULTS>[\s\S]*?<\/RESULTS>/,
@@ -187,6 +187,7 @@ Here are examples of questions users might ask and how to respond:
       } else {
         // If successful, include the results in the response
         const formattedResults = JSON.stringify(queryResult || []);
+        console.log("Query execution results:", formattedResults.substring(0, 100) + (formattedResults.length > 100 ? "..." : ""));
         
         // Replace the RESULTS placeholder with actual results
         if (aiResponse.includes("<RESULTS>")) {

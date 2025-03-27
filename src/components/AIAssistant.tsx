@@ -3,16 +3,27 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle } from 'lucide-react';
+import { Send, AlertCircle, HelpCircle, Code, Database } from 'lucide-react';
 import { suggestedDatabaseQuestions, generateResponse, genId } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant';
+  sqlQuery?: string;
+  results?: any[] | null;
   error?: boolean;
 }
 
@@ -44,7 +55,9 @@ export const AIAssistant: React.FC = () => {
       
       const assistantMessage: Message = {
         id: genId(),
-        content: response,
+        content: response.message,
+        sqlQuery: response.sqlQuery,
+        results: response.results,
         role: 'assistant'
       };
       
@@ -75,6 +88,56 @@ export const AIAssistant: React.FC = () => {
   const handleSuggestionClick = (question: string) => {
     setInput(question);
     setShowSuggestions(false);
+  };
+
+  const renderResults = (results: any[] | null) => {
+    if (!results || results.length === 0) {
+      return <p className="text-gray-500 italic">No results found</p>;
+    }
+
+    // Get column names from the first result object
+    const columns = Object.keys(results[0]);
+
+    return (
+      <div className="overflow-x-auto border rounded-md mt-2">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map(column => (
+                <TableHead key={column}>{column}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {results.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {columns.map(column => (
+                  <TableCell key={`${rowIndex}-${column}`}>
+                    {renderCellValue(row[column])}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  const renderCellValue = (value: any) => {
+    if (value === null || value === undefined) {
+      return 'N/A';
+    }
+    
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    
+    return String(value);
   };
   
   return (
@@ -109,7 +172,7 @@ export const AIAssistant: React.FC = () => {
           </div>
         )}
 
-        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1">
+        <ScrollArea className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 py-6">
               <p>Ask a question about the database, such as:</p>
@@ -122,7 +185,7 @@ export const AIAssistant: React.FC = () => {
             messages.map(message => (
               <div 
                 key={message.id} 
-                className={`p-3 rounded-lg ${
+                className={`p-3 rounded-lg mb-4 ${
                   message.role === 'user' 
                     ? 'bg-blue-100 ml-8' 
                     : message.error 
@@ -139,7 +202,31 @@ export const AIAssistant: React.FC = () => {
                     <AlertDescription className="whitespace-pre-wrap">{message.content}</AlertDescription>
                   </Alert>
                 ) : (
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  <>
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    
+                    {message.sqlQuery && (
+                      <div className="mt-3">
+                        <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                          <Code className="h-4 w-4" />
+                          <span>SQL Query:</span>
+                        </div>
+                        <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                          {message.sqlQuery}
+                        </pre>
+                      </div>
+                    )}
+                    
+                    {message.results && (
+                      <div className="mt-3">
+                        <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                          <Database className="h-4 w-4" />
+                          <span>Results:</span>
+                        </div>
+                        {renderResults(message.results)}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))
@@ -149,7 +236,7 @@ export const AIAssistant: React.FC = () => {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             </div>
           )}
-        </div>
+        </ScrollArea>
         
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Textarea
