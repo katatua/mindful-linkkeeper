@@ -40,4 +40,6 @@ export interface DocumentoExtraido {
   data_extracao: string;
   conteudo: string;
   metadata?: Record<string, any>;
+  ai_summary?: string;
+  ai_analysis?: string;
 }

@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { classifyDocument } from "@/utils/aiUtils";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -16,8 +18,11 @@ export default function AddFile() {
   const [summary, setSummary] = useState("");
   const [category, setCategory] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState("");
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: toastNotification } = useToast();
   const { t } = useLanguage();
 
   const sanitizeFilename = (filename: string): string => {
@@ -28,10 +33,93 @@ export default function AddFile() {
       .replace(/[^a-zA-Z0-9._-]/g, '');
   };
 
+  const generateAiAnalysis = async (fileContent: string, fileName: string, fileType: string): Promise<{summary: string, analysis: string}> => {
+    try {
+      setIsAnalyzing(true);
+      
+      // Call the Supabase Edge Function for AI analysis
+      const { data, error } = await supabase.functions.invoke('analyze-document', {
+        body: {
+          content: fileContent,
+          title: fileName,
+          type: fileType
+        }
+      });
+      
+      if (error) throw error;
+      
+      return {
+        summary: data.summary || "No summary generated",
+        analysis: data.analysis || "No analysis generated"
+      };
+    } catch (error) {
+      console.error('Error generating AI analysis:', error);
+      return {
+        summary: "Failed to generate summary",
+        analysis: "Failed to generate analysis"
+      };
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const readFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          resolve(event.target.result.toString());
+        } else {
+          reject(new Error("Failed to read file"));
+        }
+      };
+      
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      
+      reader.readAsText(file);
+    });
+  };
+
+  const handleAnalyzeFile = async () => {
+    if (!file) {
+      toast.error(t('file.select'));
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      
+      // Read the file content
+      const fileContent = await readFileContent(file);
+      
+      // Generate AI analysis
+      const { summary, analysis } = await generateAiAnalysis(fileContent, file.name, file.type);
+      
+      // Update state with AI results
+      setAiSummary(summary);
+      setAiAnalysis(analysis);
+      
+      // Auto-populate summary field if it's empty
+      if (!summary.trim()) {
+        setSummary(summary);
+      }
+      
+      toast.success(t('file.analysis.success'));
+    } catch (error) {
+      console.error('Error analyzing file:', error);
+      toast.error(t('file.analysis.error'));
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      toast({
+      toastNotification({
         title: t('file.select'),
         variant: "destructive",
       });
@@ -65,6 +153,22 @@ export default function AddFile() {
         summary,
         fileName: file.name
       });
+      
+      // If AI analysis hasn't been performed yet, do it now
+      let finalAiSummary = aiSummary;
+      let finalAiAnalysis = aiAnalysis;
+      
+      if (!aiSummary || !aiAnalysis) {
+        try {
+          const fileContent = await readFileContent(file);
+          const { summary, analysis } = await generateAiAnalysis(fileContent, file.name, file.type);
+          finalAiSummary = summary;
+          finalAiAnalysis = analysis;
+        } catch (error) {
+          console.error('Error generating AI analysis during submission:', error);
+          // Continue with submission even if analysis fails
+        }
+      }
 
       // Then, create a link entry for the file
       const { error: linkError } = await supabase
@@ -81,19 +185,18 @@ export default function AddFile() {
             size: file.size,
             type: file.type
           },
+          ai_summary: finalAiSummary || null,
+          ai_analysis: finalAiAnalysis || null,
           user_id: user.id
         });
 
       if (linkError) throw linkError;
 
-      toast({
-        title: t('file.success'),
-        description: t('file.success.description'),
-      });
+      toast.success(t('file.success'));
       navigate("/");
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast({
+      toastNotification({
         title: t('file.error'),
         description: t('file.error.description'),
         variant: "destructive",
@@ -116,6 +219,45 @@ export default function AddFile() {
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="w-full mb-4"
               />
+              
+              {file && (
+                <div className="mb-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleAnalyzeFile}
+                    disabled={isAnalyzing}
+                    className="w-full"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t('file.analyzing')}
+                      </>
+                    ) : (
+                      t('file.analyze')
+                    )}
+                  </Button>
+                </div>
+              )}
+              
+              {(aiSummary || aiAnalysis) && (
+                <div className="p-4 border rounded-md mb-4 space-y-3 bg-muted/30">
+                  {aiSummary && (
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.summary')}</h3>
+                      <p className="text-sm mt-1">{aiSummary}</p>
+                    </div>
+                  )}
+                  
+                  {aiAnalysis && (
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground">{t('file.ai.analysis')}</h3>
+                      <p className="text-sm mt-1 whitespace-pre-line">{aiAnalysis}</p>
+                    </div>
+                  )}
+                </div>
+              )}
               
               <Input
                 type="text"
@@ -143,7 +285,14 @@ export default function AddFile() {
             </div>
             <div className="flex gap-4">
               <Button type="submit" disabled={isUploading}>
-                {isUploading ? t('file.uploading') : t('file.upload')}
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('file.uploading')}
+                  </>
+                ) : (
+                  t('file.upload')
+                )}
               </Button>
               <Button
                 type="button"

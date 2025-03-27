@@ -10,6 +10,7 @@ import { ArrowLeft, Download, Eye, FileText, Info, File, FileSpreadsheet } from 
 import { DocumentoExtraido } from '@/types/databaseTypes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Enhanced sample data with more detailed content
 const sampleDocuments: DocumentoExtraido[] = [
@@ -59,7 +60,9 @@ Este relatório apresenta os principais resultados e atividades da Agência Naci
         { categoria: "Saúde e Ciências da Vida", valor: 23 },
         { categoria: "Mobilidade e Indústria Avançada", valor: 17 }
       ]
-    }
+    },
+    ai_summary: "Este relatório apresenta uma visão abrangente das atividades da ANI em 2023, destacando 324 projetos aprovados com €156 milhões em investimento. Mostra progresso nos programas Portugal 2030, Horizonte Europa e PRR, com foco em quatro setores prioritários liderados pela Transição Digital. Inclui recomendações para 2024, como simplificação de processos e maior ênfase em economia circular.",
+    ai_analysis: "O relatório demonstra um forte desempenho da ANI em 2023, com indicadores positivos de execução financeira e implementação de programas. A distribuição setorial reflete as prioridades da estratégia nacional e europeia de inovação, com equilíbrio entre transição digital, sustentabilidade e ciências da vida.\n\nPontos fortes:\n- Demonstra capacidade de mobilização significativa de investimento\n- Evidencia um bom balanceamento entre diferentes setores estratégicos\n- Estabelece boas práticas de colaboração academia-indústria\n\nLimitações:\n- Falta de detalhes sobre os desafios enfrentados na implementação\n- Ausência de análise comparativa com anos anteriores\n- Pouca informação sobre o impacto económico real dos investimentos\n\nRelevância e aplicações:\n- Documento essencial para stakeholders do ecossistema de inovação português\n- Útil para fundamentar decisões estratégicas sobre alocação de recursos em 2024\n- Proporciona benchmarks importantes para avaliar o desempenho futuro da agência"
   },
   {
     id: "doc-2",
@@ -114,7 +117,9 @@ O Projeto X visa desenvolver um sistema inovador de gestão energética para edi
       duracao_meses: 24,
       trl_inicial: 4,
       trl_final: 8
-    }
+    },
+    ai_summary: "Proposta da TechEnergia Solutions para desenvolver um sistema de gestão energética baseado em IA e IoT para edifícios comerciais, visando redução de 30% no consumo energético. O projeto de €475.000 e 24 meses inclui desenvolvimento de sensores, algoritmos e interface, com testes em 5 edifícios piloto. Prevê comercialização até 2025, criação de 15 empregos e redução de 5.000 toneladas de CO2/ano.",
+    ai_analysis: "Esta candidatura apresenta uma proposta com potencial significativo no domínio da eficiência energética, alinhada com os objetivos europeus de sustentabilidade e transição digital.\n\nPontos fortes:\n- Abordagem tecnológica inovadora combinando IoT e IA\n- Objetivos quantificáveis claros (30% de redução de consumo)\n- Plano de implementação bem estruturado com fases lógicas\n- Forte potencial de impacto ambiental (5.000 ton CO2)\n\nPontos fracos:\n- Pouco detalhe sobre a diferenciação face a soluções existentes no mercado\n- Risco de subestimação do orçamento necessário para alguns componentes tecnológicos\n- Falta de informação sobre estratégias de escalabilidade pós-piloto\n\nOportunidades de financiamento:\n- Forte alinhamento com programas do PRR na área da transição climática\n- Potencial para integração com iniciativas de cidades inteligentes\n- Elegível para programas específicos de eficiência energética em edifícios\n\nRecomendações para avaliação:\n- Solicitar mais detalhes sobre a propriedade intelectual dos algoritmos\n- Verificar a experiência prévia da equipa em projetos similares\n- Avaliar realismo das projeções financeiras de comercialização"
   },
   {
     id: "doc-3",
@@ -183,7 +188,9 @@ O Projeto X visa desenvolver um sistema inovador de gestão energética para edi
         { categoria: "Atividades de Inovação", subcat: "Organizacional", valor: 35 },
         { categoria: "Atividades de Inovação", subcat: "Marketing", valor: 29 }
       ]
-    }
+    },
+    ai_summary: "Este questionário de inovação de 2023 apresenta dados de 156 empresas portuguesas, majoritariamente PMEs (89.7%), com predominância dos setores de tecnologia e indústria. 68% realizaram inovação de produto/serviço e 52% inovação de processo. A mediana de investimento em I&D foi de 2.7% do volume de negócios, com 45% das empresas colaborando com universidades. As principais barreiras incluem falta de financiamento (78%) e burocracia (63%), enquanto 42% utilizaram incentivos fiscais.",
+    ai_analysis: "Este questionário oferece um panorama valioso sobre o estado da inovação empresarial em Portugal, revelando tendências importantes e barreiras persistentes.\n\nInsights principais:\n- Existe uma clara predominância de inovação de produto/serviço sobre outros tipos de inovação, sugerindo um foco em resultados tangíveis e comercializáveis\n- A taxa relativamente baixa de inovação organizacional (35%) pode indicar uma oportunidade perdida, já que este tipo de inovação frequentemente potencializa outros tipos\n- A colaboração academia-empresa mostra números promissores (45%), mas ainda há espaço para crescimento\n\nImplicações para políticas públicas:\n1. A alta percentagem de empresas que apontam a falta de financiamento como barreira (78%) contrasta com os dados de acesso a apoios públicos, sugerindo possíveis problemas de:  \n   - Adequação dos instrumentos às necessidades reais das empresas\n   - Complexidade ou burocracia nos processos de candidatura\n   - Falta de consciencialização sobre os apoios disponíveis\n\n2. A baixa taxa de participação em projetos europeus (14%) indica uma oportunidade para melhorar a internacionalização da inovação portuguesa\n\n3. A falta de pessoal qualificado (57%) aponta para a necessidade de investimentos contínuos em formação especializada\n\nLimitações do estudo:\n- A amostra poderia ser maior para representar melhor o tecido empresarial\n- Falta análise longitudinal para identificar tendências ao longo do tempo\n- Ausência de dados sobre o impacto económico das inovações realizadas\n\nEste documento é particularmente útil para informar o desenho de novos programas de apoio à inovação e ajustar os existentes para melhor atender às necessidades identificadas."
   }
 ];
 
@@ -192,6 +199,7 @@ const DocumentDetailPage: React.FC = () => {
   const [document, setDocument] = useState<DocumentoExtraido | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     // Simulate fetching document data
@@ -319,67 +327,108 @@ const DocumentDetailPage: React.FC = () => {
                         {document.metadata.status}
                       </Badge>
                     )}
+                    {document.ai_summary && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                        AI Analyzed
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-2">Resumo do Documento</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-gray-700 text-sm whitespace-pre-line">{document.conteudo.substring(0, 400)}...</p>
-                </div>
-              </div>
-
-              {document.metadata?.grafico_dados && (
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Dados Principais</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex flex-col">
-                      <h4 className="text-md font-medium mb-2">Distribuição por Categoria</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {document.metadata.grafico_dados.map((item: any, index: number) => (
-                          <div key={index} className="flex flex-col items-center p-2 border rounded">
-                            <div className="text-lg font-bold">{item.valor}%</div>
-                            <div className="text-sm text-gray-500">{item.categoria}</div>
-                          </div>
-                        ))}
-                      </div>
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="w-full justify-start px-6">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                {document.ai_summary && (
+                  <TabsTrigger value="ai-analysis">Análise AI</TabsTrigger>
+                )}
+                <TabsTrigger value="metadata">Metadados</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="px-6 py-4">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Resumo do Documento</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-gray-700 text-sm whitespace-pre-line">{document.conteudo.substring(0, 400)}...</p>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {document.metadata?.dados_estatisticos && (
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Dados Estatísticos</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex flex-col">
-                      <div className="flex flex-wrap gap-2">
-                        {document.metadata.dados_estatisticos.map((item: any, index: number) => (
-                          <div key={index} className="flex flex-col items-center p-2 border rounded">
-                            <div className="text-lg font-bold">{item.valor}%</div>
-                            <div className="text-sm text-gray-500">{item.subcat}</div>
+                  {document.metadata?.grafico_dados && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Dados Principais</h3>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex flex-col">
+                          <h4 className="text-md font-medium mb-2">Distribuição por Categoria</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {document.metadata.grafico_dados.map((item: any, index: number) => (
+                              <div key={index} className="flex flex-col items-center p-2 border rounded">
+                                <div className="text-lg font-bold">{item.valor}%</div>
+                                <div className="text-sm text-gray-500">{item.categoria}</div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
+                  )}
+
+                  {document.metadata?.dados_estatisticos && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Dados Estatísticos</h3>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex flex-col">
+                          <div className="flex flex-wrap gap-2">
+                            {document.metadata.dados_estatisticos.map((item: any, index: number) => (
+                              <div key={index} className="flex flex-col items-center p-2 border rounded">
+                                <div className="text-lg font-bold">{item.valor}%</div>
+                                <div className="text-sm text-gray-500">{item.subcat}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              {document.ai_summary && (
+                <TabsContent value="ai-analysis" className="px-6 py-4">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Resumo AI</h3>
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <p className="text-gray-800">{document.ai_summary}</p>
+                      </div>
+                    </div>
+                    
+                    {document.ai_analysis && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-2">Análise Crítica</h3>
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                          <p className="text-gray-800 whitespace-pre-line">{document.ai_analysis}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              )}
+              
+              <TabsContent value="metadata" className="px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Metadados</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {formatMetadata(document.metadata)}
+                    </dl>
                   </div>
                 </div>
-              )}
-
-              <Separator />
-
-              <div>
-                <h3 className="text-lg font-medium mb-2">Metadados</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {formatMetadata(document.metadata)}
-                  </dl>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
+              </TabsContent>
+            </Tabs>
+            
+            <CardFooter className="flex justify-between p-6 pt-2">
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleDownload}>
                   <Download className="mr-2 h-4 w-4" />
