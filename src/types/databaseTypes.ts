@@ -43,4 +43,5 @@ export interface DocumentoExtraido {
   ai_summary?: string;
   ai_analysis?: string;
   fileUrl?: string;
+  status?: 'pendente' | 'analisado' | 'erro';
 }

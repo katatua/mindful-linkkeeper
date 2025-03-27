@@ -13,9 +13,14 @@ import { useNavigate } from 'react-router-dom';
 interface AddDataSourceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenChange }) => {
+const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ 
+  open, 
+  onOpenChange, 
+  onSuccess 
+}) => {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -25,7 +30,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
   const navigate = useNavigate();
 
   const validateFile = (file: File): boolean => {
-    const allowedTypes = ['application/pdf', 'text/csv'];
+    const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.ms-excel'];
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedTypes.includes(file.type)) {
@@ -58,6 +63,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
+    console.log('File selected:', selectedFile);
     if (selectedFile && validateFile(selectedFile)) {
       setFile(selectedFile);
       // Auto-populate name if not already set
@@ -87,7 +93,8 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
       
       if (file.type === 'application/pdf') {
         // For PDFs we only read a portion as binary data
-        reader.readAsArrayBuffer(file.slice(0, 5000));
+        const chunk = file.slice(0, 5000);
+        reader.readAsText(chunk);
       } else {
         // For CSV and other text files
         reader.readAsText(file);
@@ -97,6 +104,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submit button clicked, file:', file);
     
     if (!file) {
       toast({
@@ -118,30 +126,67 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
 
     try {
       setIsUploading(true);
+      console.log('Starting upload process...');
       
       // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!user) {
+        console.log('No authenticated user found');
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Você precisa estar autenticado para adicionar fontes de dados.',
+          variant: 'destructive',
+        });
+        setIsUploading(false);
+        return;
+      }
+      console.log('User authenticated:', user.id);
 
       // First, upload the file to storage
       const fileExt = file.name.split('.').pop();
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
+      console.log('Preparing to upload file:', fileName);
 
+      // Check if storage bucket exists and create it if not
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const filesBucket = buckets?.find(bucket => bucket.name === 'files');
+      
+      if (!filesBucket) {
+        console.log('Creating files bucket...');
+        const { data: newBucket, error: bucketError } = await supabase.storage.createBucket('files', {
+          public: true
+        });
+        
+        if (bucketError) {
+          console.error('Error creating bucket:', bucketError);
+          throw new Error('Failed to create storage bucket');
+        }
+        console.log('Bucket created:', newBucket);
+      }
+
+      console.log('Uploading file to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
         .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+      console.log('File uploaded successfully:', uploadData);
 
       // Get the public URL for the file
       const fileUrl = supabase.storage.from('files').getPublicUrl(fileName).data.publicUrl;
+      console.log('File public URL:', fileUrl);
 
       // Extract content for AI analysis
       setIsAnalyzing(true);
+      console.log('Beginning file content extraction for AI analysis...');
       let fileContent = '';
       try {
         fileContent = await readFileContent(file);
+        console.log('File content extracted, length:', fileContent.length);
       } catch (error) {
         console.error('Error reading file content:', error);
         // Continue with limited or no content for analysis
@@ -149,6 +194,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
       }
 
       // Call the AI analysis edge function
+      console.log('Calling analyze-document function...');
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-document', {
         body: {
           content: fileContent,
@@ -161,14 +207,17 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
       if (analysisError) {
         console.error('Error analyzing document:', analysisError);
         // Continue without analysis data
+      } else {
+        console.log('Analysis complete:', analysisData);
       }
 
       // Create a link entry for the file
-      const { error: linkError } = await supabase
+      console.log('Creating database entry...');
+      const { data: linkData, error: linkError } = await supabase
         .from('links')
         .insert({
           title: name.trim(),
-          url: fileName,
+          url: fileUrl,
           source: 'datasource',
           summary: description.trim() || (analysisData?.summary || ''),
           category: analysisData?.suggestedCategory || 'Research Document',
@@ -180,9 +229,15 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
           ai_summary: analysisData?.summary || null,
           ai_analysis: analysisData?.analysis || null,
           user_id: user.id
-        });
+        })
+        .select()
+        .single();
 
-      if (linkError) throw linkError;
+      if (linkError) {
+        console.error('Error creating link entry:', linkError);
+        throw linkError;
+      }
+      console.log('Database entry created:', linkData);
 
       toast({
         title: 'Fonte de dados adicionada',
@@ -190,9 +245,12 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ open, onOpenCha
       });
       
       onOpenChange(false);
-      navigate('/database?tab=datasources');
+      if (onSuccess) {
+        onSuccess();
+      }
+      navigate(`/database?tab=datasources`);
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error in upload process:', error);
       toast({
         title: 'Erro ao carregar arquivo',
         description: 'Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.',

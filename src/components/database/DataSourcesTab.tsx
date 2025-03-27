@@ -10,13 +10,14 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, FilePlus, Upload } from 'lucide-react';
+import { Database, FileText, FilePlus, Upload, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FonteDados, DocumentoExtraido } from '@/types/databaseTypes';
 import { Link } from 'react-router-dom';
 import AddDataSourceModal from './AddDataSourceModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 const initialDataSources: FonteDados[] = [
   {
@@ -61,23 +62,41 @@ export const DataSourcesTab: React.FC = () => {
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
   
   const fetchUserDocuments = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching user documents...');
       const { data, error } = await supabase
         .from('links')
         .select('*')
         .eq('source', 'datasource')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
+      }
+      console.log('Documents fetched:', data?.length || 0);
       setUserDocuments(data || []);
     } catch (error) {
-      console.error('Error fetching user documents:', error);
+      console.error('Error in fetchUserDocuments:', error);
+      toast({
+        title: 'Erro ao carregar documentos',
+        description: 'Não foi possível carregar a lista de documentos.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchUserDocuments();
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -88,10 +107,16 @@ export const DataSourcesTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Fontes de Dados</h2>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <FilePlus className="mr-2 h-4 w-4" />
-          Adicionar Fonte
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)}>
+            <FilePlus className="mr-2 h-4 w-4" />
+            Adicionar Fonte
+          </Button>
+        </div>
       </div>
       
       <p className="text-muted-foreground">
@@ -99,7 +124,7 @@ export const DataSourcesTab: React.FC = () => {
         dados extraídos e comandos necessários para inserção na base de dados.
       </p>
       
-      {userDocuments.length > 0 && (
+      {userDocuments.length > 0 ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Documentos Carregados</CardTitle>
@@ -136,6 +161,24 @@ export const DataSourcesTab: React.FC = () => {
               </Table>
             </ScrollArea>
           </CardContent>
+        </Card>
+      ) : isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <Card className="mb-6 py-8">
+          <div className="flex flex-col items-center justify-center text-center p-4">
+            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium">Nenhum documento carregado</h3>
+            <p className="text-muted-foreground mt-2 mb-4">
+              Clique em "Adicionar Fonte" para carregar seu primeiro documento.
+            </p>
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Adicionar Documento
+            </Button>
+          </div>
         </Card>
       )}
       
@@ -389,6 +432,7 @@ VALUES (
       <AddDataSourceModal 
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        onSuccess={fetchUserDocuments}
       />
     </div>
   );

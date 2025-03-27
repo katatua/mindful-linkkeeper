@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { content, title, type, fileUrl } = await req.json() as RequestBody;
+    console.log('Analyze document function called');
+    const requestBody = await req.json() as RequestBody;
+    const { content, title, type, fileUrl } = requestBody;
+    
+    console.log('Request received:', {
+      contentLength: content?.length || 0,
+      title,
+      type,
+      fileUrl: fileUrl ? 'Provided' : 'Not provided'
+    });
     
     // Limit content to a reasonable size for API calls
     const truncatedContent = content.length > 15000 
@@ -71,9 +81,21 @@ Deno.serve(async (req) => {
     // Call OpenAI API for analysis
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        error: "OpenAI API key not configured",
+        suggestedTitle: title.replace(/\.[^/.]+$/, ""),
+        suggestedCategory: "Research Document",
+        summary: "No AI summary available. The API key for analysis is missing.",
+        analysis: "Unable to provide analysis due to missing API configuration.",
+        fileUrl
+      }), {
+        status: 200, // Still return 200 to avoid breaking the upload flow
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
+    console.log('Calling OpenAI API...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -100,11 +122,24 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const error = await response.text();
       console.error('OpenAI API error:', error);
-      throw new Error('Failed to analyze document');
+      
+      // Return a fallback response that doesn't break the upload flow
+      return new Response(JSON.stringify({ 
+        error: "Failed to analyze document with AI",
+        suggestedTitle: title.replace(/\.[^/.]+$/, ""),
+        suggestedCategory: "Research Document",
+        summary: "No AI summary available. There was an error in the AI analysis process.",
+        analysis: "Unable to provide analysis due to an error in the AI service.",
+        fileUrl
+      }), {
+        status: 200, // Still return 200 to avoid breaking the upload flow
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
     const analysisText = data.choices[0].message.content.trim();
+    console.log('Received analysis from OpenAI');
     
     // Extract title, category, summary and analysis from the text
     let suggestedTitle = "";
@@ -155,11 +190,11 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: error.message,
       suggestedTitle: "",
-      suggestedCategory: "",
+      suggestedCategory: "Research Document",
       summary: "Failed to generate summary due to an error.",
       analysis: "The document analysis could not be completed. Please try again later."
     }), {
-      status: 500,
+      status: 200, // Return 200 to avoid breaking the upload flow
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
