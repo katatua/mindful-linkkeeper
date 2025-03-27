@@ -47,24 +47,20 @@ export const Header = () => {
     navigate("/auth");
   };
 
-  const goToDashboard = () => {
-    navigate("/portal");
-  };
-
   return (
     <header className="bg-white border-b py-3 px-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <HamburgerMenu />
         <div 
           className="flex items-center gap-2 cursor-pointer"
-          onClick={goToDashboard}
+          onClick={() => navigate("/")}
         >
           <img 
             src="https://via.placeholder.com/40?text=ANI" 
             alt="ANI Logo" 
             className="h-10 w-10 rounded" 
           />
-          <h1 className="text-xl font-bold sm:block">{t('app.title')}</h1>
+          <h1 className="text-xl font-bold hidden sm:block">{t('app.title')}</h1>
         </div>
       </div>
       

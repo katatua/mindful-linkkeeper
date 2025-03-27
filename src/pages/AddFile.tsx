@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -41,8 +42,7 @@ export default function AddFile() {
       setIsUploading(true);
       
       // Get the current user's ID
-      const userResult = await supabase.auth.getUser();
-      const user = userResult.data.user;
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       // First, upload the file to storage
@@ -50,11 +50,11 @@ export default function AddFile() {
       const sanitizedName = sanitizeFilename(file.name);
       const fileName = `${Date.now()}-${sanitizedName}`;
 
-      const uploadResult = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
         .upload(fileName, file);
 
-      if (uploadResult.error) throw uploadResult.error;
+      if (uploadError) throw uploadError;
 
       // Auto-generate title from filename if not provided
       const displayTitle = title.trim() || file.name.replace(/\.[^/.]+$/, "");
@@ -67,7 +67,7 @@ export default function AddFile() {
       });
 
       // Then, create a link entry for the file
-      const linkResult = await supabase
+      const { error: linkError } = await supabase
         .from('links')
         .insert({
           title: displayTitle,
@@ -84,7 +84,7 @@ export default function AddFile() {
           user_id: user.id
         });
 
-      if (linkResult.error) throw linkResult.error;
+      if (linkError) throw linkError;
 
       toast({
         title: t('file.success'),

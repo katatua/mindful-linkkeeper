@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,22 +26,18 @@ export default function AddLink() {
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true);
-      const result = await supabase.auth.getSession();
-      setIsAuthenticated(!!result.data.session);
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
       setIsLoading(false);
     };
     
     checkAuth();
     
-    const subscription = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
     });
     
-    return () => {
-      if (subscription && subscription.data) {
-        subscription.data.subscription.unsubscribe();
-      }
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,8 +64,8 @@ export default function AddLink() {
     try {
       setIsSubmitting(true);
       
-      const userResult = await supabase.auth.getUser();
-      const userId = userResult.data.user?.id;
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
       
       if (!userId) {
         toast({
@@ -80,7 +77,7 @@ export default function AddLink() {
         return;
       }
 
-      const classificationResult = await supabase.functions.invoke(
+      const { data: classificationData, error: classificationError } = await supabase.functions.invoke(
         'classify-document',
         {
           body: { 
@@ -90,21 +87,21 @@ export default function AddLink() {
         }
       );
 
-      if (classificationResult.error) throw classificationResult.error;
+      if (classificationError) throw classificationError;
 
-      const insertResult = await supabase
+      const { error } = await supabase
         .from('links')
         .insert({
           url,
           title,
           summary: summary || null,
           category,
-          classification: classificationResult.data?.classification,
+          classification: classificationData?.classification,
           source: 'web',
           user_id: userId
         });
 
-      if (insertResult.error) throw insertResult.error;
+      if (error) throw error;
 
       toast({
         title: t('link.success'),

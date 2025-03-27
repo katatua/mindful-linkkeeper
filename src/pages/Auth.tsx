@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,31 +17,6 @@ export default function Auth() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Logged in successfully",
-      });
-      navigate("/");
-    } catch (error) {
-      toast({
-        title: "Authentication error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -57,7 +33,15 @@ export default function Auth() {
           description: "Please check your email to verify your account",
         });
       } else {
-        await signIn(email, password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast({
+          title: "Logged in successfully",
+        });
+        navigate("/");
       }
     } catch (error: any) {
       toast({
@@ -71,16 +55,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate("/")}>
-        <img 
-          src="https://via.placeholder.com/50?text=ANI" 
-          alt="ANI Logo" 
-          className="h-12 w-12 rounded" 
-        />
-        <h1 className="text-2xl font-bold">{t('app.title')}</h1>
-      </div>
-      
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{isSignUp ? t('auth.signup') : t('auth.login')}</CardTitle>

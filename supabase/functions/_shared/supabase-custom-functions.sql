@@ -21,32 +21,6 @@ BEGIN
 END;
 $$;
 
--- Function for raw SQL execution (for admins only)
-CREATE OR REPLACE FUNCTION public.execute_raw_query(sql_query text)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  result JSONB;
-BEGIN
-  -- For security in this demo, still restrict to SELECT statements
-  -- In a production environment with proper security, this could be modified to handle write operations
-  IF NOT (lower(btrim(sql_query)) LIKE 'select%') THEN
-    RAISE EXCEPTION 'Only SELECT queries are allowed for security reasons';
-  END IF;
-  
-  -- Execute the query and get results as JSON
-  EXECUTE 'SELECT json_agg(t) FROM (' || sql_query || ') t' INTO result;
-  
-  -- Return empty array instead of null
-  RETURN COALESCE(result, '[]'::jsonb);
-END;
-$$;
-
 -- Add row-level security and grants
 REVOKE ALL ON FUNCTION public.execute_sql_query(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.execute_sql_query(text) TO service_role;
-
-REVOKE ALL ON FUNCTION public.execute_raw_query(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.execute_raw_query(text) TO service_role;

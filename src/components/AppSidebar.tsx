@@ -1,209 +1,108 @@
+
 import {
-  LayoutDashboard,
-  Settings,
-  HelpCircle,
+  Plus,
   LogOut,
-  Compass,
-  Book,
-  MessageSquare,
-  Database,
+  FolderPlus,
+  Link as LinkIcon,
+  FileUp,
+  LogIn,
 } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from "react";
+import { useSidebar } from "@/contexts/SidebarContext";
 
-interface SidebarProps {
-  children: React.ReactNode;
-}
+const menuItems = [
+  { title: "Add File", icon: FileUp, url: "/add-file" },
+  { title: "Add Link", icon: LinkIcon, url: "/add-link" },
+  { title: "Add Category", icon: FolderPlus, url: "/add-category" },
+];
 
-const Sidebar = ({ children }: SidebarProps) => {
-  return (
-    <div className="flex h-screen">
-      <div className="w-60 bg-gray-50 border-r flex-shrink-0">
-        {children}
-      </div>
-      <div className="flex-1 overflow-y-auto">{children}</div>
-    </div>
-  );
-};
-
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  text: string;
-  active: boolean;
-  onClick?: () => void;
-}
-
-const SidebarItem = ({ icon, text, active, onClick }: SidebarItemProps) => {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            className={`justify-start px-4 py-2 w-full font-normal ${
-              active ? "bg-gray-200 dark:bg-gray-700" : ""
-            }`}
-            onClick={onClick}
-          >
-            <div className="flex items-center">
-              {icon}
-              <span className="ml-2">{text}</span>
-            </div>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">
-          <p>{text}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-};
-
-const AppSidebar = () => {
+export function AppSidebar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { pathname } = location;
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isOpen, toggle } = useSidebar();
 
   useEffect(() => {
-    setMounted(true);
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme);
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+      });
+      navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Error logging out",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogin = () => {
+    navigate("/auth");
   };
 
   return (
-    <Sidebar>
+    <div className={`w-64 h-full bg-white border-r transition-all ${isOpen ? '' : 'w-0 overflow-hidden'}`}>
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">ANI Portal</h2>
+          <Button variant="ghost" size="sm" onClick={toggle}>
+            {isOpen ? "←" : "→"}
+          </Button>
+        </div>
+      </div>
+      
       <div className="p-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="justify-start px-4 py-2 w-full">
-              <div className="flex items-center">
-                <Avatar className="mr-2">
-                  <AvatarImage src="https://github.com/shadcn.png" />
-                  <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
-                <span className="font-normal">User Name</span>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <h3 className="text-sm font-medium text-gray-500 mb-3">Actions</h3>
+        <nav className="space-y-1">
+          {isAuthenticated && menuItems.map((item) => (
+            <a
+              key={item.title}
+              href={item.url}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.title}</span>
+            </a>
+          ))}
+          
+          {isAuthenticated ? (
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+          ) : (
+            <button 
+              onClick={handleLogin}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+            >
+              <LogIn className="h-5 w-5" />
+              <span>Login</span>
+            </button>
+          )}
+        </nav>
       </div>
-
-      <SidebarItem
-        icon={<LayoutDashboard className="h-4 w-4" />}
-        text="Dashboard"
-        active={pathname === "/portal"}
-        onClick={() => navigate("/portal")}
-      />
-      <SidebarItem
-        icon={<Compass className="h-4 w-4" />}
-        text="Discovery"
-        active={pathname.includes("/portal/discovery")}
-        onClick={() => navigate("/portal/discovery")}
-      />
-      <SidebarItem
-        icon={<Book className="h-4 w-4" />}
-        text="Knowledge Base"
-        active={pathname.includes("/portal/knowledge")}
-        onClick={() => navigate("/portal/knowledge")}
-      />
-      <SidebarItem
-        icon={<MessageSquare className="h-4 w-4" />}
-        text="AI Assistant"
-        active={pathname.includes("/portal/ai")}
-        onClick={() => navigate("/portal/ai")}
-      />
-      <SidebarItem
-        icon={<Database className="h-4 w-4" />}
-        text="Database"
-        active={pathname.includes('/portal/database')}
-        onClick={() => navigate('/portal/database')}
-      />
-
-      <div className="mt-auto p-4">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-lg">
-            <SheetHeader>
-              <SheetTitle>Settings</SheetTitle>
-              <SheetDescription>
-                Make changes to your profile here. Click save when you're done.
-              </SheetDescription>
-            </SheetHeader>
-            <div className="grid gap-4 py-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="language">Language</Label>
-                <select
-                  id="language"
-                  className="border rounded px-2 py-1"
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as 'en' | 'pt')}
-                >
-                  <option value="en">English</option>
-                  <option value="pt">Português</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="theme">Theme</Label>
-                <Switch
-                  id="theme"
-                  checked={theme === "dark"}
-                  onCheckedChange={(checked) =>
-                    handleThemeChange(checked ? "dark" : "light")
-                  }
-                />
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </Sidebar>
+    </div>
   );
-};
-
-export default AppSidebar;
+}

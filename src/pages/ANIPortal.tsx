@@ -13,22 +13,13 @@ import AnalyticsPage from "./AnalyticsPage";
 import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
-import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { DataVisualization } from "@/components/DataVisualization";
-import { useVisualization } from "@/hooks/useVisualization";
-import DatabaseQuery from "@/components/DatabaseQuery";
-import SyntheticDataPage from "./SyntheticDataPage";
-import { Button } from "@/components/ui/button";
-import { X, MessageCircle } from "lucide-react";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showAssistant, setShowAssistant] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t, language } = useLanguage();
-  const { showVisualization, visualizationData, setShowVisualization } = useVisualization();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Check initial auth state
@@ -44,22 +35,14 @@ const ANIPortal = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleCloseVisualization = () => {
-    setShowVisualization(false);
-  };
-  
-  const toggleAssistant = () => {
-    setShowAssistant(prev => !prev);
-  };
-
   return (
     <div className="h-screen flex flex-col">
       <Header />
       
       <div className="flex flex-1 overflow-hidden">
-        <main className={`flex-grow ${showAssistant ? 'max-w-[calc(100%-36rem)]' : 'max-w-full'} overflow-auto bg-gray-50 transition-all duration-300`}>
+        <main className="flex-grow overflow-auto bg-gray-50">
           <Tabs defaultValue="dashboard" className="h-full">
-            <div className="container mx-auto py-4 flex justify-between items-center">
+            <div className="container mx-auto py-4">
               <TabsList>
                 <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
                 <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
@@ -67,36 +50,8 @@ const ANIPortal = () => {
                 <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>
                 <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
                 <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
-                <TabsTrigger value="database">Consulta BD</TabsTrigger>
-                <TabsTrigger value="synthetic">Dados Sintéticos</TabsTrigger>
               </TabsList>
-              
-              <div className="flex items-center gap-2">
-                {!showAssistant && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-1" 
-                    onClick={toggleAssistant}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    <span>{t('assistant.show')}</span>
-                  </Button>
-                )}
-                <div className="md:hidden">
-                  <HamburgerMenu />
-                </div>
-              </div>
             </div>
-            
-            {showVisualization && visualizationData && visualizationData.length > 0 && (
-              <div className="container mx-auto px-4 pt-4">
-                <DataVisualization 
-                  data={visualizationData} 
-                  onClose={handleCloseVisualization}
-                />
-              </div>
-            )}
             
             <TabsContent value="dashboard" className="h-full">
               <Dashboard />
@@ -121,38 +76,19 @@ const ANIPortal = () => {
             <TabsContent value="policies" className="h-full">
               <PoliciesPage />
             </TabsContent>
-            
-            <TabsContent value="database" className="h-full">
-              <DatabaseQuery />
-            </TabsContent>
-            
-            <TabsContent value="synthetic" className="h-full">
-              <SyntheticDataPage />
-            </TabsContent>
           </Tabs>
         </main>
         
-        {showAssistant && (
-          <div className="w-144 border-l flex flex-col bg-white transition-all duration-300">
-            <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-medium flex items-center gap-2">
-                {t('assistant.title')}
-              </h3>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8" 
-                onClick={toggleAssistant}
-                aria-label={language === 'en' ? 'Close assistant' : 'Fechar assistente'}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <AIAssistant />
-            </div>
+        <div className="w-96 border-l flex flex-col bg-white">
+          <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+            <h3 className="font-medium flex items-center gap-2">
+              {t('assistant.title')}
+            </h3>
           </div>
-        )}
+          <div className="flex-1 overflow-hidden">
+            <AIAssistant />
+          </div>
+        </div>
       </div>
       
       <Toaster />
