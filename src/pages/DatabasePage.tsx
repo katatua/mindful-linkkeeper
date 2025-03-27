@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -205,19 +204,15 @@ const DatabasePage: React.FC = () => {
     fetchSampleData();
   }, []);
 
-  // Helper to check if a table name is valid
   const isValidTableName = (name: string): boolean => {
     return tables.some(table => table.name === name);
   };
 
-  // Function to fix common SQL syntax issues
   const repairSqlQuery = (query: string): string => {
     let repairedQuery = query.trim();
     
-    // Remove all semicolons (not just ones in the middle)
     repairedQuery = repairedQuery.replace(/;/g, ' ').trim();
     
-    // Fix date functions for PostgreSQL
     repairedQuery = repairedQuery.replace(/strftime\s*\(\s*['"]%Y['"]\s*,\s*([^)]+)\s*\)/gi, 
       'EXTRACT(YEAR FROM $1)');
     
@@ -226,7 +221,6 @@ const DatabasePage: React.FC = () => {
     repairedQuery = repairedQuery.replace(/NOW\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
     repairedQuery = repairedQuery.replace(/CURDATE\s*\(\s*\)/gi, 'CURRENT_DATE');
     
-    // Handle incomplete queries that just end with FROM
     if (repairedQuery.toLowerCase().endsWith('from')) {
       const columnTableMap: Record<string, string> = {
         'name': 'ani_funding_programs',
@@ -244,7 +238,6 @@ const DatabasePage: React.FC = () => {
         'country': 'ani_international_collaborations'
       };
       
-      // Try to guess the table based on selected columns
       const columnsMatch = repairedQuery.match(/SELECT\s+([\s\S]+?)\s+FROM/i);
       if (columnsMatch && columnsMatch[1]) {
         const columns = columnsMatch[1].split(',').map(col => col.trim().split(' ')[0]);
@@ -275,7 +268,6 @@ const DatabasePage: React.FC = () => {
       }
     }
     
-    // Fix ordering issues - ORDER BY should be outside WHERE clause
     const whereOrderByMatch = repairedQuery.match(/WHERE\s+(.*?)\s*ORDER\s+BY\s+(.*?)(?:$|LIMIT|GROUP)/i);
     if (whereOrderByMatch) {
       const wherePart = whereOrderByMatch[1];
@@ -289,7 +281,6 @@ const DatabasePage: React.FC = () => {
       repairedQuery = `${beforeWhere} WHERE ${wherePart} ORDER BY ${orderByPart}${afterOrderBy}`;
     }
     
-    // Add WHERE clause for open/available programs if query mentions them
     if (question.toLowerCase().includes('abertos') || 
         question.toLowerCase().includes('disponíveis') ||
         question.toLowerCase().includes('ainda estão') ||
@@ -302,7 +293,6 @@ const DatabasePage: React.FC = () => {
       }
     }
     
-    // Add default ordering for funding programs if not specified
     if (repairedQuery.toLowerCase().includes('ani_funding_programs') && 
         !repairedQuery.toLowerCase().includes('order by')) {
       repairedQuery += ' ORDER BY application_deadline';
@@ -311,12 +301,10 @@ const DatabasePage: React.FC = () => {
     return repairedQuery;
   };
 
-  // Execute SQL query with automatic repair attempts (returns: success, results, error message)
   const executeSQL = async (sqlQuery: string): Promise<{success: boolean, results: ResultsType, error?: string}> => {
     try {
       console.log("Executing SQL query:", sqlQuery);
       
-      // First attempt with original query
       const { data: queryResults, error: queryError } = await supabase.rpc('execute_sql_query', {
         sql_query: sqlQuery
       });
@@ -324,13 +312,11 @@ const DatabasePage: React.FC = () => {
       if (queryError) {
         console.log("Query error, attempting to repair:", queryError.message);
         
-        // Try to repair the query
         const repairedQuery = repairSqlQuery(sqlQuery);
         
         if (repairedQuery !== sqlQuery) {
           console.log("Repaired query:", repairedQuery);
           
-          // Try again with the repaired query
           const { data: repairedResults, error: repairedError } = await supabase.rpc('execute_sql_query', {
             sql_query: repairedQuery
           });
@@ -357,23 +343,21 @@ const DatabasePage: React.FC = () => {
           };
         }
       } else {
-        // Original query succeeded
         return { 
           success: true, 
           results: toResultsArray(queryResults)
         };
       }
-    } catch (error) {
-      console.error("Error executing SQL:", error);
+    } catch (err) {
+      console.error("Error executing SQL:", err);
       return {
         success: false,
         results: [],
-        error: error.message
+        error: err.message
       };
     }
   };
 
-  // Main function to handle question submission
   const handleQuestionSubmit = async () => {
     if (!question.trim()) {
       toast({
@@ -387,7 +371,6 @@ const DatabasePage: React.FC = () => {
     await executeQuestion(question);
   };
 
-  // Process user question, generate and execute SQL query
   const executeQuestion = async (questionText: string) => {
     setIsLoading(true);
     setResults([]);
@@ -397,31 +380,24 @@ const DatabasePage: React.FC = () => {
     setQuestion(questionText);
 
     try {
-      // Get AI response
       const aiResponse = await generateResponse(questionText);
       
       if (aiResponse) {
-        // Extract SQL from AI response
         const sqlMatch = aiResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
         
         if (sqlMatch && sqlMatch[1]) {
-          // Automatically fix common SQL issues in the background
           let queryToRun = sqlMatch[1].trim();
           
-          // Check if there are any repairs needed
           const needsRepair = queryToRun.includes(';') || 
                               queryToRun.toLowerCase().includes("date('now')") ||
                               queryToRun.toLowerCase().includes("strftime");
           
           if (needsRepair) {
             queryToRun = repairSqlQuery(queryToRun);
-            // Don't show repair toast - it's done in the background
           }
           
-          // Set the final SQL to show to the user
           setSqlQuery(queryToRun);
           
-          // Try to extract results directly from the AI response first
           const resultsMatch = aiResponse.match(/<RESULTS>([\s\S]*?)<\/RESULTS>/);
           
           if (resultsMatch && resultsMatch[1]) {
@@ -430,7 +406,6 @@ const DatabasePage: React.FC = () => {
               let parsedResults = JSON.parse(parsedText);
               setResults(toResultsArray(parsedResults));
             } catch (error) {
-              // If parsing fails, execute the query directly
               console.log("Failed to parse results from AI response, executing query directly");
               const { success, results, error } = await executeSQL(queryToRun);
               
@@ -441,7 +416,6 @@ const DatabasePage: React.FC = () => {
               }
             }
           } else {
-            // No results in AI response, execute query directly
             const { success, results, error } = await executeSQL(queryToRun);
             
             if (success) {
@@ -451,30 +425,25 @@ const DatabasePage: React.FC = () => {
             }
           }
         } else {
-          // No SQL in the response, try to generate one for common queries
           if (questionText.toLowerCase().includes('abertos') || 
               questionText.toLowerCase().includes('disponíveis') ||
               questionText.toLowerCase().includes('ainda estão') ||
               questionText.toLowerCase().includes('open') ||
               questionText.toLowerCase().includes('available')) {
             
-            // Generate a query for programs with upcoming deadlines
             const generatedQuery = `SELECT id, name, description, application_deadline, total_budget FROM ani_funding_programs WHERE application_deadline >= CURRENT_DATE ORDER BY application_deadline`;
             setSqlQuery(generatedQuery);
             
-            // Execute the generated query
             const { success, results, error } = await executeSQL(generatedQuery);
             
             if (success) {
               setResults(results);
-              // No toast for automatic query generation - it's done in the background
             } else {
               setQueryError(error || "Unknown error executing query");
             }
           }
         }
         
-        // Extract explanation from AI response
         const cleanExplanation = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/g, '')
           .replace(/<RESULTS>[\s\S]*?<\/RESULTS>/g, '')
           .trim();
