@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
@@ -14,6 +13,25 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Function to get the current OpenAI model from database settings
+async function getCurrentOpenAIModel(): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc('get_database_setting', {
+      setting_key: 'openai_model'
+    });
+    
+    if (error) {
+      console.error("Error fetching OpenAI model:", error.message);
+      return 'gpt-4o-2024-11-20'; // Default model
+    }
+    
+    return data || 'gpt-4o-2024-11-20';
+  } catch (error) {
+    console.error("Error in getCurrentOpenAIModel:", error);
+    return 'gpt-4o-2024-11-20';
+  }
+}
 
 async function executeQuery(query: string): Promise<{ data: any; error: any }> {
   try {
@@ -84,7 +102,10 @@ serve(async (req) => {
     // Parse the request body
     const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
     
-    console.log(`Making request to OpenAI API with model: gpt-4o-2024-11-20`);
+    // Get the current OpenAI model from database settings
+    const openaiModel = await getCurrentOpenAIModel();
+    
+    console.log(`Making request to OpenAI API with model: ${openaiModel}`);
 
     // Create a system prompt that explains the database schema
     const systemPrompt = getEnhancedSystemPrompt();
@@ -128,7 +149,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-2024-11-20',
+        model: openaiModel,
         messages: [
           { role: 'system', content: systemPrompt },
           // Include chat history

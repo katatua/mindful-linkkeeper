@@ -9,7 +9,9 @@ import {
   generateResponse, 
   genId, 
   getCurrentAIProvider,
-  setAIProvider
+  setAIProvider,
+  getCurrentAIModel,
+  setAIModel
 } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -33,6 +35,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Message {
   id: string;
@@ -49,26 +58,49 @@ export const AIAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [provider, setProvider] = useState<string>('gemini');
+  const [geminiModel, setGeminiModel] = useState<string>('gemini-2.5-pro-exp-03-25');
+  const [openaiModel, setOpenaiModel] = useState<string>('gpt-4o-2024-11-20');
+  const [currentModel, setCurrentModel] = useState<string>('');
   const { toast } = useToast();
   
-  // Load the current AI provider on component mount
+  // Load the current AI provider and model on component mount
   useEffect(() => {
-    const loadProvider = async () => {
+    const loadProviderAndModel = async () => {
       const currentProvider = await getCurrentAIProvider();
       setProvider(currentProvider);
+      
+      const model = await getCurrentAIModel();
+      setCurrentModel(model);
+      
+      // Set the corresponding model in the state based on provider
+      if (currentProvider === 'gemini') {
+        setGeminiModel(model);
+      } else if (currentProvider === 'openai') {
+        setOpenaiModel(model);
+      }
     };
     
-    loadProvider();
+    loadProviderAndModel();
   }, []);
   
   const handleChangeProvider = async (value: string) => {
     if (value === 'gemini' || value === 'openai') {
+      // Set the appropriate model based on the provider
+      const modelToUse = value === 'gemini' ? geminiModel : openaiModel;
+      
       const success = await setAIProvider(value);
       if (success) {
         setProvider(value);
+        
+        // Also update the model to use the saved model for that provider
+        const modelSuccess = await setAIModel(modelToUse);
+        if (modelSuccess) {
+          setCurrentModel(modelToUse);
+        }
+        
         toast({
           title: "AI Provider Updated",
-          description: `Now using ${value === 'gemini' ? 'Google Gemini' : 'OpenAI'} as the AI provider.`,
+          description: `Now using ${value === 'gemini' ? 'Google Gemini' : 'OpenAI'} as the AI provider with model ${modelToUse}.`,
         });
       } else {
         toast({
@@ -77,6 +109,31 @@ export const AIAssistant: React.FC = () => {
           variant: "destructive",
         });
       }
+    }
+  };
+  
+  const handleChangeModel = async (value: string) => {
+    const success = await setAIModel(value);
+    if (success) {
+      setCurrentModel(value);
+      
+      // Also update the provider-specific model
+      if (provider === 'gemini') {
+        setGeminiModel(value);
+      } else if (provider === 'openai') {
+        setOpenaiModel(value);
+      }
+      
+      toast({
+        title: "AI Model Updated",
+        description: `Now using ${value} model.`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update AI model. Please try again.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -250,13 +307,39 @@ export const AIAssistant: React.FC = () => {
                 <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>AI Provider</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuRadioGroup value={provider} onValueChange={handleChangeProvider}>
                 <DropdownMenuRadioItem value="gemini">Google Gemini</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="openai">OpenAI</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>AI Model</DropdownMenuLabel>
+              
+              {provider === 'gemini' ? (
+                <Select value={geminiModel} onValueChange={handleChangeModel}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</SelectItem>
+                    <SelectItem value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</SelectItem>
+                    <SelectItem value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={openaiModel} onValueChange={handleChangeModel}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</SelectItem>
+                    <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           

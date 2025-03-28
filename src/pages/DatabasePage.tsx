@@ -22,8 +22,19 @@ import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 import { useLocation } from 'react-router-dom';
-import { getCurrentAIModel } from '@/utils/aiUtils';
+import { 
+  getCurrentAIModel, 
+  getCurrentAIProvider, 
+  setAIModel 
+} from '@/utils/aiUtils';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface GenericTableData {
   id?: string;
@@ -152,6 +163,7 @@ export const DatabasePage: React.FC = () => {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
   const [currentAIModel, setCurrentAIModel] = useState<string>('Loading...');
+  const [currentProvider, setCurrentProvider] = useState<string>('gemini');
   const { toast } = useToast();
 
   const getActiveTabFromURL = () => {
@@ -166,17 +178,20 @@ export const DatabasePage: React.FC = () => {
   }, [location.search]);
 
   useEffect(() => {
-    const fetchAIModel = async () => {
+    const fetchAIInfo = async () => {
       try {
         const model = await getCurrentAIModel();
         setCurrentAIModel(model);
+        
+        const provider = await getCurrentAIProvider();
+        setCurrentProvider(provider);
       } catch (error) {
         console.error("Error fetching AI model:", error);
         setCurrentAIModel("Error loading model");
       }
     };
     
-    fetchAIModel();
+    fetchAIInfo();
     
     const savedHistory = localStorage.getItem('queryHistory');
     if (savedHistory) {
@@ -440,9 +455,27 @@ export const DatabasePage: React.FC = () => {
   };
 
   const renderAIModelInfo = () => (
-    <div className="text-sm text-gray-500 mt-2 flex items-center">
-      <span className="mr-2">Current AI Model:</span>
-      <Badge variant="outline" className="font-mono">{currentAIModel}</Badge>
+    <div className="text-sm flex items-center gap-2">
+      <span className="text-gray-500">Current AI Model:</span>
+      <Select value={currentAIModel} onValueChange={handleModelChange}>
+        <SelectTrigger className="h-8 w-64 text-xs font-mono">
+          <SelectValue placeholder="Select model" />
+        </SelectTrigger>
+        <SelectContent>
+          {currentProvider === 'gemini' ? (
+            <>
+              <SelectItem value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</SelectItem>
+              <SelectItem value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</SelectItem>
+              <SelectItem value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</SelectItem>
+            </>
+          ) : (
+            <>
+              <SelectItem value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</SelectItem>
+              <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+            </>
+          )}
+        </SelectContent>
+      </Select>
     </div>
   );
 

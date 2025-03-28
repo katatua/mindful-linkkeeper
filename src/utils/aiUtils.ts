@@ -79,6 +79,44 @@ export const setAIProvider = async (provider: 'gemini' | 'openai') => {
   }
 };
 
+// Add function to set the AI model
+export const setAIModel = async (model: string) => {
+  try {
+    // First get the current provider to know which model setting to update
+    const provider = await getCurrentAIProvider();
+    
+    // Update both the current model and the provider-specific model
+    const promises = [
+      // Update the main ai_model setting
+      supabase.from('ani_database_settings').upsert({ 
+        setting_key: 'ai_model', 
+        setting_value: model,
+        updated_at: new Date().toISOString()
+      }),
+      
+      // Also update the provider-specific model setting for persistence
+      supabase.from('ani_database_settings').upsert({ 
+        setting_key: provider === 'gemini' ? 'gemini_model' : 'openai_model', 
+        setting_value: model,
+        updated_at: new Date().toISOString()
+      })
+    ];
+    
+    const results = await Promise.all(promises);
+    const hasError = results.some(result => result.error);
+    
+    if (hasError) {
+      console.error('Errors in updating model settings:', results.map(r => r.error));
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error setting AI model:', error);
+    return false;
+  }
+};
+
 // Add function to generate a unique ID
 export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
