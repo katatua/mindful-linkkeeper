@@ -33,12 +33,28 @@ export const ReportGenerator = () => {
       if (topic.toLowerCase().includes(language === 'pt' ? "renovável" : "renewable") || 
           topic.toLowerCase().includes(language === 'pt' ? "energia" : "energy")) {
         reportContent = language === 'pt' ? 
-          generateRenewableEnergyReportPT(location, year) :
-          generateRenewableEnergyReport(location, year);
+          `# Relatório de Energia Renovável em ${location} (${year})
+
+## Introdução
+
+Este relatório analisa o estado atual da energia renovável em ${location}.` :
+          `# Renewable Energy Report in ${location} (${year})
+
+## Introduction
+
+This report analyzes the current state of renewable energy in ${location}.`;
       } else {
         reportContent = language === 'pt' ?
-          generateGeneralReportPT(topic, location, year, reportStyle) :
-          generateGeneralReport(topic, location, year, reportStyle);
+          `# Relatório Geral sobre ${topic} em ${location} (${year})
+
+## Introdução
+
+Este relatório examina ${topic} em ${location} durante ${year}.` :
+          `# General Report on ${topic} in ${location} (${year})
+
+## Introduction
+
+This report examines ${topic} in ${location} during ${year}.`;
       }
       
       // Extract visualizations from the report content
@@ -188,7 +204,7 @@ A distribuição do investimento em P&D entre as tecnologias de energia renováv
 
 Os pedidos de patentes relacionados a tecnologias de energia renovável de pesquisadores e empresas baseados em ${location} totalizaram 72 em ${year}, marcando um aumento de 22% em relação ao ano anterior. Mais notável é o crescimento em patentes relacionadas a melhorias na eficiência fotovoltaica solar e tecnologias de integração à rede. Insert Visualization 3 (Gráfico de Linha: Pedidos de Patentes de Energia Renovável ${Number(year) - 4}-${year})
 
-O número de projetos de pesquisa ativos focados em energia renovável em ${location} durante ${year} foi de 183, com projetos colaborativos envolvendo parceiros internacionais representando 62% do total. Estes projetos abrangem vários níveis de prontidão tecnológica (TRLs), com 45% focados em pesquisa aplicada (TRL 4-6) e 30% em demonstração e implantação (TRL 7-9). Insert Visualization 4 (Gráfico de Barras: Projetos de Pesquisa em Energia Renovável por Nível de Prontidão Tecnológica)
+O número de projetos de pesquisa ativos focados em energia renovável em ${location} durante ${year} foi de 183, com projetos colaborativos envolvendo parceiros internacionais representando 62% do total. Estes projetos abrangem vários níveis de prontidão tecnológica (TRLs), com 45% focados em pesquisa aplicada (TRL 4-6) e 30% on demonstração e implantação (TRL 7-9). Insert Visualization 4 (Gráfico de Barras: Projetos de Pesquisa em Energia Renovável por Nível de Prontidão Tecnológica)
 
 Quanto à distribuição regional, as áreas metropolitanas de Lisboa e Porto hospedam 68% das atividades de pesquisa em energia renovável, com clusters emergentes em Évora (pesquisa solar) e Viana do Castelo (energia eólica offshore e energia marinha). Esta concentração reflete a localização das principais instituições de pesquisa e universidades, mas também destaca oportunidades para ecossistemas de inovação geograficamente mais distribuídos. Insert Visualization 5 (Gráfico de Barras: Distribuição Regional das Atividades de Pesquisa em Energia Renovável)
 
@@ -202,11 +218,11 @@ O crescimento nos pedidos de patentes é particularmente notável, pois represen
 
 A alta proporção de projetos colaborativos internacionais destaca a natureza bem conectada da comunidade de pesquisa de ${location} e sua integração bem-sucedida em redes de pesquisa europeias. Essas colaborações trazem valiosas trocas de conhecimento e acesso a fundos maiores, embora também sugiram uma potencial dependência de parceiros externos para certos aspectos do processo de inovação. Insert Visualization 7 (Gráfico de Barras: Colaboração Doméstica vs. Internacional em Projetos de Pesquisa)
 
-A concentração regional de atividades de pesquisa em grandes centros urbanos apresenta tanto vantagens em termos de transbordamentos de conhecimento e coordenação, quanto desafios relacionados ao desenvolvimento regional e à utilização de recursos renováveis distribuídos. Os clusters emergentes em regiões específicas demonstram o potencial para desenvolver ecossistemas de inovação especializados alinhados com recursos locais e capacidades industriais.
+A concentração regional de atividades de pesquisa em grandes centros urbanos apresenta tanto vantagens em termos de transbordamentos de conhecimento e coordenação, quanto desafios relacionados ao desenvolvimento regional e à utilização de recursos renováveis distribuídos. Os clusters emergentes em regiões específicas demonstram o potencial para desenvolver ecossistemas de inovação especializados alinhados com recursos locais e industrial capabilities.
 
 ## Implicações, Opiniões e Perspectivas Futuras
 
-Os dados apresentados neste relatório apontam para várias implicações importantes para o futuro da inovação em energia renovável em ${location}. Na minha avaliação, o país está bem posicionado para desenvolver vantagens competitivas em tecnologias específicas de energia renovável, particularmente sistemas de energia solar otimizados para climas mediterrâneos, soluções de integração à rede para alta penetração renovável e tecnologia eólica offshore flutuante que aproveita a expertise marítima do país.
+Os dados apresentados neste relatório apontam para várias importantes implicações para o futuro da inovação em energia renovável em ${location}. Na minha avaliação, o país está bem posicionado para desenvolver vantagens competitivas em tecnologias específicas de energia renovável, particularmente sistemas de energia solar otimizados para climas mediterrâneos, soluções de integração à rede para alta penetração renovável e tecnologia eólica offshore flutuante que aproveita a expertise marítima do país.
 
 O aumento no investimento e na atividade de patentes sugere que ${location} está em transição de ser principalmente um adotante de tecnologia para se tornar um contribuinte para o desenvolvimento tecnológico em áreas selecionadas. Esta evolução apresenta oportunidades para criação de valor econômico através de propriedade intelectual, produtos e serviços especializados, e exportação de conhecimento e soluções para mercados com desafios semelhantes de energia renovável.
 
@@ -321,7 +337,7 @@ ${location} tem uma rica história de inovação e desenvolvimento tecnológico,
 
 Nos últimos anos, ${location} intensificou seu foco em ${topic.toLowerCase()} como parte de uma estratégia mais ampla para aumentar a competitividade econômica, enfrentar desafios sociais e alcançar objetivos de desenvolvimento sustentável. Esta ênfase se reflete em várias políticas nacionais, programas de financiamento e arranjos institucionais projetados para fomentar a inovação em múltiplos setores.
 
-O período que antecedeu ${year} testemunhou vários desenvolvimentos importantes que preparam o terreno para o cenário atual. Estes incluem reformas estruturais no sistema de pesquisa e inovação, maior colaboração entre academia e indústria, e investimentos estratégicos em áreas-chave de tecnologia.
+O período que antecedeu ${year} testemunhou vários desenvolvimentos importantes que setam o terreno para o cenário atual. Estes incluem reformas estruturais no sistema de pesquisa e inovação, maior colaboração entre academia e indústria, e investimentos estratégicos em áreas-chave de tecnologia.
 
 O contexto mais amplo para ${topic.toLowerCase()} em ${location} também inclui tendências demográficas, resultados educacionais, desenvolvimento de infraestrutura e disparidades regionais. Estes fatores interagem de maneiras complexas para moldar a capacidade de inovação e a distribuição de seus benefícios entre diferentes segmentos da sociedade.
 
@@ -333,6 +349,6 @@ A distribuição setorial deste investimento revela padrões interessantes. Tecn
 
 Pedidos de patentes relacionados a ${topic.toLowerCase()} de pesquisadores e organizações baseados em ${location} totalizaram 156 em ${year}, marcando um aumento de 15% em relação ao ano anterior. Particularmente notável é o crescimento em patentes relacionadas a tecnologias digitais, inovações biomédicas e soluções de energia limpa. Insert Visualization 3 (Gráfico de Linha: Pedidos de Patentes em Áreas de ${topic} ${Number(year) - 4}-${year})
 
-O número de projetos de pesquisa ativos focados em ${topic.toLowerCase()} em ${location} durante ${year} foi de 312, com projetos colaborativos envolvendo parceiros internacionais representando 58% do total. Estes projetos abrangem vários níveis de prontidão tecnológica, com 40% focados em pesquisa aplicada e 35% em desenvolvimento experimental. Insert Visualization 4 (Gráfico de Barras: Projetos de Pesquisa por Nível de Prontidão Tecnológica)
+O número de projetos de pesquisa ativos focados em ${topic.toLowerCase()} em ${location} durante ${year} foi de 312, com projetos colaborativos envolvendo parceiros internacionais representando 58% do total. Estes projetos abrangem vários níveis de prontidão tecnológica, com 40% focados em pesquisa aplicada e 35% on desenvolvimento experimental. Insert Visualization 4 (Gráfico de Barras: Projetos de Pesquisa por Nível de Prontidão Tecnológica)
 
 Quanto à distribuição regional, os dados indicam alguma concentração de atividades de inovação em grandes centros urbanos, com a região da capital respondendo por 45% dos
