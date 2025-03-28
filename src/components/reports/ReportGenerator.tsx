@@ -134,7 +134,7 @@ export const ReportGenerator = () => {
       // Save the report
       console.log("Saving report to database");
       try {
-        const savedReport = await saveReport({
+        const reportData = {
           title,
           content: fullReport,
           language,
@@ -147,7 +147,11 @@ export const ReportGenerator = () => {
           chart_data: chartData,
           report_type: "AI Generated",
           file_url: null
-        });
+        };
+        
+        console.log("Report data to save:", reportData);
+        
+        const savedReport = await saveReport(reportData);
         
         console.log("Report saved successfully with ID:", savedReport.id);
         setGenerationProgress(100);

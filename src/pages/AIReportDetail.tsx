@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -141,13 +142,21 @@ const AIReportDetail = () => {
     let match;
     
     console.log("Processing content with length:", content.length);
-    console.log("Visualization markers:", content.match(visualizationRegex));
+    
+    // If the content is an object with a value property, use the value
+    let contentToProcess = content;
+    if (typeof content === 'object' && content._type === 'String' && content.value) {
+      contentToProcess = content.value;
+      console.log("Found content as object, using value property instead");
+    }
+    
+    console.log("Visualization markers:", contentToProcess.match(visualizationRegex));
     
     // Process content paragraph by paragraph, inserting visualizations at their marked positions
-    while ((match = visualizationRegex.exec(content)) !== null) {
+    while ((match = visualizationRegex.exec(contentToProcess)) !== null) {
       // Add text before the visualization
       if (match.index > lastIndex) {
-        const textSegment = content.substring(lastIndex, match.index);
+        const textSegment = contentToProcess.substring(lastIndex, match.index);
         parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
       }
       
@@ -172,8 +181,8 @@ const AIReportDetail = () => {
     }
     
     // Add any remaining text after the last visualization
-    if (lastIndex < content.length) {
-      const textSegment = content.substring(lastIndex);
+    if (lastIndex < contentToProcess.length) {
+      const textSegment = contentToProcess.substring(lastIndex);
       parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
     }
     
@@ -247,8 +256,13 @@ const AIReportDetail = () => {
   }
 
   // Calculate word count for display
-  const wordCount = report.content.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length;
-  const visualizationCount = extractVisualizations(report.content).length;
+  let contentForWordCount = report.content;
+  if (typeof report.content === 'object' && report.content._type === 'String' && report.content.value) {
+    contentForWordCount = report.content.value;
+  }
+  
+  const wordCount = contentForWordCount.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length;
+  const visualizationCount = extractVisualizations(contentForWordCount).length;
 
   return (
     <div className="container mx-auto py-6 space-y-6">

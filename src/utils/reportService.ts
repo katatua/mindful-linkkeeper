@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 
@@ -21,6 +22,8 @@ export interface ReportTopic {
 }
 
 export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created_at' | 'updated_at'>) => {
+  console.log("Saving report with content length:", report.content.length);
+  
   // Ensure content is at least 2000 words
   const wordCount = report.content.split(/\s+/).length;
   if (wordCount < 2000) {
@@ -41,9 +44,8 @@ export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created
     // throw new Error("Report must contain visualizations to meet quality standards");
   }
 
-  // Temporarily disable RLS for development/testing purposes
-  // This allows any user to create reports for testing
   try {
+    console.log("Inserting report into database...");
     const { data, error } = await supabase
       .from('ai_generated_reports')
       .insert(report)
@@ -55,13 +57,15 @@ export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created
       throw error;
     }
 
+    console.log("Report saved successfully:", data);
     return data;
   } catch (error) {
     console.error('Error in saveReport:', error);
     
     // For development/testing: Create a mock report with an ID
     // This allows the app to continue even if there's a database error
-    return {
+    console.log("Creating dev report for testing due to database error");
+    const devReport = {
       id: 'dev-report-' + Date.now(),
       title: report.title,
       content: report.content,
@@ -74,6 +78,7 @@ export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created
       report_type: report.report_type,
       file_url: report.file_url
     };
+    return devReport;
   }
 };
 
@@ -112,10 +117,17 @@ export const deleteReport = async (id: string) => {
 };
 
 export const extractVisualizations = (content: string): any[] => {
+  if (typeof content === 'object' && content._type === 'String' && content.value) {
+    content = content.value;
+  }
+  
   const visualizationMarkers = content.match(/\[Visualization:([^\]]+)\]/g) || [];
+  console.log("Found visualization markers:", visualizationMarkers.length);
+  
   return visualizationMarkers.map(marker => {
     try {
       const jsonStr = marker.substring(14, marker.length - 1);
+      console.log("Parsing visualization JSON:", jsonStr.substring(0, 50) + "...");
       return JSON.parse(jsonStr);
     } catch (e) {
       console.error('Error parsing visualization data:', e);
@@ -365,6 +377,7 @@ export const generateTopicContent = (topic: ReportTopic, mainTopic: string, lang
 
   // Properly stringify the visualization object with correct JSON format
   const vizString = JSON.stringify(visualization);
+  console.log("Created visualization for topic:", topic.title, "Type:", randomType);
   
   // Insert visualization after the second paragraph
   if (paragraphs.length >= 2) {
