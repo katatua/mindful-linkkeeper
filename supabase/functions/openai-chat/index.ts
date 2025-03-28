@@ -22,13 +22,18 @@ serve(async (req) => {
   }
 
   try {
-    // More detailed logging for API key
+    // Check if API key exists and has the correct format
     if (!openaiApiKey) {
       console.error('OpenAI API Key is missing');
       throw new Error("Missing OpenAI API key. Please configure the OPENAI_API_KEY in your Supabase project secrets.");
     }
     
-    console.log('OpenAI API Key present and valid');
+    // Log API key format (safely)
+    console.log(`API key format check: ${openaiApiKey.startsWith('sk-') ? 'starts with sk-' : 'invalid prefix'}, length: ${openaiApiKey.length}`);
+    
+    if (!openaiApiKey.startsWith('sk-') || openaiApiKey.length < 20) {
+      throw new Error("Invalid OpenAI API key format. Please ensure you're using a key from platform.openai.com that starts with 'sk-'");
+    }
 
     const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
     
@@ -82,7 +87,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: `Failed to generate response: ${error.message || "Unknown error"}`,
-        response: "Sorry, there was an error processing your query. Please try again.",
+        response: "Sorry, there was an error processing your query. The OpenAI API key may be invalid or expired. Please check your API key configuration.",
         sqlQuery: "",
         results: null
       }),
