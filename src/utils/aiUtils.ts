@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and sample data
@@ -218,7 +219,8 @@ export const generateResponse = async (prompt: string) => {
       return {
         message: data.response || 'Sorry, I could not process your query.',
         sqlQuery: data.sqlQuery || '',
-        results: data.results || null
+        results: data.results || null,
+        noResults: false  // Explicitly add this property
       };
     } catch (geminiError) {
       console.error('Error with Gemini API:', geminiError);
@@ -244,7 +246,7 @@ function createNoResultsResponse(prompt: string, isInvalid: boolean) {
     message: message,
     sqlQuery: '',
     results: null,
-    noResults: true
+    noResults: true  // Explicitly set this property
   };
 }
 

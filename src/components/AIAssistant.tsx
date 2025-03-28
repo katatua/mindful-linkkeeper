@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -158,48 +157,6 @@ export const AIAssistant: React.FC = () => {
           </div>
         )}
       </div>
-    );
-  };
-
-  const PopulateDataButton = ({ query }: { query: string }) => {
-    const [isPopulating, setIsPopulating] = useState(false);
-    
-    const handlePopulate = async () => {
-      setIsPopulating(true);
-      try {
-        toast({
-          title: "Data population scheduled",
-          description: "Request to populate data for this query has been submitted.",
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        toast({
-          title: "Success",
-          description: "Database has been scheduled for update with required data. Try your query again in a few minutes.",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to schedule data population.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsPopulating(false);
-      }
-    };
-    
-    return (
-      <Button 
-        variant="outline" 
-        size="sm"
-        disabled={isPopulating}
-        onClick={handlePopulate}
-        className="mt-2"
-      >
-        <DatabaseIcon className="h-4 w-4 mr-2" />
-        {isPopulating ? "Scheduling..." : "Populate Missing Data"}
-      </Button>
     );
   };
 
