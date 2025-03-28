@@ -22,15 +22,21 @@ serve(async (req) => {
   }
 
   try {
-    console.log('OpenAI API Key present:', !!openaiApiKey);
-    console.log('OpenAI API Key length:', openaiApiKey?.length);
-
-    // Validate OpenAI API key more robustly
-    if (!openaiApiKey || openaiApiKey.trim().length < 10) {
-      throw new Error("Invalid or missing OpenAI API key. Please configure the OPENAI_API_KEY in your Supabase project secrets.");
+    // More detailed logging for API key
+    if (!openaiApiKey) {
+      console.error('OpenAI API Key is missing');
+      throw new Error("Missing OpenAI API key. Please configure the OPENAI_API_KEY in your Supabase project secrets.");
     }
+    
+    console.log('OpenAI API Key present and valid');
 
     const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
+    
+    if (!prompt) {
+      throw new Error("Missing required parameter: prompt");
+    }
+
+    console.log('Sending request to OpenAI with model: gpt-4o-mini');
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -39,7 +45,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Recommended model
+        model: 'gpt-4o-mini', // Using a stable model
         messages: [
           { role: 'system', content: getEnhancedSystemPrompt() },
           ...chatHistory.map((msg: any) => ({
@@ -58,7 +64,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('OpenAI API Error:', errorBody);
-      throw new Error(`OpenAI API Error: ${errorBody}`);
+      throw new Error(`OpenAI API Error (${response.status}): ${errorBody}`);
     }
 
     const result = await response.json();
@@ -76,7 +82,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: `Failed to generate response: ${error.message || "Unknown error"}`,
-        response: "Sorry, there was an error processing your query. Please check your API key and try again.",
+        response: "Sorry, there was an error processing your query. Please try again.",
         sqlQuery: "",
         results: null
       }),
@@ -99,6 +105,7 @@ function getEnhancedSystemPrompt() {
 function enhancePrompt(prompt: string, additionalContext: any) {
   const energyKeywords = additionalContext.energyKeywords || [];
   const techKeywords = additionalContext.techKeywords || [];
+  const regionKeywords = additionalContext.regionKeywords || [];
 
   let enhancedPrompt = prompt;
   
@@ -108,6 +115,10 @@ function enhancePrompt(prompt: string, additionalContext: any) {
   
   if (techKeywords.length > 0) {
     enhancedPrompt += `\n\nTechnology-related context: ${techKeywords.join(', ')}.`;
+  }
+  
+  if (regionKeywords && regionKeywords.length > 0) {
+    enhancedPrompt += `\n\nRegion-related context: ${regionKeywords.map(r => r.original).join(', ')}.`;
   }
 
   return enhancedPrompt;
