@@ -1,13 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-
-// Create a Supabase client with the service role key
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Define CORS headers
 const corsHeaders = {
@@ -25,14 +19,35 @@ serve(async (req) => {
     // Check if API key exists and has the correct format
     if (!openaiApiKey) {
       console.error('OpenAI API Key is missing');
-      throw new Error("Missing OpenAI API key. Please configure the OPENAI_API_KEY in your Supabase project secrets.");
+      return new Response(
+        JSON.stringify({
+          error: "Missing OpenAI API key",
+          response: "Configuration error: OpenAI API key not found.",
+          sqlQuery: '',
+          results: null
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
     
-    // Log API key format (safely)
-    console.log(`API key format check: ${openaiApiKey.startsWith('sk-') ? 'starts with sk-' : 'invalid prefix'}, length: ${openaiApiKey.length}`);
-    
-    if (!openaiApiKey.startsWith('sk-') || openaiApiKey.length < 20) {
-      throw new Error("Invalid OpenAI API key format. Please ensure you're using a key from platform.openai.com that starts with 'sk-'");
+    // Validate API key format more strictly
+    if (!openaiApiKey.startsWith('sk-proj-') || openaiApiKey.length < 50) {
+      console.error('Invalid OpenAI API key format');
+      return new Response(
+        JSON.stringify({
+          error: "Invalid OpenAI API key",
+          response: "Configuration error: Invalid API key format.",
+          sqlQuery: '',
+          results: null
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
@@ -43,6 +58,11 @@ serve(async (req) => {
 
     console.log('Sending request to OpenAI with model: gpt-4o-mini');
     
+    // Enhanced context extraction
+    const energyKeywords = extractEnergyKeywords(prompt);
+    const techKeywords = extractTechnologyKeywords(prompt);
+    const regionKeywords = extractRegionKeywords(prompt);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -57,7 +77,11 @@ serve(async (req) => {
             role: msg.role,
             content: msg.content
           })),
-          { role: 'user', content: enhancePrompt(prompt, additionalContext) }
+          { role: 'user', content: enhancePrompt(prompt, { 
+            energyKeywords, 
+            techKeywords, 
+            regionKeywords 
+          }) }
         ],
         temperature: 0.4,
         max_tokens: 2048,
@@ -99,31 +123,53 @@ serve(async (req) => {
   }
 });
 
-// Enhanced system prompt for database queries
-function getEnhancedSystemPrompt() {
-  return `You are an AI database assistant specialized in research and innovation data. 
-  Focus on providing clear, concise insights about funding programs, especially in renewable energy.
-  Use precise language and help users understand the context of their database queries.`;
+// Helper functions for context extraction
+function extractEnergyKeywords(query: string): string[] {
+  const lowercaseQuery = query.toLowerCase();
+  const energyTerms = [
+    'renewable energy', 'clean energy', 'green energy', 
+    'sustainable energy', 'alternative energy',
+    'solar', 'wind', 'hydro', 'biomass', 'geothermal'
+  ];
+  return energyTerms.filter(term => lowercaseQuery.includes(term));
 }
 
-// Enhance prompt with additional context
-function enhancePrompt(prompt: string, additionalContext: any) {
-  const energyKeywords = additionalContext.energyKeywords || [];
-  const techKeywords = additionalContext.techKeywords || [];
-  const regionKeywords = additionalContext.regionKeywords || [];
+function extractTechnologyKeywords(query: string): string[] {
+  const lowercaseQuery = query.toLowerCase();
+  const techTerms = [
+    'technology', 'tech', 'digital', 'software', 
+    'ai', 'artificial intelligence', 'machine learning'
+  ];
+  return techTerms.filter(term => lowercaseQuery.includes(term));
+}
 
+function extractRegionKeywords(query: string): string[] {
+  const lowercaseQuery = query.toLowerCase();
+  const regionTerms = [
+    'lisbon', 'porto', 'north', 'south', 
+    'algarve', 'azores', 'madeira'
+  ];
+  return regionTerms.filter(term => lowercaseQuery.includes(term));
+}
+
+function getEnhancedSystemPrompt() {
+  return `You are an AI database assistant specialized in renewable energy funding programs. 
+  Provide clear, concise insights about funding opportunities in the renewable energy sector.`;
+}
+
+function enhancePrompt(prompt: string, context: any) {
   let enhancedPrompt = prompt;
   
-  if (energyKeywords.length > 0) {
-    enhancedPrompt += `\n\nNote: This query is about renewable energy. Consider these related terms: ${energyKeywords.join(', ')}.`;
+  if (context.energyKeywords.length > 0) {
+    enhancedPrompt += `\n\nNote: Renewable energy context includes terms: ${context.energyKeywords.join(', ')}.`;
   }
   
-  if (techKeywords.length > 0) {
-    enhancedPrompt += `\n\nTechnology-related context: ${techKeywords.join(', ')}.`;
+  if (context.techKeywords.length > 0) {
+    enhancedPrompt += `\n\nTechnology context: ${context.techKeywords.join(', ')}.`;
   }
   
-  if (regionKeywords && regionKeywords.length > 0) {
-    enhancedPrompt += `\n\nRegion-related context: ${regionKeywords.map(r => r.original).join(', ')}.`;
+  if (context.regionKeywords.length > 0) {
+    enhancedPrompt += `\n\nRegional context: ${context.regionKeywords.join(', ')}.`;
   }
 
   return enhancedPrompt;
