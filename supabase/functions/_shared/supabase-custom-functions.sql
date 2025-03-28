@@ -24,6 +24,13 @@ BEGIN
   ELSE
     RAISE EXCEPTION 'Only SELECT and INSERT statements are allowed';
   END IF;
+EXCEPTION
+  WHEN others THEN
+    RETURN jsonb_build_object(
+      'status', 'error',
+      'message', SQLERRM,
+      'detail', SQLSTATE
+    );
 END;
 $$;
 

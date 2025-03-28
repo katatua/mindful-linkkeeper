@@ -174,9 +174,13 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
           tables.push(tableMatch[1]);
         }
         
-        const { error } = await supabase.rpc('execute_sql_query', {
+        console.log("Executing SQL:", insertSql);
+        
+        const { data, error } = await supabase.rpc('execute_sql_query', {
           sql_query: insertSql
         });
+        
+        console.log("SQL execution result:", data, error);
         
         if (error) {
           throw new Error(`Error executing SQL: ${error.message}`);
