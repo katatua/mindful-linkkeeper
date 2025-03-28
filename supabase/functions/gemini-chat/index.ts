@@ -56,68 +56,75 @@ async function getAIModel(): Promise<string> {
   }
 }
 
-function formatNaturalLanguageResponse(message: string, results: any[] | null, sqlQuery: string): string {
+function formatNaturalLanguageResponse(originalQuestion: string, message: string, results: any[] | null, sqlQuery: string): string {
+  // Start with the original question
+  let formattedResponse = `${originalQuestion}\n`;
+  
+  // Extract a brief introduction (first sentence)
+  const briefIntro = message.split('.')[0] + '.';
+  formattedResponse += `${briefIntro}\n\n`;
+  
+  // If there are no results, show a message and return early
   if (!results || results.length === 0) {
-    return `${message}\n\nNão foram encontrados resultados para esta consulta.`;
+    return `${formattedResponse}**Não foram encontrados resultados para esta consulta.**`;
   }
-
-  // Mostrar a pergunta original no início da resposta
-  let formattedResponse = `${message}\n\n`;
   
-  // Adicionar resumo breve de informações adicionais para contextualizar os resultados
-  if (message.includes("energia renovável") || sqlQuery.toLowerCase().includes("energy")) {
-    formattedResponse += "**Informações adicionais:**\n";
-    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
-  }
-
-  // Formatar resultados de forma mais estruturada
-  formattedResponse += "**Resumo dos Resultados:**\n\n";
+  // Add the Results section with formatted table immediately after the brief intro
+  formattedResponse += "**Resultados:**\n";
   
-  results.forEach((item, index) => {
-    formattedResponse += `• Resultado ${index + 1}: `;
-    
-    // Formatar cada campo do resultado na mesma linha
-    const itemDesc = Object.entries(item)
-      .filter(([key, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => {
-        if (Array.isArray(value)) {
-          return `${key}: ${value.join(', ')}`;
-        }
-        return `${key}: ${value}`;
-      })
-      .join(', ');
-    
-    formattedResponse += `${itemDesc}\n`;
-  });
-  
-  // Adicionar a consulta SQL ao final
-  formattedResponse += `SQL Query:\n${sqlQuery}`;
-
-  // Adicionar tabela de resultados para visualização mais clara
+  // Create a formatted table for the results right at the top
   if (results.length > 0) {
-    // Cabeçalho da tabela
-    formattedResponse += "\nResults:\n";
-    
-    // Criar cabeçalho
+    // Generate table headers
     const headers = Object.keys(results[0]);
     formattedResponse += headers.join('\t') + '\n';
     
-    // Adicionar dados
+    // Generate table rows
     results.forEach(row => {
       const values = headers.map(header => {
         const value = row[header];
         if (value === null || value === undefined) return '';
         if (Array.isArray(value)) return value.join(', ');
-        return value.toString();
+        return String(value);
       });
       formattedResponse += values.join('\t') + '\n';
     });
   }
   
+  // Add the rest of the explanatory text after the results table
+  if (message.length > briefIntro.length) {
+    formattedResponse += `\n${message.substring(briefIntro.length).trim()}\n\n`;
+  }
+  
+  // Add domain-specific context for energy-related queries
+  if (message.includes("energia renovável") || 
+      sqlQuery.toLowerCase().includes("energy") || 
+      sqlQuery.toLowerCase().includes("renewable")) {
+    formattedResponse += "**Informações adicionais:**\n";
+    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
+  }
+  
+  // Add a summary section with bullet points
+  formattedResponse += "**Resumo dos Resultados:**\n\n";
+  
+  results.forEach((item, index) => {
+    const itemDetails = Object.entries(item)
+      .map(([key, value]) => {
+        if (value === null || value === undefined) return null;
+        if (Array.isArray(value)) return `${key}: ${value.join(', ')}`;
+        return `${key}: ${value}`;
+      })
+      .filter(Boolean)
+      .join(', ');
+    
+    formattedResponse += `• Resultado ${index + 1}: ${itemDetails}\n`;
+  });
+  
+  // Add the SQL query at the end
+  formattedResponse += `\nSQL Query:\n${sqlQuery}\n`;
+  
   return formattedResponse;
 }
 
-// Add specific knowledge about renewable energy programs
 function getEnhancedSystemPrompt() {
   return `
 You are an AI database assistant that helps users query and understand data in a research and innovation database.
@@ -291,7 +298,12 @@ serve(async (req) => {
         const cleanResponse = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, '').trim();
         
         // Create a formatted natural language response with insights from the data
-        const naturalLanguageResponse = formatNaturalLanguageResponse(cleanResponse, formattedResults, sqlQuery);
+        const naturalLanguageResponse = formatNaturalLanguageResponse(
+          prompt, // Pass the original question
+          cleanResponse, 
+          formattedResults, 
+          sqlQuery
+        );
         
         // Return the response with the SQL query and results
         return new Response(JSON.stringify({ 
