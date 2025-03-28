@@ -153,10 +153,20 @@ export const isMonetaryColumn = (columnName: string): boolean => {
   return false;
 };
 
-// Add function to directly execute SQL query when AI service is unavailable
+// Add improved function to directly execute SQL query when AI service is unavailable
 const executeFallbackQuery = async (query: string) => {
   try {
     console.log("Executing fallback SQL query for:", query);
+    
+    // Check if the query is likely meaningless or in a non-supported language
+    if (isLikelyNonsenseQuery(query)) {
+      return {
+        message: `No results found for this query: "${query}". The requested information doesn't appear to be in the database or the query format is not recognized.`,
+        sqlQuery: "",
+        results: null,
+        noResults: true
+      };
+    }
     
     // Determine which table to query based on keywords
     let sqlQuery = "";
@@ -213,9 +223,13 @@ const executeFallbackQuery = async (query: string) => {
       resultsMessage = "International collaborations focusing on AI research:";
     }
     else {
-      // Default to a simple query if no specific pattern is matched
-      sqlQuery = `SELECT * FROM ani_metrics LIMIT 5`;
-      resultsMessage = "Here is a sample of metrics data from our database:";
+      // For unrecognized queries or nonsense queries, return a clear "no results" response
+      return {
+        message: `No results found for this query: "${query}". The requested data might not be in the database.`,
+        sqlQuery: "",
+        results: null,
+        noResults: true
+      };
     }
     
     // Execute the query
@@ -224,6 +238,16 @@ const executeFallbackQuery = async (query: string) => {
     });
     
     if (queryError) throw queryError;
+    
+    // If we executed a query but got no results, return a no results message
+    if (!queryResult || queryResult.length === 0) {
+      return {
+        message: `No results found for this query: "${query}". The requested data might not be in the database.`,
+        sqlQuery: sqlQuery,
+        results: null,
+        noResults: true
+      };
+    }
     
     return {
       message: resultsMessage,
@@ -235,10 +259,43 @@ const executeFallbackQuery = async (query: string) => {
     return {
       message: "Unable to process your query. Please try a simpler query or try again later.",
       sqlQuery: "",
-      results: null
+      results: null,
+      noResults: true
     };
   }
 };
+
+// Helper function to identify likely nonsense or unsupported language queries
+function isLikelyNonsenseQuery(query: string): boolean {
+  // Check if query is too short (less than 10 characters)
+  if (query.trim().length < 10) return true;
+  
+  // Check for common Portuguese/English database question words
+  const databaseQueryWords = [
+    'show', 'select', 'list', 'find', 'what', 'which', 'how', 'where', 'who',
+    'mostrar', 'selecionar', 'listar', 'encontrar', 'qual', 'quais', 'como', 'onde', 'quem'
+  ];
+  
+  // Check for common database entities in our system
+  const databaseEntities = [
+    'project', 'funding', 'program', 'metric', 'policy', 'collaboration', 
+    'projeto', 'financiamento', 'programa', 'métrica', 'política', 'colaboração',
+    'research', 'innovation', 'tecnology', 'renewable', 'energy',
+    'pesquisa', 'inovação', 'tecnologia', 'renovável', 'energia'
+  ];
+  
+  // Check if query contains at least one query word AND one entity
+  const hasQueryWord = databaseQueryWords.some(word => 
+    query.toLowerCase().includes(word.toLowerCase())
+  );
+  
+  const hasEntity = databaseEntities.some(entity => 
+    query.toLowerCase().includes(entity.toLowerCase())
+  );
+  
+  // If query doesn't have both a query word and an entity, it might be nonsense
+  return !(hasQueryWord && hasEntity);
+}
 
 // Add function to handle database queries and AI responses
 export const generateResponse = async (prompt: string) => {
