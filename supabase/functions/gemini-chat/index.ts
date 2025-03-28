@@ -56,75 +56,56 @@ async function getAIModel(): Promise<string> {
   }
 }
 
-function formatNaturalLanguageResponse(originalQuestion: string, message: string, results: any[] | null, sqlQuery: string): string {
-  // Start with the original question
-  let formattedResponse = `${originalQuestion}\n`;
-  
-  // Extract a brief introduction (first sentence)
-  const briefIntro = message.split('.')[0] + '.';
-  formattedResponse += `${briefIntro}\n\n`;
-  
-  // If there are no results, show a message and return early
+function formatNaturalLanguageResponse(message: string, results: any[] | null): string {
   if (!results || results.length === 0) {
-    return `${formattedResponse}**Não foram encontrados resultados para esta consulta.**`;
+    return message + "\n\nNão foram encontrados resultados para esta consulta.";
   }
+
+  // Extract a sample of results for the summary
+  const resultCount = results.length;
+  const sampleSize = Math.min(resultCount, 3);
+  const sample = results.slice(0, sampleSize);
   
-  // Add the Results section with formatted table immediately after the brief intro
-  formattedResponse += "**Resultados:**\n";
+  // Format key points from the results
+  let keyPoints = "";
   
-  // Create a formatted table for the results right at the top
-  if (results.length > 0) {
-    // Generate table headers
-    const headers = Object.keys(results[0]);
-    formattedResponse += headers.join('\t') + '\n';
-    
-    // Generate table rows
-    results.forEach(row => {
-      const values = headers.map(header => {
-        const value = row[header];
-        if (value === null || value === undefined) return '';
-        if (Array.isArray(value)) return value.join(', ');
-        return String(value);
-      });
-      formattedResponse += values.join('\t') + '\n';
+  // For a small number of results, list them directly
+  if (resultCount <= 10) {
+    sample.forEach((item, index) => {
+      const itemDesc = Object.entries(item)
+        .filter(([key, value]) => value !== null && value !== undefined)
+        .map(([key, value]) => {
+          // Format array values nicely
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(', ')}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join(', ');
+      keyPoints += `\n• Resultado ${index + 1}: ${itemDesc}`;
     });
-  }
-  
-  // Add the rest of the explanatory text after the results table
-  if (message.length > briefIntro.length) {
-    formattedResponse += `\n${message.substring(briefIntro.length).trim()}\n\n`;
-  }
-  
-  // Add domain-specific context for energy-related queries
-  if (message.includes("energia renovável") || 
-      sqlQuery.toLowerCase().includes("energy") || 
-      sqlQuery.toLowerCase().includes("renewable")) {
-    formattedResponse += "**Informações adicionais:**\n";
-    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
-  }
-  
-  // Add a summary section with bullet points
-  formattedResponse += "**Resumo dos Resultados:**\n\n";
-  
-  results.forEach((item, index) => {
-    const itemDetails = Object.entries(item)
-      .map(([key, value]) => {
-        if (value === null || value === undefined) return null;
-        if (Array.isArray(value)) return `${key}: ${value.join(', ')}`;
-        return `${key}: ${value}`;
-      })
-      .filter(Boolean)
-      .join(', ');
     
-    formattedResponse += `• Resultado ${index + 1}: ${itemDetails}\n`;
-  });
+    if (resultCount > sampleSize) {
+      keyPoints += `\n... e mais ${resultCount - sampleSize} resultados.`;
+    }
+  } else {
+    // For many results, just summarize
+    keyPoints = `Foram encontrados ${resultCount} resultados.`;
+    
+    // Add a brief summary of the first few results
+    sample.forEach((item, index) => {
+      const keys = Object.keys(item);
+      const mainKey = keys[0] || "item";
+      keyPoints += `\n• ${mainKey}: ${item[mainKey]}`;
+    });
+    
+    keyPoints += `\n... e mais ${resultCount - sampleSize} resultados.`;
+  }
   
-  // Add the SQL query at the end
-  formattedResponse += `\nSQL Query:\n${sqlQuery}\n`;
-  
-  return formattedResponse;
+  return `${message}\n\n**Resumo dos Resultados:**\n${keyPoints}`;
 }
 
+// Add specific knowledge about renewable energy programs
 function getEnhancedSystemPrompt() {
   return `
 You are an AI database assistant that helps users query and understand data in a research and innovation database.
@@ -167,23 +148,13 @@ For SQL queries, make sure to REMOVE ANY SEMICOLONS from the end of the query.
 
 Your main goal is to provide CLEAR INSIGHTS about the data, not just raw data. Explain patterns, notable details, and summarize the information.
 
-For energy/renewable energy topics, be flexible in your search. Consider these variations:
-- For ENERGY searches include 'renewable energy', 'clean energy', 'green energy', 'sustainable energy', 'alternative energy'
-- For specific TECHNOLOGIES include 'solar', 'wind', 'hydro', 'hydroelectric', 'biomass', 'geothermal', 'tidal'
-- Other relevant terms: 'photovoltaic', 'renewable', 'clean power', 'green power', 'sustainability'
-
-When searching for renewable energy in arrays, use the ILIKE operator with wildcards for partial matching.
-
 Here are examples of questions users might ask and how to respond:
 1. Q: "Show me funding programs for renewable energy"
    A: Aqui estão os programas de financiamento relacionados à energia renovável:
       <SQL>
-      SELECT name, description, total_budget, application_deadline, funding_type
+      SELECT name, description, total_budget, application_deadline
       FROM ani_funding_programs
-      WHERE ARRAY_TO_STRING(sector_focus, ',') ILIKE '%renewable%' 
-         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energy%'
-         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%solar%'
-         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%wind%'
+      WHERE 'renewable energy' = ANY(sector_focus)
       </SQL>
       
 2. Q: "What is the average funding amount for biotech projects?"
@@ -204,7 +175,7 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
+    const { prompt, chatHistory = [] } = await req.json();
     
     // Get the AI model to use
     const model = await getAIModel();
@@ -212,15 +183,6 @@ serve(async (req) => {
 
     // Create a system prompt that explains the database schema
     const systemPrompt = getEnhancedSystemPrompt();
-
-    // If this is a renewable energy query, add extra context to the user prompt
-    const energyKeywords = additionalContext.energyKeywords || [];
-    let enhancedPrompt = prompt;
-    
-    if (energyKeywords.length > 0) {
-      console.log("Energy-related query detected with keywords:", energyKeywords);
-      enhancedPrompt = `${prompt}\n\nNote: This query is about renewable energy. Consider these related terms when searching the database: ${energyKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
-    }
 
     // Construct the conversation
     const messages = [
@@ -231,7 +193,7 @@ serve(async (req) => {
         parts: [{ text: msg.content }],
       })),
       // Add the new user prompt
-      { role: "user", parts: [{ text: enhancedPrompt }] },
+      { role: "user", parts: [{ text: prompt }] },
     ];
 
     // Make request to Google Gemini API
@@ -298,12 +260,7 @@ serve(async (req) => {
         const cleanResponse = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, '').trim();
         
         // Create a formatted natural language response with insights from the data
-        const naturalLanguageResponse = formatNaturalLanguageResponse(
-          prompt, // Pass the original question
-          cleanResponse, 
-          formattedResults, 
-          sqlQuery
-        );
+        const naturalLanguageResponse = formatNaturalLanguageResponse(cleanResponse, formattedResults);
         
         // Return the response with the SQL query and results
         return new Response(JSON.stringify({ 
