@@ -18,8 +18,19 @@ export interface AIGeneratedReport {
 
 export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created_at' | 'updated_at'>) => {
   // Ensure content is at least 2000 words
-  if (report.content.split(/\s+/).length < 2000) {
-    console.warn("Report content less than 2000 words, might not meet quality standards");
+  const wordCount = report.content.split(/\s+/).length;
+  if (wordCount < 2000) {
+    console.warn(`Report content has only ${wordCount} words, which is less than the 2000 word minimum. It might not meet quality standards.`);
+    
+    // Do not save reports with less than 2000 words
+    throw new Error("Report must contain at least 2000 words to meet quality standards");
+  }
+
+  // Verify visualizations are properly formatted
+  const visualizations = extractVisualizations(report.content);
+  if (visualizations.length === 0) {
+    console.warn("Report does not contain any visualizations");
+    throw new Error("Report must contain visualizations to meet quality standards");
   }
 
   const { data, error } = await supabase
@@ -81,6 +92,42 @@ export const extractVisualizations = (content: string): any[] => {
       return null;
     }
   }).filter(Boolean);
+};
+
+// Improved function to validate report content quality
+export const validateReportQuality = (content: string) => {
+  const wordCount = content.split(/\s+/).length;
+  const visualizations = extractVisualizations(content);
+  
+  const issues = [];
+  
+  if (wordCount < 2000) {
+    issues.push(`Word count (${wordCount}) is below 2000 words minimum`);
+  }
+  
+  if (visualizations.length === 0) {
+    issues.push("No visualizations found in the report");
+  }
+  
+  const paragraphs = content.split(/\n\n+/);
+  // Check if visualizations are properly distributed throughout the report
+  let visualizationCount = 0;
+  for (let i = 0; i < paragraphs.length; i++) {
+    if (paragraphs[i].includes("[Visualization:")) {
+      visualizationCount++;
+    }
+  }
+  
+  if (visualizationCount < 3) {
+    issues.push(`Only ${visualizationCount} visualizations found. Reports should have at least 3 visualizations`);
+  }
+  
+  return {
+    isValid: issues.length === 0,
+    wordCount,
+    visualizationCount,
+    issues
+  };
 };
 
 export const generatePDF = (report: AIGeneratedReport): string => {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { AIGeneratedReport, fetchReports, deleteReport, generatePDF, extractVisualizations } from "@/utils/reportService";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Calendar, Download, FileText, Trash2, RefreshCw, BarChart } from "lucide-react";
+import { Calendar, Download, FileText, Trash2, RefreshCw, BarChart, ChartBar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export const AIGeneratedReports = () => {
   const { toast } = useToast();
@@ -125,8 +126,9 @@ export const AIGeneratedReports = () => {
     return cleanText.split(/\s+/).length;
   };
   
-  const hasVisualizations = (content: string): boolean => {
-    return content.includes('[Visualization:');
+  const getVisualizationCount = (content: string): number => {
+    const visualizations = extractVisualizations(content);
+    return visualizations.length;
   };
 
   return (
@@ -173,12 +175,21 @@ export const AIGeneratedReports = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {reports.map((report) => {
             const wordCount = getWordCount(report.content);
-            const visualizationsPresent = hasVisualizations(report.content);
+            const visualizationCount = getVisualizationCount(report.content);
+            const isHighQuality = wordCount >= 2000 && visualizationCount >= 3;
             
             return (
-              <Card key={report.id} className="hover:shadow-md transition-shadow">
+              <Card key={report.id} className={`hover:shadow-md transition-shadow ${isHighQuality ? 'border-blue-200' : 'border-amber-200'}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium truncate">{report.title}</CardTitle>
+                  <CardTitle className="text-base font-medium truncate flex items-center gap-2">
+                    {report.title}
+                    {visualizationCount > 0 && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-600 text-xs">
+                        <BarChart className="h-3 w-3 mr-1 inline" />
+                        {visualizationCount}
+                      </Badge>
+                    )}
+                  </CardTitle>
                   <CardDescription>
                     {report.report_type || (language === 'pt' ? "Relatório Gerado por IA" : "AI-Generated Report")}
                   </CardDescription>
@@ -196,8 +207,7 @@ export const AIGeneratedReports = () => {
                         }
                       )}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {visualizationsPresent && <BarChart className="h-3.5 w-3.5 text-blue-500" />}
+                    <div className={`flex items-center gap-1 ${wordCount < 2000 ? 'text-amber-500' : 'text-green-600'}`}>
                       <span>{wordCount.toLocaleString()} {language === 'pt' ? "palavras" : "words"}</span>
                     </div>
                   </div>

@@ -124,49 +124,65 @@ const AIReportDetail = () => {
     if (!content) return null;
     
     // Split the content by visualization markers
-    const segments = content.split(/\[Visualization:[^\]]+\]/g);
-    const visualizationMarkers = content.match(/\[Visualization:[^\]]+\]/g) || [];
+    const parts = [];
+    let lastIndex = 0;
+    let currentIndex;
+    const visualizationRegex = /\[Visualization:[^\]]+\]/g;
+    let match;
     
-    return segments.map((segment, index) => {
-      // Process segment (paragraph or section)
-      const processedSegment = segment.split('\n').map((line, lineIndex) => {
-        if (line.startsWith('# ')) {
-          return <h1 key={`line-${index}-${lineIndex}`} className="text-2xl font-bold mt-6 mb-4">{line.replace('# ', '')}</h1>;
-        } else if (line.startsWith('## ')) {
-          return <h2 key={`line-${index}-${lineIndex}`} className="text-xl font-semibold mt-5 mb-3">{line.replace('## ', '')}</h2>;
-        } else if (line.startsWith('### ')) {
-          return <h3 key={`line-${index}-${lineIndex}`} className="text-lg font-medium mt-4 mb-2">{line.replace('### ', '')}</h3>;
-        } else if (line === '') {
-          return <br key={`line-${index}-${lineIndex}`} />;
-        } else {
-          return <p key={`line-${index}-${lineIndex}`} className="my-3 text-gray-700">{line}</p>;
-        }
-      });
-      
-      // Render segment + visualization if available
-      const result = [
-        <div key={`segment-${index}`}>{processedSegment}</div>
-      ];
-      
-      // Add visualization after the segment if there is one for this segment
-      if (visualizationMarkers[index]) {
-        try {
-          const marker = visualizationMarkers[index];
-          const jsonStr = marker.substring(14, marker.length - 1);
-          const vizData = JSON.parse(jsonStr);
-          
-          result.push(
-            <div key={`viz-${index}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-              <ReportVisualizer visualization={vizData} />
-            </div>
-          );
-        } catch (e) {
-          console.error('Error parsing visualization data:', e);
-        }
+    // Process content paragraph by paragraph, inserting visualizations at their marked positions
+    while ((match = visualizationRegex.exec(content)) !== null) {
+      // Add text before the visualization
+      if (match.index > lastIndex) {
+        const textSegment = content.substring(lastIndex, match.index);
+        parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
       }
       
-      return result;
+      // Process the visualization
+      try {
+        const vizMarker = match[0];
+        const jsonStr = vizMarker.substring(14, vizMarker.length - 1);
+        const vizData = JSON.parse(jsonStr);
+        
+        parts.push(
+          <div key={`viz-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+            <ReportVisualizer visualization={vizData} />
+          </div>
+        );
+      } catch (e) {
+        console.error('Error rendering visualization:', e);
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text after the last visualization
+    if (lastIndex < content.length) {
+      const textSegment = content.substring(lastIndex);
+      parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
+    }
+    
+    return parts;
+  };
+  
+  const renderTextSegment = (text: string, key: string) => {
+    // Process text segment (paragraph or section)
+    const lines = text.split('\n');
+    const processedLines = lines.map((line, lineIndex) => {
+      if (line.startsWith('# ')) {
+        return <h1 key={`${key}-line-${lineIndex}`} className="text-2xl font-bold mt-6 mb-4">{line.replace('# ', '')}</h1>;
+      } else if (line.startsWith('## ')) {
+        return <h2 key={`${key}-line-${lineIndex}`} className="text-xl font-semibold mt-5 mb-3">{line.replace('## ', '')}</h2>;
+      } else if (line.startsWith('### ')) {
+        return <h3 key={`${key}-line-${lineIndex}`} className="text-lg font-medium mt-4 mb-2">{line.replace('### ', '')}</h3>;
+      } else if (line === '') {
+        return <br key={`${key}-line-${lineIndex}`} />;
+      } else {
+        return <p key={`${key}-line-${lineIndex}`} className="my-3 text-gray-700">{line}</p>;
+      }
     });
+    
+    return <div key={key}>{processedLines}</div>;
   };
 
   if (isLoading) {
@@ -215,6 +231,10 @@ const AIReportDetail = () => {
     );
   }
 
+  // Calculate word count for display
+  const wordCount = report.content.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length;
+  const visualizationCount = extractVisualizations(report.content).length;
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -252,6 +272,10 @@ const AIReportDetail = () => {
               <span>{report.report_type}</span>
             </>
           )}
+          <span className="mx-2">•</span>
+          <span>{wordCount.toLocaleString()} {language === 'pt' ? "palavras" : "words"}</span>
+          <span className="mx-2">•</span>
+          <span>{visualizationCount} {language === 'pt' ? "visualizações" : "visualizations"}</span>
         </div>
       </div>
       
