@@ -4,7 +4,7 @@ import { Suspense, lazy } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 
 // Layout
-import Layout from '@/components/Layout';
+import { Layout } from '@/components/Layout';
 
 // Pages
 import Index from '@/pages/Index';
@@ -13,7 +13,7 @@ import AIReportDetail from '@/pages/AIReportDetail';
 
 // Lazy-loaded pages
 const Auth = lazy(() => import('@/pages/Auth'));
-const Dashboard = lazy(() => import('@/components/Dashboard'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const FundingPage = lazy(() => import('@/pages/FundingPage'));
 const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
 const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'));

@@ -250,7 +250,9 @@ const AIReportDetail = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ReportVisualizer visualizations={visualizations} />
+            {visualizations.map((viz, index) => (
+              <ReportVisualizer key={index} visualization={viz} />
+            ))}
           </CardContent>
         </Card>
       )}

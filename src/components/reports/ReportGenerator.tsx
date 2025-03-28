@@ -61,7 +61,8 @@ export const ReportGenerator = () => {
         chart_data: { visualizations: extractedVisualizations },
         report_type: topic.toLowerCase().includes(language === 'pt' ? "renovável" : "renewable") ? 
           (language === 'pt' ? "Relatório de Energia Renovável" : "Renewable Energy Report") : 
-          (language === 'pt' ? "Relatório Geral" : "General Report")
+          (language === 'pt' ? "Relatório Geral" : "General Report"),
+        file_url: null // Adding the missing property
       };
       
       await saveReport(reportData);
@@ -213,7 +214,33 @@ A análise de ${topic} em ${location} durante ${year} revela um setor dinâmico 
               {language === 'pt' ? "Relatório Gerado" : "Generated Report"}
             </h3>
             <div className="border rounded-md p-4 bg-gray-50 max-h-[500px] overflow-y-auto">
-              <ReportVisualizer reportContent={generatedReport} visualizations={visualizations} />
+              {visualizations.map((viz, index) => (
+                <ReportVisualizer key={index} visualization={viz} />
+              ))}
+              
+              <div className="prose max-w-none mt-4">
+                {generatedReport.split('\n').map((line, index) => {
+                  if (line.startsWith('# ')) {
+                    return <h1 key={index} className="text-2xl font-bold mt-6 mb-4">{line.replace('# ', '')}</h1>;
+                  } else if (line.startsWith('## ')) {
+                    return <h2 key={index} className="text-xl font-semibold mt-5 mb-3">{line.replace('## ', '')}</h2>;
+                  } else if (line.startsWith('### ')) {
+                    return <h3 key={index} className="text-lg font-medium mt-4 mb-2">{line.replace('### ', '')}</h3>;
+                  } else if (line.includes('Insert Visualization')) {
+                    return (
+                      <div key={index} className="bg-gray-100 p-4 my-4 rounded-md text-sm text-gray-700 italic">
+                        {language === 'pt' 
+                          ? "Visualização de dados aqui" 
+                          : "Data visualization here"}
+                      </div>
+                    );
+                  } else if (line === '') {
+                    return <br key={index} />;
+                  } else {
+                    return <p key={index} className="my-3 text-gray-700">{line}</p>;
+                  }
+                })}
+              </div>
             </div>
           </div>
         )}
