@@ -105,22 +105,9 @@ function formatNaturalLanguageResponse(message: string, results: any[] | null): 
   return `${message}\n\n**Resumo dos Resultados:**\n${keyPoints}`;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    // Parse the request body
-    const { prompt, chatHistory = [] } = await req.json();
-    
-    // Get the AI model to use
-    const model = await getAIModel();
-    console.log(`Making request to Gemini API with model: ${model}`);
-
-    // Create a system prompt that explains the database schema
-    const systemPrompt = `
+// Add specific knowledge about renewable energy programs
+function getEnhancedSystemPrompt() {
+  return `
 You are an AI database assistant that helps users query and understand data in a research and innovation database.
 
 The database contains the following tables:
@@ -138,6 +125,14 @@ The database contains the following tables:
    
 5. ani_international_collaborations - International research partnerships
    - id, program_name, country, partnership_type, focus_areas (array), start_date, end_date, total_budget
+
+When users ask about renewable energy programs, here are some key details to include:
+- Renewable energy programs often focus on solar, wind, hydroelectric, biomass, and geothermal technologies
+- Common funding types include grants, loans, tax incentives, and equity investments
+- Portugal has set a target of 80% renewable electricity by 2030
+- Important metrics include: CO2 emissions avoided, energy capacity installed (MW), and cost per kWh
+- The European Green Deal and Portugal's National Energy and Climate Plan are key policy frameworks
+- Funding success rates for renewable energy projects range from 25-40% depending on program competitiveness
 
 When users ask questions about the database, you should:
 1. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
@@ -170,6 +165,24 @@ Here are examples of questions users might ask and how to respond:
       WHERE sector ILIKE 'biotech'
       </SQL>
     `;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Parse the request body
+    const { prompt, chatHistory = [] } = await req.json();
+    
+    // Get the AI model to use
+    const model = await getAIModel();
+    console.log(`Making request to Gemini API with model: ${model}`);
+
+    // Create a system prompt that explains the database schema
+    const systemPrompt = getEnhancedSystemPrompt();
 
     // Construct the conversation
     const messages = [

@@ -22,7 +22,12 @@ export const suggestedDatabaseQuestions = [
   "Compare the funding success rates between technology and renewable energy sectors",
   "What institutions have the most international collaborations?",
   "What is the trend of R&D investment in Portugal over the last 3 years?",
-  "Which funding programs have the highest success rates?"
+  "Which funding programs have the highest success rates?",
+  "What are the key objectives of renewable energy policy frameworks?",
+  "List all renewable energy projects with funding over 1 million euros",
+  "Show me innovation metrics related to clean energy technologies",
+  "Which international collaborations focus on sustainable energy development?",
+  "What is the total budget allocated to renewable energy programs?"
 ];
 
 // Add function to get the current AI model
@@ -118,4 +123,17 @@ export const classifyDocument = async (document: DocumentToClassify): Promise<st
     console.error('Error in document classification:', error);
     return 'Unclassified';
   }
+};
+
+// Add function to enhance the system prompt with renewable energy domain knowledge
+export const getEnhancedSystemPrompt = () => {
+  return `
+When users ask about renewable energy programs, here are some key details to include:
+- Renewable energy programs often focus on solar, wind, hydroelectric, biomass, and geothermal technologies
+- Common funding types include grants, loans, tax incentives, and equity investments
+- Portugal has set a target of 80% renewable electricity by 2030
+- Important metrics include: CO2 emissions avoided, energy capacity installed (MW), and cost per kWh
+- The European Green Deal and Portugal's National Energy and Climate Plan are key policy frameworks
+- Success rates for renewable energy projects range from 25-40% depending on program competitiveness
+  `;
 };
