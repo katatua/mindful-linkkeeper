@@ -115,10 +115,11 @@ const TableCell = React.forwardRef<
   let content = props.children;
   
   if (content !== undefined && (typeof content === 'string' || typeof content === 'number')) {
-    const value = Number(content);
+    const valueStr = String(content).replace(/[^\d.,]/g, '').replace(',', '.');
+    const value = parseFloat(valueStr);
     
     if (!isNaN(value)) {
-      // Determine if this is a currency/monetary value
+      // Check if this is a currency-related value
       const isCurrency = currency || (unit && (
         unit === 'million EUR' || 
         unit === 'billion EUR' || 
@@ -128,11 +129,11 @@ const TableCell = React.forwardRef<
         unit.includes('investment')
       ));
       
-      // Handle percentage units
+      // Handle percentage values
       if (percentage || (unit && (unit === 'percent' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
         content = `${value.toFixed(1)}%`;
       } 
-      // Handle currency/monetary units
+      // Handle currency values with EUR symbol
       else if (isCurrency) {
         content = new Intl.NumberFormat('pt-PT', { 
           style: 'currency', 
@@ -140,25 +141,37 @@ const TableCell = React.forwardRef<
           maximumFractionDigits: 0
         }).format(value);
       } 
-      // Handle scores and indexes
+      // Handle scores and indexes without currency symbol
       else if (score || (unit && (unit === 'score' || unit.includes('index') || unit.includes('Index')))) {
         content = value.toFixed(1);
       } 
-      // Handle count values
+      // Handle count values without currency symbol
       else if (count || (unit && unit === 'count')) {
-        content = value.toLocaleString('pt-PT');
+        content = value.toLocaleString('pt-PT', {
+          style: 'decimal',
+          maximumFractionDigits: 0
+        });
       } 
-      // Handle energy units
+      // Handle energy units without currency symbol
       else if (energy || (unit && unit.includes('MW'))) {
-        content = `${value.toLocaleString('pt-PT')} MW`;
+        content = `${value.toLocaleString('pt-PT', {
+          style: 'decimal',
+          maximumFractionDigits: 0
+        })} MW`;
       }
-      // Handle other units
+      // Handle other units without currency symbol
       else if (unit) {
-        content = `${value.toLocaleString('pt-PT')} ${unit}`;
+        content = `${value.toLocaleString('pt-PT', {
+          style: 'decimal',
+          maximumFractionDigits: 0
+        })} ${unit}`;
       }
-      // No unit, just format the number
-      else {
-        content = value.toLocaleString('pt-PT');
+      // Format numeric values without currency symbol or unit
+      else if (numeric) {
+        content = value.toLocaleString('pt-PT', {
+          style: 'decimal',
+          maximumFractionDigits: 0
+        });
       }
     }
   }
