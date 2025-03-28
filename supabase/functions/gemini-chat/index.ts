@@ -56,59 +56,61 @@ async function getAIModel(): Promise<string> {
   }
 }
 
-function formatNaturalLanguageResponse(message: string, results: any[] | null, sqlQuery: string): string {
-  if (!results || results.length === 0) {
-    return `${message}\n\nNão foram encontrados resultados para esta consulta.`;
-  }
-
-  // Mostrar a pergunta original no início da resposta
-  let formattedResponse = `${message}\n\n`;
+function formatNaturalLanguageResponse(originalQuestion: string, message: string, results: any[] | null, sqlQuery: string): string {
+  // Show the original question at the beginning of the response
+  let formattedResponse = `${originalQuestion}\n`;
   
-  // Adicionar resumo breve de informações adicionais para contextualizar os resultados
-  if (message.includes("energia renovável") || sqlQuery.toLowerCase().includes("energy")) {
+  // Add the introductory message/answer
+  formattedResponse += `${message.trim()}\n\n`;
+  
+  // If there are no results, show a message
+  if (!results || results.length === 0) {
+    return `${formattedResponse}**Não foram encontrados resultados para esta consulta.**`;
+  }
+  
+  // Add domain-specific context if relevant
+  if (message.includes("energia renovável") || 
+      sqlQuery.toLowerCase().includes("energy") || 
+      sqlQuery.toLowerCase().includes("renewable")) {
     formattedResponse += "**Informações adicionais:**\n";
     formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
   }
-
-  // Formatar resultados de forma mais estruturada
+  
+  // Add a summary section with formatted results
   formattedResponse += "**Resumo dos Resultados:**\n\n";
   
+  // Add bullet points for each result
   results.forEach((item, index) => {
-    formattedResponse += `• Resultado ${index + 1}: `;
-    
-    // Formatar cada campo do resultado na mesma linha
-    const itemDesc = Object.entries(item)
-      .filter(([key, value]) => value !== null && value !== undefined)
+    const itemDetails = Object.entries(item)
       .map(([key, value]) => {
-        if (Array.isArray(value)) {
-          return `${key}: ${value.join(', ')}`;
-        }
+        if (value === null || value === undefined) return null;
+        if (Array.isArray(value)) return `${key}: ${value.join(', ')}`;
         return `${key}: ${value}`;
       })
+      .filter(Boolean)
       .join(', ');
     
-    formattedResponse += `${itemDesc}\n`;
+    formattedResponse += `• Resultado ${index + 1}: ${itemDetails}\n`;
   });
   
-  // Adicionar a consulta SQL ao final
-  formattedResponse += `SQL Query:\n${sqlQuery}`;
-
-  // Adicionar tabela de resultados para visualização mais clara
+  // Add the SQL query
+  formattedResponse += `SQL Query:\n${sqlQuery}\n`;
+  
+  // Add a clear "Results:" section to match the image formatting
+  formattedResponse += "Results:\n";
+  
+  // Create a formatted table header for the results
   if (results.length > 0) {
-    // Cabeçalho da tabela
-    formattedResponse += "\nResults:\n";
-    
-    // Criar cabeçalho
     const headers = Object.keys(results[0]);
     formattedResponse += headers.join('\t') + '\n';
     
-    // Adicionar dados
+    // Add the data rows
     results.forEach(row => {
       const values = headers.map(header => {
         const value = row[header];
         if (value === null || value === undefined) return '';
         if (Array.isArray(value)) return value.join(', ');
-        return value.toString();
+        return String(value);
       });
       formattedResponse += values.join('\t') + '\n';
     });
@@ -291,7 +293,12 @@ serve(async (req) => {
         const cleanResponse = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, '').trim();
         
         // Create a formatted natural language response with insights from the data
-        const naturalLanguageResponse = formatNaturalLanguageResponse(cleanResponse, formattedResults, sqlQuery);
+        const naturalLanguageResponse = formatNaturalLanguageResponse(
+          prompt, // Pass the original question
+          cleanResponse, 
+          formattedResults, 
+          sqlQuery
+        );
         
         // Return the response with the SQL query and results
         return new Response(JSON.stringify({ 
