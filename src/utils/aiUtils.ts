@@ -53,8 +53,18 @@ export const genId = () => {
 // Add function to handle database queries and AI responses
 export const generateResponse = async (prompt: string) => {
   try {
+    // Extract keywords for energy-related queries to improve matching
+    const energyKeywords = extractEnergyKeywords(prompt);
+    
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { prompt, chatHistory: [] }
+      body: { 
+        prompt, 
+        chatHistory: [],
+        // Pass additional context to help the query processing
+        additionalContext: {
+          energyKeywords: energyKeywords
+        }
+      }
     });
 
     if (error) {
@@ -92,6 +102,22 @@ export const generateResponse = async (prompt: string) => {
     console.error('Error generating response:', error);
     throw error;
   }
+};
+
+// Helper function to extract energy-related keywords from a query
+const extractEnergyKeywords = (query: string): string[] => {
+  const lowercaseQuery = query.toLowerCase();
+  
+  // Define sets of related terms to improve matching
+  const energyTerms = [
+    'renewable energy', 'clean energy', 'green energy', 
+    'sustainable energy', 'alternative energy',
+    'solar', 'wind', 'hydro', 'biomass', 'geothermal',
+    'photovoltaic', 'renewable', 'clean power', 'green power'
+  ];
+  
+  // Return all matching terms found in the query
+  return energyTerms.filter(term => lowercaseQuery.includes(term));
 };
 
 // Update interface for document classification

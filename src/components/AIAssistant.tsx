@@ -17,6 +17,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Message {
   id: string;
@@ -63,7 +64,6 @@ export const AIAssistant: React.FC = () => {
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Create history item to save in localStorage
       const historyItem = {
         id: assistantMessage.id,
         question: input,
@@ -76,7 +76,6 @@ export const AIAssistant: React.FC = () => {
         isCorrect: null
       };
       
-      // Save to localStorage
       try {
         const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
         const updatedHistory = [historyItem, ...existingHistory];
@@ -88,7 +87,6 @@ export const AIAssistant: React.FC = () => {
     } catch (error) {
       console.error('Error getting response:', error);
       
-      // Add error message to the chat
       const errorMessage: Message = {
         id: genId(),
         content: `Failed to get a response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or rephrase your question.`,
@@ -118,7 +116,6 @@ export const AIAssistant: React.FC = () => {
       return <p className="text-gray-500 italic">No results found</p>;
     }
 
-    // Get column names from the first result object
     const columns = Object.keys(results[0]);
 
     return (
@@ -136,7 +133,7 @@ export const AIAssistant: React.FC = () => {
               <TableRow key={rowIndex}>
                 {columns.map(column => (
                   <TableCell key={`${rowIndex}-${column}`}>
-                    {renderCellValue(row[column])}
+                    {renderCellValue(row[column], column)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -152,7 +149,7 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
-  const renderCellValue = (value: any) => {
+  const renderCellValue = (value: any, columnName?: string) => {
     if (value === null || value === undefined) {
       return 'N/A';
     }
@@ -163,6 +160,30 @@ export const AIAssistant: React.FC = () => {
     
     if (typeof value === 'object') {
       return JSON.stringify(value);
+    }
+    
+    // More precise check for monetary columns
+    if (typeof value === 'number' && columnName && (
+      columnName.toLowerCase().includes('budget') || 
+      columnName.toLowerCase().includes('amount') || 
+      columnName.toLowerCase().includes('funding') ||
+      columnName.toLowerCase().includes('cost') ||
+      columnName.toLowerCase().includes('price') ||
+      columnName.toLowerCase().includes('value') || 
+      columnName.toLowerCase().includes('contribution') ||
+      // Exclude columns that commonly have counts but could include monetary terms
+      !(columnName.toLowerCase().includes('count') || 
+        columnName.toLowerCase().includes('total_collaborations') ||
+        columnName.toLowerCase().includes('number') ||
+        columnName.toLowerCase().includes('qty') ||
+        columnName.toLowerCase().includes('quantity'))
+    )) {
+      return new Intl.NumberFormat('pt-PT', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
     }
     
     return String(value);
@@ -231,54 +252,80 @@ export const AIAssistant: React.FC = () => {
                   </Alert>
                 ) : (
                   <>
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                    
-                    {message.sqlQuery && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                          <Code className="h-4 w-4" />
-                          <span>SQL Query:</span>
-                        </div>
-                        <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
-                          {message.sqlQuery}
-                        </pre>
-                      </div>
-                    )}
-                    
-                    {message.results && message.results.length > 0 && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                          <Database className="h-4 w-4" />
-                          <span>Results:</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-xs h-6 ml-auto"
-                            onClick={() => {
-                              try {
-                                const jsonStr = JSON.stringify(message.results, null, 2);
-                                const blob = new Blob([jsonStr], { type: 'application/json' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
-                                a.href = url;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                              } catch (e) {
-                                console.error('Error downloading results:', e);
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to download results.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                          >
-                            Download JSON
-                          </Button>
-                        </div>
-                        {renderResults(message.results)}
-                      </div>
+                    {message.role === 'assistant' ? (
+                      <Tabs defaultValue="resposta" className="w-full">
+                        <TabsList className="mb-2">
+                          <TabsTrigger value="resposta">Resposta</TabsTrigger>
+                          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="resposta">
+                          <div className="whitespace-pre-wrap">
+                            {message.results && message.results.length > 0 ? (
+                              <div>
+                                <div className="font-medium text-primary mb-4">{message.content.split('\n')[0]}</div>
+                                {renderResults(message.results)}
+                              </div>
+                            ) : (
+                              message.content
+                            )}
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="detalhes">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          
+                          {message.sqlQuery && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                <Code className="h-4 w-4" />
+                                <span>SQL Query:</span>
+                              </div>
+                              <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                                {message.sqlQuery}
+                              </pre>
+                            </div>
+                          )}
+                          
+                          {message.results && message.results.length > 0 && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                <Database className="h-4 w-4" />
+                                <span>Results:</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-xs h-6 ml-auto"
+                                  onClick={() => {
+                                    try {
+                                      const jsonStr = JSON.stringify(message.results, null, 2);
+                                      const blob = new Blob([jsonStr], { type: 'application/json' });
+                                      const url = URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
+                                      a.href = url;
+                                      a.click();
+                                      URL.revokeObjectURL(url);
+                                    } catch (e) {
+                                      console.error('Error downloading results:', e);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to download results.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Download JSON
+                                </Button>
+                              </div>
+                              {renderResults(message.results)}
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    ) : (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
                     )}
                   </>
                 )}
