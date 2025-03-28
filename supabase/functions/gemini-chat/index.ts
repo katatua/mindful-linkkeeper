@@ -56,53 +56,65 @@ async function getAIModel(): Promise<string> {
   }
 }
 
-function formatNaturalLanguageResponse(message: string, results: any[] | null): string {
+function formatNaturalLanguageResponse(message: string, results: any[] | null, sqlQuery: string): string {
   if (!results || results.length === 0) {
-    return message + "\n\nNão foram encontrados resultados para esta consulta.";
+    return `${message}\n\nNão foram encontrados resultados para esta consulta.`;
   }
 
-  // Extract a sample of results for the summary
-  const resultCount = results.length;
-  const sampleSize = Math.min(resultCount, 3);
-  const sample = results.slice(0, sampleSize);
+  // Mostrar a pergunta original no início da resposta
+  let formattedResponse = `${message}\n\n`;
   
-  // Format key points from the results
-  let keyPoints = "";
+  // Adicionar resumo breve de informações adicionais para contextualizar os resultados
+  if (message.includes("energia renovável") || sqlQuery.toLowerCase().includes("energy")) {
+    formattedResponse += "**Informações adicionais:**\n";
+    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
+  }
+
+  // Formatar resultados de forma mais estruturada
+  formattedResponse += "**Resumo dos Resultados:**\n\n";
   
-  // For a small number of results, list them directly
-  if (resultCount <= 10) {
-    sample.forEach((item, index) => {
-      const itemDesc = Object.entries(item)
-        .filter(([key, value]) => value !== null && value !== undefined)
-        .map(([key, value]) => {
-          // Format array values nicely
-          if (Array.isArray(value)) {
-            return `${key}: ${value.join(', ')}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join(', ');
-      keyPoints += `\n• Resultado ${index + 1}: ${itemDesc}`;
+  results.forEach((item, index) => {
+    formattedResponse += `• Resultado ${index + 1}: `;
+    
+    // Formatar cada campo do resultado na mesma linha
+    const itemDesc = Object.entries(item)
+      .filter(([key, value]) => value !== null && value !== undefined)
+      .map(([key, value]) => {
+        if (Array.isArray(value)) {
+          return `${key}: ${value.join(', ')}`;
+        }
+        return `${key}: ${value}`;
+      })
+      .join(', ');
+    
+    formattedResponse += `${itemDesc}\n`;
+  });
+  
+  // Adicionar a consulta SQL ao final
+  formattedResponse += `SQL Query:\n${sqlQuery}`;
+
+  // Adicionar tabela de resultados para visualização mais clara
+  if (results.length > 0) {
+    // Cabeçalho da tabela
+    formattedResponse += "\nResults:\n";
+    
+    // Criar cabeçalho
+    const headers = Object.keys(results[0]);
+    formattedResponse += headers.join('\t') + '\n';
+    
+    // Adicionar dados
+    results.forEach(row => {
+      const values = headers.map(header => {
+        const value = row[header];
+        if (value === null || value === undefined) return '';
+        if (Array.isArray(value)) return value.join(', ');
+        return value.toString();
+      });
+      formattedResponse += values.join('\t') + '\n';
     });
-    
-    if (resultCount > sampleSize) {
-      keyPoints += `\n... e mais ${resultCount - sampleSize} resultados.`;
-    }
-  } else {
-    // For many results, just summarize
-    keyPoints = `Foram encontrados ${resultCount} resultados.`;
-    
-    // Add a brief summary of the first few results
-    sample.forEach((item, index) => {
-      const keys = Object.keys(item);
-      const mainKey = keys[0] || "item";
-      keyPoints += `\n• ${mainKey}: ${item[mainKey]}`;
-    });
-    
-    keyPoints += `\n... e mais ${resultCount - sampleSize} resultados.`;
   }
   
-  return `${message}\n\n**Resumo dos Resultados:**\n${keyPoints}`;
+  return formattedResponse;
 }
 
 // Add specific knowledge about renewable energy programs
@@ -159,7 +171,7 @@ Here are examples of questions users might ask and how to respond:
 1. Q: "Show me funding programs for renewable energy"
    A: Aqui estão os programas de financiamento relacionados à energia renovável:
       <SQL>
-      SELECT name, description, total_budget, application_deadline
+      SELECT name, description, total_budget, application_deadline, funding_type
       FROM ani_funding_programs
       WHERE ARRAY_TO_STRING(sector_focus, ',') ILIKE '%renewable%' 
          OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energy%'
@@ -279,7 +291,7 @@ serve(async (req) => {
         const cleanResponse = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, '').trim();
         
         // Create a formatted natural language response with insights from the data
-        const naturalLanguageResponse = formatNaturalLanguageResponse(cleanResponse, formattedResults);
+        const naturalLanguageResponse = formatNaturalLanguageResponse(cleanResponse, formattedResults, sqlQuery);
         
         // Return the response with the SQL query and results
         return new Response(JSON.stringify({ 
