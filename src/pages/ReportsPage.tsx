@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,15 +10,18 @@ import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
 import { ScheduledReports } from "@/components/reports/ScheduledReports";
 import { ReportGenerator } from "@/components/reports/ReportGenerator";
+import { AIGeneratedReports } from "@/components/reports/AIGeneratedReports";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ReportsPage = () => {
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const [customReport, setCustomReport] = useState({
-    title: "Q4 2023 Innovation Analytics",
+    title: language === 'pt' ? "Análise de Inovação Q4 2023" : "Q4 2023 Innovation Analytics",
     startDate: "2023-10-01",
     endDate: "2023-12-31",
     format: "pdf",
@@ -35,30 +39,30 @@ const ReportsPage = () => {
   
   const recentReports = [
     {
-      title: "Q3 2023 Innovation Performance",
-      description: "Quarterly performance report on ANI's innovation programs",
-      date: "Oct 15, 2023",
+      title: language === 'pt' ? "Desempenho de Inovação Q3 2023" : "Q3 2023 Innovation Performance",
+      description: language === 'pt' ? "Relatório trimestral sobre programas de inovação da ANI" : "Quarterly performance report on ANI's innovation programs",
+      date: language === 'pt' ? "15 de Out, 2023" : "Oct 15, 2023",
       status: "completed",
       author: "Maria Silva"
     },
     {
-      title: "SME Startup Ecosystem Analysis",
-      description: "Analysis of the Portuguese startup ecosystem funding and performance",
-      date: "Sep 28, 2023",
+      title: language === 'pt' ? "Análise do Ecossistema de Startups PME" : "SME Startup Ecosystem Analysis",
+      description: language === 'pt' ? "Análise do financiamento e desempenho do ecossistema de startups portuguesas" : "Analysis of the Portuguese startup ecosystem funding and performance",
+      date: language === 'pt' ? "28 de Set, 2023" : "Sep 28, 2023",
       status: "completed",
       author: "Carlos Mendes"
     },
     {
-      title: "R&D Tax Incentives Impact Study",
-      description: "Assessment of SIFIDE II program impact on corporate R&D investments",
-      date: "Sep 12, 2023",
+      title: language === 'pt' ? "Estudo de Impacto dos Incentivos Fiscais em I&D" : "R&D Tax Incentives Impact Study",
+      description: language === 'pt' ? "Avaliação do impacto do programa SIFIDE II nos investimentos empresariais em I&D" : "Assessment of SIFIDE II program impact on corporate R&D investments",
+      date: language === 'pt' ? "12 de Set, 2023" : "Sep 12, 2023",
       status: "completed",
       author: "Ana Costa"
     },
     {
-      title: "International Innovation Benchmarking",
-      description: "Comparison of Portuguese innovation metrics against EU countries",
-      date: "Aug 30, 2023",
+      title: language === 'pt' ? "Comparação Internacional de Inovação" : "International Innovation Benchmarking",
+      description: language === 'pt' ? "Comparação das métricas de inovação portuguesas com países da UE" : "Comparison of Portuguese innovation metrics against EU countries",
+      date: language === 'pt' ? "30 de Ago, 2023" : "Aug 30, 2023",
       status: "completed",
       author: "João Almeida"
     }
@@ -66,16 +70,20 @@ const ReportsPage = () => {
 
   const handleGenerateReport = () => {
     toast({
-      title: "Report generation initiated",
-      description: "Your custom report is being prepared. It will be available in a few minutes.",
+      title: language === 'pt' ? "Geração de relatório iniciada" : "Report generation initiated",
+      description: language === 'pt' ? 
+        "Seu relatório personalizado está sendo preparado. Estará disponível em alguns minutos." : 
+        "Your custom report is being prepared. It will be available in a few minutes.",
       duration: 5000
     });
   };
 
   const handleSaveTemplate = () => {
     toast({
-      title: "Template saved",
-      description: `The template "${customReport.title}" has been saved successfully.`,
+      title: language === 'pt' ? "Modelo salvo" : "Template saved",
+      description: language === 'pt' ?
+        `O modelo "${customReport.title}" foi salvo com sucesso.` :
+        `The template "${customReport.title}" has been saved successfully.`,
       duration: 5000
     });
     
@@ -120,8 +128,10 @@ const ReportsPage = () => {
 
   const handleDownloadPDF = (report: any) => {
     toast({
-      title: "Downloading report",
-      description: `Preparing ${report.title} for download`,
+      title: language === 'pt' ? "Baixando relatório" : "Downloading report",
+      description: language === 'pt' ?
+        `Preparando ${report.title} para download` :
+        `Preparing ${report.title} for download`,
     });
     
     setTimeout(() => {
@@ -135,31 +145,37 @@ const ReportsPage = () => {
       pdf.text(report.title, 20, 30);
       
       pdf.setFontSize(12);
-      pdf.text(`Report Type: ${report.description}`, 20, 45);
-      pdf.text(`Date: ${report.date}`, 20, 55);
-      pdf.text(`Author: ${report.author}`, 20, 65);
+      pdf.text(`${language === 'pt' ? 'Tipo de Relatório' : 'Report Type'}: ${report.description}`, 20, 45);
+      pdf.text(`${language === 'pt' ? 'Data' : 'Date'}: ${report.date}`, 20, 55);
+      pdf.text(`${language === 'pt' ? 'Autor' : 'Author'}: ${report.author}`, 20, 65);
       
       pdf.setFontSize(16);
-      pdf.text("Executive Summary", 20, 85);
+      pdf.text(language === 'pt' ? "Resumo Executivo" : "Executive Summary", 20, 85);
       
       pdf.setFontSize(12);
-      const content = "This is an automatically generated report summary. The full content would include detailed analytics, charts, and comprehensive data analysis relevant to the selected report type.";
+      const content = language === 'pt' 
+        ? "Este é um resumo de relatório gerado automaticamente. O conteúdo completo incluiria análises detalhadas, gráficos e análise de dados abrangente relevante para o tipo de relatório selecionado."
+        : "This is an automatically generated report summary. The full content would include detailed analytics, charts, and comprehensive data analysis relevant to the selected report type.";
       const contentLines = pdf.splitTextToSize(content, 170);
       pdf.text(contentLines, 20, 95);
       
       pdf.save(`${report.title.replace(/\s+/g, '-')}.pdf`);
       
       toast({
-        title: "Download complete",
-        description: `Report "${report.title}" has been downloaded.`,
+        title: language === 'pt' ? "Download completo" : "Download complete",
+        description: language === 'pt' ?
+          `O relatório "${report.title}" foi baixado.` :
+          `Report "${report.title}" has been downloaded.`,
       });
     }, 500);
   };
 
   const handleShareReport = (report: any) => {
     toast({
-      title: "Report shared",
-      description: `A sharing link for "${report.title}" has been copied to clipboard`,
+      title: language === 'pt' ? "Relatório compartilhado" : "Report shared",
+      description: language === 'pt' ?
+        `Um link de compartilhamento para "${report.title}" foi copiado para a área de transferência` :
+        `A sharing link for "${report.title}" has been copied to clipboard`,
     });
     
     navigator.clipboard.writeText(`https://ani-portal.example.com/shared-reports/${report.title.replace(/\s+/g, '-')}`);
@@ -172,35 +188,36 @@ const ReportsPage = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Reports & Documentation</h1>
+        <h1 className="text-2xl font-bold">{language === 'pt' ? "Relatórios e Documentação" : "Reports & Documentation"}</h1>
         
         <div className="flex items-center gap-2">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <Input
               type="search"
-              placeholder="Search reports..."
+              placeholder={language === 'pt' ? "Buscar relatórios..." : "Search reports..."}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-1" /> Filter
+            <Filter className="h-4 w-4 mr-1" /> {language === 'pt' ? "Filtrar" : "Filter"}
           </Button>
           <Button variant="default" size="sm">
-            <FileText className="h-4 w-4 mr-1" /> Generate Report
+            <FileText className="h-4 w-4 mr-1" /> {language === 'pt' ? "Gerar Relatório" : "Generate Report"}
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="recent" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="recent">Recent Reports</TabsTrigger>
-          <TabsTrigger value="templates">Report Templates</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
-          <TabsTrigger value="custom">Custom Reports</TabsTrigger>
-          <TabsTrigger value="ai-generator">AI Report Generator</TabsTrigger>
+          <TabsTrigger value="recent">{language === 'pt' ? "Relatórios Recentes" : "Recent Reports"}</TabsTrigger>
+          <TabsTrigger value="templates">{language === 'pt' ? "Modelos de Relatórios" : "Report Templates"}</TabsTrigger>
+          <TabsTrigger value="scheduled">{language === 'pt' ? "Relatórios Agendados" : "Scheduled Reports"}</TabsTrigger>
+          <TabsTrigger value="custom">{language === 'pt' ? "Relatórios Personalizados" : "Custom Reports"}</TabsTrigger>
+          <TabsTrigger value="ai-generator">{language === 'pt' ? "Gerador de Relatórios IA" : "AI Report Generator"}</TabsTrigger>
+          <TabsTrigger value="ai-reports">{language === 'pt' ? "Relatórios Gerados por IA" : "AI-Generated Reports"}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="recent">
@@ -227,7 +244,7 @@ const ReportsPage = () => {
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-500">
                     <FileText className="h-3.5 w-3.5" />
-                    <span>By {report.author}</span>
+                    <span>{language === 'pt' ? "Por" : "By"} {report.author}</span>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-2">
@@ -238,7 +255,7 @@ const ReportsPage = () => {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleShareReport(report)}>
                       <Share2 className="h-4 w-4 mr-1" />
-                      Share
+                      {language === 'pt' ? "Compartilhar" : "Share"}
                     </Button>
                   </div>
                 </CardFooter>
@@ -260,16 +277,20 @@ const ReportsPage = () => {
         <TabsContent value="custom">
           <Card>
             <CardHeader>
-              <CardTitle>Custom Report Generator</CardTitle>
+              <CardTitle>{language === 'pt' ? "Gerador de Relatórios Personalizados" : "Custom Report Generator"}</CardTitle>
               <CardDescription>
-                Create tailored reports by selecting the data sources, metrics, and visualization options
+                {language === 'pt' 
+                  ? "Crie relatórios personalizados selecionando as fontes de dados, métricas e opções de visualização"
+                  : "Create tailored reports by selecting the data sources, metrics, and visualization options"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium">1. Select Data Sources</CardTitle>
+                    <CardTitle className="text-base font-medium">
+                      {language === 'pt' ? "1. Selecione Fontes de Dados" : "1. Select Data Sources"}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
@@ -281,7 +302,9 @@ const ReportsPage = () => {
                           checked={customReport.dataSources.fundingData}
                           onChange={() => handleDataSourceChange('fundingData')}
                         />
-                        <label htmlFor="funding-data" className="text-sm">Funding Data</label>
+                        <label htmlFor="funding-data" className="text-sm">
+                          {language === 'pt' ? "Dados de Financiamento" : "Funding Data"}
+                        </label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input 
@@ -291,7 +314,9 @@ const ReportsPage = () => {
                           checked={customReport.dataSources.projectMetrics}
                           onChange={() => handleDataSourceChange('projectMetrics')}
                         />
-                        <label htmlFor="project-metrics" className="text-sm">Project Metrics</label>
+                        <label htmlFor="project-metrics" className="text-sm">
+                          {language === 'pt' ? "Métricas de Projetos" : "Project Metrics"}
+                        </label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input 
@@ -301,7 +326,9 @@ const ReportsPage = () => {
                           checked={customReport.dataSources.regionalData}
                           onChange={() => handleDataSourceChange('regionalData')}
                         />
-                        <label htmlFor="regional-data" className="text-sm">Regional Data</label>
+                        <label htmlFor="regional-data" className="text-sm">
+                          {language === 'pt' ? "Dados Regionais" : "Regional Data"}
+                        </label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input 
@@ -311,7 +338,9 @@ const ReportsPage = () => {
                           checked={customReport.dataSources.sectorAnalysis}
                           onChange={() => handleDataSourceChange('sectorAnalysis')}
                         />
-                        <label htmlFor="sector-analysis" className="text-sm">Sector Analysis</label>
+                        <label htmlFor="sector-analysis" className="text-sm">
+                          {language === 'pt' ? "Análise Setorial" : "Sector Analysis"}
+                        </label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input 
@@ -321,7 +350,9 @@ const ReportsPage = () => {
                           checked={customReport.dataSources.performanceKPIs}
                           onChange={() => handleDataSourceChange('performanceKPIs')}
                         />
-                        <label htmlFor="performance-kpis" className="text-sm">Performance KPIs</label>
+                        <label htmlFor="performance-kpis" className="text-sm">
+                          {language === 'pt' ? "KPIs de Desempenho" : "Performance KPIs"}
+                        </label>
                       </div>
                     </div>
                   </CardContent>
@@ -329,22 +360,28 @@ const ReportsPage = () => {
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium">2. Report Options</CardTitle>
+                    <CardTitle className="text-base font-medium">
+                      {language === 'pt' ? "2. Opções de Relatório" : "2. Report Options"}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <label htmlFor="report-title" className="text-sm font-medium">Report Title</label>
+                        <label htmlFor="report-title" className="text-sm font-medium">
+                          {language === 'pt' ? "Título do Relatório" : "Report Title"}
+                        </label>
                         <Input
                           id="report-title"
-                          placeholder="Enter report title"
+                          placeholder={language === 'pt' ? "Insira o título do relatório" : "Enter report title"}
                           value={customReport.title}
                           onChange={(e) => handleInputChange('title', e.target.value)}
                         />
                       </div>
                       
                       <div className="space-y-1">
-                        <label htmlFor="date-range" className="text-sm font-medium">Date Range</label>
+                        <label htmlFor="date-range" className="text-sm font-medium">
+                          {language === 'pt' ? "Período" : "Date Range"}
+                        </label>
                         <div className="flex gap-2">
                           <Input
                             id="date-range-start"
@@ -362,7 +399,9 @@ const ReportsPage = () => {
                       </div>
                       
                       <div className="space-y-1">
-                        <label className="text-sm font-medium">Report Format</label>
+                        <label className="text-sm font-medium">
+                          {language === 'pt' ? "Formato do Relatório" : "Report Format"}
+                        </label>
                         <div className="flex gap-2">
                           <Button 
                             variant={customReport.format === 'pdf' ? "default" : "outline"} 
@@ -396,12 +435,16 @@ const ReportsPage = () => {
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium">3. Schedule Options</CardTitle>
+                    <CardTitle className="text-base font-medium">
+                      {language === 'pt' ? "3. Opções de Agendamento" : "3. Schedule Options"}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <label className="text-sm font-medium">Generation Type</label>
+                        <label className="text-sm font-medium">
+                          {language === 'pt' ? "Tipo de Geração" : "Generation Type"}
+                        </label>
                         <div className="flex gap-2">
                           <Button 
                             variant={customReport.generationType === 'one-time' ? "default" : "outline"} 
@@ -409,7 +452,8 @@ const ReportsPage = () => {
                             className="flex-1"
                             onClick={() => setGenerationType('one-time')}
                           >
-                            <Calendar className="h-4 w-4 mr-1" /> One-time
+                            <Calendar className="h-4 w-4 mr-1" /> 
+                            {language === 'pt' ? "Única" : "One-time"}
                           </Button>
                           <Button 
                             variant={customReport.generationType === 'recurring' ? "default" : "outline"} 
@@ -417,13 +461,16 @@ const ReportsPage = () => {
                             className="flex-1"
                             onClick={() => setGenerationType('recurring')}
                           >
-                            <Clock className="h-4 w-4 mr-1" /> Recurring
+                            <Clock className="h-4 w-4 mr-1" /> 
+                            {language === 'pt' ? "Recorrente" : "Recurring"}
                           </Button>
                         </div>
                       </div>
                       
                       <div className="space-y-1">
-                        <label htmlFor="generate-date" className="text-sm font-medium">Generation Date</label>
+                        <label htmlFor="generate-date" className="text-sm font-medium">
+                          {language === 'pt' ? "Data de Geração" : "Generation Date"}
+                        </label>
                         <Input
                           id="generate-date"
                           type="date"
@@ -433,9 +480,11 @@ const ReportsPage = () => {
                       </div>
                       
                       <div className="space-y-1">
-                        <label className="text-sm font-medium">Distribution</label>
+                        <label className="text-sm font-medium">
+                          {language === 'pt' ? "Distribuição" : "Distribution"}
+                        </label>
                         <Input
-                          placeholder="Enter email recipients"
+                          placeholder={language === 'pt' ? "Insira destinatários de email" : "Enter email recipients"}
                           value={customReport.distribution}
                           onChange={(e) => handleInputChange('distribution', e.target.value)}
                         />
@@ -447,10 +496,10 @@ const ReportsPage = () => {
               
               <div className="flex justify-end">
                 <Button className="mr-2" variant="outline" onClick={handleSaveTemplate}>
-                  Save Template
+                  {language === 'pt' ? "Salvar Modelo" : "Save Template"}
                 </Button>
                 <Button onClick={handleGenerateReport}>
-                  Generate Report
+                  {language === 'pt' ? "Gerar Relatório" : "Generate Report"}
                 </Button>
               </div>
             </CardContent>
@@ -459,6 +508,10 @@ const ReportsPage = () => {
 
         <TabsContent value="ai-generator">
           <ReportGenerator />
+        </TabsContent>
+        
+        <TabsContent value="ai-reports">
+          <AIGeneratedReports />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,27 +7,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportVisualizer, extractVisualizations } from "./ReportVisualizer";
+import { saveReport } from "@/utils/reportService";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const ReportGenerator = () => {
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
-  const [topic, setTopic] = useState("Innovation in renewable energy");
-  const [location, setLocation] = useState("Portugal");
+  const [topic, setTopic] = useState(language === 'pt' ? "Inovação em energia renovável" : "Innovation in renewable energy");
+  const [location, setLocation] = useState(language === 'pt' ? "Portugal" : "Portugal");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [reportStyle, setReportStyle] = useState("formal");
   const [generatedReport, setGeneratedReport] = useState("");
   const [visualizations, setVisualizations] = useState<any[]>([]);
 
-  const generateReport = () => {
+  const generateReport = async () => {
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
       let reportContent = "";
       
       // For renewable energy topics, generate a more specialized report
-      if (topic.toLowerCase().includes("renewable") || topic.toLowerCase().includes("energy")) {
-        reportContent = generateRenewableEnergyReport(location, year);
+      if (topic.toLowerCase().includes(language === 'pt' ? "renovável" : "renewable") || 
+          topic.toLowerCase().includes(language === 'pt' ? "energia" : "energy")) {
+        reportContent = language === 'pt' ? 
+          generateRenewableEnergyReportPT(location, year) :
+          generateRenewableEnergyReport(location, year);
       } else {
-        reportContent = generateGeneralReport(topic, location, year, reportStyle);
+        reportContent = language === 'pt' ?
+          generateGeneralReportPT(topic, location, year, reportStyle) :
+          generateGeneralReport(topic, location, year, reportStyle);
       }
       
       // Extract visualizations from the report content
@@ -36,14 +46,45 @@ export const ReportGenerator = () => {
       
       setGeneratedReport(reportContent);
       setVisualizations(extractedVisualizations);
-      setIsLoading(false);
+      
+      // Save report to the database
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      
+      const reportData = {
+        title: `${topic} in ${location} (${year})`,
+        content: reportContent,
+        user_id: userId || null,
+        language: language,
+        metadata: { topic, location, year, reportStyle },
+        chart_data: { visualizations: extractedVisualizations },
+        report_type: topic.toLowerCase().includes(language === 'pt' ? "renovável" : "renewable") ? 
+          (language === 'pt' ? "Relatório de Energia Renovável" : "Renewable Energy Report") : 
+          (language === 'pt' ? "Relatório Geral" : "General Report")
+      };
+      
+      await saveReport(reportData);
 
       toast({
-        title: "Report Generated",
-        description: `Your report on ${topic} in ${location} for ${year} has been created.`,
+        title: language === 'pt' ? "Relatório Gerado" : "Report Generated",
+        description: language === 'pt' ? 
+          `Seu relatório sobre ${topic} em ${location} para ${year} foi criado e salvo.` :
+          `Your report on ${topic} in ${location} for ${year} has been created and saved.`,
         duration: 3000
       });
-    }, 2000);
+    } catch (error) {
+      console.error("Error generating or saving report:", error);
+      toast({
+        title: language === 'pt' ? "Erro" : "Error",
+        description: language === 'pt' ? 
+          "Ocorreu um erro ao gerar ou salvar o relatório." :
+          "An error occurred while generating or saving the report.",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const generateRenewableEnergyReport = (location: string, year: string) => {
@@ -116,6 +157,78 @@ The analysis of renewable energy innovation in ${location} during ${year} reveal
 The data indicates that ${location} is building specialized capabilities in solar energy, grid integration, and emerging technologies such as energy storage and green hydrogen. These focus areas align well with both national strengths and global market opportunities in the renewable energy transition.
 
 While challenges remain in areas such as regional distribution of innovation activities and commercialization of research outputs, the overall trajectory is positive. ${location}'s renewable energy innovation ecosystem demonstrates increasing maturity and potential for contributing to both national energy transition goals and international technology markets.`;
+  };
+
+  const generateRenewableEnergyReportPT = (location: string, year: string) => {
+    return `# Inovação em Energia Renovável em ${location} (${year})
+
+## Introdução
+
+Este relatório examina o estado da inovação em energia renovável em ${location} durante ${year}, com foco em avanços tecnológicos, iniciativas de pesquisa e o impacto das políticas governamentais no crescimento do setor. O panorama da energia renovável em ${location} passou por transformações significativas nos últimos anos, impulsionado por preocupações com as mudanças climáticas, diretivas da União Europeia e a mudança global em direção a fontes de energia sustentáveis.
+
+A importância desta análise não pode ser subestimada, pois a energia renovável representa um componente crítico da estratégia de ${location} para reduzir as emissões de carbono, aumentar a segurança energética e estimular o crescimento econômico por meio da inovação. Este relatório visa fornecer às partes interessadas insights abrangentes sobre o estado atual e o potencial futuro do setor de energia renovável em ${location}.
+
+Nas seções a seguir, mergulharemos no contexto histórico da energia renovável em ${location}, examinaremos os principais dados de ${year}, analisaremos tendências emergentes e ofereceremos perspectivas sobre desenvolvimentos futuros no setor.
+
+## Contexto e Antecedentes
+
+${location} tem uma longa história de envolvimento com energia renovável, que remonta ao uso extensivo de energia hidrelétrica em meados do século XX. A posição geográfica do país na borda ocidental da Europa proporciona recursos naturais abundantes para a geração de energia renovável, incluindo fortes ventos do Atlântico, alta irradiação solar no sul e significativo potencial hidrelétrico de seus sistemas fluviais.
+
+O compromisso do país com a energia renovável intensificou-se no início dos anos 2000, com a implementação de tarifas feed-in e outras políticas de apoio. Em 2010, ${location} já se havia estabelecido como líder europeu na integração de energias renováveis, com energia eólica e hidrelétrica contribuindo significativamente para a matriz elétrica nacional.
+
+O período que antecedeu ${year} testemunhou uma evolução adicional no panorama da energia renovável, influenciada pelo Pacto Ecológico Europeu, pelos planos de recuperação da COVID-19 e pelo plano nacional de energia e clima (PNEC 2030). Esses frameworks estabeleceram metas ambiciosas para a adoção de energia renovável, neutralidade de carbono e desenvolvimento de tecnologias inovadoras no setor de energia limpa.
+
+O ecossistema de pesquisa e inovação que apoia a energia renovável em ${location} abrange universidades, centros de pesquisa, startups e empresas de energia estabelecidas. Instituições-chave como o INESC TEC, o Instituto Superior Técnico da Universidade de Lisboa e o Laboratório Nacional de Energia e Geologia (LNEG) têm estado na vanguarda da pesquisa em energia renovável. O panorama da inovação também foi moldado por mecanismos de financiamento público, incluindo apoio do programa Portugal 2020, Horizon Europe e do Plano de Recuperação e Resiliência (PRR).
+
+## Visão Geral dos Dados
+
+De acordo com nossa base de dados, o investimento em pesquisa e desenvolvimento de energia renovável em ${location} alcançou €126,8 milhões em ${year}, representando um aumento de 15,3% em relação ao ano anterior. Este crescimento supera a taxa média de crescimento de investimento em P&D da União Europeia de 8,7% no setor de energia renovável durante o mesmo período. Insert Visualization 1 (Gráfico de Barras: Investimento em P&D de Energia Renovável (em milhões €) nos Últimos Cinco Anos)
+
+A distribuição do investimento em P&D entre as tecnologias de energia renovável mostra padrões interessantes. A energia solar recebeu a maior parcela, com 38% do financiamento total, seguida pela energia eólica (25%), sistemas de armazenamento de energia (18%), tecnologias de hidrogênio (12%) e outras tecnologias, incluindo ondas e geotérmica (7%). Esta alocação reflete tanto as vantagens naturais da geografia de ${location} quanto prioridades estratégicas em tecnologias emergentes como o hidrogênio verde. Insert Visualization 2 (Gráfico de Pizza: Distribuição do Financiamento de P&D em Energia Renovável por Tipo de Tecnologia)
+
+Os pedidos de patentes relacionados a tecnologias de energia renovável de pesquisadores e empresas baseados em ${location} totalizaram 72 em ${year}, marcando um aumento de 22% em relação ao ano anterior. Mais notável é o crescimento em patentes relacionadas a melhorias na eficiência fotovoltaica solar e tecnologias de integração à rede. Insert Visualization 3 (Gráfico de Linha: Pedidos de Patentes de Energia Renovável ${Number(year) - 4}-${year})
+
+O número de projetos de pesquisa ativos focados em energia renovável em ${location} durante ${year} foi de 183, com projetos colaborativos envolvendo parceiros internacionais representando 62% do total. Estes projetos abrangem vários níveis de prontidão tecnológica (TRLs), com 45% focados em pesquisa aplicada (TRL 4-6) e 30% em demonstração e implantação (TRL 7-9). Insert Visualization 4 (Gráfico de Barras: Projetos de Pesquisa em Energia Renovável por Nível de Prontidão Tecnológica)
+
+Quanto à distribuição regional, as áreas metropolitanas de Lisboa e Porto hospedam 68% das atividades de pesquisa em energia renovável, com clusters emergentes em Évora (pesquisa solar) e Viana do Castelo (energia eólica offshore e energia marinha). Esta concentração reflete a localização das principais instituições de pesquisa e universidades, mas também destaca oportunidades para ecossistemas de inovação geograficamente mais distribuídos. Insert Visualization 5 (Gráfico de Barras: Distribuição Regional das Atividades de Pesquisa em Energia Renovável)
+
+## Análise e Interpretação
+
+O aumento substancial no investimento em P&D em energia renovável em ${location} durante ${year} pode ser atribuído a vários fatores. Primeiro, a disponibilidade de fundos de recuperação através do PRR direcionou recursos significativos para projetos de transição verde, incluindo inovação em energia renovável. Segundo, a crescente viabilidade comercial das tecnologias renováveis atraiu maior investimento privado, particularmente em energia solar e soluções de armazenamento de energia. Terceiro, marcos políticos nacionais alinhados com as metas climáticas da UE criaram um ambiente favorável para pesquisa e inovação no setor.
+
+A ênfase em energia solar na distribuição de financiamento reflete tanto os excelentes recursos solares em ${location} quanto os rápidos avanços tecnológicos na eficiência fotovoltaica e redução de custos. O investimento significativo em tecnologias de armazenamento de energia e hidrogênio indica um foco estratégico em abordar os desafios de intermitência associados à integração de energia renovável e na expansão para mercados emergentes de energia limpa. Insert Visualization 6 (Gráfico de Linha: Tendências de Investimento vs. Maturidade Tecnológica)
+
+O crescimento nos pedidos de patentes é particularmente notável, pois representa uma mudança da adoção de tecnologia para a criação de tecnologia no setor de energia renovável português. Esta tendência sugere uma crescente maturidade do ecossistema de inovação e o desenvolvimento de expertise especializada em áreas como integração de redes inteligentes, sistemas solares flutuantes e tecnologias eólicas de próxima geração. A concentração de patentes em áreas tecnológicas específicas também indica a formação de vantagens competitivas em segmentos de nicho do mercado de energia renovável.
+
+A alta proporção de projetos colaborativos internacionais destaca a natureza bem conectada da comunidade de pesquisa de ${location} e sua integração bem-sucedida em redes de pesquisa europeias. Essas colaborações trazem valiosas trocas de conhecimento e acesso a fundos maiores, embora também sugiram uma potencial dependência de parceiros externos para certos aspectos do processo de inovação. Insert Visualization 7 (Gráfico de Barras: Colaboração Doméstica vs. Internacional em Projetos de Pesquisa)
+
+A concentração regional de atividades de pesquisa em grandes centros urbanos apresenta tanto vantagens em termos de transbordamentos de conhecimento e coordenação, quanto desafios relacionados ao desenvolvimento regional e à utilização de recursos renováveis distribuídos. Os clusters emergentes em regiões específicas demonstram o potencial para desenvolver ecossistemas de inovação especializados alinhados com recursos locais e capacidades industriais.
+
+## Implicações, Opiniões e Perspectivas Futuras
+
+Os dados apresentados neste relatório apontam para várias implicações importantes para o futuro da inovação em energia renovável em ${location}. Na minha avaliação, o país está bem posicionado para desenvolver vantagens competitivas em tecnologias específicas de energia renovável, particularmente sistemas de energia solar otimizados para climas mediterrâneos, soluções de integração à rede para alta penetração renovável e tecnologia eólica offshore flutuante que aproveita a expertise marítima do país.
+
+O aumento no investimento e na atividade de patentes sugere que ${location} está em transição de ser principalmente um adotante de tecnologia para se tornar um contribuinte para o desenvolvimento tecnológico em áreas selecionadas. Esta evolução apresenta oportunidades para criação de valor econômico através de propriedade intelectual, produtos e serviços especializados, e exportação de conhecimento e soluções para mercados com desafios semelhantes de energia renovável.
+
+Olhando para o futuro, acredito que vários fatores moldarão o panorama de inovação em energia renovável em ${location} nos próximos anos:
+
+A implementação da Estratégia Nacional de Hidrogênio provavelmente impulsionará maior pesquisa e inovação na produção, armazenamento e utilização de hidrogênio verde, criando novas áreas de pesquisa interdisciplinar e aplicações industriais.
+
+A expansão da capacidade de energia renovável em direção às metas de 2030 gerará desafios práticos relacionados à estabilidade da rede, armazenamento de energia e acoplamento setorial, estimulando inovação orientada pela demanda.
+
+A evolução da política climática europeia e a integração do mercado de energia criarão tanto oportunidades quanto pressões competitivas para os inovadores de energia renovável de ${location}.
+
+O envolvimento crescente da tecnologia da informação, inteligência artificial e gêmeos digitais em sistemas de energia criará novas interfaces de inovação entre o setor de energia renovável e a economia digital crescente de ${location}.
+
+Para ${location} capitalizar plenamente essas oportunidades, será essencial a coordenação política entre financiamento de pesquisa, política industrial, educação e regulação de energia. Além disso, mecanismos para traduzir resultados de pesquisa em aplicações comerciais precisarão ser fortalecidos, potencialmente através de programas de incubação aprimorados, compras públicas de inovação e investimento em projetos de demonstração.
+
+## Conclusão
+
+A análise da inovação em energia renovável em ${location} durante ${year} revela um setor dinâmico experimentando crescimento em investimento, atividade de pesquisa e desenvolvimento de propriedade intelectual. Os recursos naturais renováveis do país, combinados com foco estratégico em políticas e alocação de fundos, criaram condições favoráveis para inovação em áreas tecnológicas selecionadas.
+
+Os dados indicam que ${location} está construindo capacidades especializadas em energia solar, integração à rede e tecnologias emergentes como armazenamento de energia e hidrogênio verde. Estas áreas de foco se alinham bem tanto com os pontos fortes nacionais quanto com oportunidades de mercado global na transição de energia renovável.
+
+Embora permaneçam desafios em áreas como distribuição regional de atividades de inovação e comercialização de resultados de pesquisa, a trajetória geral é positiva. O ecossistema de inovação em energia renovável de ${location} demonstra maturidade crescente e potencial para contribuir tanto para metas de transição energética nacional quanto para mercados de tecnologia internacional.`;
   };
 
   const generateGeneralReport = (topic: string, location: string, year: string, style: string) => {
@@ -191,137 +304,35 @@ The data indicates progress in key metrics such as R&D investment, patent applic
 As ${location} looks toward the future, the trajectory of ${topic.toLowerCase()} will be influenced by both domestic priorities and global trends. By building on current strengths, addressing systemic weaknesses, and embracing emerging opportunities, ${location} can enhance its position in the global innovation landscape while generating economic and social benefits for its citizens.`;
   };
 
-  // Function to render the report with visualizations inserted at appropriate places
-  const renderReportWithVisualizations = () => {
-    if (!generatedReport) return null;
-    
-    // Split the report into sections at visualization placeholders
-    const visualizationPlaceholderRegex = /Insert Visualization \d+\s*\([^)]+\)/g;
-    const sections = generatedReport.split(visualizationPlaceholderRegex);
-    const placeholders = generatedReport.match(visualizationPlaceholderRegex) || [];
-    
-    // Create an array of content and visualizations alternating
-    const result = [];
-    
-    for (let i = 0; i < sections.length; i++) {
-      // Add the text section
-      if (sections[i].trim()) {
-        result.push(
-          <div key={`text-${i}`} className="my-4 prose max-w-none" dangerouslySetInnerHTML={{ 
-            __html: sections[i]
-              .replace(/# (.*)/g, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>')
-              .replace(/## (.*)/g, '<h2 class="text-xl font-semibold mt-5 mb-3">$1</h2>')
-              .replace(/\n\n/g, '</p><p>') 
-          }} />
-        );
-      }
-      
-      // Add the visualization if there is one for this position
-      if (i < placeholders.length) {
-        const vizIndex = placeholders[i].match(/Insert Visualization (\d+)/)?.[1];
-        const vizNumber = vizIndex ? parseInt(vizIndex) - 1 : i;
-        
-        if (visualizations[vizNumber]) {
-          result.push(
-            <div key={`viz-${i}`} className="my-6 p-4 bg-gray-50 rounded-lg border">
-              <ReportVisualizer visualization={visualizations[vizNumber]} />
-            </div>
-          );
-        }
-      }
-    }
-    
-    return result;
-  };
+  const generateGeneralReportPT = (topic: string, location: string, year: string, style: string) => {
+    return `# ${topic} em ${location} (${year})
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Report Generator</CardTitle>
-          <CardDescription>
-            Generate comprehensive reports with visualizations on various innovation topics
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="topic">Report Topic</Label>
-              <Input
-                id="topic"
-                placeholder="e.g., Innovation in renewable energy"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                placeholder="e.g., Portugal"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="year">Year</Label>
-              <Input
-                id="year"
-                placeholder="e.g., 2023"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="style">Report Style</Label>
-              <Select value={reportStyle} onValueChange={setReportStyle}>
-                <SelectTrigger id="style">
-                  <SelectValue placeholder="Select style" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="formal">Formal Academic</SelectItem>
-                  <SelectItem value="business">Business-oriented</SelectItem>
-                  <SelectItem value="policy">Policy-focused</SelectItem>
-                  <SelectItem value="technical">Technical Analysis</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <Button 
-            className="w-full" 
-            onClick={generateReport} 
-            disabled={isLoading}
-          >
-            {isLoading ? "Generating Report..." : "Generate AI Report"}
-          </Button>
-        </CardContent>
-      </Card>
-      
-      {generatedReport && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{`${topic} in ${location} (${year})`}</CardTitle>
-            <CardDescription>
-              Generated report with integrated data visualizations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {renderReportWithVisualizations()}
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline">
-              Download PDF
-            </Button>
-            <Button variant="outline">
-              Share Report
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
-    </div>
-  );
-};
+## Introdução
+
+Este relatório examina ${topic} em ${location} durante ${year}, fornecendo uma análise abrangente dos principais desenvolvimentos, tendências e implicações. À medida que navegamos em um cenário de inovação cada vez mais complexo, compreender a dinâmica de ${topic} em ${location} torna-se essencial para formuladores de políticas, pesquisadores e partes interessadas da indústria.
+
+A importância desta análise se estende além do mero interesse acadêmico. Ela fornece insights valiosos sobre como ${location} está se posicionando no ecossistema global de inovação, particularmente no contexto de rápida mudança tecnológica e transformação econômica. As descobertas apresentadas aqui podem informar decisões estratégicas, formulações de políticas e direções futuras de pesquisa.
+
+Nas seções a seguir, exploraremos o contexto histórico de ${topic} em ${location}, apresentaremos pontos de dados chave de ${year}, analisaremos padrões emergentes e ofereceremos perspectivas sobre possíveis desenvolvimentos futuros.
+
+## Contexto e Antecedentes
+
+${location} tem uma rica história de inovação e desenvolvimento tecnológico, moldada por seus fatores geográficos, culturais e econômicos únicos. A abordagem do país para ${topic.toLowerCase()} evoluiu significativamente ao longo das décadas, influenciada tanto por prioridades domésticas quanto por tendências internacionais.
+
+Nos últimos anos, ${location} intensificou seu foco em ${topic.toLowerCase()} como parte de uma estratégia mais ampla para aumentar a competitividade econômica, enfrentar desafios sociais e alcançar objetivos de desenvolvimento sustentável. Esta ênfase se reflete em várias políticas nacionais, programas de financiamento e arranjos institucionais projetados para fomentar a inovação em múltiplos setores.
+
+O período que antecedeu ${year} testemunhou vários desenvolvimentos importantes que preparam o terreno para o cenário atual. Estes incluem reformas estruturais no sistema de pesquisa e inovação, maior colaboração entre academia e indústria, e investimentos estratégicos em áreas-chave de tecnologia.
+
+O contexto mais amplo para ${topic.toLowerCase()} em ${location} também inclui tendências demográficas, resultados educacionais, desenvolvimento de infraestrutura e disparidades regionais. Estes fatores interagem de maneiras complexas para moldar a capacidade de inovação e a distribuição de seus benefícios entre diferentes segmentos da sociedade.
+
+## Visão Geral dos Dados
+
+De acordo com nossa base de dados, o investimento total em pesquisa e desenvolvimento relacionado a ${topic.toLowerCase()} em ${location} atingiu €345 milhões em ${year}, representando um aumento de 12,8% em relação ao ano anterior. Este crescimento excede a taxa média nacional de crescimento de investimento em P&D de 7,5% em todos os setores. Insert Visualization 1 (Gráfico de Barras: Investimento em P&D em ${topic} nos Últimos Cinco Anos)
+
+A distribuição setorial deste investimento revela padrões interessantes. Tecnologias de informação e comunicação receberam a maior parcela, com 32% do financiamento total, seguidas por ciências da saúde (23%), tecnologias de energia sustentável (18%), manufatura avançada (15%) e outros setores, incluindo agricultura e transporte (12%). Insert Visualization 2 (Gráfico de Pizza: Distribuição Setorial de Financiamento de ${topic})
+
+Pedidos de patentes relacionados a ${topic.toLowerCase()} de pesquisadores e organizações baseados em ${location} totalizaram 156 em ${year}, marcando um aumento de 15% em relação ao ano anterior. Particularmente notável é o crescimento em patentes relacionadas a tecnologias digitais, inovações biomédicas e soluções de energia limpa. Insert Visualization 3 (Gráfico de Linha: Pedidos de Patentes em Áreas de ${topic} ${Number(year) - 4}-${year})
+
+O número de projetos de pesquisa ativos focados em ${topic.toLowerCase()} em ${location} durante ${year} foi de 312, com projetos colaborativos envolvendo parceiros internacionais representando 58% do total. Estes projetos abrangem vários níveis de prontidão tecnológica, com 40% focados em pesquisa aplicada e 35% em desenvolvimento experimental. Insert Visualization 4 (Gráfico de Barras: Projetos de Pesquisa por Nível de Prontidão Tecnológica)
+
+Quanto à distribuição regional, os dados indicam alguma concentração de atividades de inovação em grandes centros urbanos, com a região da capital respondendo por 45% dos

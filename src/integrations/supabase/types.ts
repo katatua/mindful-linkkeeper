@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_generated_reports: {
+        Row: {
+          chart_data: Json | null
+          content: string
+          created_at: string
+          file_url: string | null
+          id: string
+          language: string
+          metadata: Json | null
+          report_type: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          chart_data?: Json | null
+          content: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          language?: string
+          metadata?: Json | null
+          report_type?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          chart_data?: Json | null
+          content?: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          language?: string
+          metadata?: Json | null
+          report_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ani_database_settings: {
         Row: {
           created_at: string

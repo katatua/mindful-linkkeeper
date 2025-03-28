@@ -1,77 +1,49 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "./contexts/LanguageContext";
-import { SidebarProvider } from "./contexts/SidebarContext";
-import { Layout } from "./components/Layout";
-import Index from "./pages/Index";
-import AddFile from "./pages/AddFile";
-import AddLink from "./pages/AddLink";
-import AddCategory from "./pages/AddCategory";
-import ANIPortal from "./pages/ANIPortal";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import FundingPage from "./pages/FundingPage";
-import ProjectsPage from "./pages/ProjectsPage";
-import ProjectDetailPage from "./pages/ProjectDetailPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import ReportsPage from "./pages/ReportsPage";
-import ReportDetailPage from "./pages/ReportDetailPage";
-import PoliciesPage from "./pages/PoliciesPage";
-import PolicyDetailPage from "./pages/PolicyDetailPage";
-import FrameworkDetailPage from "./pages/FrameworkDetailPage";
-import VisualizationDetailPage from "./pages/VisualizationDetailPage";
-import MetricDetailPage from "./pages/MetricDetailPage";
-import PolicyGuidePage from "./pages/PolicyGuidePage";
-import DatabasePage from "./pages/DatabasePage";
-import SyntheticDataPage from "./pages/SyntheticDataPage";
-import DocumentDetailPage from "./pages/DocumentDetailPage";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
-const queryClient = new QueryClient();
+// Layout
+import Layout from '@/components/Layout';
+
+// Pages
+import Index from '@/pages/Index';
+import ANIPortal from '@/pages/ANIPortal';
+import AIReportDetail from '@/pages/AIReportDetail';
+
+// Lazy-loaded pages
+const Auth = lazy(() => import('@/pages/Auth'));
+const Dashboard = lazy(() => import('@/components/Dashboard'));
+const FundingPage = lazy(() => import('@/pages/FundingPage'));
+const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
+const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'));
+const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
+const PoliciesPage = lazy(() => import('@/pages/PoliciesPage'));
+const AIAssistant = lazy(() => import('@/components/AIAssistant').then(module => ({ default: module.AIAssistant })));
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SidebarProvider>
-          <LanguageProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<ANIPortal />} />
-                  <Route path="/legacy" element={<Index />} />
-                  <Route path="/add-file" element={<AddFile />} />
-                  <Route path="/add-link" element={<AddLink />} />
-                  <Route path="/add-category" element={<AddCategory />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/funding" element={<FundingPage />} />
-                  <Route path="/projects" element={<ProjectsPage />} />
-                  <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-                  <Route path="/analytics" element={<AnalyticsPage />} />
-                  <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/reports/:reportId" element={<ReportDetailPage />} />
-                  <Route path="/policies" element={<PoliciesPage />} />
-                  <Route path="/database" element={<DatabasePage />} />
-                  <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
-                  <Route path="/synthetic-data" element={<SyntheticDataPage />} />
-                  <Route path="/policies/:policyId" element={<PolicyDetailPage />} />
-                  <Route path="/frameworks/:frameworkId" element={<FrameworkDetailPage />} />
-                  <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
-                  <Route path="/metrics/:metricId" element={<MetricDetailPage />} />
-                  <Route path="/policy-guide" element={<PolicyGuidePage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </BrowserRouter>
-          </LanguageProvider>
-        </SidebarProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <LanguageProvider>
+      <Router>
+        <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/portal" element={<ANIPortal />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route element={<Layout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/funding" element={<FundingPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/reports/ai/:id" element={<AIReportDetail />} />
+              <Route path="/policies" element={<PoliciesPage />} />
+              <Route path="/assistant" element={<AIAssistant />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </Router>
+    </LanguageProvider>
   );
 }
 
