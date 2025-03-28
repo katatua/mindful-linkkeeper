@@ -14,9 +14,12 @@ import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "@/components/ui/button";
+import { X, MessageCircle } from "lucide-react";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -34,6 +37,10 @@ const ANIPortal = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const toggleAssistant = () => {
+    setIsAssistantMinimized(!isAssistantMinimized);
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -76,16 +83,36 @@ const ANIPortal = () => {
         </Tabs>
       </main>
       
-      <div className="w-96 border-l flex flex-col bg-white fixed top-14 right-0 bottom-0">
-        <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-          <h3 className="font-medium flex items-center gap-2">
-            {t('assistant.title')}
-          </h3>
+      {isAssistantMinimized ? (
+        <Button
+          variant="secondary"
+          size="icon"
+          className="fixed bottom-6 right-6 rounded-full w-12 h-12 shadow-md z-50"
+          onClick={toggleAssistant}
+          aria-label={t('assistant.maximize')}
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      ) : (
+        <div className="w-96 border-l flex flex-col bg-white fixed top-14 right-0 bottom-0 z-40 shadow-md transition-all duration-300">
+          <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+            <h3 className="font-medium flex items-center gap-2">
+              {t('assistant.title')}
+            </h3>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleAssistant}
+              aria-label={t('assistant.minimize')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <AIAssistant />
+          </div>
         </div>
-        <div className="flex-1 overflow-hidden">
-          <AIAssistant />
-        </div>
-      </div>
+      )}
       
       <Toaster />
     </div>
