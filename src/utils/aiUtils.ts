@@ -50,8 +50,11 @@ export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-// Enhanced query handling with better context extraction and error management
-export const generateResponse = async (prompt: string) => {
+// Helper function for delay in retry mechanism
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Enhanced query handling with better context extraction, error management and retry mechanism
+export const generateResponse = async (prompt: string, retryCount = 0, maxRetries = 2) => {
   try {
     // Extract keywords for energy-related queries to improve matching
     const energyKeywords = extractEnergyKeywords(prompt);
@@ -76,8 +79,40 @@ export const generateResponse = async (prompt: string) => {
     });
 
     if (error) {
-      console.error('Error invoking Gemini Chat function:', error);
-      throw new Error(`Failed to generate response: ${error.message}`);
+      // Check if error contains rate limit or quota information (status 429)
+      const isRateLimitError = error.message?.includes('429') || 
+                              error.message?.includes('quota') ||
+                              error.message?.includes('rate limit');
+      
+      if (isRateLimitError && retryCount < maxRetries) {
+        // Calculate exponential backoff time
+        const backoffTime = Math.pow(2, retryCount) * 1000;
+        console.log(`Rate limit detected, retrying in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        // Wait for the backoff time
+        await delay(backoffTime);
+        
+        // Retry the request
+        return generateResponse(prompt, retryCount + 1, maxRetries);
+      }
+      
+      if (isRateLimitError) {
+        console.error('AI API quota exceeded:', error);
+        throw new Error('The AI query service is currently experiencing high demand. Please try again in a few minutes.');
+      } else {
+        console.error('Error invoking Gemini Chat function:', error);
+        throw new Error(`Failed to generate response: ${error.message}`);
+      }
+    }
+
+    // Fallback handling if data structure is unexpected
+    if (!data || (!data.response && !data.error)) {
+      throw new Error('Received invalid response format from AI service');
+    }
+    
+    // If there's an error message in the response, throw it
+    if (data.error) {
+      throw new Error(data.error);
     }
 
     // Store query history in the database
@@ -214,4 +249,41 @@ When users ask about renewable energy programs, here are some key details to inc
 - The European Green Deal and Portugal's National Energy and Climate Plan are key policy frameworks
 - Success rates for renewable energy projects range from 25-40% depending on program competitiveness
   `;
+};
+
+// Fallback response generator when API is rate limited
+export const generateFallbackResponse = async (prompt: string) => {
+  // This function provides pre-computed responses for common queries when the AI is rate-limited
+  const lowercasePrompt = prompt.toLowerCase();
+  
+  // Check for pre-computed fallback answers for common queries
+  if (lowercasePrompt.includes('renewable energy') && 
+      (lowercasePrompt.includes('programs') || lowercasePrompt.includes('funding'))) {
+    
+    try {
+      // Get data directly from database instead of using AI
+      const { data, error } = await supabase
+        .from('ani_funding_programs')
+        .select('name, description, total_budget, application_deadline, funding_type')
+        .filter('sector_focus', 'cs', '{renewable energy, solar, wind, hydro, biomass, geothermal}')
+        .limit(5);
+      
+      if (!error && data && data.length > 0) {
+        return {
+          message: "Here are some renewable energy funding programs. This is a fallback response while the AI service is busy.",
+          sqlQuery: "SELECT name, description, total_budget, application_deadline, funding_type FROM ani_funding_programs WHERE sector_focus @> '{renewable energy}' OR sector_focus @> '{solar}' OR sector_focus @> '{wind}'",
+          results: data
+        };
+      }
+    } catch (e) {
+      console.error('Error in fallback response generator:', e);
+    }
+  }
+  
+  // Default fallback response
+  return {
+    message: "The AI query service is currently experiencing high demand. Please try again in a few minutes.",
+    sqlQuery: "",
+    results: null
+  };
 };
