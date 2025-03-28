@@ -199,7 +199,7 @@ function createNoResultsResponse(prompt: string, isInvalid: boolean): AIQueryRes
   };
 }
 
-// Helper function to extract energy-related keywords from a query
+// Add function to extract energy-related keywords from a query
 const extractEnergyKeywords = (query: string): string[] => {
   const lowercaseQuery = query.toLowerCase();
   
@@ -242,6 +242,52 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       console.error('Error saving to database:', dbError);
     }
     
+    // If the query is about renewable energy, directly call the get-funding-programs endpoint
+    if (energyKeywords.length > 0) {
+      console.log('Energy-related query detected with keywords:', energyKeywords);
+      
+      try {
+        // Call the get-funding-programs function directly
+        const { data: programsData, error: programsError } = await supabase.functions.invoke('get-funding-programs', {
+          body: { sector: 'renewable energy' }
+        });
+        
+        if (programsError) {
+          console.error('Error fetching funding programs:', programsError);
+          throw programsError;
+        }
+        
+        if (!programsData || programsData.length === 0) {
+          return {
+            message: 'No renewable energy funding programs found.',
+            sqlQuery: 'SELECT * FROM ani_funding_programs WHERE sector_focus ILIKE \'%renewable energy%\'',
+            results: null,
+            noResults: true,
+            queryId: queryId || undefined
+          };
+        }
+        
+        // Update query status
+        if (queryId) {
+          await supabase.from('query_history').update({
+            was_successful: true,
+            error_message: null
+          }).eq('id', queryId);
+        }
+        
+        return {
+          message: 'Here are the funding programs related to renewable energy:',
+          sqlQuery: 'SELECT * FROM ani_funding_programs WHERE sector_focus ILIKE \'%renewable energy%\'',
+          results: programsData,
+          noResults: false,
+          queryId: queryId || undefined
+        };
+      } catch (error) {
+        console.error('Error handling energy-related query:', error);
+      }
+    }
+    
+    // Continue with the regular Gemini flow for non-energy queries
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 

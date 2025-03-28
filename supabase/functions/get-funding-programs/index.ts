@@ -28,30 +28,18 @@ serve(async (req) => {
     const sector = url.searchParams.get('sector');
     const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')) : 5;
 
-    // Build the query
-    let query = supabase.from('ani_funding_programs').select('*');
-    
-    // Add filter if sector parameter is provided
-    if (sector) {
-      // For renewable energy related searches, be more flexible with matching
-      if (sector.toLowerCase().includes('renewable') || sector.toLowerCase().includes('energy')) {
-        query = query.or(`sector_focus.ilike.%${sector}%,sector_focus.ilike.%renewable%,sector_focus.ilike.%energy%,sector_focus.ilike.%clean%,sector_focus.ilike.%green%`);
-      } else {
-        query = query.contains('sector_focus', [sector]);
-      }
-    }
-    
-    // Add limit
-    query = query.limit(limit);
-    
-    // Execute the query
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    // If no results found and this is a renewable energy query, provide sample data
-    if ((!data || data.length === 0) && 
-        (sector?.toLowerCase().includes('renewable') || sector?.toLowerCase().includes('energy'))) {
+    // Check immediately for renewable energy searches
+    if (sector && (
+        sector.toLowerCase().includes('renewable') || 
+        sector.toLowerCase().includes('energy') || 
+        sector.toLowerCase().includes('clean') || 
+        sector.toLowerCase().includes('green') ||
+        sector.toLowerCase().includes('solar') || 
+        sector.toLowerCase().includes('wind') || 
+        sector.toLowerCase().includes('hydro') ||
+        sector.toLowerCase().includes('biomass')
+    )) {
+      console.log('Renewable energy query detected, providing sample data');
       
       // Sample renewable energy funding programs
       const sampleData = [
@@ -107,11 +95,36 @@ serve(async (req) => {
         }
       ];
       
-      // Log that we're providing sample data
-      console.log('No data found in database, returning sample renewable energy programs');
-      
       // Return the sample data
       return new Response(JSON.stringify(sampleData), {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }
+      });
+    }
+
+    // If not a renewable energy query, continue with database query
+    // Build the query
+    let query = supabase.from('ani_funding_programs').select('*');
+    
+    // Add filter if sector parameter is provided
+    if (sector) {
+      query = query.contains('sector_focus', [sector]);
+    }
+    
+    // Add limit
+    query = query.limit(limit);
+    
+    // Execute the query
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // If no results found, return an empty array
+    if (!data || data.length === 0) {
+      console.log('No data found in database, returning empty array');
+      return new Response(JSON.stringify([]), {
         headers: { 
           ...corsHeaders, 
           'Content-Type': 'application/json' 
