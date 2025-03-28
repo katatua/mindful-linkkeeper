@@ -90,8 +90,11 @@ const TableCell = React.forwardRef<
     align?: "left" | "center" | "right";
     percentage?: boolean;
     energy?: boolean;
+    score?: boolean;
+    count?: boolean;
+    unit?: string;
   }
->(({ className, numeric, currency, percentage, energy, align = "left", ...props }, ref) => {
+>(({ className, numeric, currency, percentage, energy, score, count, unit, align = "left", ...props }, ref) => {
   const alignmentClass = {
     left: "text-left",
     center: "text-center",
@@ -103,8 +106,35 @@ const TableCell = React.forwardRef<
     numeric && "font-mono tabular-nums",
     currency && "font-mono tabular-nums",
     percentage && "font-mono tabular-nums",
-    energy && "font-mono tabular-nums"
+    energy && "font-mono tabular-nums",
+    score && "font-mono tabular-nums",
+    count && "font-mono tabular-nums"
   )
+  
+  // Format the content based on the cell type
+  let content = props.children;
+  
+  if (content && typeof content === 'string' || typeof content === 'number') {
+    const value = Number(content);
+    
+    if (!isNaN(value)) {
+      if (percentage || (unit === 'percent' || unit === 'percent YoY' || unit === 'percent of GDP')) {
+        content = `${value.toFixed(1)}%`;
+      } else if (currency || unit?.includes('EUR') || unit?.includes('million')) {
+        content = new Intl.NumberFormat('pt-PT', { 
+          style: 'currency', 
+          currency: 'EUR',
+          maximumFractionDigits: 0
+        }).format(value);
+      } else if (score && (unit === 'score' || unit?.includes('index'))) {
+        content = value.toFixed(1);
+      } else if (count || unit === 'count') {
+        content = value.toLocaleString('pt-PT');
+      } else if (energy && unit?.includes('MW')) {
+        content = `${value.toLocaleString('pt-PT')} MW`;
+      }
+    }
+  }
 
   return (
     <td
@@ -116,7 +146,9 @@ const TableCell = React.forwardRef<
         className
       )}
       {...props}
-    />
+    >
+      {content}
+    </td>
   )
 })
 TableCell.displayName = "TableCell"
