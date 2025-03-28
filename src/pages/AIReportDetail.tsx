@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,8 @@ const AIReportDetail = () => {
         const storedReport = sessionStorage.getItem('currentReport');
         if (storedReport) {
           const parsedReport = JSON.parse(storedReport);
-          if (parsedReport.id === id) {
+          if (parsedReport.id === id || (id && id.startsWith('dev-report-') && parsedReport.id.startsWith('dev-report-'))) {
+            console.log("Loading report from session storage:", parsedReport);
             setReport(parsedReport);
             setIsLoading(false);
             return;
@@ -43,10 +43,21 @@ const AIReportDetail = () => {
           .single();
           
         if (error) {
+          // For development testing with dev-report IDs
+          if (id && id.startsWith('dev-report-') && storedReport) {
+            const parsedReport = JSON.parse(storedReport);
+            console.log("Using stored report for development:", parsedReport);
+            setReport(parsedReport);
+            setIsLoading(false);
+            return;
+          }
+          
+          console.error("Error fetching report:", error);
           throw error;
         }
         
         if (data) {
+          console.log("Loaded report from database:", data);
           setReport(data as AIGeneratedReport);
         } else {
           navigate('/reports');
@@ -126,9 +137,11 @@ const AIReportDetail = () => {
     // Split the content by visualization markers
     const parts = [];
     let lastIndex = 0;
-    let currentIndex;
     const visualizationRegex = /\[Visualization:[^\]]+\]/g;
     let match;
+    
+    console.log("Processing content with length:", content.length);
+    console.log("Visualization markers:", content.match(visualizationRegex));
     
     // Process content paragraph by paragraph, inserting visualizations at their marked positions
     while ((match = visualizationRegex.exec(content)) !== null) {
@@ -142,7 +155,9 @@ const AIReportDetail = () => {
       try {
         const vizMarker = match[0];
         const jsonStr = vizMarker.substring(14, vizMarker.length - 1);
+        console.log("Parsing visualization JSON:", jsonStr);
         const vizData = JSON.parse(jsonStr);
+        console.log("Parsed visualization data:", vizData);
         
         parts.push(
           <div key={`viz-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">

@@ -160,6 +160,9 @@ export const ReportGenerator = () => {
             : "Your report has been created and is ready for viewing"
         });
         
+        // Save the report to session storage for direct access
+        sessionStorage.setItem('currentReport', JSON.stringify(savedReport));
+        
         // Navigate to the report detail page
         setTimeout(() => {
           console.log("Navigating to report detail page:", savedReport.id);
