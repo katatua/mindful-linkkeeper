@@ -50,7 +50,7 @@ serve(async (req) => {
     console.log('Region keywords:', regionKeywords);
 
     try {
-      // Using fetch with the API key in the Authorization header (works with both sk- and sk-proj- formats)
+      // Using fetch with the API key in the Authorization header
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
