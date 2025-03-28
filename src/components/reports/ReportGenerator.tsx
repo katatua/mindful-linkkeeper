@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,7 +112,7 @@ export const ReportGenerator = () => {
       const fullReport = assembleFullReport(title, generatedTopics, contents);
       console.log("Full report assembled, length:", fullReport.length);
       
-      // Generate chart data
+      // Generate chart data - ensure we have diverse visualizations
       const chartData = {
         financingData: [
           { year: "2019", value: Math.floor(Math.random() * 400) + 100 },
