@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -386,7 +386,7 @@ export const DatabasePage: React.FC = () => {
               <TableRow key={index}>
                 {columns.map(col => (
                   <TableCell key={col}>
-                    {renderCellValue(item[col], col)}
+                    {renderCellValue(item[col])}
                   </TableCell>
                 ))}
               </TableRow>
@@ -396,8 +396,8 @@ export const DatabasePage: React.FC = () => {
       </div>
     );
   };
-
-  const renderCellValue = (value: any, columnName?: string) => {
+  
+  const renderCellValue = (value: any) => {
     if (value === null || value === undefined) {
       return 'N/A';
     }
@@ -410,29 +410,7 @@ export const DatabasePage: React.FC = () => {
       return JSON.stringify(value);
     }
     
-    if (typeof value === 'number' && columnName && (
-      columnName.toLowerCase().includes('budget') || 
-      columnName.toLowerCase().includes('amount') || 
-      columnName.toLowerCase().includes('funding') ||
-      columnName.toLowerCase().includes('cost') ||
-      columnName.toLowerCase().includes('price') ||
-      columnName.toLowerCase().includes('value') || 
-      columnName.toLowerCase().includes('contribution') ||
-      !(columnName.toLowerCase().includes('count') || 
-        columnName.toLowerCase().includes('total_collaborations') ||
-        columnName.toLowerCase().includes('number') ||
-        columnName.toLowerCase().includes('qty') ||
-        columnName.toLowerCase().includes('quantity'))
-    )) {
-      return new Intl.NumberFormat('pt-PT', { 
-        style: 'currency', 
-        currency: 'EUR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(value);
-    }
-    
-    return String(value);
+    return value.toString();
   };
 
   const handleTableChange = (table: string) => {
@@ -519,7 +497,7 @@ export const DatabasePage: React.FC = () => {
                       <TableRow key={rowIndex}>
                         {Object.entries(row).map(([column, value]) => (
                           <TableCell key={`${rowIndex}-${column}`} className="text-xs">
-                            {renderCellValue(value, column)}
+                            {renderCellValue(value)}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -617,89 +595,47 @@ export const DatabasePage: React.FC = () => {
                       <CardTitle>Query Result</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Tabs defaultValue="resposta" className="w-full">
-                        <TabsList className="mb-4">
-                          <TabsTrigger value="resposta">Resposta</TabsTrigger>
-                          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-                        </TabsList>
+                      <div className="bg-gray-50 p-4 rounded-md border">
+                        <div className="font-semibold mb-2 text-primary">{activeQuestion}</div>
+                        <div className="whitespace-pre-wrap">{queryResult.message}</div>
                         
-                        <TabsContent value="resposta">
-                          <div className="bg-gray-50 p-4 rounded-md border">
-                            <div className="font-semibold mb-2 text-primary">{activeQuestion}</div>
-                            
-                            {queryResult.results && queryResult.results.length > 0 ? (
-                              <div className="overflow-x-auto border rounded-md">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      {Object.keys(queryResult.results[0]).map((column) => (
-                                        <TableHead key={column}>{column}</TableHead>
+                        {queryResult.sqlQuery && (
+                          <div className="mt-4">
+                            <div className="text-sm font-medium text-gray-500 mb-1">SQL Query:</div>
+                            <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                              {queryResult.sqlQuery}
+                            </pre>
+                          </div>
+                        )}
+                        
+                        {queryResult.results && queryResult.results.length > 0 && (
+                          <div className="mt-4">
+                            <div className="text-sm font-medium text-gray-500 mb-1">Results:</div>
+                            <div className="overflow-x-auto border rounded-md">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    {Object.keys(queryResult.results[0]).map((column) => (
+                                      <TableHead key={column}>{column}</TableHead>
+                                    ))}
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {queryResult.results.map((row, rowIndex) => (
+                                    <TableRow key={rowIndex}>
+                                      {Object.entries(row).map(([column, value]) => (
+                                        <TableCell key={`${rowIndex}-${column}`}>
+                                          {renderCellValue(value)}
+                                        </TableCell>
                                       ))}
                                     </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {queryResult.results.map((row, rowIndex) => (
-                                      <TableRow key={rowIndex}>
-                                        {Object.entries(row).map(([column, value]) => (
-                                          <TableCell key={`${rowIndex}-${column}`}>
-                                            {renderCellValue(value, column)}
-                                          </TableCell>
-                                        ))}
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <div className="whitespace-pre-wrap">{queryResult.message}</div>
-                            )}
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
                           </div>
-                        </TabsContent>
-                        
-                        <TabsContent value="detalhes">
-                          <div className="bg-gray-50 p-4 rounded-md border">
-                            <div className="font-semibold mb-2 text-primary">{activeQuestion}</div>
-                            <div className="whitespace-pre-wrap">{queryResult.message}</div>
-                            
-                            {queryResult.sqlQuery && (
-                              <div className="mt-4">
-                                <div className="text-sm font-medium text-gray-500 mb-1">SQL Query:</div>
-                                <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
-                                  {queryResult.sqlQuery}
-                                </pre>
-                              </div>
-                            )}
-                            
-                            {queryResult.results && queryResult.results.length > 0 && (
-                              <div className="mt-4">
-                                <div className="text-sm font-medium text-gray-500 mb-1">Results:</div>
-                                <div className="overflow-x-auto border rounded-md">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        {Object.keys(queryResult.results[0]).map((column) => (
-                                          <TableHead key={column}>{column}</TableHead>
-                                        ))}
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {queryResult.results.map((row, rowIndex) => (
-                                        <TableRow key={rowIndex}>
-                                          {Object.entries(row).map(([column, value]) => (
-                                            <TableCell key={`${rowIndex}-${column}`}>
-                                              {renderCellValue(value, column)}
-                                            </TableCell>
-                                          ))}
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </TabsContent>
-                      </Tabs>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ) : (
