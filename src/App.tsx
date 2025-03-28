@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
@@ -32,7 +32,7 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/portal" element={<ANIPortal />} />
               <Route path="/auth" element={<Auth />} />
-              <Route element={<Layout />}>
+              <Route path="/" element={<Layout><Outlet /></Layout>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/funding" element={<FundingPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
