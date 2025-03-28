@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 
@@ -118,7 +119,7 @@ export const deleteReport = async (id: string) => {
 export const extractVisualizations = (content: string | null): any[] => {
   if (!content) return [];
   
-  let contentToProcess: string | null = content;
+  let contentToProcess: string = content;
   if (typeof content === 'object' && content._type === 'String' && content.value) {
     contentToProcess = content.value;
   }
@@ -130,7 +131,9 @@ export const extractVisualizations = (content: string | null): any[] => {
   
   return visualizationMarkers.map(marker => {
     try {
-      const jsonStr = marker.substring(14, marker.length - 1);
+      // Fix the colon issue in the visualization JSON parsing
+      const jsonStart = marker.indexOf(':', 13) + 1;  // Find the first colon after "Visualization"
+      const jsonStr = marker.substring(jsonStart, marker.length - 1).trim();
       console.log("Parsing visualization JSON:", jsonStr.substring(0, 50) + "...");
       return JSON.parse(jsonStr);
     } catch (e) {
@@ -379,7 +382,7 @@ export const generateTopicContent = (topic: ReportTopic, mainTopic: string, lang
     };
   }
 
-  // Properly stringify the visualization object with correct JSON format
+  // Fix visualization string format - don't include the "Visualization:" prefix in the JSON
   const vizString = JSON.stringify(visualization);
   console.log("Created visualization for topic:", topic.title, "Type:", randomType);
   

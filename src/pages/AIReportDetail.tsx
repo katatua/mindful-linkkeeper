@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -140,7 +141,7 @@ const AIReportDetail = () => {
     const visualizationRegex = /\[Visualization:[^\]]+\]/g;
     let match;
     
-    console.log("Processing content with length:", content.length);
+    console.log("Processing content with length:", content ? content.length : 0);
     
     // If the content is an object with a value property, use the value
     let contentToProcess: string | null = content;
@@ -167,7 +168,9 @@ const AIReportDetail = () => {
       // Process the visualization
       try {
         const vizMarker = match[0];
-        const jsonStr = vizMarker.substring(14, vizMarker.length - 1);
+        // Fix the JSON parsing by finding the actual JSON start after the colon
+        const jsonStart = vizMarker.indexOf(':', 13) + 1; // Find the first colon after "Visualization"
+        const jsonStr = vizMarker.substring(jsonStart, vizMarker.length - 1).trim();
         console.log("Parsing visualization JSON:", jsonStr);
         const vizData = JSON.parse(jsonStr);
         console.log("Parsed visualization data:", vizData);
