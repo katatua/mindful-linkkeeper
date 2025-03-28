@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and sample data
@@ -153,8 +152,7 @@ export const generateResponse = async (prompt: string) => {
           additionalContext: {
             energyKeywords: energyKeywords
           }
-        },
-        timeout: 15000
+        }
       });
 
       if (error) {
