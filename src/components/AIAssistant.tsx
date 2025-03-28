@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Message {
   id: string;
@@ -63,7 +63,6 @@ export const AIAssistant: React.FC = () => {
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Create history item to save in localStorage
       const historyItem = {
         id: assistantMessage.id,
         question: input,
@@ -76,7 +75,6 @@ export const AIAssistant: React.FC = () => {
         isCorrect: null
       };
       
-      // Save to localStorage
       try {
         const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
         const updatedHistory = [historyItem, ...existingHistory];
@@ -88,7 +86,6 @@ export const AIAssistant: React.FC = () => {
     } catch (error) {
       console.error('Error getting response:', error);
       
-      // Add error message to the chat
       const errorMessage: Message = {
         id: genId(),
         content: `Failed to get a response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or rephrase your question.`,
@@ -118,7 +115,6 @@ export const AIAssistant: React.FC = () => {
       return <p className="text-gray-500 italic">No results found</p>;
     }
 
-    // Get column names from the first result object
     const columns = Object.keys(results[0]);
 
     return (
@@ -231,54 +227,71 @@ export const AIAssistant: React.FC = () => {
                   </Alert>
                 ) : (
                   <>
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                    
-                    {message.sqlQuery && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                          <Code className="h-4 w-4" />
-                          <span>SQL Query:</span>
-                        </div>
-                        <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
-                          {message.sqlQuery}
-                        </pre>
-                      </div>
-                    )}
-                    
-                    {message.results && message.results.length > 0 && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                          <Database className="h-4 w-4" />
-                          <span>Results:</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-xs h-6 ml-auto"
-                            onClick={() => {
-                              try {
-                                const jsonStr = JSON.stringify(message.results, null, 2);
-                                const blob = new Blob([jsonStr], { type: 'application/json' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
-                                a.href = url;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                              } catch (e) {
-                                console.error('Error downloading results:', e);
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to download results.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                          >
-                            Download JSON
-                          </Button>
-                        </div>
-                        {renderResults(message.results)}
-                      </div>
+                    {message.role === 'assistant' ? (
+                      <Tabs defaultValue="resposta" className="w-full">
+                        <TabsList className="mb-2">
+                          <TabsTrigger value="resposta">Resposta</TabsTrigger>
+                          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="resposta">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                        </TabsContent>
+                        
+                        <TabsContent value="detalhes">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          
+                          {message.sqlQuery && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                <Code className="h-4 w-4" />
+                                <span>SQL Query:</span>
+                              </div>
+                              <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                                {message.sqlQuery}
+                              </pre>
+                            </div>
+                          )}
+                          
+                          {message.results && message.results.length > 0 && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                <Database className="h-4 w-4" />
+                                <span>Results:</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-xs h-6 ml-auto"
+                                  onClick={() => {
+                                    try {
+                                      const jsonStr = JSON.stringify(message.results, null, 2);
+                                      const blob = new Blob([jsonStr], { type: 'application/json' });
+                                      const url = URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
+                                      a.href = url;
+                                      a.click();
+                                      URL.revokeObjectURL(url);
+                                    } catch (e) {
+                                      console.error('Error downloading results:', e);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to download results.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Download JSON
+                                </Button>
+                              </div>
+                              {renderResults(message.results)}
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    ) : (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
                     )}
                   </>
                 )}
