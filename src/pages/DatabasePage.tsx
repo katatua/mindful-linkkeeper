@@ -25,7 +25,9 @@ import { useLocation } from 'react-router-dom';
 import { 
   getCurrentAIModel, 
   getCurrentAIProvider, 
-  setAIModel 
+  setAIModel, 
+  setAIProvider,
+  getProviderModel
 } from '@/utils/aiUtils';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -473,6 +475,29 @@ export const DatabasePage: React.FC = () => {
     }
   };
 
+  const handleProviderChange = async (provider: 'gemini' | 'openai') => {
+    try {
+      await setAIProvider(provider);
+      
+      const model = await getProviderModel(provider);
+      
+      setCurrentProvider(provider);
+      setCurrentAIModel(model);
+      
+      toast({
+        title: "AI Provider Updated",
+        description: `Switched to ${provider === 'gemini' ? 'Google Gemini' : 'OpenAI'} with model ${model}`,
+      });
+    } catch (error) {
+      console.error('Error changing AI provider:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update AI provider",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatTimestamp = (date: Date) => {
     return date.toLocaleString(undefined, {
       year: 'numeric',
@@ -568,7 +593,17 @@ export const DatabasePage: React.FC = () => {
 
   const renderAIModelInfo = () => (
     <div className="text-sm flex items-center gap-2">
-      <span className="text-gray-500">Current AI Model:</span>
+      <span className="text-gray-500">Current AI:</span>
+      <Select value={currentProvider} onValueChange={handleProviderChange}>
+        <SelectTrigger className="h-8 w-32 text-xs">
+          <SelectValue placeholder="Provider" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="gemini">Google Gemini</SelectItem>
+          <SelectItem value="openai">OpenAI</SelectItem>
+        </SelectContent>
+      </Select>
+      
       <Select value={currentAIModel} onValueChange={handleModelChange}>
         <SelectTrigger className="h-8 w-64 text-xs font-mono">
           <SelectValue placeholder="Select model" />

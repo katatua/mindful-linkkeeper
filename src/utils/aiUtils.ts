@@ -59,18 +59,59 @@ export const getCurrentAIProvider = async () => {
   }
 };
 
+// Add function to get provider-specific model
+export const getProviderModel = async (provider) => {
+  try {
+    const settingKey = provider === 'gemini' ? 'gemini_model' : 'openai_model';
+    const { data, error } = await supabase.rpc('get_database_setting', {
+      setting_key: settingKey
+    });
+    
+    if (error) throw error;
+    
+    // Default models per provider
+    const defaultModel = provider === 'gemini' 
+      ? 'gemini-2.5-pro-exp-03-25' 
+      : 'gpt-4o-2024-11-20';
+      
+    return data || defaultModel;
+  } catch (error) {
+    console.error(`Error fetching ${provider} model:`, error);
+    return provider === 'gemini' ? 'gemini-2.5-pro-exp-03-25' : 'gpt-4o-2024-11-20';
+  }
+};
+
 // Add function to set the AI provider
 export const setAIProvider = async (provider: 'gemini' | 'openai') => {
   try {
-    const { error } = await supabase
-      .from('ani_database_settings')
-      .upsert({ 
+    // First, get the provider-specific model that was previously selected
+    const providerModel = await getProviderModel(provider);
+    console.log(`Setting provider to ${provider} with model ${providerModel}`);
+    
+    const promises = [
+      // Update the provider setting
+      supabase.from('ani_database_settings').upsert({ 
         setting_key: 'ai_provider', 
         setting_value: provider,
         updated_at: new Date().toISOString()
-      });
+      }),
+      
+      // Also update the current model to the provider-specific model
+      supabase.from('ani_database_settings').upsert({ 
+        setting_key: 'ai_model', 
+        setting_value: providerModel,
+        updated_at: new Date().toISOString()
+      })
+    ];
     
-    if (error) throw error;
+    const results = await Promise.all(promises);
+    const hasError = results.some(result => result.error);
+    
+    if (hasError) {
+      console.error('Errors in updating provider settings:', results.map(r => r.error));
+      return false;
+    }
+    
     return true;
   } catch (error) {
     console.error('Error setting AI provider:', error);
@@ -83,6 +124,7 @@ export const setAIModel = async (model: string) => {
   try {
     // First get the current provider to know which model setting to update
     const provider = await getCurrentAIProvider();
+    console.log(`Setting model to ${model} for provider ${provider}`);
     
     // Update both the current model and the provider-specific model
     const promises = [
