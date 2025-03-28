@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -386,7 +386,7 @@ export const DatabasePage: React.FC = () => {
               <TableRow key={index}>
                 {columns.map(col => (
                   <TableCell key={col}>
-                    {renderCellValue(item[col])}
+                    {renderCellValue(item[col], col)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -396,8 +396,8 @@ export const DatabasePage: React.FC = () => {
       </div>
     );
   };
-  
-  const renderCellValue = (value: any) => {
+
+  const renderCellValue = (value: any, columnName?: string) => {
     if (value === null || value === undefined) {
       return 'N/A';
     }
@@ -410,7 +410,25 @@ export const DatabasePage: React.FC = () => {
       return JSON.stringify(value);
     }
     
-    return value.toString();
+    if (typeof value === 'number' && columnName && (
+      columnName.toLowerCase().includes('budget') || 
+      columnName.toLowerCase().includes('amount') || 
+      columnName.toLowerCase().includes('funding') ||
+      columnName.toLowerCase().includes('cost') ||
+      columnName.toLowerCase().includes('price') ||
+      columnName.toLowerCase().includes('total') ||
+      columnName.toLowerCase().includes('value') ||
+      columnName.toLowerCase().includes('contribution')
+    )) {
+      return new Intl.NumberFormat('pt-PT', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
+    }
+    
+    return String(value);
   };
 
   const handleTableChange = (table: string) => {
@@ -497,7 +515,7 @@ export const DatabasePage: React.FC = () => {
                       <TableRow key={rowIndex}>
                         {Object.entries(row).map(([column, value]) => (
                           <TableCell key={`${rowIndex}-${column}`} className="text-xs">
-                            {renderCellValue(value)}
+                            {renderCellValue(value, column)}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -620,7 +638,7 @@ export const DatabasePage: React.FC = () => {
                                       <TableRow key={rowIndex}>
                                         {Object.entries(row).map(([column, value]) => (
                                           <TableCell key={`${rowIndex}-${column}`}>
-                                            {renderCellValue(value)}
+                                            {renderCellValue(value, column)}
                                           </TableCell>
                                         ))}
                                       </TableRow>
@@ -665,7 +683,7 @@ export const DatabasePage: React.FC = () => {
                                         <TableRow key={rowIndex}>
                                           {Object.entries(row).map(([column, value]) => (
                                             <TableCell key={`${rowIndex}-${column}`}>
-                                              {renderCellValue(value)}
+                                              {renderCellValue(value, column)}
                                             </TableCell>
                                           ))}
                                         </TableRow>

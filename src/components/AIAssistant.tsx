@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -133,7 +132,7 @@ export const AIAssistant: React.FC = () => {
               <TableRow key={rowIndex}>
                 {columns.map(column => (
                   <TableCell key={`${rowIndex}-${column}`}>
-                    {renderCellValue(row[column])}
+                    {renderCellValue(row[column], column)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -149,7 +148,7 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
-  const renderCellValue = (value: any) => {
+  const renderCellValue = (value: any, columnName?: string) => {
     if (value === null || value === undefined) {
       return 'N/A';
     }
@@ -160,6 +159,24 @@ export const AIAssistant: React.FC = () => {
     
     if (typeof value === 'object') {
       return JSON.stringify(value);
+    }
+    
+    if (typeof value === 'number' && columnName && (
+      columnName.toLowerCase().includes('budget') || 
+      columnName.toLowerCase().includes('amount') || 
+      columnName.toLowerCase().includes('funding') ||
+      columnName.toLowerCase().includes('cost') ||
+      columnName.toLowerCase().includes('price') ||
+      columnName.toLowerCase().includes('total') ||
+      columnName.toLowerCase().includes('value') ||
+      columnName.toLowerCase().includes('contribution')
+    )) {
+      return new Intl.NumberFormat('pt-PT', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
     }
     
     return String(value);
