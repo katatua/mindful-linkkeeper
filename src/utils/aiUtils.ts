@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
-// Updated suggested questions with a wider variety of complex query types
+// Update the suggested questions to better match our database schema and sample data
 export const suggestedDatabaseQuestions = [
   "Which funding programs include renewable energy in their sector focus?",
   "Show me the top 5 projects with highest funding amounts in the technology sector",
@@ -30,7 +29,7 @@ export const suggestedDatabaseQuestions = [
   "What is the total budget allocated to renewable energy programs?"
 ];
 
-// Add function to get the current AI model with error handling
+// Add function to get the current AI model
 export const getCurrentAIModel = async () => {
   try {
     const { data, error } = await supabase.rpc('get_database_setting', {
@@ -50,20 +49,14 @@ export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-// Helper function for delay in retry mechanism
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Enhanced query handling with better context extraction, error management and retry mechanism
-export const generateResponse = async (prompt: string, retryCount = 0, maxRetries = 2) => {
+// Update handle database queries and AI responses
+export const generateResponse = async (prompt: string) => {
   try {
     // Extract keywords for energy-related queries to improve matching
     const energyKeywords = extractEnergyKeywords(prompt);
     
     // Add technology-related keywords extraction
     const techKeywords = extractTechnologyKeywords(prompt);
-    
-    // Add region-related keywords extraction for better city/region matching
-    const regionKeywords = extractRegionKeywords(prompt);
     
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
       body: { 
@@ -72,47 +65,14 @@ export const generateResponse = async (prompt: string, retryCount = 0, maxRetrie
         // Pass additional context to help the query processing
         additionalContext: {
           energyKeywords: energyKeywords,
-          techKeywords: techKeywords,
-          regionKeywords: regionKeywords
+          techKeywords: techKeywords
         }
       }
     });
 
     if (error) {
-      // Check if error contains rate limit or quota information (status 429)
-      const isRateLimitError = error.message?.includes('429') || 
-                              error.message?.includes('quota') ||
-                              error.message?.includes('rate limit');
-      
-      if (isRateLimitError && retryCount < maxRetries) {
-        // Calculate exponential backoff time
-        const backoffTime = Math.pow(2, retryCount) * 1000;
-        console.log(`Rate limit detected, retrying in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`);
-        
-        // Wait for the backoff time
-        await delay(backoffTime);
-        
-        // Retry the request
-        return generateResponse(prompt, retryCount + 1, maxRetries);
-      }
-      
-      if (isRateLimitError) {
-        console.error('AI API quota exceeded:', error);
-        throw new Error('The AI query service is currently experiencing high demand. Please try again in a few minutes.');
-      } else {
-        console.error('Error invoking Gemini Chat function:', error);
-        throw new Error(`Failed to generate response: ${error.message}`);
-      }
-    }
-
-    // Fallback handling if data structure is unexpected
-    if (!data || (!data.response && !data.error)) {
-      throw new Error('Received invalid response format from AI service');
-    }
-    
-    // If there's an error message in the response, throw it
-    if (data.error) {
-      throw new Error(data.error);
+      console.error('Error invoking Gemini Chat function:', error);
+      throw new Error(`Failed to generate response: ${error.message}`);
     }
 
     // Store query history in the database
@@ -181,32 +141,6 @@ const extractTechnologyKeywords = (query: string): string[] => {
   return techTerms.filter(term => lowercaseQuery.includes(term));
 };
 
-// New helper function to extract region-related keywords and their variations from a query
-const extractRegionKeywords = (query: string): { original: string, variations: string[] }[] => {
-  const lowercaseQuery = query.toLowerCase();
-  
-  // Define region names and their variations (English/Portuguese spellings)
-  const regionMappings = [
-    { original: 'lisbon', variations: ['lisbon', 'lisboa'] },
-    { original: 'porto', variations: ['porto', 'oporto'] },
-    { original: 'north', variations: ['north', 'norte'] },
-    { original: 'south', variations: ['south', 'sul'] },
-    { original: 'algarve', variations: ['algarve'] },
-    { original: 'azores', variations: ['azores', 'açores'] },
-    { original: 'madeira', variations: ['madeira'] },
-    { original: 'center', variations: ['center', 'centro', 'central'] },
-    { original: 'alentejo', variations: ['alentejo'] },
-    { original: 'braga', variations: ['braga'] },
-    { original: 'coimbra', variations: ['coimbra'] },
-    { original: 'evora', variations: ['evora', 'évora'] }
-  ];
-  
-  // Find all region terms that match the query
-  return regionMappings.filter(region => 
-    region.variations.some(variation => lowercaseQuery.includes(variation))
-  );
-};
-
 // Update interface for document classification
 export interface DocumentToClassify {
   title: string;
@@ -249,41 +183,4 @@ When users ask about renewable energy programs, here are some key details to inc
 - The European Green Deal and Portugal's National Energy and Climate Plan are key policy frameworks
 - Success rates for renewable energy projects range from 25-40% depending on program competitiveness
   `;
-};
-
-// Fallback response generator when API is rate limited
-export const generateFallbackResponse = async (prompt: string) => {
-  // This function provides pre-computed responses for common queries when the AI is rate-limited
-  const lowercasePrompt = prompt.toLowerCase();
-  
-  // Check for pre-computed fallback answers for common queries
-  if (lowercasePrompt.includes('renewable energy') && 
-      (lowercasePrompt.includes('programs') || lowercasePrompt.includes('funding'))) {
-    
-    try {
-      // Get data directly from database instead of using AI
-      const { data, error } = await supabase
-        .from('ani_funding_programs')
-        .select('name, description, total_budget, application_deadline, funding_type')
-        .filter('sector_focus', 'cs', '{renewable energy, solar, wind, hydro, biomass, geothermal}')
-        .limit(5);
-      
-      if (!error && data && data.length > 0) {
-        return {
-          message: "Here are some renewable energy funding programs. This is a fallback response while the AI service is busy.",
-          sqlQuery: "SELECT name, description, total_budget, application_deadline, funding_type FROM ani_funding_programs WHERE sector_focus @> '{renewable energy}' OR sector_focus @> '{solar}' OR sector_focus @> '{wind}'",
-          results: data
-        };
-      }
-    } catch (e) {
-      console.error('Error in fallback response generator:', e);
-    }
-  }
-  
-  // Default fallback response
-  return {
-    message: "The AI query service is currently experiencing high demand. Please try again in a few minutes.",
-    sqlQuery: "",
-    results: null
-  };
 };
