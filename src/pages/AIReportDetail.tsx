@@ -144,49 +144,51 @@ const AIReportDetail = () => {
     console.log("Processing content with length:", content.length);
     
     // If the content is an object with a value property, use the value
-    let contentToProcess = content;
+    let contentToProcess: string | null = content;
     if (typeof content === 'object' && content._type === 'String' && content.value) {
       contentToProcess = content.value;
       console.log("Found content as object, using value property instead");
     }
     
     // Check if contentToProcess exists before trying to match
-    if (contentToProcess && typeof contentToProcess === 'string') {
-      console.log("Visualization markers:", contentToProcess.match(visualizationRegex));
-      
-      // Process content paragraph by paragraph, inserting visualizations at their marked positions
-      while ((match = visualizationRegex.exec(contentToProcess)) !== null) {
-        // Add text before the visualization
-        if (match.index > lastIndex) {
-          const textSegment = contentToProcess.substring(lastIndex, match.index);
-          parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
-        }
-        
-        // Process the visualization
-        try {
-          const vizMarker = match[0];
-          const jsonStr = vizMarker.substring(14, vizMarker.length - 1);
-          console.log("Parsing visualization JSON:", jsonStr);
-          const vizData = JSON.parse(jsonStr);
-          console.log("Parsed visualization data:", vizData);
-          
-          parts.push(
-            <div key={`viz-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-              <ReportVisualizer visualization={vizData} />
-            </div>
-          );
-        } catch (e) {
-          console.error('Error rendering visualization:', e);
-        }
-        
-        lastIndex = match.index + match[0].length;
-      }
-      
-      // Add any remaining text after the last visualization
-      if (lastIndex < contentToProcess.length) {
-        const textSegment = contentToProcess.substring(lastIndex);
+    if (!contentToProcess || typeof contentToProcess !== 'string') {
+      return null;
+    }
+    
+    console.log("Visualization markers:", contentToProcess.match(visualizationRegex));
+    
+    // Process content paragraph by paragraph, inserting visualizations at their marked positions
+    while ((match = visualizationRegex.exec(contentToProcess)) !== null) {
+      // Add text before the visualization
+      if (match.index > lastIndex) {
+        const textSegment = contentToProcess.substring(lastIndex, match.index);
         parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
       }
+      
+      // Process the visualization
+      try {
+        const vizMarker = match[0];
+        const jsonStr = vizMarker.substring(14, vizMarker.length - 1);
+        console.log("Parsing visualization JSON:", jsonStr);
+        const vizData = JSON.parse(jsonStr);
+        console.log("Parsed visualization data:", vizData);
+        
+        parts.push(
+          <div key={`viz-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+            <ReportVisualizer visualization={vizData} />
+          </div>
+        );
+      } catch (e) {
+        console.error('Error rendering visualization:', e);
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text after the last visualization
+    if (contentToProcess && lastIndex < contentToProcess.length) {
+      const textSegment = contentToProcess.substring(lastIndex);
+      parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
     }
     
     return parts;
@@ -261,7 +263,7 @@ const AIReportDetail = () => {
   // Calculate word count for display
   let contentForWordCount = "";
   if (report && report.content) {
-    contentForWordCount = report.content;
+    contentForWordCount = typeof report.content === 'string' ? report.content : '';
     if (typeof report.content === 'object' && report.content._type === 'String' && report.content.value) {
       contentForWordCount = report.content.value;
     }

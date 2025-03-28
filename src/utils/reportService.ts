@@ -119,12 +119,12 @@ export const deleteReport = async (id: string) => {
 export const extractVisualizations = (content: string | null): any[] => {
   if (!content) return [];
   
-  let contentToProcess = content;
+  let contentToProcess: string | null = content;
   if (typeof content === 'object' && content._type === 'String' && content.value) {
     contentToProcess = content.value;
   }
   
-  if (typeof contentToProcess !== 'string') return [];
+  if (!contentToProcess || typeof contentToProcess !== 'string') return [];
   
   const visualizationMarkers = contentToProcess.match(/\[Visualization:[^\]]+\]/g) || [];
   console.log("Found visualization markers:", visualizationMarkers.length);
