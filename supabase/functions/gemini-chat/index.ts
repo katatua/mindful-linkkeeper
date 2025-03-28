@@ -1,3 +1,4 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -168,6 +169,13 @@ When users ask about technology sector projects, be flexible in your search:
 - For specific industries include 'fintech', 'healthtech', 'cybersecurity', 'cloud computing'
 - Use ILIKE operator with wildcards for partial matching when searching technology fields
 
+When users ask about regions or cities, handle different naming variations:
+- For Lisbon/Lisboa queries, search for both spellings: region ILIKE '%lisbon%' OR region ILIKE '%lisboa%'
+- For Porto/Oporto, search for both variations 
+- For North/Norte region, handle both English and Portuguese terms
+- Always use pattern matching with wildcards for flexibility in region names
+- Consider common misspellings and abbreviations
+
 When users ask questions about the database, you should:
 1. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
 2. Format your response to be clear, concise and helpful, focusing on insights from the data
@@ -222,6 +230,15 @@ Here are examples of questions users might ask and how to respond:
       ORDER BY funding_amount DESC
       LIMIT 5
       </SQL>
+      
+4. Q: "What are the innovation metrics for the Lisbon region from 2024?"
+   A: Aqui estão as métricas de inovação para a região de Lisboa em 2024:
+      <SQL>
+      SELECT name, category, value, unit, measurement_date
+      FROM ani_metrics
+      WHERE (region ILIKE '%lisbon%' OR region ILIKE '%lisboa%')
+        AND EXTRACT(YEAR FROM measurement_date) = 2024
+      </SQL>
     `;
 }
 
@@ -242,19 +259,35 @@ serve(async (req) => {
     // Create a system prompt that explains the database schema
     const systemPrompt = getEnhancedSystemPrompt();
 
-    // If this is a renewable energy or technology query, add extra context to the user prompt
+    // Extract any context provided by the client
     const energyKeywords = additionalContext.energyKeywords || [];
     const techKeywords = additionalContext.techKeywords || [];
+    const regionKeywords = additionalContext.regionKeywords || [];
+    
     let enhancedPrompt = prompt;
     
+    // Add energy-related context if relevant
     if (energyKeywords.length > 0) {
       console.log("Energy-related query detected with keywords:", energyKeywords);
       enhancedPrompt = `${prompt}\n\nNote: This query is about renewable energy. Consider these related terms when searching the database: ${energyKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
     }
     
+    // Add technology-related context if relevant
     if (techKeywords.length > 0) {
       console.log("Technology-related query detected with keywords:", techKeywords);
       enhancedPrompt = `${enhancedPrompt}\n\nNote: This query is about technology. Consider these related terms when searching the database: ${techKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
+    }
+    
+    // Add region-related context if relevant
+    if (regionKeywords.length > 0) {
+      console.log("Region-related query detected with regions:", regionKeywords.map(r => r.original));
+      
+      // Create an enhanced prompt that lists all the region variations to try
+      const regionVariationsPrompt = regionKeywords.map(region => {
+        return `For "${region.original}" region, use these variations: ${region.variations.join(', ')}`;
+      }).join('. ');
+      
+      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query involves specific regions or cities. ${regionVariationsPrompt}. Use ILIKE with OR conditions to match all possible variations.`;
     }
 
     // Construct the conversation

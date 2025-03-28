@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and sample data
@@ -58,6 +59,9 @@ export const generateResponse = async (prompt: string) => {
     // Add technology-related keywords extraction
     const techKeywords = extractTechnologyKeywords(prompt);
     
+    // Add region-related keywords extraction for better city/region matching
+    const regionKeywords = extractRegionKeywords(prompt);
+    
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
       body: { 
         prompt, 
@@ -65,7 +69,8 @@ export const generateResponse = async (prompt: string) => {
         // Pass additional context to help the query processing
         additionalContext: {
           energyKeywords: energyKeywords,
-          techKeywords: techKeywords
+          techKeywords: techKeywords,
+          regionKeywords: regionKeywords
         }
       }
     });
@@ -139,6 +144,32 @@ const extractTechnologyKeywords = (query: string): string[] => {
   
   // Return all matching terms found in the query
   return techTerms.filter(term => lowercaseQuery.includes(term));
+};
+
+// New helper function to extract region-related keywords and their variations from a query
+const extractRegionKeywords = (query: string): { original: string, variations: string[] }[] => {
+  const lowercaseQuery = query.toLowerCase();
+  
+  // Define region names and their variations (English/Portuguese spellings)
+  const regionMappings = [
+    { original: 'lisbon', variations: ['lisbon', 'lisboa'] },
+    { original: 'porto', variations: ['porto', 'oporto'] },
+    { original: 'north', variations: ['north', 'norte'] },
+    { original: 'south', variations: ['south', 'sul'] },
+    { original: 'algarve', variations: ['algarve'] },
+    { original: 'azores', variations: ['azores', 'açores'] },
+    { original: 'madeira', variations: ['madeira'] },
+    { original: 'center', variations: ['center', 'centro', 'central'] },
+    { original: 'alentejo', variations: ['alentejo'] },
+    { original: 'braga', variations: ['braga'] },
+    { original: 'coimbra', variations: ['coimbra'] },
+    { original: 'evora', variations: ['evora', 'évora'] }
+  ];
+  
+  // Find all region terms that match the query
+  return regionMappings.filter(region => 
+    region.variations.some(variation => lowercaseQuery.includes(variation))
+  );
 };
 
 // Update interface for document classification
