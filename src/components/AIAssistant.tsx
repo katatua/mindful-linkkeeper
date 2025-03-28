@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue, AIQueryResponse } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +69,8 @@ export const AIAssistant: React.FC = () => {
         role: 'assistant',
         noResults: response.noResults,
         timestamp: new Date(),
-        queryId: response.queryId
+        queryId: response.queryId,
+        analysis: response.analysis
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -358,7 +358,6 @@ export const AIAssistant: React.FC = () => {
                               queryId={message.queryId}
                               insertStatements={message.analysis.insertStatements}
                               onInsertSuccess={() => {
-                                // Refresh the message to show that data has been populated
                                 const updatedMessages = [...messages];
                                 const index = updatedMessages.findIndex(m => m.id === message.id);
                                 if (index >= 0) {
