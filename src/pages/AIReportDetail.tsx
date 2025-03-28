@@ -256,13 +256,16 @@ const AIReportDetail = () => {
   }
 
   // Calculate word count for display
-  let contentForWordCount = report.content || "";
-  if (typeof report.content === 'object' && report.content._type === 'String' && report.content.value) {
-    contentForWordCount = report.content.value;
+  let contentForWordCount = "";
+  if (report.content) {
+    contentForWordCount = report.content;
+    if (typeof report.content === 'object' && report.content._type === 'String' && report.content.value) {
+      contentForWordCount = report.content.value;
+    }
   }
   
-  const wordCount = contentForWordCount.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length;
-  const visualizationCount = extractVisualizations(contentForWordCount).length;
+  const wordCount = contentForWordCount ? contentForWordCount.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length : 0;
+  const visualizationCount = report.content ? extractVisualizations(report.content).length : 0;
 
   return (
     <div className="container mx-auto py-6 space-y-6">

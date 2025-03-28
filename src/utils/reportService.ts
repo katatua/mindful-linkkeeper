@@ -455,37 +455,38 @@ export const generatePDF = (report: AIGeneratedReport): string => {
   pdf.setFontSize(12);
   
   // Process content as markdown-like - extract sections
-  const sections = report.content.split(/^#{1,2} /gm);
-  let yPosition = 65;
-  
-  sections.forEach((section, index) => {
-    if (index === 0 && !section.trim()) return; // Skip empty first section
+  if (!report.content) {
+    pdf.text("No content available", 20, 65);
+  } else {
+    const sections = report.content.split(/^#{1,2} /gm);
+    let yPosition = 65;
     
-    const lines = section.split('\n');
-    const heading = lines[0];
-    const content = lines.slice(1).join('\n');
-    
-    if (index > 0) { // Skip for the first section which doesn't have a heading
-      pdf.setFontSize(16);
-      pdf.text(heading, 20, yPosition);
-      yPosition += 10;
-    }
-    
-    pdf.setFontSize(12);
-    const contentLines = pdf.splitTextToSize(content, 170);
-    
-    // Check if we need a new page
-    if (yPosition + contentLines.length * 5 > 280) {
-      pdf.addPage();
-      yPosition = 20;
-    }
-    
-    pdf.text(contentLines, 20, yPosition);
-    yPosition += contentLines.length * 5 + 10;
-  });
-  
-  // If there's chart data, we could potentially add visualization here
-  // but that would require additional libraries for PDF chart rendering
+    sections.forEach((section, index) => {
+      if (index === 0 && !section.trim()) return; // Skip empty first section
+      
+      const lines = section.split('\n');
+      const heading = lines[0];
+      const content = lines.slice(1).join('\n');
+      
+      if (index > 0) { // Skip for the first section which doesn't have a heading
+        pdf.setFontSize(16);
+        pdf.text(heading, 20, yPosition);
+        yPosition += 10;
+      }
+      
+      pdf.setFontSize(12);
+      const contentLines = pdf.splitTextToSize(content, 170);
+      
+      // Check if we need a new page
+      if (yPosition + contentLines.length * 5 > 280) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      pdf.text(contentLines, 20, yPosition);
+      yPosition += contentLines.length * 5 + 10;
+    });
+  }
   
   // Add footer
   const pageCount = pdf.getNumberOfPages();
