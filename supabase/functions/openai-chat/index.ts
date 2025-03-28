@@ -1,9 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-
-// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -16,13 +13,15 @@ serve(async (req) => {
   }
 
   try {
-    // Check if API key exists and has the correct format
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // Check if API key exists
     if (!openaiApiKey) {
-      console.error('OpenAI API Key is missing');
+      console.error('OpenAI API key is missing');
       return new Response(
         JSON.stringify({
-          error: "Missing OpenAI API key",
-          response: "Configuration error: OpenAI API key not found.",
+          error: "Missing OpenAI API key. Please set the OPENAI_API_KEY secret in Supabase.",
+          response: "Configuration error: OpenAI API key not found. Please contact the administrator.",
           sqlQuery: '',
           results: null
         }),
@@ -33,13 +32,14 @@ serve(async (req) => {
       );
     }
     
-    // Validate API key format more strictly
-    if (!openaiApiKey.startsWith('sk-proj-') || openaiApiKey.length < 50) {
-      console.error('Invalid OpenAI API key format');
+    // Check if it's a valid OpenAI key format
+    // OpenAI keys should start with 'sk-' not 'sk-proj-'
+    if (!openaiApiKey.startsWith('sk-') || openaiApiKey.startsWith('sk-proj-')) {
+      console.error('Invalid OpenAI API key format detected');
       return new Response(
         JSON.stringify({
-          error: "Invalid OpenAI API key",
-          response: "Configuration error: Invalid API key format.",
+          error: "Invalid OpenAI API key format. OpenAI keys should start with 'sk-' but not 'sk-proj-'.",
+          response: "Configuration error: The API key provided is not in the correct format for OpenAI. OpenAI API keys typically start with 'sk-' and you may need to get a key from platform.openai.com.",
           sqlQuery: '',
           results: null
         }),
@@ -62,56 +62,97 @@ serve(async (req) => {
     const energyKeywords = extractEnergyKeywords(prompt);
     const techKeywords = extractTechnologyKeywords(prompt);
     const regionKeywords = extractRegionKeywords(prompt);
+    
+    console.log('Energy keywords:', energyKeywords);
+    console.log('Technology keywords:', techKeywords);
+    console.log('Region keywords:', regionKeywords);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini', // Using a stable model
-        messages: [
-          { role: 'system', content: getEnhancedSystemPrompt() },
-          ...chatHistory.map((msg: any) => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          { role: 'user', content: enhancePrompt(prompt, { 
-            energyKeywords, 
-            techKeywords, 
-            regionKeywords 
-          }) }
-        ],
-        temperature: 0.4,
-        max_tokens: 2048,
-      }),
-    });
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini', // Using a stable model
+          messages: [
+            { role: 'system', content: getEnhancedSystemPrompt() },
+            ...chatHistory.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            { role: 'user', content: enhancePrompt(prompt, { 
+              energyKeywords, 
+              techKeywords, 
+              regionKeywords 
+            }) }
+          ],
+          temperature: 0.4,
+          max_tokens: 2048,
+        }),
+      });
 
-    console.log('OpenAI Response Status:', response.status);
+      console.log('OpenAI Response Status:', response.status);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('OpenAI API Error:', errorBody);
-      throw new Error(`OpenAI API Error (${response.status}): ${errorBody}`);
+      if (response.status === 401) {
+        const errorBody = await response.text();
+        console.error('OpenAI API Authentication Error:', errorBody);
+        return new Response(
+          JSON.stringify({
+            error: "OpenAI API Authentication Error. The API key appears to be invalid or expired.",
+            response: "There was an authentication error with the OpenAI API. Please ensure you're using a valid API key from platform.openai.com.",
+            sqlQuery: '',
+            results: null
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } else if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('OpenAI API Error:', errorBody);
+        throw new Error(`OpenAI API Error (${response.status}): ${errorBody}`);
+      }
+
+      const result = await response.json();
+      const aiResponse = result.choices[0].message.content;
+
+      return new Response(JSON.stringify({ 
+        response: aiResponse,
+        sqlQuery: '',
+        results: null
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (openAIError) {
+      console.error('Error calling OpenAI API:', openAIError);
+      
+      // Check for rate limiting
+      if (openAIError.message && openAIError.message.includes('429')) {
+        return new Response(
+          JSON.stringify({
+            error: `Rate limit exceeded: ${openAIError.message}`,
+            response: "The OpenAI API rate limit has been reached. Please try again in a few moments.",
+            sqlQuery: "",
+            results: null
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      throw openAIError; // Let the outer catch handle other errors
     }
-
-    const result = await response.json();
-    const aiResponse = result.choices[0].message.content;
-
-    return new Response(JSON.stringify({ 
-      response: aiResponse,
-      sqlQuery: '',
-      results: null
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (error) {
     console.error('Error in OpenAI chat function:', error);
     return new Response(
       JSON.stringify({
         error: `Failed to generate response: ${error.message || "Unknown error"}`,
-        response: "Sorry, there was an error processing your query. The OpenAI API key may be invalid or expired. Please check your API key configuration.",
+        response: "Sorry, there was an error processing your query. This could be due to an invalid OpenAI API key or a temporary service issue. Please check your API key configuration or try again later.",
         sqlQuery: "",
         results: null
       }),

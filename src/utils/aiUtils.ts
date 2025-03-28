@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Updated suggested questions with a wider variety of complex query types
@@ -193,18 +192,20 @@ export const generateResponse = async (prompt: string, retryCount = 0, maxRetrie
         chatHistory: [],
         // Pass additional context to help the query processing
         additionalContext: {
-          energyKeywords: energyKeywords,
-          techKeywords: techKeywords,
-          regionKeywords: regionKeywords
+          energyKeywords,
+          techKeywords,
+          regionKeywords
         }
       }
     });
 
     if (error) {
+      console.error(`Error invoking ${functionName} function:`, error);
+      
       // Check if error contains rate limit or quota information (status 429)
       const isRateLimitError = error.message?.includes('429') || 
-                              error.message?.includes('quota') ||
-                              error.message?.includes('rate limit');
+                            error.message?.includes('quota') ||
+                            error.message?.includes('rate limit');
       
       if (isRateLimitError && retryCount < maxRetries) {
         // Calculate exponential backoff time
@@ -220,21 +221,71 @@ export const generateResponse = async (prompt: string, retryCount = 0, maxRetrie
       
       if (isRateLimitError) {
         console.error('AI API quota exceeded:', error);
-        throw new Error('The AI query service is currently experiencing high demand. Please try again in a few minutes.');
+        return await generateFallbackResponse(prompt);
       } else {
-        console.error(`Error invoking ${functionName} function:`, error);
-        throw new Error(`Failed to generate response: ${error.message}`);
+        // For other errors, attempt to switch to the alternate provider
+        if (retryCount < 1) {
+          console.log(`Trying to switch providers due to error with ${provider}`);
+          
+          // Switch provider temporarily for this request
+          const alternateProvider = provider === 'openai' ? 'gemini' : 'openai';
+          const alternateFunctionName = alternateProvider === 'openai' ? 'openai-chat' : 'gemini-chat';
+          
+          console.log(`Attempting with alternate provider: ${alternateProvider}`);
+          
+          try {
+            const { data: alternateData, error: alternateError } = await supabase.functions.invoke(alternateFunctionName, {
+              body: { 
+                prompt, 
+                chatHistory: [],
+                additionalContext: {
+                  energyKeywords,
+                  techKeywords,
+                  regionKeywords
+                }
+              }
+            });
+            
+            if (alternateError) {
+              throw alternateError;
+            }
+            
+            return {
+              message: alternateData.response || 'Sorry, I could not process your query.',
+              sqlQuery: alternateData.sqlQuery || '',
+              results: alternateData.results || null
+            };
+          } catch (alternateProviderError) {
+            console.error(`Error with alternate provider ${alternateProvider}:`, alternateProviderError);
+            // Continue to fallback
+          }
+        }
+        
+        // If we get here, both providers failed or we've already tried alternates
+        return await generateFallbackResponse(prompt);
       }
     }
 
     // Fallback handling if data structure is unexpected
     if (!data || (!data.response && !data.error)) {
-      throw new Error('Received invalid response format from AI service');
+      console.error('Received invalid response format from AI service');
+      return await generateFallbackResponse(prompt);
     }
     
-    // If there's an error message in the response, throw it
+    // If there's an error message in the response, log it and use fallback
     if (data.error) {
-      throw new Error(data.error);
+      console.error('Error in AI response:', data.error);
+      
+      // Try to extract API key error patterns
+      if (data.error.includes('API key') || data.error.includes('authentication')) {
+        return {
+          message: "There appears to be an issue with the AI provider's API key. Please check your API key configuration in the Supabase edge function secrets. For OpenAI, make sure you're using a key from platform.openai.com.",
+          sqlQuery: '',
+          results: null
+        };
+      }
+      
+      return await generateFallbackResponse(prompt);
     }
 
     // Store query history in the database
@@ -265,7 +316,7 @@ export const generateResponse = async (prompt: string, retryCount = 0, maxRetrie
     };
   } catch (error) {
     console.error('Error generating response:', error);
-    throw error;
+    return await generateFallbackResponse(prompt);
   }
 };
 
@@ -373,7 +424,7 @@ When users ask about renewable energy programs, here are some key details to inc
   `;
 };
 
-// Fallback response generator when API is rate limited
+// Improve fallback response generator when API is rate limited
 export const generateFallbackResponse = async (prompt: string) => {
   // This function provides pre-computed responses for common queries when the AI is rate-limited
   const lowercasePrompt = prompt.toLowerCase();
@@ -402,9 +453,43 @@ export const generateFallbackResponse = async (prompt: string) => {
     }
   }
   
+  if (lowercasePrompt.includes('top') && 
+      lowercasePrompt.includes('projects') && 
+      lowercasePrompt.includes('technology')) {
+    
+    try {
+      // Get top projects in technology sector
+      const { data, error } = await supabase
+        .from('ani_projects')
+        .select('*')
+        .eq('sector', 'technology')
+        .order('funding_amount', { ascending: false })
+        .limit(5);
+      
+      if (!error && data && data.length > 0) {
+        return {
+          message: "Here are the top 5 projects in the technology sector by funding amount. This is a fallback response.",
+          sqlQuery: "SELECT * FROM ani_projects WHERE sector = 'technology' ORDER BY funding_amount DESC LIMIT 5",
+          results: data
+        };
+      }
+    } catch (e) {
+      console.error('Error in fallback response generator:', e);
+    }
+  }
+  
+  // For API key errors, provide a specific message
+  if (lowercasePrompt.includes('error') || lowercasePrompt.includes('not working')) {
+    return {
+      message: "It seems you're experiencing errors with the AI service. The most likely issue is with the API key configuration. Please check the following:\n\n1. If using OpenAI, make sure your API key starts with 'sk-' (not 'sk-proj-').\n2. Make sure you're using an API key from the correct service (OpenAI keys from platform.openai.com, Gemini keys from Google AI Studio).\n3. Check that your API key is active and has sufficient quota/credits.",
+      sqlQuery: "",
+      results: null
+    };
+  }
+  
   // Default fallback response
   return {
-    message: "The AI query service is currently experiencing high demand. Please try again in a few minutes.",
+    message: "I'm unable to process your query at the moment. This might be due to an API key configuration issue or a temporary service limitation. Please try switching to a different AI provider in the settings or try again later.",
     sqlQuery: "",
     results: null
   };
