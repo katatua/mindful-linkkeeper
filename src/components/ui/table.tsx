@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -83,14 +84,37 @@ TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props}
-  />
-))
+  React.TdHTMLAttributes<HTMLTableCellElement> & { 
+    numeric?: boolean;
+    currency?: boolean;
+    align?: "left" | "center" | "right";
+  }
+>(({ className, numeric, currency, align = "left", ...props }, ref) => {
+  const alignmentClass = {
+    left: "text-left",
+    center: "text-center",
+    right: "text-right"
+  }[align]
+
+  // Apply numeric formatting classes
+  const formattingClass = cn(
+    numeric && "font-mono tabular-nums",
+    currency && "font-mono tabular-nums"
+  )
+
+  return (
+    <td
+      ref={ref}
+      className={cn(
+        "p-4 align-middle [&:has([role=checkbox])]:pr-0", 
+        alignmentClass,
+        formattingClass,
+        className
+      )}
+      {...props}
+    />
+  )
+})
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef<
