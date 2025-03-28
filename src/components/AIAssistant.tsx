@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle, DatabaseIcon } from 'lucide-react';
+import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle } from 'lucide-react';
 import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PopulateDataButton } from '@/components/database/PopulateDataButton';
 
 interface Message {
   id: string;
