@@ -1,11 +1,10 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 
 export interface AIGeneratedReport {
   id: string;
   title: string;
-  content: string;
+  content: string | null;
   created_at: string;
   updated_at: string;
   user_id: string | null;
@@ -22,10 +21,10 @@ export interface ReportTopic {
 }
 
 export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created_at' | 'updated_at'>) => {
-  console.log("Saving report with content length:", report.content.length);
+  console.log("Saving report with content length:", report.content ? report.content.length : 0);
   
   // Ensure content is at least 2000 words
-  const wordCount = report.content.split(/\s+/).length;
+  const wordCount = report.content ? report.content.split(/\s+/).length : 0;
   if (wordCount < 2000) {
     console.warn(`Report content has only ${wordCount} words, which is less than the 2000 word minimum. It might not meet quality standards.`);
     
@@ -35,7 +34,7 @@ export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created
   }
 
   // Verify visualizations are properly formatted
-  const visualizations = extractVisualizations(report.content);
+  const visualizations = report.content ? extractVisualizations(report.content) : [];
   if (visualizations.length === 0) {
     console.warn("Report does not contain any visualizations");
     
@@ -116,12 +115,14 @@ export const deleteReport = async (id: string) => {
   return true;
 };
 
-export const extractVisualizations = (content: string): any[] => {
+export const extractVisualizations = (content: string | null): any[] => {
+  if (!content) return [];
+  
   if (typeof content === 'object' && content._type === 'String' && content.value) {
     content = content.value;
   }
   
-  const visualizationMarkers = content.match(/\[Visualization:([^\]]+)\]/g) || [];
+  const visualizationMarkers = content.match(/\[Visualization:[^\]]+\]/g) || [];
   console.log("Found visualization markers:", visualizationMarkers.length);
   
   return visualizationMarkers.map(marker => {

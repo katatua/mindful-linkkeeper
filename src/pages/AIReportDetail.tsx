@@ -132,7 +132,7 @@ const AIReportDetail = () => {
     navigate('/reports');
   };
 
-  const renderContent = (content: string) => {
+  const renderContent = (content: string | null) => {
     if (!content) return null;
     
     // Split the content by visualization markers
@@ -256,7 +256,7 @@ const AIReportDetail = () => {
   }
 
   // Calculate word count for display
-  let contentForWordCount = report.content;
+  let contentForWordCount = report.content || "";
   if (typeof report.content === 'object' && report.content._type === 'String' && report.content.value) {
     contentForWordCount = report.content.value;
   }
@@ -311,7 +311,7 @@ const AIReportDetail = () => {
       <Card>
         <CardContent className="p-6">
           <div className="prose max-w-none">
-            {renderContent(report.content)}
+            {report.content && renderContent(report.content)}
           </div>
         </CardContent>
       </Card>
