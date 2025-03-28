@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'pt';
@@ -576,4 +577,49 @@ const translations: Record<Language, Record<string, string>> = {
     'reports.scheduled': 'Visão Geral Mensal de Financiamento',
     'reports.scheduled.description': 'Relatório mensal automatizado sobre alocação e utilização de financiamento',
     'reports.frequency': 'Frequência:',
-    'reports.next': 'Pr
+    'reports.next': 'Próxima geração:',
+    'reports.generated': 'Gerado às',
+    'reports.recipients': 'Destinatários:',
+    'reports.preview': 'Visualizar',
+    'reports.pause': 'Pausar',
+    'reports.resume': 'Retomar',
+    'reports.delete': 'Excluir',
+    'reports.confirm': 'Confirmar',
+    'reports.cancel': 'Cancelar'
+  }
+};
+
+export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
+  const [language, setLanguage] = useState<Language>('en');
+  
+  // Initialize language from localStorage if available
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') as Language;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pt')) {
+      setLanguage(savedLanguage);
+    }
+  }, []);
+  
+  // Save language to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+  
+  const t = (key: string): string => {
+    return translations[language][key] || key;
+  };
+  
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
