@@ -32,14 +32,13 @@ serve(async (req) => {
       );
     }
     
-    // Check if it's a valid OpenAI key format
-    // OpenAI keys should start with 'sk-' not 'sk-proj-'
-    if (!openaiApiKey.startsWith('sk-') || openaiApiKey.startsWith('sk-proj-')) {
-      console.error('Invalid OpenAI API key format detected');
+    // Check if it's a project API key format (which won't work with OpenAI API)
+    if (openaiApiKey.startsWith('sk-proj-')) {
+      console.error('Project API key format detected - not compatible with OpenAI API');
       return new Response(
         JSON.stringify({
-          error: "Invalid OpenAI API key format. OpenAI keys should start with 'sk-' but not 'sk-proj-'.",
-          response: "Configuration error: The API key provided is not in the correct format for OpenAI. OpenAI API keys typically start with 'sk-' and you may need to get a key from platform.openai.com.",
+          error: "Invalid API key format. OpenAI requires a key starting with 'sk-' (not 'sk-proj-').",
+          response: "Configuration error: The API key provided is a project key (starts with 'sk-proj-') which is not compatible with the OpenAI API. You need to get a standard API key from platform.openai.com that starts with 'sk-' (without 'proj').",
           sqlQuery: '',
           results: null
         }),
@@ -152,7 +151,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: `Failed to generate response: ${error.message || "Unknown error"}`,
-        response: "Sorry, there was an error processing your query. This could be due to an invalid OpenAI API key or a temporary service issue. Please check your API key configuration or try again later.",
+        response: "Sorry, there was an error processing your query. This could be due to an invalid OpenAI API key or a temporary service issue. Please try using the Gemini provider instead by changing the AI provider in the settings dropdown.",
         sqlQuery: "",
         results: null
       }),
