@@ -182,8 +182,9 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
         
         console.log("SQL execution result:", data, error);
         
-        if (error) {
-          throw new Error(`Error executing SQL: ${error.message}`);
+        if (error || (data && data.status === 'error')) {
+          const errorMessage = error ? error.message : (data ? data.message : 'Unknown error');
+          throw new Error(`Error executing SQL: ${errorMessage}`);
         }
       }
       
