@@ -1,1 +1,8 @@
+
 project_id = "ncnewevucbkebrqjtufl"
+
+[functions.gemini-chat]
+verify_jwt = false
+
+[functions.openai-chat]
+verify_jwt = false

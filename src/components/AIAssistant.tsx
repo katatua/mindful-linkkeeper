@@ -1,10 +1,16 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId } from '@/utils/aiUtils';
+import { Send, AlertCircle, HelpCircle, Code, Database, Settings } from 'lucide-react';
+import { 
+  suggestedDatabaseQuestions, 
+  generateResponse, 
+  genId, 
+  getCurrentAIProvider,
+  setAIProvider
+} from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +24,15 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Message {
   id: string;
@@ -33,7 +48,37 @@ export const AIAssistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [provider, setProvider] = useState<string>('gemini');
   const { toast } = useToast();
+  
+  // Load the current AI provider on component mount
+  useEffect(() => {
+    const loadProvider = async () => {
+      const currentProvider = await getCurrentAIProvider();
+      setProvider(currentProvider);
+    };
+    
+    loadProvider();
+  }, []);
+  
+  const handleChangeProvider = async (value: string) => {
+    if (value === 'gemini' || value === 'openai') {
+      const success = await setAIProvider(value);
+      if (success) {
+        setProvider(value);
+        toast({
+          title: "AI Provider Updated",
+          description: `Now using ${value === 'gemini' ? 'Google Gemini' : 'OpenAI'} as the AI provider.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update AI provider. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,15 +237,38 @@ export const AIAssistant: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>AI Database Assistant</CardTitle>
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={() => setShowSuggestions(!showSuggestions)}
-          aria-label="Show example questions"
-        >
-          <HelpCircle className="h-4 w-4" />
-        </Button>
+        <div>
+          <CardTitle>AI Database Assistant</CardTitle>
+          <CardDescription>
+            Powered by {provider === 'gemini' ? 'Google Gemini' : 'OpenAI'}
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>AI Provider</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup value={provider} onValueChange={handleChangeProvider}>
+                <DropdownMenuRadioItem value="gemini">Google Gemini</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="openai">OpenAI</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            aria-label="Show example questions"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {showSuggestions && (

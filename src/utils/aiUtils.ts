@@ -45,6 +45,40 @@ export const getCurrentAIModel = async () => {
   }
 };
 
+// Add function to get the current AI provider
+export const getCurrentAIProvider = async () => {
+  try {
+    const { data, error } = await supabase.rpc('get_database_setting', {
+      setting_key: 'ai_provider'
+    });
+    
+    if (error) throw error;
+    return data || 'gemini'; // Default to gemini if not set
+  } catch (error) {
+    console.error('Error fetching AI provider:', error);
+    return 'gemini';
+  }
+};
+
+// Add function to set the AI provider
+export const setAIProvider = async (provider: 'gemini' | 'openai') => {
+  try {
+    const { error } = await supabase
+      .from('ani_database_settings')
+      .upsert({ 
+        setting_key: 'ai_provider', 
+        setting_value: provider,
+        updated_at: new Date().toISOString()
+      });
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error setting AI provider:', error);
+    return false;
+  }
+};
+
 // Add function to generate a unique ID
 export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
@@ -65,7 +99,15 @@ export const generateResponse = async (prompt: string, retryCount = 0, maxRetrie
     // Add region-related keywords extraction for better city/region matching
     const regionKeywords = extractRegionKeywords(prompt);
     
-    const { data, error } = await supabase.functions.invoke('gemini-chat', {
+    // Determine which AI provider to use
+    const provider = await getCurrentAIProvider();
+    
+    // Call the appropriate edge function based on the provider
+    const functionName = provider === 'openai' ? 'openai-chat' : 'gemini-chat';
+    
+    console.log(`Using AI provider: ${provider}`);
+    
+    const { data, error } = await supabase.functions.invoke(functionName, {
       body: { 
         prompt, 
         chatHistory: [],
@@ -100,7 +142,7 @@ export const generateResponse = async (prompt: string, retryCount = 0, maxRetrie
         console.error('AI API quota exceeded:', error);
         throw new Error('The AI query service is currently experiencing high demand. Please try again in a few minutes.');
       } else {
-        console.error('Error invoking Gemini Chat function:', error);
+        console.error(`Error invoking ${functionName} function:`, error);
         throw new Error(`Failed to generate response: ${error.message}`);
       }
     }
