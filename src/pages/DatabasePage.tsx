@@ -582,8 +582,8 @@ export const DatabasePage: React.FC = () => {
             </>
           ) : (
             <>
-              <SelectItem value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</SelectItem>
-              <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+              <SelectItem value="gpt-4o-2024-11-20">GPT-4o (Latest)</SelectItem>
+              <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
             </>
           )}
         </SelectContent>
