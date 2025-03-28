@@ -176,7 +176,7 @@ export interface AIQueryResponse {
   sqlQuery: string;
   results: any[] | null;
   noResults: boolean;
-  queryId?: string;  // Make queryId optional but consistently defined in the type
+  queryId?: string;  // Make queryId optional
 }
 
 // Helper function to create a consistent "no results" response
@@ -217,6 +217,30 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
   try {
     const energyKeywords = extractEnergyKeywords(prompt);
     
+    // Store the query in the database first to get a queryId
+    let queryId = '';
+    try {
+      const userResponse = await supabase.auth.getUser();
+      const userId = userResponse.data?.user?.id;
+      
+      const { data: queryData, error: queryError } = await supabase.from('query_history').insert({
+        query_text: prompt,
+        user_id: userId || null,
+        was_successful: false, // Will update this after we get results
+        language: 'en',
+        error_message: "Pending execution"
+      }).select('id');
+      
+      if (queryError) {
+        console.error('Error storing query in database:', queryError);
+      } else if (queryData && queryData.length > 0) {
+        queryId = queryData[0].id;
+        console.log('Query stored with ID:', queryId);
+      }
+    } catch (dbError) {
+      console.error('Error saving to database:', dbError);
+    }
+    
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
@@ -231,63 +255,35 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       if (error) {
         console.error('Error invoking Gemini Chat function:', error);
         
-        // Store the query in the database even when it fails
-        try {
-          const userResponse = await supabase.auth.getUser();
-          const userId = userResponse.data?.user?.id;
-          
-          const { data: queryData, error: queryError } = await supabase.from('query_history').insert({
-            query_text: prompt,
-            user_id: userId || null,
-            was_successful: false,
-            language: 'en',
-            error_message: "Error invoking AI function: " + error.message,
-            created_tables: null
-          }).select('id');
-          
-          if (queryError) {
-            console.error('Error storing failed query:', queryError);
-          } else if (queryData && queryData.length > 0) {
-            console.log('Failed query stored with ID:', queryData[0].id);
-            return {
-              message: `Sorry, there was an error processing your query: ${error.message}. Your query has been saved for review.`,
-              sqlQuery: '',
-              results: null,
-              noResults: true,
-              queryId: queryData[0].id
-            };
+        // Update query status to failed
+        if (queryId) {
+          try {
+            await supabase.from('query_history').update({
+              was_successful: false,
+              error_message: "Error invoking AI function: " + error.message
+            }).eq('id', queryId);
+          } catch (updateError) {
+            console.error('Error updating query status:', updateError);
           }
-        } catch (historyStoreError) {
-          console.error('Error storing query history for failed request:', historyStoreError);
         }
         
         const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
-        return noResultsResponse;
+        return {
+          ...noResultsResponse,
+          queryId: queryId || undefined
+        };
       }
 
-      // Store successful queries in the database
-      let queryId = '';
-      try {
-        const userResponse = await supabase.auth.getUser();
-        const userId = userResponse.data?.user?.id;
-        
-        const { data: queryData, error: historyError } = await supabase.from('query_history').insert({
-          query_text: prompt,
-          user_id: userId || null,
-          was_successful: data.results && data.results.length > 0,
-          language: 'en',
-          error_message: data.results && data.results.length > 0 ? null : "No results found",
-          created_tables: null
-        }).select('id');
-
-        if (historyError) {
-          console.error('Error storing query history:', historyError);
-        } else if (queryData && queryData.length > 0) {
-          queryId = queryData[0].id;
-          console.log('Query stored with ID:', queryId);
+      // Update query status based on results
+      if (queryId) {
+        try {
+          await supabase.from('query_history').update({
+            was_successful: data.results && data.results.length > 0,
+            error_message: data.results && data.results.length > 0 ? null : "No results found"
+          }).eq('id', queryId);
+        } catch (updateError) {
+          console.error('Error updating query status:', updateError);
         }
-      } catch (historyStoreError) {
-        console.error('Error storing query history:', historyStoreError);
       }
       
       if (!data.results || data.results.length === 0) {
@@ -308,38 +304,23 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
     } catch (geminiError) {
       console.error('Error with Gemini API:', geminiError);
       
-      // Try to save a record of the failed query
-      try {
-        const userResponse = await supabase.auth.getUser();
-        const userId = userResponse.data?.user?.id;
-        
-        const { data: queryData, error: queryError } = await supabase.from('query_history').insert({
-          query_text: prompt,
-          user_id: userId || null,
-          was_successful: false,
-          language: 'en',
-          error_message: "Gemini API error: " + (geminiError instanceof Error ? geminiError.message : String(geminiError)),
-          created_tables: null
-        }).select('id');
-        
-        if (queryError) {
-          console.error('Error storing failed Gemini query:', queryError);
-        } else if (queryData && queryData.length > 0) {
-          console.log('Failed Gemini query stored with ID:', queryData[0].id);
-          return {
-            message: `Sorry, there was an error with the AI service. Your query has been saved for review.`,
-            sqlQuery: '',
-            results: null,
-            noResults: true,
-            queryId: queryData[0].id
-          };
+      // Update query status to failed
+      if (queryId) {
+        try {
+          await supabase.from('query_history').update({
+            was_successful: false,
+            error_message: "Gemini API error: " + (geminiError instanceof Error ? geminiError.message : String(geminiError))
+          }).eq('id', queryId);
+        } catch (updateError) {
+          console.error('Error updating query status:', updateError);
         }
-      } catch (historyError) {
-        console.error('Error storing query history for Gemini error:', historyError);
       }
       
       const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
-      return noResultsResponse;
+      return {
+        ...noResultsResponse,
+        queryId: queryId || undefined
+      };
     }
   } catch (error) {
     console.error('Error generating response:', error);

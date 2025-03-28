@@ -30,6 +30,7 @@ interface Message {
   noResults?: boolean;
   timestamp?: Date;
   queryId?: string;
+  analysis?: any;
 }
 
 export const AIAssistant: React.FC = () => {
@@ -59,70 +60,6 @@ export const AIAssistant: React.FC = () => {
     try {
       const response = await generateResponse(input);
       
-      // Extract queryId from response (may be undefined)
-      const queryId = response.queryId;
-      
-      // If the response doesn't already include a queryId, try to save it to the database
-      if (!queryId) {
-        try {
-          const userAuth = await supabase.auth.getUser();
-          const userId = userAuth.data?.user?.id;
-          
-          const { data, error } = await supabase.from('query_history').insert({
-            query_text: input,
-            user_id: userId || null,
-            was_successful: response.results && response.results.length > 0,
-            language: 'en',
-            error_message: response.results && response.results.length > 0 ? null : "No results found"
-          }).select('id');
-          
-          if (error) {
-            console.error('Error storing query in database:', error);
-          } else if (data && data.length > 0) {
-            console.log('Query stored with ID:', data[0].id);
-            
-            const assistantMessage: Message = {
-              id: genId(),
-              content: response.message,
-              sqlQuery: response.sqlQuery,
-              results: response.results,
-              role: 'assistant',
-              noResults: response.noResults,
-              timestamp: new Date(),
-              queryId: data[0].id
-            };
-            
-            setMessages(prev => [...prev, assistantMessage]);
-            
-            const historyItem = {
-              id: assistantMessage.id,
-              question: input,
-              timestamp: new Date(),
-              result: {
-                message: response.message,
-                sqlQuery: response.sqlQuery,
-                results: response.results
-              },
-              isCorrect: null,
-              queryId: data[0].id
-            };
-            
-            try {
-              const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
-              const updatedHistory = [historyItem, ...existingHistory];
-              localStorage.setItem('queryHistory', JSON.stringify(updatedHistory));
-            } catch (err) {
-              console.error('Error saving to localStorage:', err);
-            }
-            
-            return; // Exit early since we've handled the message creation
-          }
-        } catch (dbError) {
-          console.error('Error saving to database:', dbError);
-        }
-      }
-      
-      // If we reach here, either we have a queryId from the response, or we failed to save one above
       const assistantMessage: Message = {
         id: genId(),
         content: response.message,
@@ -131,25 +68,25 @@ export const AIAssistant: React.FC = () => {
         role: 'assistant',
         noResults: response.noResults,
         timestamp: new Date(),
-        queryId: queryId // This can be undefined
+        queryId: response.queryId
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      const historyItem = {
-        id: assistantMessage.id,
-        question: input,
-        timestamp: new Date(),
-        result: {
-          message: response.message,
-          sqlQuery: response.sqlQuery,
-          results: response.results
-        },
-        isCorrect: null,
-        queryId: queryId
-      };
-      
       try {
+        const historyItem = {
+          id: assistantMessage.id,
+          question: input,
+          timestamp: new Date(),
+          result: {
+            message: response.message,
+            sqlQuery: response.sqlQuery,
+            results: response.results
+          },
+          isCorrect: null,
+          queryId: response.queryId
+        };
+        
         const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
         const updatedHistory = [historyItem, ...existingHistory];
         localStorage.setItem('queryHistory', JSON.stringify(updatedHistory));
@@ -214,7 +151,6 @@ export const AIAssistant: React.FC = () => {
   };
 
   useEffect(() => {
-    // Check for query status updates every 30 seconds for queries with noResults=true
     const interval = setInterval(async () => {
       const updatedMessages = [...messages];
       let hasUpdates = false;
@@ -224,8 +160,7 @@ export const AIAssistant: React.FC = () => {
         if (message.role === 'assistant' && message.noResults && message.queryId) {
           const queryStatus = await checkQueryStatus(message.queryId);
           
-          if (queryStatus && queryStatus.created_tables) {
-            // The query has been populated with data
+          if (queryStatus && queryStatus.created_tables && queryStatus.was_successful) {
             hasUpdates = true;
             updatedMessages[i] = {
               ...message,
@@ -243,7 +178,7 @@ export const AIAssistant: React.FC = () => {
           description: "New data has been added to the database. You can run your query again.",
         });
       }
-    }, 30000);
+    }, 15000);
     
     return () => clearInterval(interval);
   }, [messages, toast]);
@@ -380,9 +315,12 @@ export const AIAssistant: React.FC = () => {
                                 <AlertDescription>
                                   {message.content}
                                   <div className="mt-2">
-                                    <PopulateDataButton query={
-                                      messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
-                                    } />
+                                    <PopulateDataButton 
+                                      query={
+                                        messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
+                                      } 
+                                      queryId={message.queryId}
+                                    />
                                   </div>
                                 </AlertDescription>
                               </Alert>
@@ -464,9 +402,12 @@ export const AIAssistant: React.FC = () => {
                               <AlertDescription>
                                 The database doesn't contain data matching this query.
                                 <div className="mt-2">
-                                  <PopulateDataButton query={
-                                    messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
-                                  } />
+                                  <PopulateDataButton 
+                                    query={
+                                      messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
+                                    }
+                                    queryId={message.queryId}
+                                  />
                                 </div>
                               </AlertDescription>
                             </Alert>
