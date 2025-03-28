@@ -13,7 +13,8 @@ import {
   extractTechnologyKeywords, 
   extractRegionKeywords 
 } from './ai/keywordExtractor';
-import { DocumentToClassify, classifyDocument } from './ai/documentClassifier';
+import { classifyDocument } from './ai/documentClassifier';
+import type { DocumentToClassify } from './ai/documentClassifier';
 import { getEnhancedSystemPrompt } from './ai/promptEnhancer';
 import { generateFallbackResponse } from './ai/fallbackResponder';
 import { generateResponse } from './ai/responseGenerator';
@@ -37,7 +38,7 @@ export {
   extractRegionKeywords,
   
   // Document classification
-  DocumentToClassify,
+  type DocumentToClassify,
   classifyDocument,
   
   // Prompt enhancement
