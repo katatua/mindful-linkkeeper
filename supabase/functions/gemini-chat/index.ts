@@ -298,14 +298,12 @@ serve(async (req) => {
     
     // Add region-related context if relevant
     if (regionKeywords.length > 0) {
-      console.log("Region-related query detected with regions:", regionKeywords.map(r => r.original));
+      console.log("Region-related query detected with regions:", regionKeywords);
       
       // Create an enhanced prompt that lists all the region variations to try
-      const regionVariationsPrompt = regionKeywords.map(region => {
-        return `For "${region.original}" region, use these variations: ${region.variations.join(', ')}`;
-      }).join('. ');
+      const regionVariationsPrompt = Array.isArray(regionKeywords) ? regionKeywords.join(', ') : regionKeywords;
       
-      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query involves specific regions or cities. ${regionVariationsPrompt}. Use ILIKE with OR conditions to match all possible variations.`;
+      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query involves specific regions or cities: ${regionVariationsPrompt}. Use ILIKE with OR conditions to match all possible variations.`;
     }
 
     // Construct the conversation
@@ -319,6 +317,19 @@ serve(async (req) => {
       // Add the new user prompt
       { role: "user", parts: [{ text: enhancedPrompt }] },
     ];
+
+    if (!googleApiKey) {
+      console.error("Missing Gemini API key");
+      return new Response(JSON.stringify({
+        error: "Missing Gemini API key. Please set the GEMINI_API_KEY secret in Supabase.",
+        response: "Configuration error: Gemini API key not found. Please contact the administrator.",
+        sqlQuery: '',
+        results: null
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Make request to Google Gemini API
     const response = await fetch(
