@@ -1,3 +1,4 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -59,7 +60,7 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
   // Start with the original question
   let formattedResponse = `${originalQuestion}\n`;
   
-  // Add a brief introductory line from the message (just the first sentence or two)
+  // Extract a brief introduction (first sentence)
   const briefIntro = message.split('.')[0] + '.';
   formattedResponse += `${briefIntro}\n\n`;
   
@@ -68,15 +69,16 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     return `${formattedResponse}**Não foram encontrados resultados para esta consulta.**`;
   }
   
-  // Add the Results section immediately after the brief intro
+  // Add the Results section with formatted table immediately after the brief intro
   formattedResponse += "**Resultados:**\n";
   
-  // Create a formatted table header for the results right at the top
+  // Create a formatted table for the results right at the top
   if (results.length > 0) {
+    // Generate table headers
     const headers = Object.keys(results[0]);
     formattedResponse += headers.join('\t') + '\n';
     
-    // Add the data rows
+    // Generate table rows
     results.forEach(row => {
       const values = headers.map(header => {
         const value = row[header];
@@ -88,10 +90,12 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     });
   }
   
-  // Add the full explanatory text after the results table
-  formattedResponse += `\n${message.substring(briefIntro.length).trim()}\n\n`;
+  // Add the rest of the explanatory text after the results table
+  if (message.length > briefIntro.length) {
+    formattedResponse += `\n${message.substring(briefIntro.length).trim()}\n\n`;
+  }
   
-  // Add domain-specific context if relevant
+  // Add domain-specific context for energy-related queries
   if (message.includes("energia renovável") || 
       sqlQuery.toLowerCase().includes("energy") || 
       sqlQuery.toLowerCase().includes("renewable")) {
@@ -99,7 +103,7 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
   }
   
-  // Add a summary section with formatted results as bullet points
+  // Add a summary section with bullet points
   formattedResponse += "**Resumo dos Resultados:**\n\n";
   
   results.forEach((item, index) => {
@@ -115,7 +119,7 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     formattedResponse += `• Resultado ${index + 1}: ${itemDetails}\n`;
   });
   
-  // Add the SQL query
+  // Add the SQL query at the end
   formattedResponse += `\nSQL Query:\n${sqlQuery}\n`;
   
   return formattedResponse;
