@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { AIGeneratedReport, fetchReports, deleteReport, generatePDF } from "@/utils/reportService";
+import { AIGeneratedReport, fetchReports, deleteReport, generatePDF, extractVisualizations } from "@/utils/reportService";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Calendar, Download, FileText, Trash2, RefreshCw } from "lucide-react";
+import { Calendar, Download, FileText, Trash2, RefreshCw, BarChart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -118,6 +118,16 @@ export const AIGeneratedReports = () => {
       });
     }
   };
+  
+  const getWordCount = (content: string): number => {
+    // Remove visualization markers before counting words
+    const cleanText = content.replace(/\[Visualization:[^\]]+\]/g, '');
+    return cleanText.split(/\s+/).length;
+  };
+  
+  const hasVisualizations = (content: string): boolean => {
+    return content.includes('[Visualization:');
+  };
 
   return (
     <div className="space-y-6">
@@ -161,89 +171,98 @@ export const AIGeneratedReports = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reports.map((report) => (
-            <Card key={report.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium truncate">{report.title}</CardTitle>
-                <CardDescription>
-                  {report.report_type || (language === 'pt' ? "Relatório Gerado por IA" : "AI-Generated Report")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>{new Date(report.created_at).toLocaleDateString(
-                    language === 'pt' ? 'pt-BR' : 'en-US',
-                    { 
-                      year: 'numeric', 
-                      month: 'short', 
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }
-                  )}</span>
-                </div>
-                <div className="mt-2 text-sm line-clamp-2">
-                  {report.content.substring(0, 150)}...
-                </div>
-              </CardContent>
-              <CardFooter className="pt-2 flex justify-between items-center">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleViewReport(report)}
-                >
-                  {language === 'pt' ? "Visualizar" : "View"}
-                </Button>
-                <div className="flex gap-2">
+          {reports.map((report) => {
+            const wordCount = getWordCount(report.content);
+            const visualizationsPresent = hasVisualizations(report.content);
+            
+            return (
+              <Card key={report.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium truncate">{report.title}</CardTitle>
+                  <CardDescription>
+                    {report.report_type || (language === 'pt' ? "Relatório Gerado por IA" : "AI-Generated Report")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>{new Date(report.created_at).toLocaleDateString(
+                        language === 'pt' ? 'pt-BR' : 'en-US',
+                        { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                        }
+                      )}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {visualizationsPresent && <BarChart className="h-3.5 w-3.5 text-blue-500" />}
+                      <span>{wordCount.toLocaleString()} {language === 'pt' ? "palavras" : "words"}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm line-clamp-3">
+                    {report.content.replace(/\[Visualization:[^\]]+\]/g, '').substring(0, 150)}...
+                  </div>
+                </CardContent>
+                <CardFooter className="pt-2 flex justify-between items-center">
                   <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleDownloadPDF(report)}
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleViewReport(report)}
                   >
-                    <Download className="h-4 w-4" />
+                    {language === 'pt' ? "Visualizar" : "View"}
                   </Button>
-                  <AlertDialog open={showConfirmDialog && reportToDelete === report.id} onOpenChange={setShowConfirmDialog}>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          setReportToDelete(report.id);
-                          setShowConfirmDialog(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {language === 'pt' ? "Excluir Relatório?" : "Delete Report?"}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {language === 'pt' 
-                            ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente o relatório." 
-                            : "This action cannot be undone. This will permanently delete the report."}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>
-                          {language === 'pt' ? "Cancelar" : "Cancel"}
-                        </AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => reportToDelete && handleDeleteReport(reportToDelete)}
-                          className="bg-destructive hover:bg-destructive/90"
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDownloadPDF(report)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog open={showConfirmDialog && reportToDelete === report.id} onOpenChange={setShowConfirmDialog}>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setReportToDelete(report.id);
+                            setShowConfirmDialog(true);
+                          }}
                         >
-                          {language === 'pt' ? "Excluir" : "Delete"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {language === 'pt' ? "Excluir Relatório?" : "Delete Report?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {language === 'pt' 
+                              ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente o relatório." 
+                              : "This action cannot be undone. This will permanently delete the report."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {language === 'pt' ? "Cancelar" : "Cancel"}
+                          </AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => reportToDelete && handleDeleteReport(reportToDelete)}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            {language === 'pt' ? "Excluir" : "Delete"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

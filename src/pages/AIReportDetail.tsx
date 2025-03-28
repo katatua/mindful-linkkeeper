@@ -4,9 +4,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { AIGeneratedReport, generatePDF } from "@/utils/reportService";
+import { AIGeneratedReport, generatePDF, extractVisualizations } from "@/utils/reportService";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ReportVisualizer, extractVisualizations } from "@/components/reports/ReportVisualizer";
+import { ReportVisualizer } from "@/components/reports/ReportVisualizer";
 import { ChevronLeft, Download, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,6 @@ const AIReportDetail = () => {
   const { language } = useLanguage();
   const [report, setReport] = useState<AIGeneratedReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [visualizations, setVisualizations] = useState<any[]>([]);
 
   useEffect(() => {
     const loadReport = async () => {
@@ -31,7 +30,6 @@ const AIReportDetail = () => {
           const parsedReport = JSON.parse(storedReport);
           if (parsedReport.id === id) {
             setReport(parsedReport);
-            setVisualizations(extractVisualizations(parsedReport.content));
             setIsLoading(false);
             return;
           }
@@ -50,7 +48,6 @@ const AIReportDetail = () => {
         
         if (data) {
           setReport(data as AIGeneratedReport);
-          setVisualizations(extractVisualizations(data.content));
         } else {
           navigate('/reports');
           toast({
@@ -121,6 +118,55 @@ const AIReportDetail = () => {
 
   const goBackToReports = () => {
     navigate('/reports');
+  };
+
+  const renderContent = (content: string) => {
+    if (!content) return null;
+    
+    // Split the content by visualization markers
+    const segments = content.split(/\[Visualization:[^\]]+\]/g);
+    const visualizationMarkers = content.match(/\[Visualization:[^\]]+\]/g) || [];
+    
+    return segments.map((segment, index) => {
+      // Process segment (paragraph or section)
+      const processedSegment = segment.split('\n').map((line, lineIndex) => {
+        if (line.startsWith('# ')) {
+          return <h1 key={`line-${index}-${lineIndex}`} className="text-2xl font-bold mt-6 mb-4">{line.replace('# ', '')}</h1>;
+        } else if (line.startsWith('## ')) {
+          return <h2 key={`line-${index}-${lineIndex}`} className="text-xl font-semibold mt-5 mb-3">{line.replace('## ', '')}</h2>;
+        } else if (line.startsWith('### ')) {
+          return <h3 key={`line-${index}-${lineIndex}`} className="text-lg font-medium mt-4 mb-2">{line.replace('### ', '')}</h3>;
+        } else if (line === '') {
+          return <br key={`line-${index}-${lineIndex}`} />;
+        } else {
+          return <p key={`line-${index}-${lineIndex}`} className="my-3 text-gray-700">{line}</p>;
+        }
+      });
+      
+      // Render segment + visualization if available
+      const result = [
+        <div key={`segment-${index}`}>{processedSegment}</div>
+      ];
+      
+      // Add visualization after the segment if there is one for this segment
+      if (visualizationMarkers[index]) {
+        try {
+          const marker = visualizationMarkers[index];
+          const jsonStr = marker.substring(14, marker.length - 1);
+          const vizData = JSON.parse(jsonStr);
+          
+          result.push(
+            <div key={`viz-${index}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <ReportVisualizer visualization={vizData} />
+            </div>
+          );
+        } catch (e) {
+          console.error('Error parsing visualization data:', e);
+        }
+      }
+      
+      return result;
+    });
   };
 
   if (isLoading) {
@@ -212,50 +258,10 @@ const AIReportDetail = () => {
       <Card>
         <CardContent className="p-6">
           <div className="prose max-w-none">
-            {report.content.split('\n').map((line, index) => {
-              if (line.startsWith('# ')) {
-                return <h1 key={index} className="text-2xl font-bold mt-6 mb-4">{line.replace('# ', '')}</h1>;
-              } else if (line.startsWith('## ')) {
-                return <h2 key={index} className="text-xl font-semibold mt-5 mb-3">{line.replace('## ', '')}</h2>;
-              } else if (line.startsWith('### ')) {
-                return <h3 key={index} className="text-lg font-medium mt-4 mb-2">{line.replace('### ', '')}</h3>;
-              } else if (line.includes('Insert Visualization')) {
-                return (
-                  <div key={index} className="bg-gray-100 p-4 my-4 rounded-md text-sm text-gray-700 italic">
-                    {language === 'pt' 
-                      ? "Visualização de dados aqui" 
-                      : "Data visualization here"}
-                  </div>
-                );
-              } else if (line === '') {
-                return <br key={index} />;
-              } else {
-                return <p key={index} className="my-3 text-gray-700">{line}</p>;
-              }
-            })}
+            {renderContent(report.content)}
           </div>
         </CardContent>
       </Card>
-      
-      {visualizations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {language === 'pt' ? "Visualizações de Dados" : "Data Visualizations"}
-            </CardTitle>
-            <CardDescription>
-              {language === 'pt' 
-                ? "Gráficos e visualizações baseados nos dados do relatório" 
-                : "Charts and visualizations based on the report data"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {visualizations.map((viz, index) => (
-              <ReportVisualizer key={index} visualization={viz} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

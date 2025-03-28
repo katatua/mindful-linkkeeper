@@ -17,6 +17,11 @@ export interface AIGeneratedReport {
 }
 
 export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created_at' | 'updated_at'>) => {
+  // Ensure content is at least 2000 words
+  if (report.content.split(/\s+/).length < 2000) {
+    console.warn("Report content less than 2000 words, might not meet quality standards");
+  }
+
   const { data, error } = await supabase
     .from('ai_generated_reports')
     .insert(report)
@@ -63,6 +68,19 @@ export const deleteReport = async (id: string) => {
   }
 
   return true;
+};
+
+export const extractVisualizations = (content: string): any[] => {
+  const visualizationMarkers = content.match(/\[Visualization:([^\]]+)\]/g) || [];
+  return visualizationMarkers.map(marker => {
+    try {
+      const jsonStr = marker.substring(14, marker.length - 1);
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      console.error('Error parsing visualization data:', e);
+      return null;
+    }
+  }).filter(Boolean);
 };
 
 export const generatePDF = (report: AIGeneratedReport): string => {
