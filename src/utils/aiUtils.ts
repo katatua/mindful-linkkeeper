@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Update the suggested questions to better match our database schema and sample data
+// Updated suggested questions with a wider variety of complex query types
 export const suggestedDatabaseQuestions = [
   "Which funding programs include renewable energy in their sector focus?",
   "Show me the top 5 projects with highest funding amounts in the technology sector",
@@ -30,7 +30,7 @@ export const suggestedDatabaseQuestions = [
   "What is the total budget allocated to renewable energy programs?"
 ];
 
-// Add function to get the current AI model
+// Add function to get the current AI model with error handling
 export const getCurrentAIModel = async () => {
   try {
     const { data, error } = await supabase.rpc('get_database_setting', {
@@ -50,7 +50,7 @@ export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-// Update handle database queries and AI responses
+// Enhanced query handling with better context extraction and error management
 export const generateResponse = async (prompt: string) => {
   try {
     // Extract keywords for energy-related queries to improve matching
