@@ -31,6 +31,9 @@ serve(async (req) => {
 
     if (error) throw error;
 
+    // Log the data for visibility
+    console.log('Funding Programs Data:', JSON.stringify(data, null, 2));
+
     return new Response(JSON.stringify(data), {
       headers: { 
         ...corsHeaders, 
@@ -38,6 +41,7 @@ serve(async (req) => {
       }
     });
   } catch (error) {
+    console.error('Error fetching funding programs:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 
