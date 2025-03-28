@@ -31,23 +31,6 @@ serve(async (req) => {
         }
       );
     }
-    
-    // Check if it's a project API key format (which won't work with OpenAI API)
-    if (openaiApiKey.startsWith('sk-proj-')) {
-      console.error('Project API key format detected - not compatible with OpenAI API');
-      return new Response(
-        JSON.stringify({
-          error: "Invalid API key format. OpenAI requires a key starting with 'sk-' (not 'sk-proj-').",
-          response: "Configuration error: The API key provided is a project key (starts with 'sk-proj-') which is not compatible with the OpenAI API. You need to get a standard API key from platform.openai.com that starts with 'sk-' (without 'proj').",
-          sqlQuery: '',
-          results: null
-        }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
 
     const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
     
@@ -57,7 +40,7 @@ serve(async (req) => {
 
     console.log('Sending request to OpenAI with model: gpt-4o-mini');
     
-    // Enhanced context extraction
+    // Enhanced context extraction from shared utilities
     const energyKeywords = extractEnergyKeywords(prompt);
     const techKeywords = extractTechnologyKeywords(prompt);
     const regionKeywords = extractRegionKeywords(prompt);
