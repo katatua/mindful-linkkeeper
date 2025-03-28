@@ -177,6 +177,7 @@ export interface AIQueryResponse {
   results: any[] | null;
   noResults: boolean;
   queryId?: string;  // Make queryId optional
+  analysis?: any;    // Add analysis field
 }
 
 // Helper function to create a consistent "no results" response
@@ -274,6 +275,30 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
         };
       }
 
+      // If there are no results, get analysis and recommendations
+      let analysis = null;
+      if (!data.results || data.results.length === 0) {
+        try {
+          // Call analyze-query to get recommendations
+          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-query', {
+            body: { query: data.sqlQuery || prompt }
+          });
+          
+          if (!analysisError && analysisData) {
+            analysis = analysisData;
+            
+            // Save analysis to query_history
+            if (queryId) {
+              await supabase.from('query_history').update({
+                analysis_result: analysis
+              }).eq('id', queryId);
+            }
+          }
+        } catch (analysisError) {
+          console.error('Error analyzing query:', analysisError);
+        }
+      }
+
       // Update query status based on results
       if (queryId) {
         try {
@@ -290,7 +315,8 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
         const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
         return {
           ...noResultsResponse,
-          queryId: queryId || undefined
+          queryId: queryId || undefined,
+          analysis: analysis
         };
       }
       
@@ -299,7 +325,8 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
         sqlQuery: data.sqlQuery || '',
         results: data.results || null,
         noResults: false,
-        queryId: queryId || undefined
+        queryId: queryId || undefined,
+        analysis: analysis
       };
     } catch (geminiError) {
       console.error('Error with Gemini API:', geminiError);

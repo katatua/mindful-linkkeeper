@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PopulateDataButton } from '@/components/database/PopulateDataButton';
+import { QueryDataRecommendations } from '@/components/database/QueryDataRecommendations';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -348,6 +350,27 @@ export const AIAssistant: React.FC = () => {
                                 {message.sqlQuery}
                               </pre>
                             </div>
+                          )}
+                          
+                          {message.analysis && message.analysis.insertStatements && message.analysis.insertStatements.length > 0 && (
+                            <QueryDataRecommendations
+                              query={messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""}
+                              queryId={message.queryId}
+                              insertStatements={message.analysis.insertStatements}
+                              onInsertSuccess={() => {
+                                // Refresh the message to show that data has been populated
+                                const updatedMessages = [...messages];
+                                const index = updatedMessages.findIndex(m => m.id === message.id);
+                                if (index >= 0) {
+                                  updatedMessages[index] = {
+                                    ...message,
+                                    content: "Data has been populated successfully. Please try your query again.",
+                                    noResults: false
+                                  };
+                                  setMessages(updatedMessages);
+                                }
+                              }}
+                            />
                           )}
                           
                           {message.queryId && (
