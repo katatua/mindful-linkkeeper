@@ -78,6 +78,10 @@ export const saveReport = async (report: Omit<AIGeneratedReport, 'id' | 'created
       report_type: report.report_type,
       file_url: report.file_url
     };
+    
+    // Save the report to session storage for later access
+    sessionStorage.setItem('currentReport', JSON.stringify(devReport));
+    
     return devReport;
   }
 };
@@ -119,7 +123,7 @@ export const deleteReport = async (id: string) => {
 export const extractVisualizations = (content: string | null): any[] => {
   if (!content) return [];
   
-  let contentToProcess: string = content;
+  let contentToProcess: string = typeof content === 'string' ? content : '';
   if (typeof content === 'object' && content._type === 'String' && content.value) {
     contentToProcess = content.value;
   }

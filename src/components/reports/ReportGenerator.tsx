@@ -173,7 +173,41 @@ export const ReportGenerator = () => {
         }, 1000);
       } catch (saveError) {
         console.error("Error saving report:", saveError);
-        throw saveError;
+        
+        // Handle the case where database save fails but we still have the report
+        const devReport = {
+          id: 'dev-report-' + Date.now(),
+          title,
+          content: fullReport,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: null,
+          language,
+          metadata: {
+            topic,
+            generationMethod: "step-by-step",
+            additionalInstructions: additionalInstructions || null
+          },
+          chart_data: chartData,
+          report_type: "AI Generated",
+          file_url: null
+        };
+        
+        // Save to session storage for viewing
+        sessionStorage.setItem('currentReport', JSON.stringify(devReport));
+        
+        // Show a warning but still allow viewing the report
+        toast({
+          title: language === 'pt' ? "Relatório gerado com limitações" : "Report generated with limitations",
+          description: language === 'pt' 
+            ? "O relatório foi gerado mas não pôde ser salvo no banco de dados. Você ainda pode visualizá-lo." 
+            : "The report was generated but couldn't be saved to the database. You can still view it.",
+          variant: "warning"
+        });
+        
+        setTimeout(() => {
+          navigate(`/ai-report/${devReport.id}`);
+        }, 1000);
       }
       
     } catch (error) {
