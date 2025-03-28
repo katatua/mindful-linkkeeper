@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and sample data
@@ -171,8 +170,50 @@ function isInvalidOrUnrecognizedQuery(query: string): boolean {
   return !(hasQueryWord && hasEntity);
 }
 
+// Define the response type for consistency
+export interface AIQueryResponse {
+  message: string;
+  sqlQuery: string;
+  results: any[] | null;
+  noResults: boolean;
+  queryId?: string;  // Make queryId optional but consistently defined in the type
+}
+
+// Helper function to create a consistent "no results" response
+function createNoResultsResponse(prompt: string, isInvalid: boolean): AIQueryResponse {
+  let message = '';
+  
+  if (isInvalid) {
+    message = `No results found for your query: "${prompt}". The query format is not recognized or the requested information doesn't match our database schema.`;
+  } else {
+    message = `No results found for your query: "${prompt}". The requested data is not currently in our database, but you can populate it using the button below.`;
+  }
+  
+  return {
+    message: message,
+    sqlQuery: '',
+    results: null,
+    noResults: true,
+    queryId: undefined  // Explicitly set to undefined for consistency
+  };
+}
+
+// Helper function to extract energy-related keywords from a query
+const extractEnergyKeywords = (query: string): string[] => {
+  const lowercaseQuery = query.toLowerCase();
+  
+  const energyTerms = [
+    'renewable energy', 'clean energy', 'green energy', 
+    'sustainable energy', 'alternative energy',
+    'solar', 'wind', 'hydro', 'biomass', 'geothermal',
+    'photovoltaic', 'renewable', 'clean power', 'green power'
+  ];
+  
+  return energyTerms.filter(term => lowercaseQuery.includes(term));
+};
+
 // Add function to handle database queries and AI responses
-export const generateResponse = async (prompt: string) => {
+export const generateResponse = async (prompt: string): Promise<AIQueryResponse> => {
   try {
     const energyKeywords = extractEnergyKeywords(prompt);
     
@@ -220,7 +261,8 @@ export const generateResponse = async (prompt: string) => {
           console.error('Error storing query history for failed request:', historyStoreError);
         }
         
-        return createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
+        const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
+        return noResultsResponse;
       }
 
       // Store successful queries in the database
@@ -252,7 +294,7 @@ export const generateResponse = async (prompt: string) => {
         const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
         return {
           ...noResultsResponse,
-          queryId
+          queryId: queryId || undefined
         };
       }
       
@@ -261,7 +303,7 @@ export const generateResponse = async (prompt: string) => {
         sqlQuery: data.sqlQuery || '',
         results: data.results || null,
         noResults: false,
-        queryId
+        queryId: queryId || undefined
       };
     } catch (geminiError) {
       console.error('Error with Gemini API:', geminiError);
@@ -296,44 +338,14 @@ export const generateResponse = async (prompt: string) => {
         console.error('Error storing query history for Gemini error:', historyError);
       }
       
-      return createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
+      const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
+      return noResultsResponse;
     }
   } catch (error) {
     console.error('Error generating response:', error);
-    return createNoResultsResponse(prompt, true);
+    const noResultsResponse = createNoResultsResponse(prompt, true);
+    return noResultsResponse;
   }
-};
-
-// Helper function to create a consistent "no results" response
-function createNoResultsResponse(prompt: string, isInvalid: boolean) {
-  let message = '';
-  
-  if (isInvalid) {
-    message = `No results found for your query: "${prompt}". The query format is not recognized or the requested information doesn't match our database schema.`;
-  } else {
-    message = `No results found for your query: "${prompt}". The requested data is not currently in our database, but you can populate it using the button below.`;
-  }
-  
-  return {
-    message: message,
-    sqlQuery: '',
-    results: null,
-    noResults: true  // Explicitly set this property
-  };
-}
-
-// Helper function to extract energy-related keywords from a query
-const extractEnergyKeywords = (query: string): string[] => {
-  const lowercaseQuery = query.toLowerCase();
-  
-  const energyTerms = [
-    'renewable energy', 'clean energy', 'green energy', 
-    'sustainable energy', 'alternative energy',
-    'solar', 'wind', 'hydro', 'biomass', 'geothermal',
-    'photovoltaic', 'renewable', 'clean power', 'green power'
-  ];
-  
-  return energyTerms.filter(term => lowercaseQuery.includes(term));
 };
 
 // Update interface for document classification

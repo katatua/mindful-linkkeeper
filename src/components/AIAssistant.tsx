@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue, AIQueryResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -60,9 +59,11 @@ export const AIAssistant: React.FC = () => {
     try {
       const response = await generateResponse(input);
       
-      // If the response indicates we need to save it to the database
-      let queryId = '';
-      if (!response.queryId) {
+      // Extract queryId from response (may be undefined)
+      const queryId = response.queryId;
+      
+      // If the response doesn't already include a queryId, try to save it to the database
+      if (!queryId) {
         try {
           const userAuth = await supabase.auth.getUser();
           const userId = userAuth.data?.user?.id;
@@ -78,16 +79,50 @@ export const AIAssistant: React.FC = () => {
           if (error) {
             console.error('Error storing query in database:', error);
           } else if (data && data.length > 0) {
-            queryId = data[0].id;
-            console.log('Query stored with ID:', queryId);
+            console.log('Query stored with ID:', data[0].id);
+            
+            const assistantMessage: Message = {
+              id: genId(),
+              content: response.message,
+              sqlQuery: response.sqlQuery,
+              results: response.results,
+              role: 'assistant',
+              noResults: response.noResults,
+              timestamp: new Date(),
+              queryId: data[0].id
+            };
+            
+            setMessages(prev => [...prev, assistantMessage]);
+            
+            const historyItem = {
+              id: assistantMessage.id,
+              question: input,
+              timestamp: new Date(),
+              result: {
+                message: response.message,
+                sqlQuery: response.sqlQuery,
+                results: response.results
+              },
+              isCorrect: null,
+              queryId: data[0].id
+            };
+            
+            try {
+              const existingHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
+              const updatedHistory = [historyItem, ...existingHistory];
+              localStorage.setItem('queryHistory', JSON.stringify(updatedHistory));
+            } catch (err) {
+              console.error('Error saving to localStorage:', err);
+            }
+            
+            return; // Exit early since we've handled the message creation
           }
         } catch (dbError) {
           console.error('Error saving to database:', dbError);
         }
-      } else {
-        queryId = response.queryId;
       }
       
+      // If we reach here, either we have a queryId from the response, or we failed to save one above
       const assistantMessage: Message = {
         id: genId(),
         content: response.message,
@@ -96,7 +131,7 @@ export const AIAssistant: React.FC = () => {
         role: 'assistant',
         noResults: response.noResults,
         timestamp: new Date(),
-        queryId
+        queryId: queryId // This can be undefined
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -111,7 +146,7 @@ export const AIAssistant: React.FC = () => {
           results: response.results
         },
         isCorrect: null,
-        queryId
+        queryId: queryId
       };
       
       try {
