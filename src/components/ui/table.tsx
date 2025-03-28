@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -114,24 +113,37 @@ const TableCell = React.forwardRef<
   // Format the content based on the cell type
   let content = props.children;
   
-  if (content && typeof content === 'string' || typeof content === 'number') {
+  if (content !== undefined && (typeof content === 'string' || typeof content === 'number')) {
     const value = Number(content);
     
     if (!isNaN(value)) {
-      if (percentage || (unit === 'percent' || unit === 'percent YoY' || unit === 'percent of GDP')) {
+      // Handle percentage units
+      if (percentage || (unit && (unit === 'percent' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
         content = `${value.toFixed(1)}%`;
-      } else if (currency || unit?.includes('EUR') || unit?.includes('million')) {
+      } 
+      // Handle currency/monetary units - only if explicitly marked as currency or unit contains EUR/million/billion
+      else if (currency || (unit && (unit.includes('EUR') || unit.includes('million') || unit.includes('billion')))) {
         content = new Intl.NumberFormat('pt-PT', { 
           style: 'currency', 
           currency: 'EUR',
           maximumFractionDigits: 0
         }).format(value);
-      } else if (score && (unit === 'score' || unit?.includes('index'))) {
+      } 
+      // Handle scores and indexes
+      else if (score || (unit && (unit === 'score' || unit.includes('index') || unit.includes('Index')))) {
         content = value.toFixed(1);
-      } else if (count || unit === 'count') {
+      } 
+      // Handle count values
+      else if (count || (unit && unit === 'count')) {
         content = value.toLocaleString('pt-PT');
-      } else if (energy && unit?.includes('MW')) {
+      } 
+      // Handle energy units
+      else if (energy || (unit && unit.includes('MW'))) {
         content = `${value.toLocaleString('pt-PT')} MW`;
+      }
+      // Keep original value for other units
+      else if (unit) {
+        content = `${value.toLocaleString('pt-PT')} ${unit}`;
       }
     }
   }
