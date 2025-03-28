@@ -17,7 +17,7 @@ export function Header({ children }: HeaderProps) {
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center gap-4">
           <HamburgerMenu />
-          <span className="font-semibold text-lg">ANI Portal</span>
+          <span className="font-semibold text-lg">ANI GENAI PORTAL</span>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" asChild>
