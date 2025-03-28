@@ -416,9 +416,13 @@ export const DatabasePage: React.FC = () => {
       columnName.toLowerCase().includes('funding') ||
       columnName.toLowerCase().includes('cost') ||
       columnName.toLowerCase().includes('price') ||
-      columnName.toLowerCase().includes('total') ||
-      columnName.toLowerCase().includes('value') ||
-      columnName.toLowerCase().includes('contribution')
+      columnName.toLowerCase().includes('value') || 
+      columnName.toLowerCase().includes('contribution') ||
+      !(columnName.toLowerCase().includes('count') || 
+        columnName.toLowerCase().includes('total_collaborations') ||
+        columnName.toLowerCase().includes('number') ||
+        columnName.toLowerCase().includes('qty') ||
+        columnName.toLowerCase().includes('quantity'))
     )) {
       return new Intl.NumberFormat('pt-PT', { 
         style: 'currency', 

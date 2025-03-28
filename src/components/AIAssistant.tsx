@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -161,15 +162,21 @@ export const AIAssistant: React.FC = () => {
       return JSON.stringify(value);
     }
     
+    // More precise check for monetary columns
     if (typeof value === 'number' && columnName && (
       columnName.toLowerCase().includes('budget') || 
       columnName.toLowerCase().includes('amount') || 
       columnName.toLowerCase().includes('funding') ||
       columnName.toLowerCase().includes('cost') ||
       columnName.toLowerCase().includes('price') ||
-      columnName.toLowerCase().includes('total') ||
-      columnName.toLowerCase().includes('value') ||
-      columnName.toLowerCase().includes('contribution')
+      columnName.toLowerCase().includes('value') || 
+      columnName.toLowerCase().includes('contribution') ||
+      // Exclude columns that commonly have counts but could include monetary terms
+      !(columnName.toLowerCase().includes('count') || 
+        columnName.toLowerCase().includes('total_collaborations') ||
+        columnName.toLowerCase().includes('number') ||
+        columnName.toLowerCase().includes('qty') ||
+        columnName.toLowerCase().includes('quantity'))
     )) {
       return new Intl.NumberFormat('pt-PT', { 
         style: 'currency', 
