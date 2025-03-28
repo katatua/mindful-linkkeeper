@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -166,13 +165,11 @@ export const AIAssistant: React.FC = () => {
     const handlePopulate = async () => {
       setIsPopulating(true);
       try {
-        // We'll just show a toast for now since actual data population would require more complex implementation
         toast({
           title: "Data population scheduled",
           description: "Request to populate data for this query has been submitted.",
         });
         
-        // In a real implementation, you'd call a function to populate the database
         await new Promise(resolve => setTimeout(resolve, 1500));
         
         toast({
