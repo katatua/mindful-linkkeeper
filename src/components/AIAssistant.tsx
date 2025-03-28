@@ -60,28 +60,32 @@ export const AIAssistant: React.FC = () => {
     try {
       const response = await generateResponse(input);
       
-      // Save to database via query_history if it isn't already being saved within generateResponse
+      // If the response indicates we need to save it to the database
       let queryId = '';
-      try {
-        const userAuth = await supabase.auth.getUser();
-        const userId = userAuth.data?.user?.id;
-        
-        const { data, error } = await supabase.from('query_history').insert({
-          query_text: input,
-          user_id: userId || null,
-          was_successful: response.results && response.results.length > 0,
-          language: 'en',
-          error_message: response.results && response.results.length > 0 ? null : "No results found"
-        }).select('id');
-        
-        if (error) {
-          console.error('Error storing query in database:', error);
-        } else if (data && data.length > 0) {
-          queryId = data[0].id;
-          console.log('Query stored with ID:', queryId);
+      if (!response.queryId) {
+        try {
+          const userAuth = await supabase.auth.getUser();
+          const userId = userAuth.data?.user?.id;
+          
+          const { data, error } = await supabase.from('query_history').insert({
+            query_text: input,
+            user_id: userId || null,
+            was_successful: response.results && response.results.length > 0,
+            language: 'en',
+            error_message: response.results && response.results.length > 0 ? null : "No results found"
+          }).select('id');
+          
+          if (error) {
+            console.error('Error storing query in database:', error);
+          } else if (data && data.length > 0) {
+            queryId = data[0].id;
+            console.log('Query stored with ID:', queryId);
+          }
+        } catch (dbError) {
+          console.error('Error saving to database:', dbError);
         }
-      } catch (dbError) {
-        console.error('Error saving to database:', dbError);
+      } else {
+        queryId = response.queryId;
       }
       
       const assistantMessage: Message = {

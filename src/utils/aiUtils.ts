@@ -189,41 +189,113 @@ export const generateResponse = async (prompt: string) => {
 
       if (error) {
         console.error('Error invoking Gemini Chat function:', error);
+        
+        // Store the query in the database even when it fails
+        try {
+          const userResponse = await supabase.auth.getUser();
+          const userId = userResponse.data?.user?.id;
+          
+          const { data: queryData, error: queryError } = await supabase.from('query_history').insert({
+            query_text: prompt,
+            user_id: userId || null,
+            was_successful: false,
+            language: 'en',
+            error_message: "Error invoking AI function: " + error.message,
+            created_tables: null
+          }).select('id');
+          
+          if (queryError) {
+            console.error('Error storing failed query:', queryError);
+          } else if (queryData && queryData.length > 0) {
+            console.log('Failed query stored with ID:', queryData[0].id);
+            return {
+              message: `Sorry, there was an error processing your query: ${error.message}. Your query has been saved for review.`,
+              sqlQuery: '',
+              results: null,
+              noResults: true,
+              queryId: queryData[0].id
+            };
+          }
+        } catch (historyStoreError) {
+          console.error('Error storing query history for failed request:', historyStoreError);
+        }
+        
         return createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
       }
 
+      // Store successful queries in the database
+      let queryId = '';
       try {
         const userResponse = await supabase.auth.getUser();
         const userId = userResponse.data?.user?.id;
         
-        const { error: historyError } = await supabase.from('query_history').insert({
+        const { data: queryData, error: historyError } = await supabase.from('query_history').insert({
           query_text: prompt,
           user_id: userId || null,
           was_successful: data.results && data.results.length > 0,
           language: 'en',
           error_message: data.results && data.results.length > 0 ? null : "No results found",
           created_tables: null
-        });
+        }).select('id');
 
         if (historyError) {
           console.error('Error storing query history:', historyError);
+        } else if (queryData && queryData.length > 0) {
+          queryId = queryData[0].id;
+          console.log('Query stored with ID:', queryId);
         }
       } catch (historyStoreError) {
         console.error('Error storing query history:', historyStoreError);
       }
       
       if (!data.results || data.results.length === 0) {
-        return createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
+        const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
+        return {
+          ...noResultsResponse,
+          queryId
+        };
       }
       
       return {
         message: data.response || 'Sorry, I could not process your query.',
         sqlQuery: data.sqlQuery || '',
         results: data.results || null,
-        noResults: false  // Explicitly add this property
+        noResults: false,
+        queryId
       };
     } catch (geminiError) {
       console.error('Error with Gemini API:', geminiError);
+      
+      // Try to save a record of the failed query
+      try {
+        const userResponse = await supabase.auth.getUser();
+        const userId = userResponse.data?.user?.id;
+        
+        const { data: queryData, error: queryError } = await supabase.from('query_history').insert({
+          query_text: prompt,
+          user_id: userId || null,
+          was_successful: false,
+          language: 'en',
+          error_message: "Gemini API error: " + (geminiError instanceof Error ? geminiError.message : String(geminiError)),
+          created_tables: null
+        }).select('id');
+        
+        if (queryError) {
+          console.error('Error storing failed Gemini query:', queryError);
+        } else if (queryData && queryData.length > 0) {
+          console.log('Failed Gemini query stored with ID:', queryData[0].id);
+          return {
+            message: `Sorry, there was an error with the AI service. Your query has been saved for review.`,
+            sqlQuery: '',
+            results: null,
+            noResults: true,
+            queryId: queryData[0].id
+          };
+        }
+      } catch (historyError) {
+        console.error('Error storing query history for Gemini error:', historyError);
+      }
+      
       return createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
     }
   } catch (error) {

@@ -14,12 +14,21 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query })
   const { toast } = useToast();
   
   const handlePopulate = async () => {
+    if (!query.trim()) {
+      toast({
+        title: "Error",
+        description: "Cannot request data for an empty query.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsPopulating(true);
     try {
       // Save the query to query_history table with a special flag for data population requests
       const { data, error } = await supabase.from('query_history').insert({
         query_text: query,
-        was_successful: false,
+        was_successful: false, // Mark as unsuccessful since we're just requesting data
         language: 'en',
         error_message: "No results - data population requested",
         created_tables: null // Will be filled in by the admin when creating the tables
@@ -27,7 +36,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query })
       
       if (error) {
         console.error("Error saving query for population:", error);
-        throw new Error("Failed to save query for data population");
+        throw new Error(`Failed to save query for data population: ${error.message}`);
       }
       
       toast({
@@ -48,7 +57,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query })
       console.error("Error scheduling data population:", error);
       toast({
         title: "Error",
-        description: "Failed to schedule data population. Please try again.",
+        description: `Failed to schedule data population: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
