@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { suggestedDatabaseQuestions, formatDatabaseValue } from '@/utils/aiUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronRight, Database as DatabaseIcon, FileQuestion, Search, FileText, History, X } from 'lucide-react';
+import { Check, ChevronRight, Database as DatabaseIcon, FileQuestion, Search, FileText, History, X, PlusCircle } from 'lucide-react';
 import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
@@ -505,6 +505,12 @@ export const DatabasePage: React.FC = () => {
     );
   };
 
+  const resetQueryState = () => {
+    setActiveQuestion('');
+    setQueryResult(null);
+    setIsQueryLoading(false);
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
@@ -579,8 +585,17 @@ export const DatabasePage: React.FC = () => {
                   </Card>
                 ) : queryResult ? (
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>Query Result</CardTitle>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={resetQueryState}
+                        className="flex items-center gap-1"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-1" />
+                        New Query
+                      </Button>
                     </CardHeader>
                     <CardContent>
                       <Tabs defaultValue="resposta" className="w-full">

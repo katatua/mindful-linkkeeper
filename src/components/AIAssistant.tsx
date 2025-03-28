@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database } from 'lucide-react';
+import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle } from 'lucide-react';
 import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -110,6 +111,12 @@ export const AIAssistant: React.FC = () => {
     setShowSuggestions(false);
   };
 
+  const resetConversation = () => {
+    setMessages([]);
+    setInput('');
+    setShowSuggestions(false);
+  };
+
   const renderResults = (results: any[] | null) => {
     if (!results || results.length === 0) {
       return <p className="text-gray-500 italic">No results found</p>;
@@ -152,14 +159,27 @@ export const AIAssistant: React.FC = () => {
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>AI Database Assistant</CardTitle>
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={() => setShowSuggestions(!showSuggestions)}
-          aria-label="Show example questions"
-        >
-          <HelpCircle className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          {messages.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={resetConversation}
+              className="flex items-center gap-1"
+            >
+              <PlusCircle className="h-4 w-4 mr-1" />
+              New Query
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            aria-label="Show example questions"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {showSuggestions && (
