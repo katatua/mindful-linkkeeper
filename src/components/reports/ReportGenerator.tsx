@@ -39,6 +39,7 @@ export const ReportGenerator = () => {
   };
 
   const handleGenerate = async () => {
+    console.log("Generate button clicked");
     if (!topic.trim()) {
       toast({
         title: language === 'pt' ? "Tópico necessário" : "Topic required",
@@ -54,14 +55,17 @@ export const ReportGenerator = () => {
     resetState();
     
     try {
+      console.log("Starting report generation process");
       // Step 1: Generate topics
       setCurrentStep(language === 'pt' ? "Gerando estrutura do relatório..." : "Generating report structure...");
       setGenerationProgress(10);
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Generating topics for:", topic);
       
       const generatedTopics = generateReportTopics(topic, language);
+      console.log("Generated topics:", generatedTopics);
       setTopics(generatedTopics);
       setGenerationProgress(25);
       setCurrentTopicIndex(0);
@@ -78,11 +82,13 @@ export const ReportGenerator = () => {
             : `Generating content for: ${topicItem.title}...`
         );
         
+        console.log("Generating content for topic:", topicItem.title);
         // Simulate API delay for each topic
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         const topicContent = generateTopicContent(topicItem, topic, language);
         contents.push(topicContent);
+        console.log("Generated content length:", topicContent.length);
         
         // Update progress - distribute remaining 65% across all topics
         const progressIncrement = 65 / generatedTopics.length;
@@ -103,7 +109,9 @@ export const ReportGenerator = () => {
         ? `Relatório sobre ${topic} - ${new Date().toLocaleDateString('pt-BR')}` 
         : `Report on ${topic} - ${new Date().toLocaleDateString()}`;
       
+      console.log("Assembling full report with title:", title);
       const fullReport = assembleFullReport(title, generatedTopics, contents);
+      console.log("Full report assembled, length:", fullReport.length);
       
       // Generate chart data
       const chartData = {
@@ -124,35 +132,43 @@ export const ReportGenerator = () => {
       };
       
       // Save the report
-      const savedReport = await saveReport({
-        title,
-        content: fullReport,
-        language,
-        user_id: null,
-        metadata: {
-          topic,
-          generationMethod: "step-by-step",
-          additionalInstructions: additionalInstructions || null
-        },
-        chart_data: chartData,
-        report_type: "AI Generated",
-        file_url: null
-      });
-      
-      setGenerationProgress(100);
-      setCurrentStep(language === 'pt' ? "Relatório concluído!" : "Report completed!");
-      
-      toast({
-        title: language === 'pt' ? "Relatório gerado com sucesso!" : "Report generated successfully!",
-        description: language === 'pt' 
-          ? "Seu relatório foi criado e está pronto para visualização" 
-          : "Your report has been created and is ready for viewing"
-      });
-      
-      // Navigate to the report detail page
-      setTimeout(() => {
-        navigate(`/ai-report/${savedReport.id}`);
-      }, 1000);
+      console.log("Saving report to database");
+      try {
+        const savedReport = await saveReport({
+          title,
+          content: fullReport,
+          language,
+          user_id: null,
+          metadata: {
+            topic,
+            generationMethod: "step-by-step",
+            additionalInstructions: additionalInstructions || null
+          },
+          chart_data: chartData,
+          report_type: "AI Generated",
+          file_url: null
+        });
+        
+        console.log("Report saved successfully with ID:", savedReport.id);
+        setGenerationProgress(100);
+        setCurrentStep(language === 'pt' ? "Relatório concluído!" : "Report completed!");
+        
+        toast({
+          title: language === 'pt' ? "Relatório gerado com sucesso!" : "Report generated successfully!",
+          description: language === 'pt' 
+            ? "Seu relatório foi criado e está pronto para visualização" 
+            : "Your report has been created and is ready for viewing"
+        });
+        
+        // Navigate to the report detail page
+        setTimeout(() => {
+          console.log("Navigating to report detail page:", savedReport.id);
+          navigate(`/ai-report/${savedReport.id}`);
+        }, 1000);
+      } catch (saveError) {
+        console.error("Error saving report:", saveError);
+        throw saveError;
+      }
       
     } catch (error) {
       console.error("Error generating report:", error);

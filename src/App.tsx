@@ -38,7 +38,7 @@ function App() {
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/reports/ai/:id" element={<AIReportDetail />} />
+                <Route path="/ai-report/:id" element={<AIReportDetail />} />
                 <Route path="/policies" element={<PoliciesPage />} />
                 <Route path="/assistant" element={<AIAssistant />} />
               </Route>
