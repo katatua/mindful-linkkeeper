@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 
@@ -118,11 +119,14 @@ export const deleteReport = async (id: string) => {
 export const extractVisualizations = (content: string | null): any[] => {
   if (!content) return [];
   
+  let contentToProcess = content;
   if (typeof content === 'object' && content._type === 'String' && content.value) {
-    content = content.value;
+    contentToProcess = content.value;
   }
   
-  const visualizationMarkers = content.match(/\[Visualization:[^\]]+\]/g) || [];
+  if (typeof contentToProcess !== 'string') return [];
+  
+  const visualizationMarkers = contentToProcess.match(/\[Visualization:[^\]]+\]/g) || [];
   console.log("Found visualization markers:", visualizationMarkers.length);
   
   return visualizationMarkers.map(marker => {
