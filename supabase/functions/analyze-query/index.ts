@@ -34,10 +34,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get database schema information
+    // Get database schema information using the newly created function
     const { data: tableList, error: tableError } = await supabase.rpc('get_database_tables');
     
     if (tableError) {
+      console.error('Error fetching database tables:', tableError);
       throw new Error(`Failed to fetch database tables: ${tableError.message}`);
     }
     

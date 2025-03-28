@@ -1,5 +1,5 @@
 
--- Function to safely execute SQL queries with restrictions (only SELECTs allowed)
+-- Function to safely execute SQL queries (now supporting INSERT statements)
 CREATE OR REPLACE FUNCTION public.execute_sql_query(sql_query text)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -7,21 +7,23 @@ SECURITY DEFINER
 AS $$
 DECLARE
   result JSONB;
-  clean_query text;
+  statement_type text;
 BEGIN
-  -- Validate that the query is a SELECT statement
-  IF NOT (lower(btrim(sql_query)) LIKE 'select%') THEN
-    RAISE EXCEPTION 'Only SELECT queries are allowed';
+  -- Extract the first word to determine statement type
+  statement_type := lower(split_part(btrim(sql_query), ' ', 1));
+  
+  -- Handle different statement types
+  IF statement_type = 'select' THEN
+    -- For SELECT: return results as JSON
+    EXECUTE 'SELECT json_agg(t) FROM (' || sql_query || ') t' INTO result;
+    RETURN COALESCE(result, '[]'::jsonb);
+  ELSIF statement_type = 'insert' THEN
+    -- For INSERT: execute and return success message
+    EXECUTE sql_query;
+    RETURN jsonb_build_object('status', 'success', 'message', 'Insert completed successfully');
+  ELSE
+    RAISE EXCEPTION 'Only SELECT and INSERT statements are allowed';
   END IF;
-  
-  -- Clean the query by removing all semicolons
-  clean_query := regexp_replace(sql_query, ';', '', 'g');
-  
-  -- Execute the query and get results as JSON
-  EXECUTE 'SELECT json_agg(t) FROM (' || clean_query || ') t' INTO result;
-  
-  -- Return empty array instead of null
-  RETURN COALESCE(result, '[]'::jsonb);
 END;
 $$;
 

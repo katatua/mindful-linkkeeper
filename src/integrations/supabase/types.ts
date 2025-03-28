@@ -1421,6 +1421,7 @@ export type Database = {
       }
       query_history: {
         Row: {
+          analysis_result: Json | null
           created_tables: string[] | null
           error_message: string | null
           id: string
@@ -1431,6 +1432,7 @@ export type Database = {
           was_successful: boolean
         }
         Insert: {
+          analysis_result?: Json | null
           created_tables?: string[] | null
           error_message?: string | null
           id?: string
@@ -1441,6 +1443,7 @@ export type Database = {
           was_successful?: boolean
         }
         Update: {
+          analysis_result?: Json | null
           created_tables?: string[] | null
           error_message?: string | null
           id?: string
@@ -1862,6 +1865,10 @@ export type Database = {
           setting_key: string
         }
         Returns: string
+      }
+      get_database_tables: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       gtrgm_compress: {
         Args: {
