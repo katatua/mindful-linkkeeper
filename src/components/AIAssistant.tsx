@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -235,7 +236,16 @@ export const AIAssistant: React.FC = () => {
                         </TabsList>
                         
                         <TabsContent value="resposta">
-                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          <div className="whitespace-pre-wrap">
+                            {message.results && message.results.length > 0 ? (
+                              <div>
+                                <div className="font-medium text-primary mb-4">{message.content.split('\n')[0]}</div>
+                                {renderResults(message.results)}
+                              </div>
+                            ) : (
+                              message.content
+                            )}
+                          </div>
                         </TabsContent>
                         
                         <TabsContent value="detalhes">

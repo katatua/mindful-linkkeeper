@@ -605,7 +605,32 @@ export const DatabasePage: React.FC = () => {
                           <div className="bg-gray-50 p-4 rounded-md border">
                             <div className="font-semibold mb-2 text-primary">{activeQuestion}</div>
                             
-                            <div className="whitespace-pre-wrap">{queryResult.message}</div>
+                            {queryResult.results && queryResult.results.length > 0 ? (
+                              <div className="overflow-x-auto border rounded-md">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      {Object.keys(queryResult.results[0]).map((column) => (
+                                        <TableHead key={column}>{column}</TableHead>
+                                      ))}
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {queryResult.results.map((row, rowIndex) => (
+                                      <TableRow key={rowIndex}>
+                                        {Object.entries(row).map(([column, value]) => (
+                                          <TableCell key={`${rowIndex}-${column}`}>
+                                            {renderCellValue(value)}
+                                          </TableCell>
+                                        ))}
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <div className="whitespace-pre-wrap">{queryResult.message}</div>
+                            )}
                           </div>
                         </TabsContent>
                         
