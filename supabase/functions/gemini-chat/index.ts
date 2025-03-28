@@ -1,4 +1,3 @@
-
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -57,49 +56,22 @@ async function getAIModel(): Promise<string> {
 }
 
 function formatNaturalLanguageResponse(originalQuestion: string, message: string, results: any[] | null, sqlQuery: string): string {
-  // Show the original question at the beginning of the response
+  // Start with the original question
   let formattedResponse = `${originalQuestion}\n`;
   
-  // Add the introductory message/answer
-  formattedResponse += `${message.trim()}\n\n`;
+  // Add a brief introductory line from the message (just the first sentence or two)
+  const briefIntro = message.split('.')[0] + '.';
+  formattedResponse += `${briefIntro}\n\n`;
   
-  // If there are no results, show a message
+  // If there are no results, show a message and return early
   if (!results || results.length === 0) {
     return `${formattedResponse}**Não foram encontrados resultados para esta consulta.**`;
   }
   
-  // Add domain-specific context if relevant
-  if (message.includes("energia renovável") || 
-      sqlQuery.toLowerCase().includes("energy") || 
-      sqlQuery.toLowerCase().includes("renewable")) {
-    formattedResponse += "**Informações adicionais:**\n";
-    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
-  }
+  // Add the Results section immediately after the brief intro
+  formattedResponse += "**Resultados:**\n";
   
-  // Add a summary section with formatted results
-  formattedResponse += "**Resumo dos Resultados:**\n\n";
-  
-  // Add bullet points for each result
-  results.forEach((item, index) => {
-    const itemDetails = Object.entries(item)
-      .map(([key, value]) => {
-        if (value === null || value === undefined) return null;
-        if (Array.isArray(value)) return `${key}: ${value.join(', ')}`;
-        return `${key}: ${value}`;
-      })
-      .filter(Boolean)
-      .join(', ');
-    
-    formattedResponse += `• Resultado ${index + 1}: ${itemDetails}\n`;
-  });
-  
-  // Add the SQL query
-  formattedResponse += `SQL Query:\n${sqlQuery}\n`;
-  
-  // Add a clear "Results:" section to match the image formatting
-  formattedResponse += "Results:\n";
-  
-  // Create a formatted table header for the results
+  // Create a formatted table header for the results right at the top
   if (results.length > 0) {
     const headers = Object.keys(results[0]);
     formattedResponse += headers.join('\t') + '\n';
@@ -116,10 +88,39 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     });
   }
   
+  // Add the full explanatory text after the results table
+  formattedResponse += `\n${message.substring(briefIntro.length).trim()}\n\n`;
+  
+  // Add domain-specific context if relevant
+  if (message.includes("energia renovável") || 
+      sqlQuery.toLowerCase().includes("energy") || 
+      sqlQuery.toLowerCase().includes("renewable")) {
+    formattedResponse += "**Informações adicionais:**\n";
+    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
+  }
+  
+  // Add a summary section with formatted results as bullet points
+  formattedResponse += "**Resumo dos Resultados:**\n\n";
+  
+  results.forEach((item, index) => {
+    const itemDetails = Object.entries(item)
+      .map(([key, value]) => {
+        if (value === null || value === undefined) return null;
+        if (Array.isArray(value)) return `${key}: ${value.join(', ')}`;
+        return `${key}: ${value}`;
+      })
+      .filter(Boolean)
+      .join(', ');
+    
+    formattedResponse += `• Resultado ${index + 1}: ${itemDetails}\n`;
+  });
+  
+  // Add the SQL query
+  formattedResponse += `\nSQL Query:\n${sqlQuery}\n`;
+  
   return formattedResponse;
 }
 
-// Add specific knowledge about renewable energy programs
 function getEnhancedSystemPrompt() {
   return `
 You are an AI database assistant that helps users query and understand data in a research and innovation database.
