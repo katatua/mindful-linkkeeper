@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ReportsList } from "@/components/reports/ReportsList";
 import { ReportTemplates } from "@/components/reports/ReportTemplates";
 import { ScheduledReports } from "@/components/reports/ScheduledReports";
+import { ReportGenerator } from "@/components/reports/ReportGenerator";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 
@@ -199,6 +200,7 @@ const ReportsPage = () => {
           <TabsTrigger value="templates">Report Templates</TabsTrigger>
           <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
           <TabsTrigger value="custom">Custom Reports</TabsTrigger>
+          <TabsTrigger value="ai-generator">AI Report Generator</TabsTrigger>
         </TabsList>
         
         <TabsContent value="recent">
@@ -453,6 +455,10 @@ const ReportsPage = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-generator">
+          <ReportGenerator />
         </TabsContent>
       </Tabs>
     </div>
