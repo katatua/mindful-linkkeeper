@@ -49,6 +49,105 @@ export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
+// Add utility function to detect and clean numeric values
+export const formatDatabaseValue = (value: any, columnName?: string): any => {
+  if (value === null || value === undefined) {
+    return 'N/A';
+  }
+  
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  
+  // If it's already a number, just return it
+  if (typeof value === 'number') {
+    if (columnName && isMonetaryColumn(columnName)) {
+      return new Intl.NumberFormat('pt-PT', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
+    }
+    return value;
+  }
+  
+  // Try to handle string values that might contain numbers with currency symbols
+  if (typeof value === 'string') {
+    // Clean the string from currency symbols and spaces
+    const cleanValue = value.trim().replace(/[€$£\s]/g, '');
+    
+    // Check if it's a valid number after cleaning
+    if (!isNaN(Number(cleanValue)) && cleanValue !== '') {
+      const numValue = Number(cleanValue);
+      
+      // If column suggests monetary value or originally had currency symbol, format it
+      if (value.includes('€') || value.includes('$') || value.includes('£') || 
+          (columnName && isMonetaryColumn(columnName))) {
+        return new Intl.NumberFormat('pt-PT', { 
+          style: 'currency', 
+          currency: 'EUR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(numValue);
+      }
+      
+      // Otherwise, return the clean number
+      return numValue;
+    }
+  }
+  
+  // If all else fails, return the original value as string
+  return String(value);
+};
+
+// Helper function to check if a column should be treated as monetary value
+export const isMonetaryColumn = (columnName: string): boolean => {
+  const monetaryTerms = [
+    'budget', 
+    'amount', 
+    'funding', 
+    'cost',
+    'price',
+    'value', 
+    'contribution',
+    'investment',
+    'expense',
+    'revenue',
+    'income'
+  ];
+  
+  const nonMonetaryTerms = [
+    'count',
+    'total_collaborations',
+    'number',
+    'qty',
+    'quantity'
+  ];
+  
+  const colName = columnName.toLowerCase();
+  
+  // First check if it's explicitly a non-monetary column despite containing monetary terms
+  for (const term of nonMonetaryTerms) {
+    if (colName.includes(term)) {
+      return false;
+    }
+  }
+  
+  // Then check if it's a monetary column
+  for (const term of monetaryTerms) {
+    if (colName.includes(term)) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
 // Add function to directly execute SQL query when AI service is unavailable
 const executeFallbackQuery = async (query: string) => {
   try {

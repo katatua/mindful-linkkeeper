@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, getTable } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Table, 
@@ -14,10 +14,10 @@ import { Layout } from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AIAssistant } from '@/components/AIAssistant';
 import { Input } from '@/components/ui/input';
-import { suggestedDatabaseQuestions } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, formatDatabaseValue } from '@/utils/aiUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronRight, Database, FileQuestion, Search, Database as DatabaseIcon, FileText, History, X } from 'lucide-react';
+import { Check, ChevronRight, Database as DatabaseIcon, FileQuestion, Search, FileText, History, X } from 'lucide-react';
 import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
@@ -386,7 +386,7 @@ export const DatabasePage: React.FC = () => {
               <TableRow key={index}>
                 {columns.map(col => (
                   <TableCell key={col}>
-                    {renderCellValue(item[col], col)}
+                    {formatDatabaseValue(item[col], col)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -395,48 +395,6 @@ export const DatabasePage: React.FC = () => {
         </Table>
       </div>
     );
-  };
-
-  const renderCellValue = (value: any, columnName?: string) => {
-    if (value === null || value === undefined) {
-      return 'N/A';
-    }
-    
-    if (Array.isArray(value)) {
-      return value.join(', ');
-    }
-    
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    
-    if (typeof value === 'number' && columnName && (
-      columnName.toLowerCase().includes('budget') || 
-      columnName.toLowerCase().includes('amount') || 
-      columnName.toLowerCase().includes('funding') ||
-      columnName.toLowerCase().includes('cost') ||
-      columnName.toLowerCase().includes('price') ||
-      columnName.toLowerCase().includes('value') || 
-      columnName.toLowerCase().includes('contribution') ||
-      !(columnName.toLowerCase().includes('count') || 
-        columnName.toLowerCase().includes('total_collaborations') ||
-        columnName.toLowerCase().includes('number') ||
-        columnName.toLowerCase().includes('qty') ||
-        columnName.toLowerCase().includes('quantity'))
-    )) {
-      return new Intl.NumberFormat('pt-PT', { 
-        style: 'currency', 
-        currency: 'EUR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(value);
-    }
-    
-    return String(value);
-  };
-
-  const handleTableChange = (table: string) => {
-    setActiveTable(table);
   };
 
   const renderAIModelInfo = () => (
@@ -562,7 +520,7 @@ export const DatabasePage: React.FC = () => {
               Fontes de Dados
             </TabsTrigger>
             <TabsTrigger value="schema">
-              <Database className="w-4 h-4 mr-2" />
+              <DatabaseIcon className="w-4 h-4 mr-2" />
               Database Schema
             </TabsTrigger>
             <TabsTrigger value="data">

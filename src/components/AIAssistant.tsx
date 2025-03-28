@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, HelpCircle, Code, Database } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -133,7 +132,7 @@ export const AIAssistant: React.FC = () => {
               <TableRow key={rowIndex}>
                 {columns.map(column => (
                   <TableCell key={`${rowIndex}-${column}`}>
-                    {renderCellValue(row[column], column)}
+                    {formatDatabaseValue(row[column], column)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -149,46 +148,6 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
-  const renderCellValue = (value: any, columnName?: string) => {
-    if (value === null || value === undefined) {
-      return 'N/A';
-    }
-    
-    if (Array.isArray(value)) {
-      return value.join(', ');
-    }
-    
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    
-    // More precise check for monetary columns
-    if (typeof value === 'number' && columnName && (
-      columnName.toLowerCase().includes('budget') || 
-      columnName.toLowerCase().includes('amount') || 
-      columnName.toLowerCase().includes('funding') ||
-      columnName.toLowerCase().includes('cost') ||
-      columnName.toLowerCase().includes('price') ||
-      columnName.toLowerCase().includes('value') || 
-      columnName.toLowerCase().includes('contribution') ||
-      // Exclude columns that commonly have counts but could include monetary terms
-      !(columnName.toLowerCase().includes('count') || 
-        columnName.toLowerCase().includes('total_collaborations') ||
-        columnName.toLowerCase().includes('number') ||
-        columnName.toLowerCase().includes('qty') ||
-        columnName.toLowerCase().includes('quantity'))
-    )) {
-      return new Intl.NumberFormat('pt-PT', { 
-        style: 'currency', 
-        currency: 'EUR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(value);
-    }
-    
-    return String(value);
-  };
-  
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
