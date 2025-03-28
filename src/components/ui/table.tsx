@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -121,8 +122,15 @@ const TableCell = React.forwardRef<
       if (percentage || (unit && (unit === 'percent' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
         content = `${value.toFixed(1)}%`;
       } 
-      // Handle currency/monetary units - only if explicitly marked as currency or unit contains EUR/million/billion
-      else if (currency || (unit && (unit.includes('EUR') || unit.includes('million') || unit.includes('billion')))) {
+      // Handle currency/monetary units - strictly only for actual currency values
+      else if (currency || (unit && (
+        unit === 'million EUR' || 
+        unit === 'billion EUR' || 
+        unit === 'EUR' || 
+        unit.includes('budget') ||
+        unit.includes('funding') ||
+        unit.includes('investment')
+      ))) {
         content = new Intl.NumberFormat('pt-PT', { 
           style: 'currency', 
           currency: 'EUR',
