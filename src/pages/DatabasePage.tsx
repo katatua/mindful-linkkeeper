@@ -566,6 +566,31 @@ export const DatabasePage: React.FC = () => {
     );
   };
 
+  const renderAIModelInfo = () => (
+    <div className="text-sm flex items-center gap-2">
+      <span className="text-gray-500">Current AI Model:</span>
+      <Select value={currentAIModel} onValueChange={handleModelChange}>
+        <SelectTrigger className="h-8 w-64 text-xs font-mono">
+          <SelectValue placeholder="Select model" />
+        </SelectTrigger>
+        <SelectContent>
+          {currentProvider === 'gemini' ? (
+            <>
+              <SelectItem value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</SelectItem>
+              <SelectItem value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</SelectItem>
+              <SelectItem value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</SelectItem>
+            </>
+          ) : (
+            <>
+              <SelectItem value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</SelectItem>
+              <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+            </>
+          )}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
