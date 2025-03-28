@@ -70,7 +70,7 @@ export function AppSidebar() {
     <div className="fixed h-full z-40 bg-white border-r shadow-lg w-64">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">ANI Portal</h2>
+          <h2 className="text-xl font-bold">Menu</h2>
           <Button variant="ghost" size="sm" onClick={toggle}>
             ←
           </Button>
