@@ -148,13 +148,23 @@ For SQL queries, make sure to REMOVE ANY SEMICOLONS from the end of the query.
 
 Your main goal is to provide CLEAR INSIGHTS about the data, not just raw data. Explain patterns, notable details, and summarize the information.
 
+For energy/renewable energy topics, be flexible in your search. Consider these variations:
+- For ENERGY searches include 'renewable energy', 'clean energy', 'green energy', 'sustainable energy', 'alternative energy'
+- For specific TECHNOLOGIES include 'solar', 'wind', 'hydro', 'hydroelectric', 'biomass', 'geothermal', 'tidal'
+- Other relevant terms: 'photovoltaic', 'renewable', 'clean power', 'green power', 'sustainability'
+
+When searching for renewable energy in arrays, use the ILIKE operator with wildcards for partial matching.
+
 Here are examples of questions users might ask and how to respond:
 1. Q: "Show me funding programs for renewable energy"
    A: Aqui estão os programas de financiamento relacionados à energia renovável:
       <SQL>
       SELECT name, description, total_budget, application_deadline
       FROM ani_funding_programs
-      WHERE 'renewable energy' = ANY(sector_focus)
+      WHERE ARRAY_TO_STRING(sector_focus, ',') ILIKE '%renewable%' 
+         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energy%'
+         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%solar%'
+         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%wind%'
       </SQL>
       
 2. Q: "What is the average funding amount for biotech projects?"
@@ -175,7 +185,7 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { prompt, chatHistory = [] } = await req.json();
+    const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
     
     // Get the AI model to use
     const model = await getAIModel();
@@ -183,6 +193,15 @@ serve(async (req) => {
 
     // Create a system prompt that explains the database schema
     const systemPrompt = getEnhancedSystemPrompt();
+
+    // If this is a renewable energy query, add extra context to the user prompt
+    const energyKeywords = additionalContext.energyKeywords || [];
+    let enhancedPrompt = prompt;
+    
+    if (energyKeywords.length > 0) {
+      console.log("Energy-related query detected with keywords:", energyKeywords);
+      enhancedPrompt = `${prompt}\n\nNote: This query is about renewable energy. Consider these related terms when searching the database: ${energyKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
+    }
 
     // Construct the conversation
     const messages = [
@@ -193,7 +212,7 @@ serve(async (req) => {
         parts: [{ text: msg.content }],
       })),
       // Add the new user prompt
-      { role: "user", parts: [{ text: prompt }] },
+      { role: "user", parts: [{ text: enhancedPrompt }] },
     ];
 
     // Make request to Google Gemini API
