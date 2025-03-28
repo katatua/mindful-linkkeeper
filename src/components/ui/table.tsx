@@ -88,18 +88,22 @@ const TableCell = React.forwardRef<
     numeric?: boolean;
     currency?: boolean;
     align?: "left" | "center" | "right";
+    percentage?: boolean;
+    energy?: boolean;
   }
->(({ className, numeric, currency, align = "left", ...props }, ref) => {
+>(({ className, numeric, currency, percentage, energy, align = "left", ...props }, ref) => {
   const alignmentClass = {
     left: "text-left",
     center: "text-center",
     right: "text-right"
   }[align]
 
-  // Apply numeric formatting classes
+  // Apply specific formatting classes
   const formattingClass = cn(
     numeric && "font-mono tabular-nums",
-    currency && "font-mono tabular-nums"
+    currency && "font-mono tabular-nums",
+    percentage && "font-mono tabular-nums",
+    energy && "font-mono tabular-nums"
   )
 
   return (
