@@ -1,3 +1,4 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -102,15 +103,6 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
   }
   
-  // Add domain-specific context for technology-related queries
-  if (message.includes("tecnologia") || 
-      sqlQuery.toLowerCase().includes("tech") || 
-      sqlQuery.toLowerCase().includes("digital") ||
-      sqlQuery.toLowerCase().includes("software")) {
-    formattedResponse += "**Informações adicionais sobre o setor tecnológico:**\n";
-    formattedResponse += "O setor de tecnologia em Portugal tem crescido significativamente, com foco em áreas como inteligência artificial, software, fintech e cibersegurança. Os projetos tecnológicos geralmente recebem financiamento através de programas governamentais, fundos europeus e investimento privado. A estratégia nacional Portugal Digital 2030 visa aumentar a competitividade tecnológica do país.\n\n";
-  }
-  
   // Add a summary section with bullet points
   formattedResponse += "**Resumo dos Resultados:**\n\n";
   
@@ -144,7 +136,7 @@ The database contains the following tables:
 2. ani_projects - Details about specific research projects
    - id, title, description, funding_amount, start_date, end_date, status, sector, region, organization
    
-3. ani_metrics - Innovation and research metrics
+3. ani_metrics - Innovation and research metrics data
    - id, name, category, value, unit, measurement_date, region, sector, source
    
 4. ani_policy_frameworks - Policy frameworks related to innovation
@@ -160,13 +152,6 @@ When users ask about renewable energy programs, here are some key details to inc
 - Important metrics include: CO2 emissions avoided, energy capacity installed (MW), and cost per kWh
 - The European Green Deal and Portugal's National Energy and Climate Plan are key policy frameworks
 - Funding success rates for renewable energy projects range from 25-40% depending on program competitiveness
-
-When users ask about technology sector projects, be flexible in your search:
-- Include related terms like 'digital', 'software', 'hardware', 'IT', 'telecommunications', 'computing'
-- For AI-related searches include 'artificial intelligence', 'machine learning', 'data science', 'analytics'
-- For emerging tech include 'blockchain', 'IoT', 'internet of things', 'robotics', 'automation'
-- For specific industries include 'fintech', 'healthtech', 'cybersecurity', 'cloud computing'
-- Use ILIKE operator with wildcards for partial matching when searching technology fields
 
 When users ask questions about the database, you should:
 1. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
@@ -208,20 +193,6 @@ Here are examples of questions users might ask and how to respond:
       FROM ani_projects
       WHERE sector ILIKE 'biotech'
       </SQL>
-      
-3. Q: "Show me the top 5 projects with highest funding amounts in the technology sector"
-   A: Aqui estão os 5 principais projetos no setor de tecnologia com os maiores montantes de financiamento:
-      <SQL>
-      SELECT title, funding_amount
-      FROM ani_projects
-      WHERE sector ILIKE '%tech%' 
-         OR sector ILIKE '%digital%'
-         OR sector ILIKE '%software%'
-         OR sector ILIKE '%IT%'
-         OR sector ILIKE '%computing%'
-      ORDER BY funding_amount DESC
-      LIMIT 5
-      </SQL>
     `;
 }
 
@@ -242,19 +213,13 @@ serve(async (req) => {
     // Create a system prompt that explains the database schema
     const systemPrompt = getEnhancedSystemPrompt();
 
-    // If this is a renewable energy or technology query, add extra context to the user prompt
+    // If this is a renewable energy query, add extra context to the user prompt
     const energyKeywords = additionalContext.energyKeywords || [];
-    const techKeywords = additionalContext.techKeywords || [];
     let enhancedPrompt = prompt;
     
     if (energyKeywords.length > 0) {
       console.log("Energy-related query detected with keywords:", energyKeywords);
       enhancedPrompt = `${prompt}\n\nNote: This query is about renewable energy. Consider these related terms when searching the database: ${energyKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
-    }
-    
-    if (techKeywords.length > 0) {
-      console.log("Technology-related query detected with keywords:", techKeywords);
-      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query is about technology. Consider these related terms when searching the database: ${techKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
     }
 
     // Construct the conversation

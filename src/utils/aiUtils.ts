@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and sample data
@@ -49,14 +50,11 @@ export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-// Update handle database queries and AI responses
+// Add function to handle database queries and AI responses
 export const generateResponse = async (prompt: string) => {
   try {
     // Extract keywords for energy-related queries to improve matching
     const energyKeywords = extractEnergyKeywords(prompt);
-    
-    // Add technology-related keywords extraction
-    const techKeywords = extractTechnologyKeywords(prompt);
     
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
       body: { 
@@ -64,8 +62,7 @@ export const generateResponse = async (prompt: string) => {
         chatHistory: [],
         // Pass additional context to help the query processing
         additionalContext: {
-          energyKeywords: energyKeywords,
-          techKeywords: techKeywords
+          energyKeywords: energyKeywords
         }
       }
     });
@@ -121,24 +118,6 @@ const extractEnergyKeywords = (query: string): string[] => {
   
   // Return all matching terms found in the query
   return energyTerms.filter(term => lowercaseQuery.includes(term));
-};
-
-// New helper function to extract technology-related keywords from a query
-const extractTechnologyKeywords = (query: string): string[] => {
-  const lowercaseQuery = query.toLowerCase();
-  
-  // Define sets of related terms to improve matching
-  const techTerms = [
-    'technology', 'tech', 'digital', 'software', 'hardware', 
-    'ai', 'artificial intelligence', 'machine learning', 'ml',
-    'data science', 'cloud', 'iot', 'internet of things',
-    'blockchain', 'cyber', 'cybersecurity', 'robotics',
-    'automation', 'computing', 'fintech', 'information technology',
-    'it', 'telecommunications', 'telecom'
-  ];
-  
-  // Return all matching terms found in the query
-  return techTerms.filter(term => lowercaseQuery.includes(term));
 };
 
 // Update interface for document classification
