@@ -16,13 +16,8 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query })
   const handlePopulate = async () => {
     setIsPopulating(true);
     try {
-      toast({
-        title: "Data population scheduled",
-        description: "Request to populate data for this query has been submitted.",
-      });
-      
-      // Save the query to a special table for data population requests
-      const { error } = await supabase.from('query_history').insert({
+      // Save the query to query_history table with a special flag for data population requests
+      const { data, error } = await supabase.from('query_history').insert({
         query_text: query,
         was_successful: false,
         language: 'en',
@@ -35,6 +30,11 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query })
         throw new Error("Failed to save query for data population");
       }
       
+      toast({
+        title: "Data population requested",
+        description: "Your request has been submitted. An administrator will review it and populate the database with relevant data.",
+      });
+      
       // Simulate a delay to give feedback to the user
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -42,11 +42,13 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query })
         title: "Success",
         description: "Request submitted. Database update has been scheduled. Try your query again after the update is complete.",
       });
+      
+      console.log("Saved query for population:", query);
     } catch (error) {
       console.error("Error scheduling data population:", error);
       toast({
         title: "Error",
-        description: "Failed to schedule data population.",
+        description: "Failed to schedule data population. Please try again.",
         variant: "destructive",
       });
     } finally {

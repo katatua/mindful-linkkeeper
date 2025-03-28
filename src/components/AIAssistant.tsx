@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +19,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PopulateDataButton } from '@/components/database/PopulateDataButton';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -27,6 +29,8 @@ interface Message {
   results?: any[] | null;
   error?: boolean;
   noResults?: boolean;
+  timestamp?: Date;
+  queryId?: string;
 }
 
 export const AIAssistant: React.FC = () => {
@@ -44,7 +48,8 @@ export const AIAssistant: React.FC = () => {
     const userMessage: Message = {
       id: genId(),
       content: input,
-      role: 'user'
+      role: 'user',
+      timestamp: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -55,13 +60,39 @@ export const AIAssistant: React.FC = () => {
     try {
       const response = await generateResponse(input);
       
+      // Save to database via query_history if it isn't already being saved within generateResponse
+      let queryId = '';
+      try {
+        const userAuth = await supabase.auth.getUser();
+        const userId = userAuth.data?.user?.id;
+        
+        const { data, error } = await supabase.from('query_history').insert({
+          query_text: input,
+          user_id: userId || null,
+          was_successful: response.results && response.results.length > 0,
+          language: 'en',
+          error_message: response.results && response.results.length > 0 ? null : "No results found"
+        }).select('id');
+        
+        if (error) {
+          console.error('Error storing query in database:', error);
+        } else if (data && data.length > 0) {
+          queryId = data[0].id;
+          console.log('Query stored with ID:', queryId);
+        }
+      } catch (dbError) {
+        console.error('Error saving to database:', dbError);
+      }
+      
       const assistantMessage: Message = {
         id: genId(),
         content: response.message,
         sqlQuery: response.sqlQuery,
         results: response.results,
         role: 'assistant',
-        noResults: response.noResults
+        noResults: response.noResults,
+        timestamp: new Date(),
+        queryId
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -75,7 +106,8 @@ export const AIAssistant: React.FC = () => {
           sqlQuery: response.sqlQuery,
           results: response.results
         },
-        isCorrect: null
+        isCorrect: null,
+        queryId
       };
       
       try {
@@ -93,7 +125,8 @@ export const AIAssistant: React.FC = () => {
         id: genId(),
         content: `Failed to get a response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or rephrase your question.`,
         role: 'assistant',
-        error: true
+        error: true,
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, errorMessage]);
@@ -118,6 +151,63 @@ export const AIAssistant: React.FC = () => {
     setInput('');
     setShowSuggestions(false);
   };
+
+  const checkQueryStatus = async (queryId: string) => {
+    if (!queryId) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('query_history')
+        .select('*')
+        .eq('id', queryId)
+        .single();
+        
+      if (error) {
+        console.error('Error checking query status:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in checkQueryStatus:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Check for query status updates every 30 seconds for queries with noResults=true
+    const interval = setInterval(async () => {
+      const updatedMessages = [...messages];
+      let hasUpdates = false;
+      
+      for (let i = 0; i < updatedMessages.length; i++) {
+        const message = updatedMessages[i];
+        if (message.role === 'assistant' && message.noResults && message.queryId) {
+          const queryStatus = await checkQueryStatus(message.queryId);
+          
+          if (queryStatus && queryStatus.created_tables) {
+            // The query has been populated with data
+            hasUpdates = true;
+            updatedMessages[i] = {
+              ...message,
+              content: `The data for your query has been populated. Please try your query again.`,
+              noResults: false
+            };
+          }
+        }
+      }
+      
+      if (hasUpdates) {
+        setMessages(updatedMessages);
+        toast({
+          title: "Database Updated",
+          description: "New data has been added to the database. You can run your query again.",
+        });
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [messages, toast]);
 
   const renderResults = (results: any[] | null) => {
     if (!results || results.length === 0) {
@@ -280,6 +370,18 @@ export const AIAssistant: React.FC = () => {
                               <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
                                 {message.sqlQuery}
                               </pre>
+                            </div>
+                          )}
+                          
+                          {message.queryId && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              Query ID: {message.queryId}
+                            </div>
+                          )}
+                          
+                          {message.timestamp && (
+                            <div className="mt-1 text-xs text-gray-500">
+                              Time: {message.timestamp.toLocaleString()}
                             </div>
                           )}
                           
