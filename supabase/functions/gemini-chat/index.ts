@@ -1,3 +1,4 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -15,25 +16,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Function to get the current Gemini model from database settings
-async function getCurrentGeminiModel(): Promise<string> {
-  try {
-    const { data, error } = await supabase.rpc('get_database_setting', {
-      setting_key: 'gemini_model'
-    });
-    
-    if (error) {
-      console.error("Error fetching Gemini model:", error.message);
-      return 'gemini-2.5-pro-exp-03-25'; // Default model
-    }
-    
-    return data || 'gemini-2.5-pro-exp-03-25';
-  } catch (error) {
-    console.error("Error in getCurrentGeminiModel:", error);
-    return 'gemini-2.5-pro-exp-03-25';
-  }
-}
 
 async function executeQuery(query: string): Promise<{ data: any; error: any }> {
   try {
@@ -298,12 +280,14 @@ serve(async (req) => {
     
     // Add region-related context if relevant
     if (regionKeywords.length > 0) {
-      console.log("Region-related query detected with regions:", regionKeywords);
+      console.log("Region-related query detected with regions:", regionKeywords.map(r => r.original));
       
       // Create an enhanced prompt that lists all the region variations to try
-      const regionVariationsPrompt = Array.isArray(regionKeywords) ? regionKeywords.join(', ') : regionKeywords;
+      const regionVariationsPrompt = regionKeywords.map(region => {
+        return `For "${region.original}" region, use these variations: ${region.variations.join(', ')}`;
+      }).join('. ');
       
-      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query involves specific regions or cities: ${regionVariationsPrompt}. Use ILIKE with OR conditions to match all possible variations.`;
+      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query involves specific regions or cities. ${regionVariationsPrompt}. Use ILIKE with OR conditions to match all possible variations.`;
     }
 
     // Construct the conversation
@@ -317,19 +301,6 @@ serve(async (req) => {
       // Add the new user prompt
       { role: "user", parts: [{ text: enhancedPrompt }] },
     ];
-
-    if (!googleApiKey) {
-      console.error("Missing Gemini API key");
-      return new Response(JSON.stringify({
-        error: "Missing Gemini API key. Please set the GEMINI_API_KEY secret in Supabase.",
-        response: "Configuration error: Gemini API key not found. Please contact the administrator.",
-        sqlQuery: '',
-        results: null
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Make request to Google Gemini API
     const response = await fetch(

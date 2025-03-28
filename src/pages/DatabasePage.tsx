@@ -22,21 +22,8 @@ import { generateResponse } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 import { useLocation } from 'react-router-dom';
-import { 
-  getCurrentAIModel, 
-  getCurrentAIProvider, 
-  setAIModel, 
-  setAIProvider,
-  getProviderModel
-} from '@/utils/aiUtils';
+import { getCurrentAIModel } from '@/utils/aiUtils';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface GenericTableData {
   id?: string;
@@ -165,7 +152,6 @@ export const DatabasePage: React.FC = () => {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
   const [currentAIModel, setCurrentAIModel] = useState<string>('Loading...');
-  const [currentProvider, setCurrentProvider] = useState<string>('gemini');
   const { toast } = useToast();
 
   const getActiveTabFromURL = () => {
@@ -180,20 +166,17 @@ export const DatabasePage: React.FC = () => {
   }, [location.search]);
 
   useEffect(() => {
-    const fetchAIInfo = async () => {
+    const fetchAIModel = async () => {
       try {
         const model = await getCurrentAIModel();
         setCurrentAIModel(model);
-        
-        const provider = await getCurrentAIProvider();
-        setCurrentProvider(provider);
       } catch (error) {
         console.error("Error fetching AI model:", error);
         setCurrentAIModel("Error loading model");
       }
     };
     
-    fetchAIInfo();
+    fetchAIModel();
     
     const savedHistory = localStorage.getItem('queryHistory');
     if (savedHistory) {
@@ -456,47 +439,12 @@ export const DatabasePage: React.FC = () => {
     setActiveTable(table);
   };
 
-  const handleModelChange = async (model: string) => {
-    try {
-      await setAIModel(model);
-      setCurrentAIModel(model);
-      
-      toast({
-        title: "AI Model Updated",
-        description: `Successfully switched to ${model}`,
-      });
-    } catch (error) {
-      console.error("Error changing model:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update AI model",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleProviderChange = async (provider: 'gemini' | 'openai') => {
-    try {
-      await setAIProvider(provider);
-      
-      const model = await getProviderModel(provider);
-      
-      setCurrentProvider(provider);
-      setCurrentAIModel(model);
-      
-      toast({
-        title: "AI Provider Updated",
-        description: `Switched to ${provider === 'gemini' ? 'Google Gemini' : 'OpenAI'} with model ${model}`,
-      });
-    } catch (error) {
-      console.error('Error changing AI provider:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update AI provider",
-        variant: "destructive",
-      });
-    }
-  };
+  const renderAIModelInfo = () => (
+    <div className="text-sm text-gray-500 mt-2 flex items-center">
+      <span className="mr-2">Current AI Model:</span>
+      <Badge variant="outline" className="font-mono">{currentAIModel}</Badge>
+    </div>
+  );
 
   const formatTimestamp = (date: Date) => {
     return date.toLocaleString(undefined, {
@@ -590,41 +538,6 @@ export const DatabasePage: React.FC = () => {
       </div>
     );
   };
-
-  const renderAIModelInfo = () => (
-    <div className="text-sm flex items-center gap-2">
-      <span className="text-gray-500">Current AI:</span>
-      <Select value={currentProvider} onValueChange={handleProviderChange}>
-        <SelectTrigger className="h-8 w-32 text-xs">
-          <SelectValue placeholder="Provider" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="gemini">Google Gemini</SelectItem>
-          <SelectItem value="openai">OpenAI</SelectItem>
-        </SelectContent>
-      </Select>
-      
-      <Select value={currentAIModel} onValueChange={handleModelChange}>
-        <SelectTrigger className="h-8 w-64 text-xs font-mono">
-          <SelectValue placeholder="Select model" />
-        </SelectTrigger>
-        <SelectContent>
-          {currentProvider === 'gemini' ? (
-            <>
-              <SelectItem value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</SelectItem>
-              <SelectItem value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</SelectItem>
-              <SelectItem value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</SelectItem>
-            </>
-          ) : (
-            <>
-              <SelectItem value="gpt-4o-2024-11-20">GPT-4o (Latest)</SelectItem>
-              <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-            </>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
 
   return (
     <Layout>

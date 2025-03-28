@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,26 +10,11 @@ import { ReportTemplates } from "@/components/reports/ReportTemplates";
 import { ScheduledReports } from "@/components/reports/ScheduledReports";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  getCurrentAIModel, 
-  getCurrentAIProvider, 
-  setAIModel,
-  setAIProvider
-} from "@/utils/aiUtils";
 
 const ReportsPage = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const [currentAIModel, setCurrentAIModel] = useState<string>('Loading...');
-  const [currentProvider, setCurrentProvider] = useState<string>('gemini');
   const [customReport, setCustomReport] = useState({
     title: "Q4 2023 Innovation Analytics",
     startDate: "2023-10-01",
@@ -183,124 +168,28 @@ const ReportsPage = () => {
     navigate(`/visualization/${category}/${chartType}/${chartId}`);
   };
 
-  const renderAIModelInfo = () => (
-    <div className="text-sm flex items-center gap-2">
-      <span className="text-gray-500">Current AI:</span>
-      <Select value={currentProvider} onValueChange={handleProviderChange}>
-        <SelectTrigger className="h-8 w-32 text-xs">
-          <SelectValue placeholder="Provider" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="gemini">Google Gemini</SelectItem>
-          <SelectItem value="openai">OpenAI</SelectItem>
-        </SelectContent>
-      </Select>
-      
-      <Select value={currentAIModel} onValueChange={handleModelChange}>
-        <SelectTrigger className="h-8 w-64 text-xs font-mono">
-          <SelectValue placeholder="Select model" />
-        </SelectTrigger>
-        <SelectContent>
-          {currentProvider === 'gemini' ? (
-            <>
-              <SelectItem value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</SelectItem>
-              <SelectItem value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</SelectItem>
-              <SelectItem value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</SelectItem>
-            </>
-          ) : (
-            <>
-              <SelectItem value="gpt-4o-2024-11-20">GPT-4o (Latest)</SelectItem>
-              <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-            </>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  useEffect(() => {
-    const fetchAIInfo = async () => {
-      try {
-        const model = await getCurrentAIModel();
-        setCurrentAIModel(model);
-        
-        const provider = await getCurrentAIProvider();
-        setCurrentProvider(provider);
-      } catch (error) {
-        console.error("Error fetching AI model:", error);
-        setCurrentAIModel("Error loading model");
-      }
-    };
-    
-    fetchAIInfo();
-  }, []);
-
-  const handleModelChange = async (model: string) => {
-    try {
-      await setAIModel(model);
-      setCurrentAIModel(model);
-      
-      toast({
-        title: "AI Model Updated",
-        description: `Successfully switched to ${model}`,
-      });
-    } catch (error) {
-      console.error("Error changing model:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update AI model",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleProviderChange = async (provider: 'gemini' | 'openai') => {
-    try {
-      await setAIProvider(provider);
-      const model = await getCurrentAIModel();
-      
-      setCurrentProvider(provider);
-      setCurrentAIModel(model);
-      
-      toast({
-        title: "AI Provider Updated",
-        description: `Switched to ${provider === 'gemini' ? 'Google Gemini' : 'OpenAI'}`,
-      });
-    } catch (error) {
-      console.error('Error changing AI provider:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update AI provider",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Reports & Documentation</h1>
         
-        <div className="flex items-center gap-4">
-          {renderAIModelInfo()}
-          <div className="flex items-center gap-2">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                type="search"
-                placeholder="Search reports..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-1" /> Filter
-            </Button>
-            <Button variant="default" size="sm">
-              <FileText className="h-4 w-4 mr-1" /> Generate Report
-            </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              type="search"
+              placeholder="Search reports..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-1" /> Filter
+          </Button>
+          <Button variant="default" size="sm">
+            <FileText className="h-4 w-4 mr-1" /> Generate Report
+          </Button>
         </div>
       </div>
 

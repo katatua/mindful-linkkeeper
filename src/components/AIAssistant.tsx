@@ -1,18 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database, Settings } from 'lucide-react';
-import { 
-  suggestedDatabaseQuestions, 
-  generateResponse, 
-  genId, 
-  getCurrentAIProvider,
-  setAIProvider,
-  getCurrentAIModel,
-  setAIModel
-} from '@/utils/aiUtils';
+import { Send, AlertCircle, HelpCircle, Code, Database } from 'lucide-react';
+import { suggestedDatabaseQuestions, generateResponse, genId } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -26,22 +18,6 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Message {
   id: string;
@@ -57,85 +33,7 @@ export const AIAssistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [provider, setProvider] = useState<string>('gemini');
-  const [geminiModel, setGeminiModel] = useState<string>('gemini-2.5-pro-exp-03-25');
-  const [openaiModel, setOpenaiModel] = useState<string>('gpt-4o-2024-11-20');
-  const [currentModel, setCurrentModel] = useState<string>('');
   const { toast } = useToast();
-  
-  // Load the current AI provider and model on component mount
-  useEffect(() => {
-    const loadProviderAndModel = async () => {
-      const currentProvider = await getCurrentAIProvider();
-      setProvider(currentProvider);
-      
-      const model = await getCurrentAIModel();
-      setCurrentModel(model);
-      
-      // Set the corresponding model in the state based on provider
-      if (currentProvider === 'gemini') {
-        setGeminiModel(model);
-      } else if (currentProvider === 'openai') {
-        setOpenaiModel(model);
-      }
-    };
-    
-    loadProviderAndModel();
-  }, []);
-  
-  const handleChangeProvider = async (value: string) => {
-    if (value === 'gemini' || value === 'openai') {
-      // Set the appropriate model based on the provider
-      const modelToUse = value === 'gemini' ? geminiModel : openaiModel;
-      
-      const success = await setAIProvider(value);
-      if (success) {
-        setProvider(value);
-        
-        // Also update the model to use the saved model for that provider
-        const modelSuccess = await setAIModel(modelToUse);
-        if (modelSuccess) {
-          setCurrentModel(modelToUse);
-        }
-        
-        toast({
-          title: "AI Provider Updated",
-          description: `Now using ${value === 'gemini' ? 'Google Gemini' : 'OpenAI'} as the AI provider with model ${modelToUse}.`,
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to update AI provider. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-  
-  const handleChangeModel = async (value: string) => {
-    const success = await setAIModel(value);
-    if (success) {
-      setCurrentModel(value);
-      
-      // Also update the provider-specific model
-      if (provider === 'gemini') {
-        setGeminiModel(value);
-      } else if (provider === 'openai') {
-        setOpenaiModel(value);
-      }
-      
-      toast({
-        title: "AI Model Updated",
-        description: `Now using ${value} model.`,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to update AI model. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,64 +192,15 @@ export const AIAssistant: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>AI Database Assistant</CardTitle>
-          <CardDescription>
-            Powered by {provider === 'gemini' ? 'Google Gemini' : 'OpenAI'}
-          </CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>AI Provider</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={provider} onValueChange={handleChangeProvider}>
-                <DropdownMenuRadioItem value="gemini">Google Gemini</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="openai">OpenAI</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>AI Model</DropdownMenuLabel>
-              
-              {provider === 'gemini' ? (
-                <Select value={geminiModel} onValueChange={handleChangeModel}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</SelectItem>
-                    <SelectItem value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</SelectItem>
-                    <SelectItem value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select value={openaiModel} onValueChange={handleChangeModel}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-4o-2024-11-20">GPT-4o (Latest)</SelectItem>
-                    <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setShowSuggestions(!showSuggestions)}
-            aria-label="Show example questions"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </Button>
-        </div>
+        <CardTitle>AI Database Assistant</CardTitle>
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={() => setShowSuggestions(!showSuggestions)}
+          aria-label="Show example questions"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent>
         {showSuggestions && (
