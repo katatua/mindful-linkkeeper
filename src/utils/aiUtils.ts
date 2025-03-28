@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Updated suggested questions with a wider variety of complex query types
@@ -88,28 +89,28 @@ export const setAIProvider = async (provider: 'gemini' | 'openai') => {
     const providerModel = await getProviderModel(provider);
     console.log(`Setting provider to ${provider} with model ${providerModel}`);
     
-    const promises = [
-      // Update the provider setting
-      supabase.from('ani_database_settings').upsert({ 
-        setting_key: 'ai_provider', 
-        setting_value: provider,
-        updated_at: new Date().toISOString()
-      }),
-      
-      // Also update the current model to the provider-specific model
-      supabase.from('ani_database_settings').upsert({ 
-        setting_key: 'ai_model', 
-        setting_value: providerModel,
-        updated_at: new Date().toISOString()
-      })
-    ];
+    // First, update the AI provider setting
+    const { error: providerError } = await supabase.from('ani_database_settings').upsert({ 
+      setting_key: 'ai_provider', 
+      setting_value: provider,
+      updated_at: new Date().toISOString()
+    });
     
-    const results = await Promise.all(promises);
-    const hasError = results.some(result => result.error);
-    
-    if (hasError) {
-      console.error('Errors in updating provider settings:', results.map(r => r.error));
+    if (providerError) {
+      console.error('Error updating provider setting:', providerError);
       return false;
+    }
+    
+    // Then, update the AI model setting separately
+    const { error: modelError } = await supabase.from('ani_database_settings').upsert({ 
+      setting_key: 'ai_model', 
+      setting_value: providerModel,
+      updated_at: new Date().toISOString()
+    });
+    
+    if (modelError) {
+      console.error('Error updating model setting:', modelError);
+      // Continue anyway since provider was updated successfully
     }
     
     return true;
