@@ -15,12 +15,13 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, language = 'en' } = await req.json();
     
     if (!query || query.trim() === '') {
+      const errorMessage = language === 'pt' ? 'É necessário uma consulta' : 'Query is required';
       return new Response(
         JSON.stringify({
-          error: 'Query is required'
+          error: errorMessage
         }),
         { 
           status: 400, 
@@ -59,7 +60,31 @@ serve(async (req) => {
     }
     
     // Prepare system prompt with database schema
-    const systemPrompt = `
+    const systemPrompt = language === 'pt' 
+      ? `
+Você é um especialista em banco de dados que analisa consultas SQL e esquemas de banco de dados.
+
+Tenho esta consulta que não retornou resultados:
+${query}
+
+O banco de dados tem as seguintes tabelas com suas colunas:
+${JSON.stringify(tableList, null, 2)}
+
+Sua tarefa é:
+1. Identificar quais tabelas e colunas são referenciadas na consulta
+2. Gerar dados de exemplo que satisfariam as condições da consulta
+3. Fornecer as instruções INSERT necessárias para popular o banco de dados para que a consulta retorne resultados
+4. Explicar por que a consulta atual não retorna resultados
+
+Formate sua resposta como um objeto JSON com estes campos:
+- analysis: Sua análise de por que a consulta não retorna resultados
+- tables: Array de tabelas que precisam de dados
+- insertStatements: Array de instruções SQL INSERT para popular o banco de dados
+- expectedResults: O que a consulta deve retornar após a inserção dos dados
+
+Use apenas a sintaxe PostgreSQL padrão para as instruções INSERT.
+`
+      : `
 You are a database expert that analyzes SQL queries and database schemas.
 
 I have this query that yielded no results:
@@ -122,9 +147,10 @@ Use only standard PostgreSQL syntax for the INSERT statements.
       console.log("Failed to parse AI response as JSON, using text format");
       
       // Simple extraction attempt
-      const analysis = aiResponse.indexOf("Analysis") > -1 ? 
-        aiResponse.split("Analysis:")[1]?.split("\n\n")[0] : 
-        "Analysis unavailable in structured format";
+      const analysisLabel = language === 'pt' ? "Análise" : "Analysis";
+      const analysis = aiResponse.indexOf(analysisLabel) > -1 ? 
+        aiResponse.split(`${analysisLabel}:`)[1]?.split("\n\n")[0] : 
+        language === 'pt' ? "Análise não disponível em formato estruturado" : "Analysis unavailable in structured format";
       
       // Extract SQL statements
       const insertStatements = [];
@@ -137,7 +163,7 @@ Use only standard PostgreSQL syntax for the INSERT statements.
         analysis: analysis.trim(),
         tables: [],
         insertStatements: insertStatements,
-        expectedResults: "Results extraction not available in text format"
+        expectedResults: language === 'pt' ? "Extração de resultados não disponível em formato de texto" : "Results extraction not available in text format"
       };
     }
     
@@ -156,7 +182,8 @@ Use only standard PostgreSQL syntax for the INSERT statements.
       await supabase
         .from('query_history')
         .update({
-          analysis_result: parsedResponse
+          analysis_result: parsedResponse,
+          language: language
         })
         .eq('id', queryId);
     }
@@ -172,9 +199,14 @@ Use only standard PostgreSQL syntax for the INSERT statements.
     
   } catch (error) {
     console.error("Error in analyze-query function:", error);
+    const errorMessage = req.headers.get('accept-language')?.includes('pt') || 
+                         (await req.json())?.language === 'pt' 
+      ? `Falha ao analisar consulta: ${error.message || "Erro desconhecido"}`
+      : `Failed to analyze query: ${error.message || "Unknown error"}`;
+      
     return new Response(
       JSON.stringify({
-        error: `Failed to analyze query: ${error.message || "Unknown error"}`
+        error: errorMessage
       }),
       { 
         status: 500, 

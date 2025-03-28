@@ -60,7 +60,14 @@ export const HamburgerMenu = () => {
   };
 
   const toggleLanguage = () => {
+    // Pass the new language value explicitly
     setLanguage(language === 'en' ? 'pt' : 'en');
+    
+    // Show a toast to confirm language change
+    toast({
+      title: language === 'en' ? 'Idioma alterado para Português' : 'Language changed to English',
+      description: language === 'en' ? 'Todas as páginas serão exibidas em Português' : 'All pages will be displayed in English',
+    });
   };
 
   const mainMenuItems = [
@@ -137,7 +144,7 @@ export const HamburgerMenu = () => {
                 onClick={toggleLanguage}
               >
                 <Languages className="h-4 w-4 mr-2" />
-                {t('language.toggle')}
+                {language === 'en' ? 'PT | EN' : 'PT | EN'}
               </Button>
               <Button 
                 variant="ghost" 

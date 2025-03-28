@@ -17,6 +17,7 @@ import {
   AreaChart,
   Area
 } from "recharts";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F', '#FFBB28'];
 
@@ -33,8 +34,10 @@ interface VisualizationData {
 // visualization data objects with synthetic data
 export const extractVisualizations = (content: string): VisualizationData[] => {
   const visualizationRegex = /Insert Visualization (\d+)\s*\((.*?):(.*?)\)/gi;
+  const ptVisualizationRegex = /Inserir Visualização (\d+)\s*\((.*?):(.*?)\)/gi;
   const visualizations: VisualizationData[] = [];
   
+  // Try with English regex
   let match;
   while ((match = visualizationRegex.exec(content)) !== null) {
     const id = parseInt(match[1]);
@@ -62,6 +65,34 @@ export const extractVisualizations = (content: string): VisualizationData[] => {
     });
   }
   
+  // Try with Portuguese regex
+  let ptMatch;
+  while ((ptMatch = ptVisualizationRegex.exec(content)) !== null) {
+    const id = parseInt(ptMatch[1]);
+    const typeStr = ptMatch[2].toLowerCase().trim();
+    const title = ptMatch[3].trim();
+    
+    // Determine visualization type
+    let type: VisualizationType = "bar";
+    if (typeStr.includes("linha") || typeStr.includes("line")) {
+      type = "line";
+    } else if (typeStr.includes("pizza") || typeStr.includes("pie")) {
+      type = "pie";
+    } else if (typeStr.includes("área") || typeStr.includes("area")) {
+      type = "area";
+    }
+    
+    // Generate synthetic data based on the title and type
+    const data = generateDataForVisualization(type, title);
+    
+    visualizations.push({
+      type,
+      title,
+      description: ptMatch[0],
+      data
+    });
+  }
+  
   return visualizations;
 };
 
@@ -70,7 +101,8 @@ const generateDataForVisualization = (type: VisualizationType, title: string): a
   const currentYear = new Date().getFullYear();
   
   if (type === "bar" || type === "line" || type === "area") {
-    if (title.toLowerCase().includes("over") && title.toLowerCase().includes("year")) {
+    if (title.toLowerCase().includes("over") && title.toLowerCase().includes("year") ||
+        title.toLowerCase().includes("ao longo") && title.toLowerCase().includes("ano")) {
       // Time series data
       return Array.from({ length: 5 }, (_, i) => ({
         year: `${currentYear - 4 + i}`,
@@ -79,10 +111,13 @@ const generateDataForVisualization = (type: VisualizationType, title: string): a
       }));
     }
     
-    if (title.toLowerCase().includes("vs") || title.toLowerCase().includes("versus")) {
+    if (title.toLowerCase().includes("vs") || title.toLowerCase().includes("versus") ||
+       title.toLowerCase().includes("comparação")) {
       // Comparison data
       const categories = ["Research", "Development", "Innovation", "Patents", "Startups"];
-      return categories.map(cat => ({
+      const categoriesPT = ["Pesquisa", "Desenvolvimento", "Inovação", "Patentes", "Startups"];
+      
+      return (title.toLowerCase().includes("comparação") ? categoriesPT : categories).map(cat => ({
         name: cat,
         current: Math.floor(Math.random() * 100) + 50,
         previous: Math.floor(Math.random() * 80) + 40
@@ -90,28 +125,31 @@ const generateDataForVisualization = (type: VisualizationType, title: string): a
     }
     
     // Default time or category-based data
-    if (title.toLowerCase().includes("funding") || title.toLowerCase().includes("investment")) {
+    if (title.toLowerCase().includes("funding") || title.toLowerCase().includes("investment") ||
+       title.toLowerCase().includes("financiamento") || title.toLowerCase().includes("investimento")) {
       return Array.from({ length: 5 }, (_, i) => ({
         year: `${currentYear - 4 + i}`,
         value: (Math.random() * 10 + 5).toFixed(1),
-        name: `Year ${currentYear - 4 + i}`
+        name: `${title.toLowerCase().includes("financiamento") ? "Ano" : "Year"} ${currentYear - 4 + i}`
       }));
     }
     
     // Regional data
-    if (title.toLowerCase().includes("region") || title.toLowerCase().includes("location")) {
+    if (title.toLowerCase().includes("region") || title.toLowerCase().includes("location") ||
+        title.toLowerCase().includes("região") || title.toLowerCase().includes("localização")) {
+      const isPortuguese = title.toLowerCase().includes("região") || title.toLowerCase().includes("localização");
       return [
-        { name: "North", value: Math.floor(Math.random() * 30) + 10 },
-        { name: "Central", value: Math.floor(Math.random() * 30) + 20 },
-        { name: "Lisbon", value: Math.floor(Math.random() * 40) + 30 },
-        { name: "South", value: Math.floor(Math.random() * 20) + 10 },
-        { name: "Islands", value: Math.floor(Math.random() * 15) + 5 }
+        { name: isPortuguese ? "Norte" : "North", value: Math.floor(Math.random() * 30) + 10 },
+        { name: isPortuguese ? "Centro" : "Central", value: Math.floor(Math.random() * 30) + 20 },
+        { name: "Lisboa", value: Math.floor(Math.random() * 40) + 30 },
+        { name: isPortuguese ? "Sul" : "South", value: Math.floor(Math.random() * 20) + 10 },
+        { name: isPortuguese ? "Ilhas" : "Islands", value: Math.floor(Math.random() * 15) + 5 }
       ];
     }
     
     // Generic categories
     return Array.from({ length: 5 }, (_, i) => ({
-      name: `Category ${i + 1}`,
+      name: `${title.toLowerCase().includes("categoria") ? "Categoria" : "Category"} ${i + 1}`,
       value: Math.floor(Math.random() * 100) + 20
     }));
   }
@@ -119,21 +157,23 @@ const generateDataForVisualization = (type: VisualizationType, title: string): a
   if (type === "pie") {
     // Generate sectors or categories for pie charts
     const categories = [];
+    const isPortuguese = title.toLowerCase().includes("setor") || title.toLowerCase().includes("distribuição");
     
-    if (title.toLowerCase().includes("sector") || title.toLowerCase().includes("distribution")) {
+    if (title.toLowerCase().includes("sector") || title.toLowerCase().includes("distribution") ||
+        title.toLowerCase().includes("setor") || title.toLowerCase().includes("distribuição")) {
       categories.push(
-        { name: "ICT", value: Math.floor(Math.random() * 30) + 15 },
-        { name: "Healthcare", value: Math.floor(Math.random() * 25) + 10 },
-        { name: "Energy", value: Math.floor(Math.random() * 20) + 10 },
-        { name: "Manufacturing", value: Math.floor(Math.random() * 15) + 5 },
-        { name: "Other", value: Math.floor(Math.random() * 10) + 5 }
+        { name: isPortuguese ? "TIC" : "ICT", value: Math.floor(Math.random() * 30) + 15 },
+        { name: isPortuguese ? "Saúde" : "Healthcare", value: Math.floor(Math.random() * 25) + 10 },
+        { name: isPortuguese ? "Energia" : "Energy", value: Math.floor(Math.random() * 20) + 10 },
+        { name: isPortuguese ? "Manufatura" : "Manufacturing", value: Math.floor(Math.random() * 15) + 5 },
+        { name: isPortuguese ? "Outros" : "Other", value: Math.floor(Math.random() * 10) + 5 }
       );
     } else {
       categories.push(
-        { name: "Category A", value: Math.floor(Math.random() * 40) + 20 },
-        { name: "Category B", value: Math.floor(Math.random() * 30) + 15 },
-        { name: "Category C", value: Math.floor(Math.random() * 20) + 10 },
-        { name: "Category D", value: Math.floor(Math.random() * 10) + 5 }
+        { name: isPortuguese ? "Categoria A" : "Category A", value: Math.floor(Math.random() * 40) + 20 },
+        { name: isPortuguese ? "Categoria B" : "Category B", value: Math.floor(Math.random() * 30) + 15 },
+        { name: isPortuguese ? "Categoria C" : "Category C", value: Math.floor(Math.random() * 20) + 10 },
+        { name: isPortuguese ? "Categoria D" : "Category D", value: Math.floor(Math.random() * 10) + 5 }
       );
     }
     
@@ -141,8 +181,9 @@ const generateDataForVisualization = (type: VisualizationType, title: string): a
   }
   
   // Default fallback data
+  const isPortuguese = title.toLowerCase().includes("item") && !title.toLowerCase().includes("items");
   return Array.from({ length: 5 }, (_, i) => ({
-    name: `Item ${i + 1}`,
+    name: `${isPortuguese ? "Item" : "Item"} ${i + 1}`,
     value: Math.floor(Math.random() * 100) + 10
   }));
 };
@@ -154,6 +195,7 @@ interface ReportVisualizerProps {
 
 export const ReportVisualizer = ({ visualization, height = 300 }: ReportVisualizerProps) => {
   const { type, title, data } = visualization;
+  const { language } = useLanguage();
   
   const renderVisualization = () => {
     switch (type) {
@@ -168,13 +210,13 @@ export const ReportVisualizer = ({ visualization, height = 300 }: ReportVisualiz
               <Legend />
               <Bar dataKey="value" fill="#8884d8" name={title} />
               {data[0]?.previousValue !== undefined && (
-                <Bar dataKey="previousValue" fill="#82ca9d" name="Previous Year" />
+                <Bar dataKey="previousValue" fill="#82ca9d" name={language === 'pt' ? "Ano Anterior" : "Previous Year"} />
               )}
               {data[0]?.current !== undefined && (
-                <Bar dataKey="current" fill="#8884d8" name="Current" />
+                <Bar dataKey="current" fill="#8884d8" name={language === 'pt' ? "Atual" : "Current"} />
               )}
               {data[0]?.previous !== undefined && (
-                <Bar dataKey="previous" fill="#82ca9d" name="Previous" />
+                <Bar dataKey="previous" fill="#82ca9d" name={language === 'pt' ? "Anterior" : "Previous"} />
               )}
             </BarChart>
           </ResponsiveContainer>
@@ -191,13 +233,13 @@ export const ReportVisualizer = ({ visualization, height = 300 }: ReportVisualiz
               <Legend />
               <Line type="monotone" dataKey="value" stroke="#8884d8" name={title} />
               {data[0]?.previousValue !== undefined && (
-                <Line type="monotone" dataKey="previousValue" stroke="#82ca9d" name="Previous Year" />
+                <Line type="monotone" dataKey="previousValue" stroke="#82ca9d" name={language === 'pt' ? "Ano Anterior" : "Previous Year"} />
               )}
               {data[0]?.current !== undefined && (
-                <Line type="monotone" dataKey="current" stroke="#8884d8" name="Current" />
+                <Line type="monotone" dataKey="current" stroke="#8884d8" name={language === 'pt' ? "Atual" : "Current"} />
               )}
               {data[0]?.previous !== undefined && (
-                <Line type="monotone" dataKey="previous" stroke="#82ca9d" name="Previous" />
+                <Line type="monotone" dataKey="previous" stroke="#82ca9d" name={language === 'pt' ? "Anterior" : "Previous"} />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -237,14 +279,14 @@ export const ReportVisualizer = ({ visualization, height = 300 }: ReportVisualiz
               <Legend />
               <Area type="monotone" dataKey="value" fill="#8884d8" stroke="#8884d8" name={title} />
               {data[0]?.previousValue !== undefined && (
-                <Area type="monotone" dataKey="previousValue" fill="#82ca9d" stroke="#82ca9d" name="Previous Year" />
+                <Area type="monotone" dataKey="previousValue" fill="#82ca9d" stroke="#82ca9d" name={language === 'pt' ? "Ano Anterior" : "Previous Year"} />
               )}
             </AreaChart>
           </ResponsiveContainer>
         );
         
       default:
-        return <div>Unsupported visualization type</div>;
+        return <div>{language === 'pt' ? "Tipo de visualização não suportado" : "Unsupported visualization type"}</div>;
     }
   };
   
