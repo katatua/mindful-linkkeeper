@@ -15,84 +15,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Function to get the current OpenAI model from database settings
-async function getCurrentOpenAIModel(): Promise<string> {
-  try {
-    const { data, error } = await supabase.rpc('get_database_setting', {
-      setting_key: 'openai_model'
-    });
-    
-    if (error) {
-      console.error("Error fetching OpenAI model:", error.message);
-      return 'gpt-4o-2024-11-20'; // Default model
-    }
-    
-    return data || 'gpt-4o-2024-11-20';
-  } catch (error) {
-    console.error("Error in getCurrentOpenAIModel:", error);
-    return 'gpt-4o-2024-11-20';
-  }
-}
-
-async function executeQuery(query: string): Promise<{ data: any; error: any }> {
-  try {
-    console.log("Executing SQL query:", query);
-
-    // Remove semicolons from the end of the query which can cause issues
-    const cleanQuery = query.trim().replace(/;$/, '');
-    
-    // Execute the query using the SQL function that only allows SELECT
-    const { data, error } = await supabase.rpc('execute_sql_query', {
-      sql_query: cleanQuery
-    });
-
-    if (error) {
-      console.error("SQL query execution error:", error);
-      return { data: null, error };
-    }
-
-    console.log("Query executed successfully, data:", data ? data.slice(0, 2) : "no data");
-    return { data, error: null };
-  } catch (error) {
-    console.error("Error executing query:", error);
-    return { data: null, error };
-  }
-}
-
-function getEnhancedSystemPrompt() {
-  return `
-You are an AI database assistant that helps users query and understand data in a research and innovation database.
-
-The database contains the following tables:
-1. ani_funding_programs - Information about funding programs for research and innovation
-   - id, name, description, total_budget, application_deadline, end_date, sector_focus (array), funding_type, success_rate
-   
-2. ani_projects - Details about specific research projects
-   - id, title, description, funding_amount, start_date, end_date, status, sector, region, organization
-   
-3. ani_metrics - Innovation and research metrics
-   - id, name, category, value, unit, measurement_date, region, sector, source
-   
-4. ani_policy_frameworks - Policy frameworks related to innovation
-   - id, title, description, implementation_date, status, key_objectives (array)
-   
-5. ani_international_collaborations - International research partnerships
-   - id, program_name, country, partnership_type, focus_areas (array), start_date, end_date, total_budget
-
-When users ask questions about the database, you should:
-1. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
-2. Format your response to be clear, concise and helpful, focusing on insights from the data
-3. Always present the information in Portuguese, as this is a Portuguese database
-
-Wrap your SQL in <SQL>your query here</SQL> tags
-
-If you can't answer a question or generate a valid SQL query, explain why in Portuguese.
-For SQL queries, make sure to REMOVE ANY SEMICOLONS from the end of the query.
-
-Your main goal is to provide CLEAR INSIGHTS about the data, not just raw data. Explain patterns, notable details, and summarize the information.
-`;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -100,132 +22,48 @@ serve(async (req) => {
   }
 
   try {
-    // Verify that we have the OpenAI API key
-    if (!openaiApiKey || openaiApiKey.trim() === '') {
-      throw new Error("Missing OpenAI API key. Please set the OPENAI_API_KEY in your environment.");
+    console.log('OpenAI API Key present:', !!openaiApiKey);
+    console.log('OpenAI API Key length:', openaiApiKey?.length);
+
+    // Validate OpenAI API key more robustly
+    if (!openaiApiKey || openaiApiKey.trim().length < 10) {
+      throw new Error("Invalid or missing OpenAI API key. Please configure the OPENAI_API_KEY in your Supabase project secrets.");
     }
 
-    // Parse the request body
     const { prompt, chatHistory = [], additionalContext = {} } = await req.json();
     
-    // Get the current OpenAI model from database settings
-    const openaiModel = await getCurrentOpenAIModel();
-    
-    console.log(`Making request to OpenAI API with model: ${openaiModel}`);
-
-    // Create a system prompt that explains the database schema
-    const systemPrompt = getEnhancedSystemPrompt();
-
-    // Extract any context provided by the client
-    const energyKeywords = additionalContext.energyKeywords || [];
-    const techKeywords = additionalContext.techKeywords || [];
-    const regionKeywords = additionalContext.regionKeywords || [];
-    
-    let enhancedPrompt = prompt;
-    
-    // Add energy-related context if relevant
-    if (energyKeywords.length > 0) {
-      console.log("Energy-related query detected with keywords:", energyKeywords);
-      enhancedPrompt = `${prompt}\n\nNote: This query is about renewable energy. Consider these related terms when searching the database: ${energyKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
-    }
-    
-    // Add technology-related context if relevant
-    if (techKeywords.length > 0) {
-      console.log("Technology-related query detected with keywords:", techKeywords);
-      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query is about technology. Consider these related terms when searching the database: ${techKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
-    }
-    
-    // Add region-related context if relevant
-    if (regionKeywords.length > 0) {
-      console.log("Region-related query detected with regions:", regionKeywords.map(r => r.original));
-      
-      // Create an enhanced prompt that lists all the region variations to try
-      const regionVariationsPrompt = regionKeywords.map(region => {
-        return `For "${region.original}" region, use these variations: ${region.variations.join(', ')}`;
-      }).join('. ');
-      
-      enhancedPrompt = `${enhancedPrompt}\n\nNote: This query involves specific regions or cities. ${regionVariationsPrompt}. Use ILIKE with OR conditions to match all possible variations.`;
-    }
-
-    // Make request to OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: openaiModel,
+        model: 'gpt-4o-mini', // Recommended model
         messages: [
-          { role: 'system', content: systemPrompt },
-          // Include chat history
+          { role: 'system', content: getEnhancedSystemPrompt() },
           ...chatHistory.map((msg: any) => ({
             role: msg.role,
-            content: msg.content,
+            content: msg.content
           })),
-          // Add the enhanced user prompt
-          { role: 'user', content: enhancedPrompt }
+          { role: 'user', content: enhancePrompt(prompt, additionalContext) }
         ],
         temperature: 0.4,
         max_tokens: 2048,
       }),
     });
 
+    console.log('OpenAI Response Status:', response.status);
+
     if (!response.ok) {
-      const error = await response.json();
-      console.error("OpenAI API error:", error);
-      throw new Error(`OpenAI API Error: ${JSON.stringify(error)}`);
+      const errorBody = await response.text();
+      console.error('OpenAI API Error:', errorBody);
+      throw new Error(`OpenAI API Error: ${errorBody}`);
     }
 
     const result = await response.json();
-    let aiResponse = result.choices[0].message.content;
+    const aiResponse = result.choices[0].message.content;
 
-    // Extract SQL query if present in the response
-    const sqlMatch = aiResponse.match(/<SQL>([\s\S]*?)<\/SQL>/);
-    if (sqlMatch && sqlMatch[1]) {
-      const sqlQuery = sqlMatch[1].trim();
-      console.log("Extracted SQL query:", sqlQuery);
-      
-      // Execute the SQL query
-      const { data: queryResult, error: queryError } = await executeQuery(sqlQuery);
-      
-      if (queryError) {
-        // If there's an error, include it in the response
-        const errorMessage = queryError.message || "Unknown database error";
-        console.log("Query execution error:", errorMessage);
-        
-        // Create an explanatory message
-        const errorResponse = `Ocorreu um erro ao executar a consulta: ${errorMessage}. Por favor, verifique a sintaxe SQL ou reformule sua pergunta.`;
-        
-        // Return the response with the SQL query and error message
-        return new Response(JSON.stringify({ 
-          response: aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, `<SQL>${sqlQuery}</SQL>`),
-          sqlQuery: sqlQuery,
-          results: null,
-          error: errorMessage
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } else {
-        // If successful, include the results
-        const formattedResults = queryResult || [];
-        console.log("Query execution results count:", formattedResults.length);
-        
-        // Remove the SQL tags from the AI response
-        const cleanResponse = aiResponse.replace(/<SQL>[\s\S]*?<\/SQL>/, '').trim();
-        
-        // Return the response with the SQL query and results
-        return new Response(JSON.stringify({ 
-          response: cleanResponse,
-          sqlQuery: sqlQuery,
-          results: formattedResults
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // Return the response (if no SQL was found)
     return new Response(JSON.stringify({ 
       response: aiResponse,
       sqlQuery: '',
@@ -234,11 +72,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error processing request:", error);
+    console.error('Error in OpenAI chat function:', error);
     return new Response(
       JSON.stringify({
         error: `Failed to generate response: ${error.message || "Unknown error"}`,
-        response: "Desculpe, houve um erro ao processar sua consulta. Por favor, tente novamente com uma pergunta diferente.",
+        response: "Sorry, there was an error processing your query. Please check your API key and try again.",
         sqlQuery: "",
         results: null
       }),
@@ -249,3 +87,28 @@ serve(async (req) => {
     );
   }
 });
+
+// Enhanced system prompt for database queries
+function getEnhancedSystemPrompt() {
+  return `You are an AI database assistant specialized in research and innovation data. 
+  Focus on providing clear, concise insights about funding programs, especially in renewable energy.
+  Use precise language and help users understand the context of their database queries.`;
+}
+
+// Enhance prompt with additional context
+function enhancePrompt(prompt: string, additionalContext: any) {
+  const energyKeywords = additionalContext.energyKeywords || [];
+  const techKeywords = additionalContext.techKeywords || [];
+
+  let enhancedPrompt = prompt;
+  
+  if (energyKeywords.length > 0) {
+    enhancedPrompt += `\n\nNote: This query is about renewable energy. Consider these related terms: ${energyKeywords.join(', ')}.`;
+  }
+  
+  if (techKeywords.length > 0) {
+    enhancedPrompt += `\n\nTechnology-related context: ${techKeywords.join(', ')}.`;
+  }
+
+  return enhancedPrompt;
+}
