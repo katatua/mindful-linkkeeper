@@ -82,6 +82,20 @@ const TableHead = React.forwardRef<
 ))
 TableHead.displayName = "TableHead"
 
+// Define specific monetary column names to help with detection
+const MONETARY_COLUMNS = [
+  'budget', 'funding', 'investment', 'cost', 'price', 'value', 
+  'contribution', 'expense', 'revenue', 'income', 'total_budget', 
+  'funding_amount', 'amount'
+];
+
+// Define specific non-monetary count column names
+const COUNT_COLUMNS = [
+  'count', 'number', 'total', 'qty', 'quantity', 'applications',
+  'projects', 'startups', 'collaborations', 'patents', 'participants',
+  'companies', 'users', 'submissions'
+];
+
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement> & { 
@@ -115,22 +129,30 @@ const TableCell = React.forwardRef<
   let content = props.children;
   
   if (content !== undefined && (typeof content === 'string' || typeof content === 'number')) {
-    const valueStr = String(content).replace(/[^\d.,]/g, '').replace(',', '.');
-    const value = parseFloat(valueStr);
+    const valueStr = String(content).trim();
+    
+    // Check if the string represents a number (ignoring currency symbols)
+    const numericStr = valueStr.replace(/[^\d.,\-]/g, '').replace(',', '.');
+    const value = parseFloat(numericStr);
     
     if (!isNaN(value)) {
-      // Check if this is a currency-related value
-      const isCurrency = currency || (unit && (
-        unit === 'million EUR' || 
-        unit === 'billion EUR' || 
-        unit === 'EUR' || 
-        unit.includes('budget') ||
-        unit.includes('funding') ||
-        unit.includes('investment')
-      ));
+      // Determine column name if available from DOM context
+      const columnName = (props as any)['data-column']?.toLowerCase() || '';
+      
+      // Check if this column should be treated as currency
+      const isCurrency = currency || 
+        MONETARY_COLUMNS.some(term => columnName.includes(term)) ||
+        (unit && (['EUR', '€', 'euro', 'euros', 'million EUR', 'billion EUR'].includes(unit) ||
+                  unit.toLowerCase().includes('budget') ||
+                  unit.toLowerCase().includes('funding') ||
+                  unit.toLowerCase().includes('investment')));
+      
+      const isCount = count || 
+        COUNT_COLUMNS.some(term => columnName.includes(term)) || 
+        (unit && COUNT_COLUMNS.some(term => unit.toLowerCase().includes(term)));
       
       // Handle percentage values
-      if (percentage || (unit && (unit === 'percent' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
+      if (percentage || (unit && (unit === 'percent' || unit === '%' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
         content = `${value.toFixed(1)}%`;
       } 
       // Handle currency values with EUR symbol
@@ -141,37 +163,18 @@ const TableCell = React.forwardRef<
           maximumFractionDigits: 0
         }).format(value);
       } 
-      // Handle scores and indexes without currency symbol
-      else if (score || (unit && (unit === 'score' || unit.includes('index') || unit.includes('Index')))) {
-        content = value.toFixed(1);
-      } 
-      // Handle count values without currency symbol
-      else if (count || (unit && unit === 'count')) {
+      // Handle counts and other numeric values without currency symbol
+      else if (isCount || numeric || (unit && unit !== 'N/A')) {
+        // Format the number without currency symbol
         content = value.toLocaleString('pt-PT', {
           style: 'decimal',
           maximumFractionDigits: 0
         });
-      } 
-      // Handle energy units without currency symbol
-      else if (energy || (unit && unit.includes('MW'))) {
-        content = `${value.toLocaleString('pt-PT', {
-          style: 'decimal',
-          maximumFractionDigits: 0
-        })} MW`;
-      }
-      // Handle other units without currency symbol
-      else if (unit) {
-        content = `${value.toLocaleString('pt-PT', {
-          style: 'decimal',
-          maximumFractionDigits: 0
-        })} ${unit}`;
-      }
-      // Format numeric values without currency symbol or unit
-      else if (numeric) {
-        content = value.toLocaleString('pt-PT', {
-          style: 'decimal',
-          maximumFractionDigits: 0
-        });
+        
+        // Add the unit if provided and not N/A
+        if (unit && unit !== 'N/A') {
+          content = `${content} ${unit}`;
+        }
       }
     }
   }

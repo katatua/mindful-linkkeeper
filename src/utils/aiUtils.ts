@@ -65,6 +65,7 @@ export const formatDatabaseValue = (value: any, columnName?: string): any => {
   
   // If it's already a number, just return it
   if (typeof value === 'number') {
+    // Only format monetary columns as currency
     if (columnName && isMonetaryColumn(columnName)) {
       return new Intl.NumberFormat('pt-PT', { 
         style: 'currency', 
@@ -76,7 +77,7 @@ export const formatDatabaseValue = (value: any, columnName?: string): any => {
     return value;
   }
   
-  // Try to handle string values that might contain numbers with currency symbols
+  // Try to handle string values that might contain numbers
   if (typeof value === 'string') {
     // Clean the string from currency symbols and spaces
     const cleanValue = value.trim().replace(/[€$£\s]/g, '');
@@ -85,9 +86,8 @@ export const formatDatabaseValue = (value: any, columnName?: string): any => {
     if (!isNaN(Number(cleanValue)) && cleanValue !== '') {
       const numValue = Number(cleanValue);
       
-      // If column suggests monetary value or originally had currency symbol, format it
-      if (value.includes('€') || value.includes('$') || value.includes('£') || 
-          (columnName && isMonetaryColumn(columnName))) {
+      // If column suggests monetary value, format it as currency
+      if (columnName && isMonetaryColumn(columnName)) {
         return new Intl.NumberFormat('pt-PT', { 
           style: 'currency', 
           currency: 'EUR',
@@ -126,7 +126,12 @@ export const isMonetaryColumn = (columnName: string): boolean => {
     'total_collaborations',
     'number',
     'qty',
-    'quantity'
+    'quantity',
+    'applications',
+    'projects',
+    'startups',
+    'collaborations',
+    'patents'
   ];
   
   const colName = columnName.toLowerCase();
