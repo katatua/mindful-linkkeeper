@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -270,7 +269,7 @@ const AIReportDetail = () => {
   }
   
   const wordCount = contentForWordCount ? contentForWordCount.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length : 0;
-  const visualizationCount = report && report.content ? extractVisualizations(report.content).length : 0;
+  const visualizationCount = (report && report.content) ? extractVisualizations(report.content).length : 0;
 
   return (
     <div className="container mx-auto py-6 space-y-6">
