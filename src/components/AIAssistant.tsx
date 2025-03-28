@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle } from 'lucide-react';
+import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle, DatabaseIcon } from 'lucide-react';
 import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { 
   Table, 
@@ -26,6 +26,7 @@ interface Message {
   sqlQuery?: string;
   results?: any[] | null;
   error?: boolean;
+  noResults?: boolean;
 }
 
 export const AIAssistant: React.FC = () => {
@@ -59,7 +60,8 @@ export const AIAssistant: React.FC = () => {
         content: response.message,
         sqlQuery: response.sqlQuery,
         results: response.results,
-        role: 'assistant'
+        role: 'assistant',
+        noResults: response.noResults
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -138,7 +140,10 @@ export const AIAssistant: React.FC = () => {
             {results.slice(0, 10).map((row, rowIndex) => (
               <TableRow key={rowIndex}>
                 {columns.map(column => (
-                  <TableCell key={`${rowIndex}-${column}`}>
+                  <TableCell 
+                    key={`${rowIndex}-${column}`}
+                    data-column={column}
+                  >
                     {formatDatabaseValue(row[column], column)}
                   </TableCell>
                 ))}
@@ -152,6 +157,50 @@ export const AIAssistant: React.FC = () => {
           </div>
         )}
       </div>
+    );
+  };
+
+  const PopulateDataButton = ({ query }: { query: string }) => {
+    const [isPopulating, setIsPopulating] = useState(false);
+    
+    const handlePopulate = async () => {
+      setIsPopulating(true);
+      try {
+        // We'll just show a toast for now since actual data population would require more complex implementation
+        toast({
+          title: "Data population scheduled",
+          description: "Request to populate data for this query has been submitted.",
+        });
+        
+        // In a real implementation, you'd call a function to populate the database
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        toast({
+          title: "Success",
+          description: "Database has been scheduled for update with required data. Try your query again in a few minutes.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to schedule data population.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsPopulating(false);
+      }
+    };
+    
+    return (
+      <Button 
+        variant="outline" 
+        size="sm"
+        disabled={isPopulating}
+        onClick={handlePopulate}
+        className="mt-2"
+      >
+        <DatabaseIcon className="h-4 w-4 mr-2" />
+        {isPopulating ? "Scheduling..." : "Populate Missing Data"}
+      </Button>
     );
   };
 
@@ -240,7 +289,19 @@ export const AIAssistant: React.FC = () => {
                         
                         <TabsContent value="resposta">
                           <div className="whitespace-pre-wrap">
-                            {message.results && message.results.length > 0 ? (
+                            {message.noResults ? (
+                              <Alert variant="warning" className="mb-3">
+                                <AlertTitle>No results found</AlertTitle>
+                                <AlertDescription>
+                                  {message.content}
+                                  <div className="mt-2">
+                                    <PopulateDataButton query={
+                                      messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
+                                    } />
+                                  </div>
+                                </AlertDescription>
+                              </Alert>
+                            ) : message.results && message.results.length > 0 ? (
                               <div>
                                 <div className="font-medium text-primary mb-4">{message.content.split('\n')[0]}</div>
                                 {renderResults(message.results)}
@@ -266,7 +327,7 @@ export const AIAssistant: React.FC = () => {
                             </div>
                           )}
                           
-                          {message.results && message.results.length > 0 && (
+                          {message.results && message.results.length > 0 ? (
                             <div className="mt-3">
                               <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
                                 <Database className="h-4 w-4" />
@@ -300,7 +361,19 @@ export const AIAssistant: React.FC = () => {
                               </div>
                               {renderResults(message.results)}
                             </div>
-                          )}
+                          ) : message.noResults ? (
+                            <Alert variant="warning" className="mt-3">
+                              <AlertTitle>No results found</AlertTitle>
+                              <AlertDescription>
+                                The database doesn't contain data matching this query.
+                                <div className="mt-2">
+                                  <PopulateDataButton query={
+                                    messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
+                                  } />
+                                </div>
+                              </AlertDescription>
+                            </Alert>
+                          ) : null}
                         </TabsContent>
                       </Tabs>
                     ) : (

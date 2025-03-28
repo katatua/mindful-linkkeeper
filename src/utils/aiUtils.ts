@@ -74,7 +74,7 @@ export const formatDatabaseValue = (value: any, columnName?: string): any => {
         maximumFractionDigits: 0
       }).format(value);
     }
-    return value;
+    return value.toLocaleString('pt-PT');
   }
   
   // Try to handle string values that might contain numbers
@@ -97,7 +97,7 @@ export const formatDatabaseValue = (value: any, columnName?: string): any => {
       }
       
       // Otherwise, return the clean number
-      return numValue;
+      return numValue.toLocaleString('pt-PT');
     }
   }
   
@@ -285,6 +285,16 @@ export const generateResponse = async (prompt: string) => {
         }
       } catch (historyStoreError) {
         console.error('Error storing query history:', historyStoreError);
+      }
+      
+      // If no results, return a clear message indicating no data found
+      if (!data.results || data.results.length === 0) {
+        return {
+          message: `No results found for this query: "${prompt}". The requested data might not be in the database.`,
+          sqlQuery: data.sqlQuery || '',
+          results: null,
+          noResults: true
+        };
       }
       
       return {

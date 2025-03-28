@@ -132,48 +132,54 @@ const TableCell = React.forwardRef<
     const valueStr = String(content).trim();
     
     // Check if the string represents a number (ignoring currency symbols)
-    const numericStr = valueStr.replace(/[^\d.,\-]/g, '').replace(',', '.');
-    const value = parseFloat(numericStr);
+    const numericRegex = /^[€$£\s]*([-+]?[\d.,]+)[€$£\s%]*$/;
+    const match = valueStr.match(numericRegex);
     
-    if (!isNaN(value)) {
-      // Determine column name if available from DOM context
-      const columnName = (props as any)['data-column']?.toLowerCase() || '';
+    if (match) {
+      // Replace comma with dot for correct parsing and remove any currency symbols
+      const cleanNumericStr = match[1].replace(/,/g, '.');
+      const value = parseFloat(cleanNumericStr);
       
-      // Check if this column should be treated as currency
-      const isCurrency = currency || 
-        MONETARY_COLUMNS.some(term => columnName.includes(term)) ||
-        (unit && (['EUR', '€', 'euro', 'euros', 'million EUR', 'billion EUR'].includes(unit) ||
-                  unit.toLowerCase().includes('budget') ||
-                  unit.toLowerCase().includes('funding') ||
-                  unit.toLowerCase().includes('investment')));
-      
-      const isCount = count || 
-        COUNT_COLUMNS.some(term => columnName.includes(term)) || 
-        (unit && COUNT_COLUMNS.some(term => unit.toLowerCase().includes(term)));
-      
-      // Handle percentage values
-      if (percentage || (unit && (unit === 'percent' || unit === '%' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
-        content = `${value.toFixed(1)}%`;
-      } 
-      // Handle currency values with EUR symbol
-      else if (isCurrency) {
-        content = new Intl.NumberFormat('pt-PT', { 
-          style: 'currency', 
-          currency: 'EUR',
-          maximumFractionDigits: 0
-        }).format(value);
-      } 
-      // Handle counts and other numeric values without currency symbol
-      else if (isCount || numeric || (unit && unit !== 'N/A')) {
-        // Format the number without currency symbol
-        content = value.toLocaleString('pt-PT', {
-          style: 'decimal',
-          maximumFractionDigits: 0
-        });
+      if (!isNaN(value)) {
+        // Determine column name if available from DOM context
+        const columnName = (props as any)['data-column']?.toLowerCase() || '';
         
-        // Add the unit if provided and not N/A
-        if (unit && unit !== 'N/A') {
-          content = `${content} ${unit}`;
+        // Check if this column should be treated as currency
+        const isCurrency = currency || 
+          MONETARY_COLUMNS.some(term => columnName.includes(term)) ||
+          (unit && (['EUR', '€', 'euro', 'euros', 'million EUR', 'billion EUR'].includes(unit) ||
+                    unit.toLowerCase().includes('budget') ||
+                    unit.toLowerCase().includes('funding') ||
+                    unit.toLowerCase().includes('investment')));
+        
+        const isCount = count || 
+          COUNT_COLUMNS.some(term => columnName.includes(term)) || 
+          (unit && COUNT_COLUMNS.some(term => unit.toLowerCase().includes(term)));
+        
+        // Handle percentage values
+        if (percentage || valueStr.includes('%') || (unit && (unit === 'percent' || unit === '%' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
+          content = `${value.toFixed(1)}%`;
+        } 
+        // Handle currency values with EUR symbol
+        else if (isCurrency) {
+          content = new Intl.NumberFormat('pt-PT', { 
+            style: 'currency', 
+            currency: 'EUR',
+            maximumFractionDigits: 0
+          }).format(value);
+        } 
+        // Handle counts and other numeric values without currency symbol
+        else if (isCount || numeric || (unit && unit !== 'N/A')) {
+          // Format the number without currency symbol
+          content = value.toLocaleString('pt-PT', {
+            style: 'decimal',
+            maximumFractionDigits: 0
+          });
+          
+          // Add the unit if provided and not N/A
+          if (unit && unit !== 'N/A') {
+            content = `${content} ${unit}`;
+          }
         }
       }
     }
