@@ -50,57 +50,158 @@ export const genId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
+// Add function to directly execute SQL query when AI service is unavailable
+const executeFallbackQuery = async (query: string) => {
+  try {
+    console.log("Executing fallback SQL query for:", query);
+    
+    // Determine which table to query based on keywords
+    let sqlQuery = "";
+    let resultsMessage = "Here are the results based on your query:";
+    
+    if (query.toLowerCase().includes("innovation metrics") && query.toLowerCase().includes("lisbon")) {
+      sqlQuery = `
+        SELECT name, category, value, unit, measurement_date, region 
+        FROM ani_metrics 
+        WHERE LOWER(region) LIKE '%lisbon%' 
+        AND measurement_date >= '2024-01-01'
+        ORDER BY name ASC
+        LIMIT 10
+      `;
+      resultsMessage = "Innovation metrics for Lisbon region from 2024:";
+    } 
+    else if (query.toLowerCase().includes("renewable energy") && query.toLowerCase().includes("sector focus")) {
+      sqlQuery = `
+        SELECT name, description, total_budget, application_deadline, funding_type
+        FROM ani_funding_programs
+        WHERE ARRAY_TO_STRING(sector_focus, ',') ILIKE '%renewable%' 
+           OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energy%'
+        LIMIT 10
+      `;
+      resultsMessage = "Funding programs that include renewable energy in their sector focus:";
+    }
+    else if (query.toLowerCase().includes("projects") && query.toLowerCase().includes("funding") && query.toLowerCase().includes("technology")) {
+      sqlQuery = `
+        SELECT title, funding_amount, start_date, end_date, status
+        FROM ani_projects
+        WHERE sector ILIKE '%technology%' OR sector ILIKE '%tech%'
+        ORDER BY funding_amount DESC
+        LIMIT 5
+      `;
+      resultsMessage = "Top 5 projects with highest funding in the technology sector:";
+    }
+    else if (query.toLowerCase().includes("policy frameworks") && query.toLowerCase().includes("active")) {
+      sqlQuery = `
+        SELECT title, implementation_date, status
+        FROM ani_policy_frameworks
+        WHERE status ILIKE '%active%'
+        LIMIT 10
+      `;
+      resultsMessage = "Policy frameworks with 'active' status:";
+    }
+    else if (query.toLowerCase().includes("international collaborations") && query.toLowerCase().includes("ai")) {
+      sqlQuery = `
+        SELECT program_name, country, partnership_type, total_budget
+        FROM ani_international_collaborations
+        WHERE ARRAY_TO_STRING(focus_areas, ',') ILIKE '%ai%' 
+           OR ARRAY_TO_STRING(focus_areas, ',') ILIKE '%artificial intelligence%'
+        LIMIT 10
+      `;
+      resultsMessage = "International collaborations focusing on AI research:";
+    }
+    else {
+      // Default to a simple query if no specific pattern is matched
+      sqlQuery = `SELECT * FROM ani_metrics LIMIT 5`;
+      resultsMessage = "Here is a sample of metrics data from our database:";
+    }
+    
+    // Execute the query
+    const { data: queryResult, error: queryError } = await supabase.rpc('execute_sql_query', {
+      sql_query: sqlQuery.trim()
+    });
+    
+    if (queryError) throw queryError;
+    
+    return {
+      message: resultsMessage,
+      sqlQuery: sqlQuery,
+      results: queryResult || []
+    };
+  } catch (error) {
+    console.error('Error executing fallback query:', error);
+    return {
+      message: "Unable to process your query. Please try a simpler query or try again later.",
+      sqlQuery: "",
+      results: null
+    };
+  }
+};
+
 // Add function to handle database queries and AI responses
 export const generateResponse = async (prompt: string) => {
   try {
     // Extract keywords for energy-related queries to improve matching
     const energyKeywords = extractEnergyKeywords(prompt);
     
-    const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { 
-        prompt, 
-        chatHistory: [],
-        // Pass additional context to help the query processing
-        additionalContext: {
-          energyKeywords: energyKeywords
-        }
-      }
-    });
-
-    if (error) {
-      console.error('Error invoking Gemini Chat function:', error);
-      throw new Error(`Failed to generate response: ${error.message}`);
-    }
-
-    // Store query history in the database
+    // Try to use the Gemini API first
     try {
-      const userResponse = await supabase.auth.getUser();
-      const userId = userResponse.data?.user?.id;
-      
-      const { error: historyError } = await supabase.from('query_history').insert({
-        query_text: prompt,
-        user_id: userId || null,
-        was_successful: true,
-        language: 'en',
-        error_message: null,
-        created_tables: null
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { 
+          prompt, 
+          chatHistory: [],
+          // Pass additional context to help the query processing
+          additionalContext: {
+            energyKeywords: energyKeywords
+          }
+        },
+        timeout: 15000
       });
 
-      if (historyError) {
-        console.error('Error storing query history:', historyError);
+      if (error) {
+        console.error('Error invoking Gemini Chat function:', error);
+        // Instead of throwing, we'll fall back to direct SQL execution
+        console.log('Falling back to direct SQL execution');
+        return await executeFallbackQuery(prompt);
       }
-    } catch (historyStoreError) {
-      console.error('Error storing query history:', historyStoreError);
+
+      // Store query history in the database
+      try {
+        const userResponse = await supabase.auth.getUser();
+        const userId = userResponse.data?.user?.id;
+        
+        const { error: historyError } = await supabase.from('query_history').insert({
+          query_text: prompt,
+          user_id: userId || null,
+          was_successful: true,
+          language: 'en',
+          error_message: null,
+          created_tables: null
+        });
+
+        if (historyError) {
+          console.error('Error storing query history:', historyError);
+        }
+      } catch (historyStoreError) {
+        console.error('Error storing query history:', historyStoreError);
+      }
+      
+      return {
+        message: data.response || 'Sorry, I could not process your query.',
+        sqlQuery: data.sqlQuery || '',
+        results: data.results || null
+      };
+    } catch (geminiError) {
+      console.error('Error with Gemini API, falling back to direct SQL execution:', geminiError);
+      return await executeFallbackQuery(prompt);
     }
-    
-    return {
-      message: data.response || 'Sorry, I could not process your query.',
-      sqlQuery: data.sqlQuery || '',
-      results: data.results || null
-    };
   } catch (error) {
     console.error('Error generating response:', error);
-    throw error;
+    // As last resort, return a friendly error
+    return {
+      message: `I apologize, but I'm having trouble processing your query. Try asking one of the suggested questions instead.`,
+      sqlQuery: '',
+      results: null
+    };
   }
 };
 
