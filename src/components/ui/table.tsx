@@ -153,6 +153,10 @@ const TableCell = React.forwardRef<
       else if (unit) {
         content = `${value.toLocaleString('pt-PT')} ${unit}`;
       }
+      // No unit, just format the number
+      else {
+        content = value.toLocaleString('pt-PT');
+      }
     }
   }
 
