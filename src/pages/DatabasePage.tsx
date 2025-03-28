@@ -355,6 +355,14 @@ export const DatabasePage: React.FC = () => {
     });
   };
 
+  const renderCellValue = (value: any, columnName?: string): React.ReactNode => {
+    return formatDatabaseValue(value, columnName);
+  };
+
+  const handleTableChange = (value: string) => {
+    setActiveTable(value);
+  };
+
   const renderTableContent = () => {
     if (loading) {
       return <p className="py-4 text-center">Loading data...</p>;
