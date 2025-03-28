@@ -23,11 +23,24 @@ serve(async (req) => {
   }
 
   try {
-    // Fetch first 3 records from ani_funding_programs
-    const { data, error } = await supabase
-      .from('ani_funding_programs')
-      .select('*')
-      .limit(3);
+    // Parse query parameters if they exist
+    const url = new URL(req.url);
+    const sector = url.searchParams.get('sector');
+    const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')) : 5;
+
+    // Build the query
+    let query = supabase.from('ani_funding_programs').select('*');
+    
+    // Add filter if sector parameter is provided
+    if (sector) {
+      query = query.contains('sector_focus', [sector]);
+    }
+    
+    // Add limit
+    query = query.limit(limit);
+    
+    // Execute the query
+    const { data, error } = await query;
 
     if (error) throw error;
 
