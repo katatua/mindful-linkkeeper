@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -20,6 +19,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 import { useLocation } from 'react-router-dom';
 import { fetchDatabaseTables, fetchTableData, updateDatabaseTables, DatabaseTable } from '@/utils/databaseService';
+import { Link } from 'react-router-dom';
 
 interface GenericTableData {
   id?: string;
@@ -343,8 +343,14 @@ export const DatabasePage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
-                  The Query Assistant feature will help you to explore data with natural language. We're still working on this feature.
+                  The Query Assistant feature helps you explore data with natural language.
                 </p>
+                <Link to="/query-assistant">
+                  <Button>
+                    <Search className="h-4 w-4 mr-2" />
+                    Open Query Assistant
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </TabsContent>

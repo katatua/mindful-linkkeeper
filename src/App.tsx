@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -11,6 +10,7 @@ import { Layout } from '@/components/Layout';
 import Index from '@/pages/Index';
 import ANIPortal from '@/pages/ANIPortal';
 import AIReportDetail from '@/pages/AIReportDetail';
+import QueryAssistantPage from './pages/QueryAssistantPage';
 
 // Lazy-loaded pages
 const Auth = lazy(() => import('@/pages/Auth'));
@@ -46,6 +46,7 @@ function App() {
                 <Route path="/policies" element={<PoliciesPage />} />
                 <Route path="/assistant" element={<AIAssistant />} />
                 <Route path="/database" element={<DatabasePage />} />
+                <Route path="/query-assistant" element={<QueryAssistantPage />} />
               </Route>
             </Routes>
           </Suspense>

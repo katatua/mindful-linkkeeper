@@ -1,115 +1,180 @@
-
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from "@/components/ui/button"
 import {
-  Plus,
-  LogOut,
-  FolderPlus,
-  Link as LinkIcon,
-  FileUp,
-  LogIn,
-  Database,
-  BarChart2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { useEffect, useState } from "react";
-import { useSidebar } from "@/contexts/SidebarContext";
-
-const menuItems = [
-  { title: "Add File", icon: FileUp, url: "/add-file" },
-  { title: "Add Link", icon: LinkIcon, url: "/add-link" },
-  { title: "Add Category", icon: FolderPlus, url: "/add-category" },
-  { title: "Database Explorer", icon: Database, url: "/database" },
-  { title: "Generate Test Data", icon: BarChart2, url: "/synthetic-data" },
-];
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Menu } from "lucide-react";
+import { useTheme } from "@/components/theme-provider"
+import { MoonIcon, SunIcon } from "@radix-ui/react-icons"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { DatabaseIcon, Search } from 'lucide-react';
 
 export function AppSidebar() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { isOpen, toggle } = useSidebar();
-
-  useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Logged out successfully",
-      });
-      navigate("/auth");
-    } catch (error) {
-      toast({
-        title: "Error logging out",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLogin = () => {
-    navigate("/auth");
-  };
-
-  // If sidebar is not open, don't render anything
-  if (!isOpen) return null;
+  const { pathname } = useLocation();
+  const { setTheme, mode } = useTheme();
 
   return (
-    <div className="fixed h-full z-40 bg-white border-r shadow-lg w-64">
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Menu</h2>
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            ←
-          </Button>
+    <div className="border-r flex-col bg-background md:flex hidden">
+      <div className="flex h-20 shrink-0 items-center border-b bg-secondary p-4">
+        <Link to="/" className="font-semibold text-2xl">
+          Inovação
+        </Link>
+      </div>
+
+      <div className="space-y-4">
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            Menu
+          </h2>
+          <div className="space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+              data-active={pathname === '/'}
+            >
+              <Link to="/">
+                Dashboard
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            Database
+          </h2>
+          <div className="space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+              data-active={pathname === '/database'}
+            >
+              <Link to="/database">
+                <DatabaseIcon className="mr-2 h-4 w-4" />
+                Database Explorer
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+              data-active={pathname === '/query-assistant'}
+            >
+              <Link to="/query-assistant">
+                <Search className="mr-2 h-4 w-4" />
+                Query Assistant
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            Admin
+          </h2>
+          <div className="space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+              data-active={pathname === '/admin/settings'}
+            >
+              <Link to="/admin/settings">
+                Settings
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
-      
-      <div className="p-4">
-        <h3 className="text-sm font-medium text-gray-500 mb-3">Actions</h3>
-        <nav className="space-y-1">
-          {menuItems.map((item) => (
-            <a
-              key={item.title}
-              href={item.url}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.title}</span>
-            </a>
-          ))}
-          
-          {isAuthenticated ? (
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Logout</span>
-            </button>
-          ) : (
-            <button 
-              onClick={handleLogin}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
-            >
-              <LogIn className="h-5 w-5" />
-              <span>Login</span>
-            </button>
-          )}
-        </nav>
-      </div>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="sm" className="md:hidden absolute top-4 left-4">
+            <Menu className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="sm:w-64">
+          <SheetHeader>
+            <SheetTitle>Menu</SheetTitle>
+            <SheetDescription>
+              Explore the application.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="px-3 py-2">
+              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+                Menu
+              </h2>
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  asChild
+                  data-active={pathname === '/'}
+                >
+                  <Link to="/">
+                    Dashboard
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="px-3 py-2">
+              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+                Database
+              </h2>
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  asChild
+                  data-active={pathname === '/database'}
+                >
+                  <Link to="/database">
+                    Database Explorer
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  asChild
+                  data-active={pathname === '/query-assistant'}
+                >
+                  <Link to="/query-assistant">
+                    Query Assistant
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="px-3 py-2">
+              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+                Admin
+              </h2>
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  asChild
+                  data-active={pathname === '/admin/settings'}
+                >
+                  <Link to="/admin/settings">
+                    Settings
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
