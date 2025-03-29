@@ -36,64 +36,41 @@ serve(async (req) => {
     if (isRefresh) {
       console.log("Performing a refresh of database tables");
     }
-    
-    // First, check if the supabase credentials work by getting a list of all tables
-    console.log("Querying information_schema to list all tables");
-    const { data: allTables, error: tablesError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
+
+    console.log("Querying information_schema for tables");
+    const { data: tables, error: tablesError } = await supabase
+      .from('information_schema.columns')
+      .select('table_name, column_name, data_type, is_nullable')
       .eq('table_schema', 'public')
-      .neq('table_name', 'schema_migrations')
-      .order('table_name');
+      .neq('table_name', 'schema_migrations');
       
     if (tablesError) {
       console.error("Error querying tables:", tablesError);
       throw tablesError;
     }
     
-    console.log(`Found ${allTables?.length || 0} total tables in the database`);
-    
-    // Get all tables in the public schema
-    const query = `
-      SELECT 
-        table_name,
-        json_agg(
-          json_build_object(
-            'column_name', column_name,
-            'data_type', data_type,
-            'is_nullable', is_nullable
-          )
-        ) as columns
-      FROM 
-        information_schema.columns
-      WHERE 
-        table_schema = 'public' 
-        AND table_name IN (
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_type = 'BASE TABLE'
-        )
-      GROUP BY 
-        table_name
-      ORDER BY 
-        table_name;
-    `;
-    
-    console.log("Executing detailed query for table schema");
-    const { data, error } = await supabase.rpc('execute_sql_query', {
-      sql_query: query
+    // Group by table name to organize the data
+    const groupedTables = {};
+    tables?.forEach(column => {
+      if (!groupedTables[column.table_name]) {
+        groupedTables[column.table_name] = {
+          table_name: column.table_name,
+          columns: []
+        };
+      }
+      
+      groupedTables[column.table_name].columns.push({
+        column_name: column.column_name,
+        data_type: column.data_type,
+        is_nullable: column.is_nullable
+      });
     });
     
-    if (error) {
-      console.error("Error executing SQL query:", error);
-      throw error;
-    }
-    
-    console.log(`Returning schema for ${data?.length || 0} tables`);
+    const result = Object.values(groupedTables);
+    console.log(`Returning schema for ${result.length} tables`);
     
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(result),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -101,6 +78,8 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in get-database-tables function:", error);
+    
+    // Return a structured error response
     return new Response(
       JSON.stringify({
         error: `Failed to get database tables: ${error.message || "Unknown error"}`

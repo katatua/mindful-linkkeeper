@@ -99,7 +99,26 @@ export const DatabasePage: React.FC = () => {
   };
 
   const handleRefresh = async () => {
-    if (activeTable) {
+    if (activeTab === 'schema') {
+      setTablesLoading(true);
+      const success = await updateDatabaseTables();
+      if (success) {
+        toast({
+          title: 'Tables refreshed',
+          description: 'Database tables have been refreshed.',
+        });
+        // Reload tables after refreshing
+        const tables = await fetchDatabaseTables();
+        setDatabaseTables(tables);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to refresh database tables.',
+          variant: 'destructive',
+        });
+      }
+      setTablesLoading(false);
+    } else if (activeTable) {
       await fetchTableContent(activeTable);
     }
   };
@@ -215,6 +234,10 @@ export const DatabasePage: React.FC = () => {
       <div className="container mx-auto py-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Database Explorer</h1>
+          <Button variant="outline" onClick={handleRefresh} disabled={tablesLoading} className="mt-2 md:mt-0">
+            <RefreshCw className={`mr-2 h-4 w-4 ${tablesLoading ? 'animate-spin' : ''}`} />
+            Refresh Schema
+          </Button>
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

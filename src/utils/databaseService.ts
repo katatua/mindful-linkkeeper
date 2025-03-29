@@ -134,6 +134,7 @@ export const insertTableData = async (tableName: string, data: any): Promise<boo
 
 export const updateDatabaseTables = async (): Promise<boolean> => {
   try {
+    console.log("Updating database tables...");
     const { error } = await supabase.functions.invoke('get-database-tables', {
       method: 'POST',
       body: { refresh: true }
@@ -144,6 +145,7 @@ export const updateDatabaseTables = async (): Promise<boolean> => {
       return false;
     }
     
+    console.log("Database tables updated successfully");
     return true;
   } catch (error) {
     console.error("Failed to update database tables:", error);
