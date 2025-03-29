@@ -93,11 +93,13 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
         });
         
         // Call the onInsertSuccess callback if provided
-        // Add a delay to allow the database triggers to complete
+        // Add a significant delay to ensure database triggers complete
         if (onInsertSuccess) {
+          console.log("Aguardando 2 segundos antes de chamar onInsertSuccess");
           setTimeout(() => {
+            console.log("Chamando onInsertSuccess");
             onInsertSuccess();
-          }, 1000); // Increase delay to ensure database triggers complete
+          }, 2000); // Increase delay to ensure database triggers complete
         }
       }
       

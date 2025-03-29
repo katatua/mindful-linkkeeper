@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -13,7 +14,10 @@ interface PopulateDataButtonProps {
   queryId?: string;
 }
 
-export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, queryId }) => {
+export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ 
+  query, 
+  queryId 
+}) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
@@ -123,6 +127,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
     
     setIsAnalyzing(true);
     try {
+      console.log("Analyzing query:", query);
       const sampleAnalysis = generateSampleAnalysis(query);
       setAnalysis(sampleAnalysis);
       setShowDialog(true);
@@ -132,6 +137,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
         body: { query }
       }).then(({ data, error }) => {
         if (!error && data) {
+          console.log("Received data from analyze-query:", data);
           setAnalysis(data);
         } else {
           console.log("Background analyze-query call failed, using sample data instead:", error);
@@ -169,12 +175,13 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
   };
   
   const handleInsertSuccess = () => {
+    console.log("Insert success called, closing dialog");
     setShowDialog(false);
     
     // Give user a helpful message
     toast({
       title: "Dados inseridos com sucesso",
-      description: "Tente fazer sua consulta novamente para ver os resultados.",
+      description: "A página irá recarregar para mostrar os resultados da consulta.",
     });
     
     // Create a URL with the query to retry
@@ -182,9 +189,10 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
     const newUrl = `${currentUrl}?queryToRetry=${encodeURIComponent(query)}`;
     
     // Navigate to the same page with the query parameter to retry
+    console.log("Redirecting to:", newUrl);
     setTimeout(() => {
       window.location.href = newUrl;
-    }, 500);
+    }, 1000);
   };
   
   return (

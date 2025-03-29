@@ -57,6 +57,8 @@ export const AIAssistant: React.FC = () => {
   };
 
   const processQuery = async (queryText: string) => {
+    console.log("Processing query:", queryText);
+    
     const userMessage: Message = {
       id: genId(),
       content: queryText,
@@ -69,7 +71,15 @@ export const AIAssistant: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // Show a toast to let user know we're processing
+      toast({
+        title: "Processando consulta",
+        description: "Aguarde enquanto processamos sua consulta...",
+      });
+      
+      console.log("Sending query to generateResponse:", queryText);
       const response = await generateResponse(queryText);
+      console.log("Response received:", response);
       
       const assistantMessage: Message = {
         id: genId(),
@@ -113,6 +123,10 @@ export const AIAssistant: React.FC = () => {
     setActiveQuestion(null);
     setActiveResponse(null);
     setInput('');
+    
+    // Remove any URL parameters
+    const currentUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, currentUrl);
   };
   
   // Effect to retry the query if the query ID changes (after data has been populated)
@@ -122,6 +136,8 @@ export const AIAssistant: React.FC = () => {
     const queryToRetry = urlParams.get('queryToRetry');
     
     if (queryToRetry) {
+      console.log("Found queryToRetry parameter, processing:", queryToRetry);
+      
       // Remove the parameter from the URL to prevent infinite retries
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
