@@ -18,14 +18,115 @@ import { fetchTableData, fetchDatabaseTables, DatabaseTable, insertTableData } f
 import AddDataSourceModal from './AddDataSourceModal';
 import { useToast } from '@/components/ui/use-toast';
 
+// Predefined data sources based on provided information
+const predefinedDataSources: Partial<FonteDados>[] = [
+  {
+    nome_sistema: "Diversas origens distribuídas por vários repositórios/sistemas de armazenamento",
+    descricao: "Candidaturas de projetos; projetos; pareceres de peritos; respostas a questionários; representações; relatórios diversos; estudos; etc.",
+    tecnologia: "Documentos PDF; Documentos Word; Documentos Excel; Outros formatos office; Outros documentos em formato open source",
+  },
+  {
+    nome_sistema: "Dados de projetos financiados por Fundos Europeus de gestão centralizada",
+    descricao: "Dados relativos à atribuição de financiamento através de fundos europeus de gestão centralizada a entidades empresariais e não empresariais.",
+    tecnologia: "Outsystems (SQL Server)",
+    entidade: "Horizonte Europa, Programa Europa Digital"
+  },
+  {
+    nome_sistema: "Dados de projetos financiados por Fundos Europeus e por Fundos Nacionais",
+    descricao: "Dados relativos à atribuição de financiamento através de fundos europeus e por fundos nacionais a entidades empresariais e não empresariais.",
+    tecnologia: "Outsystems (SQL Server)",
+    entidade: "rede EUREKA"
+  },
+  {
+    nome_sistema: "Pedidos de incentivos fiscais",
+    descricao: "Dados relativos à atribuição de incentivos fiscais a entidades empresariais e não empresariais apoiando o seu esforço em Investigação & Desenvolvimento através da dedução à coleta do IRC.",
+    tecnologia: "Outsystems (SQL Server)",
+    entidade: "SIFIDE"
+  },
+  {
+    nome_sistema: "Instituições de I&D",
+    descricao: "Dados relativos ao mapeamento das entidades que fazem Investigação & Desenvolvimento em Portugal e na Europa.",
+    tecnologia: "Outsystems (SQL Server)"
+  },
+  {
+    nome_sistema: "Dados sobre Cooperação Internacional",
+    descricao: "Dados relativos à Bolsa de Tecnologia e Negócios, onde a procura e a oferta de tecnologias são valorizadas.",
+    tecnologia: "Outsystems (SQL Server)"
+  },
+  {
+    nome_sistema: "Dados sobre Empreendedorismo, Inovação e Clusters",
+    descricao: "Dados relativos clusters de inovação colaborativa e empreendedorismo, que coabitam no mesmo local e possuem características e objetivos semelhantes.",
+    tecnologia: "Outsystems (SQL Server)"
+  },
+  {
+    nome_sistema: "Dados constantes no Portal da Inovação SNI",
+    descricao: "Dados relativos à atribuição de financiamento através de fundos europeus a entidades empresariais e não empresariais",
+    tecnologia: "Outsystems (SQL Server)"
+  },
+  {
+    nome_sistema: "Dados sobre a ENEI 2020",
+    descricao: "Dados relativos à estratégia nacional para especialização inteligente dando prioridade às intervenções públicas em matéria de I&D e Inovação.",
+    tecnologia: "Azure (SQL Server)",
+    entidade: "Estratégia Nacional de Investigação e Inovação para uma Especialização Inteligente 2014-2020"
+  },
+  {
+    nome_sistema: "Dados sobre projetos da Missão Interface",
+    descricao: "Dados relativos a projetos/candidaturas ao programa de financiamento base das instituições interface, visando alavancar a sua capacidade de mediação e articulação entre a academia e as empresas, nomeadamente através do apoio à dinamização de infraestruturas de transferência de conhecimentos e tecnologia, como os Centros de Tecnologia e Inovação (CTI) e os Laboratórios Colaborativos (CoLAB).",
+    tecnologia: ".NET + SQL Server"
+  },
+  {
+    nome_sistema: "Dados sobre a Qualificação e Certificação de Reconhecimento de Idoneidade",
+    descricao: "Dados relativos a projetos/candidaturas que consistem em ambientes físicos, geograficamente localizados, em ambiente real ou quase real, utilizados para a realização de testes e experimentação de processos inovadores de base tecnologia.",
+    tecnologia: "Outsystems (SQL Server)"
+  },
+  {
+    nome_sistema: "Dados de projetos com enquadramento em Zonas Livres Tecnológicas",
+    descricao: "Fonte de informação complementar sobre investigação e inovação em zonas tecnológicas de experimentação.",
+    tecnologia: "Outsystems (SQL Server)"
+  }
+];
+
 export const DataSourcesTab: React.FC = () => {
   const [dataSources, setDataSources] = useState<FonteDados[]>([]);
   const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
   
+  const initializeDataSources = async () => {
+    // Check if we already have data sources
+    const existingData = await fetchTableData('fontes_dados');
+    
+    // If no data, insert the predefined data sources
+    if (existingData.length === 0) {
+      console.log("No data sources found. Initializing with predefined data...");
+      
+      // Insert each predefined data source sequentially
+      for (const source of predefinedDataSources) {
+        try {
+          await insertTableData('fontes_dados', source);
+          console.log(`Added data source: ${source.nome_sistema}`);
+        } catch (error) {
+          console.error(`Error adding data source: ${source.nome_sistema}`, error);
+        }
+      }
+      
+      toast({
+        title: "Fontes de dados inicializadas",
+        description: "As fontes de dados predefinidas foram carregadas com sucesso.",
+      });
+      
+      // Fetch the newly inserted data
+      await fetchDataSources();
+    } else {
+      console.log("Data sources already exist in the database.");
+    }
+    
+    setHasInitialized(true);
+  };
+
   const fetchDataSources = async () => {
     setIsLoading(true);
     try {
@@ -62,7 +163,13 @@ export const DataSourcesTab: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDataSources();
+    // First fetch the data sources
+    fetchDataSources().then(() => {
+      // After fetching, check if we need to initialize
+      if (!hasInitialized) {
+        initializeDataSources();
+      }
+    });
   }, []);
   
   // Function to find matching database table for a data source
