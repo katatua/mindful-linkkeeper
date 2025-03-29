@@ -177,19 +177,14 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
       description: "Tente fazer sua consulta novamente para ver os resultados.",
     });
     
-    // If we're on a page with a refresh function, try to call it
-    if (window.location.pathname.includes('query-assistant')) {
-      // Attempt to refresh the query by simulating a click on the same suggestion button
-      setTimeout(() => {
-        const buttons = document.querySelectorAll('button');
-        for (const button of buttons) {
-          if (button.textContent && button.textContent.includes(query)) {
-            button.click();
-            return;
-          }
-        }
-      }, 1000);
-    }
+    // Create a URL with the query to retry
+    const currentUrl = window.location.pathname;
+    const newUrl = `${currentUrl}?queryToRetry=${encodeURIComponent(query)}`;
+    
+    // Navigate to the same page with the query parameter to retry
+    setTimeout(() => {
+      window.location.href = newUrl;
+    }, 500);
   };
   
   return (

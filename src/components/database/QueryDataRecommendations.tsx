@@ -93,10 +93,11 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
         });
         
         // Call the onInsertSuccess callback if provided
+        // Add a delay to allow the database triggers to complete
         if (onInsertSuccess) {
           setTimeout(() => {
             onInsertSuccess();
-          }, 500); // Small delay to allow UI to update
+          }, 1000); // Increase delay to ensure database triggers complete
         }
       }
       
