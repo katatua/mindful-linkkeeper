@@ -13,6 +13,7 @@ import { Layout } from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Database as DatabaseIcon, FileQuestion, Search, FileText, History, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -298,29 +299,32 @@ export const DatabasePage: React.FC = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : databaseTables.length > 0 ? (
-                  <>
-                    <Tabs 
-                      defaultValue={activeTable || databaseTables[0].table_name} 
-                      className="mt-2"
-                      onValueChange={setActiveTable}
-                    >
-                      <ScrollArea className="w-full" type="always">
-                        <TabsList className="mb-4 flex w-max">
-                          {databaseTables.map(table => (
-                            <TabsTrigger key={table.table_name} value={table.table_name}>
-                              {table.table_name}
-                            </TabsTrigger>
-                          ))}
-                        </TabsList>
-                      </ScrollArea>
-                      
-                      {databaseTables.map(table => (
-                        <TabsContent key={table.table_name} value={table.table_name}>
-                          {renderTableContent()}
-                        </TabsContent>
-                      ))}
-                    </Tabs>
-                  </>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-64">
+                        <Select
+                          value={activeTable}
+                          onValueChange={setActiveTable}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a table" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {databaseTables.map((table) => (
+                              <SelectItem key={table.table_name} value={table.table_name}>
+                                {table.table_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Badge variant="outline">
+                        {activeTable && databaseTables.find(t => t.table_name === activeTable)?.columns.length} columns
+                      </Badge>
+                    </div>
+                    
+                    {renderTableContent()}
+                  </div>
                 ) : (
                   <p className="text-center py-4">No database tables found</p>
                 )}
