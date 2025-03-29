@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FonteDados } from '@/types/databaseTypes';
 import { fetchTableData, fetchDatabaseTables, DatabaseTable, insertTableData } from '@/utils/databaseService';
 import AddDataSourceModal from './AddDataSourceModal';
+import { useToast } from '@/components/ui/use-toast';
 
 export const DataSourcesTab: React.FC = () => {
   const [dataSources, setDataSources] = useState<FonteDados[]>([]);
@@ -23,6 +24,7 @@ export const DataSourcesTab: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
   
   const fetchDataSources = async () => {
     setIsLoading(true);
@@ -43,6 +45,11 @@ export const DataSourcesTab: React.FC = () => {
     } catch (error) {
       console.error('Error fetching data sources:', error);
       setDataSources([]);
+      toast({
+        title: "Erro ao carregar fontes de dados",
+        description: "Não foi possível carregar as fontes de dados. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +69,7 @@ export const DataSourcesTab: React.FC = () => {
   const findMatchingTable = (fonte: FonteDados): DatabaseTable | undefined => {
     // Try to match by exact name or containing the fonte name
     return databaseTables.find(table => 
-      table.table_name.toLowerCase() === fonte.nome_sistema.toLowerCase() ||
+      table.table_name.toLowerCase() === fonte.nome_sistema.toLowerCase().replace(/\s+/g, '_') ||
       table.table_name.toLowerCase().includes(fonte.nome_sistema.toLowerCase().replace(/\s+/g, '_')) ||
       fonte.nome_sistema.toLowerCase().includes(table.table_name.toLowerCase().replace(/_/g, ' '))
     );
@@ -119,7 +126,7 @@ export const DataSourcesTab: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-1">Descrição</h3>
-                      <p>{source.descricao}</p>
+                      <p className="whitespace-pre-line">{source.descricao}</p>
                     </div>
                     
                     <div>
@@ -166,54 +173,6 @@ export const DataSourcesTab: React.FC = () => {
                         </ScrollArea>
                       </div>
                     )}
-                    
-                    <div className="pt-4 border-t">
-                      <h3 className="text-sm font-medium mb-3 flex items-center">
-                        <Database className="mr-2 h-4 w-4" />
-                        Comando de Importação
-                      </h3>
-                      <ScrollArea className="h-[100px] w-full rounded-md border p-4 bg-gray-50">
-                        <pre className="text-xs text-gray-700">
-{`INSERT INTO fontes_dados (nome_sistema, descricao, tecnologia, entidade, data_importacao)
-VALUES (
-    '${source.nome_sistema}',
-    '${source.descricao}',
-    '${source.tecnologia}',
-    ${source.entidade ? `'${source.entidade}'` : 'NULL'},
-    CURRENT_TIMESTAMP
-);`}
-                        </pre>
-                      </ScrollArea>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <h3 className="text-sm font-medium mb-3 flex items-center">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Dados Extraídos (Exemplo)
-                      </h3>
-                      <ScrollArea className="h-[150px] w-full rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Tipo</TableHead>
-                              <TableHead>Data Extração</TableHead>
-                              <TableHead>Detalhes</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>001</TableCell>
-                              <TableCell>Estatísticas</TableCell>
-                              <TableCell>{new Date().toLocaleDateString()}</TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="sm">Ver Detalhes</Button>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
