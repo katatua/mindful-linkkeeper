@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -21,6 +22,7 @@ const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
 const PoliciesPage = lazy(() => import('@/pages/PoliciesPage'));
 const AIAssistant = lazy(() => import('@/components/AIAssistant').then(module => ({ default: module.AIAssistant })));
 const ReportDetailPage = lazy(() => import('@/pages/ReportDetailPage'));
+const DatabasePage = lazy(() => import('@/pages/DatabasePage'));
 
 function App() {
   return (
@@ -43,6 +45,7 @@ function App() {
                 <Route path="/report/:reportId" element={<ReportDetailPage />} />
                 <Route path="/policies" element={<PoliciesPage />} />
                 <Route path="/assistant" element={<AIAssistant />} />
+                <Route path="/database" element={<DatabasePage />} />
               </Route>
             </Routes>
           </Suspense>
