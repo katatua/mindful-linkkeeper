@@ -1,3 +1,4 @@
+
 import { supabase, getTable } from '@/integrations/supabase/client';
 
 export interface DatabaseTable {
@@ -89,9 +90,6 @@ export const fetchDatabaseTables = async (): Promise<DatabaseTable[]> => {
         ]
       }
     ];
-  } catch (error) {
-    console.error("Failed to fetch database tables:", error);
-    return [];
   }
 };
 
