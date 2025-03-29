@@ -123,12 +123,14 @@ export const deleteReport = async (id: string) => {
 export const extractVisualizations = (content: string | null): any[] => {
   if (!content) return [];
   
-  let contentToProcess: string = typeof content === 'string' ? content : '';
-  if (typeof content === 'object' && content._type === 'String' && content.value) {
-    contentToProcess = content.value;
+  let contentToProcess: string = '';
+  if (typeof content === 'string') {
+    contentToProcess = content;
+  } else if (typeof content === 'object' && content && '_type' in content && content._type === 'String' && 'value' in content) {
+    contentToProcess = (content as any).value || '';
   }
   
-  if (!contentToProcess || typeof contentToProcess !== 'string') return [];
+  if (!contentToProcess) return [];
   
   const visualizationMarkers = contentToProcess.match(/\[Visualization:[^\]]+\]/g) || [];
   console.log("Found visualization markers:", visualizationMarkers.length);
@@ -155,20 +157,20 @@ export const generateReportTopics = (topic: string, language: string): ReportTop
     {
       title: language === 'pt' ? "Introdução" : "Introduction",
       description: language === 'pt' ? 
-        `Visão geral do relatório sobre ${topic}` : 
-        `Overview of the report on ${topic}`
+        `Visão geral do relatório sobre ${topic}, contextualizando o tema e explicando sua relevância.` : 
+        `Overview of the report on ${topic}, contextualizing the subject and explaining its relevance.`
     },
     {
       title: language === 'pt' ? "Metodologia" : "Methodology",
       description: language === 'pt' ? 
-        "Abordagem analítica e fontes de dados utilizadas" : 
-        "Analytical approach and data sources used"
+        "Abordagem analítica, fontes de dados utilizadas e métodos de análise aplicados." : 
+        "Analytical approach, data sources used, and analysis methods applied."
     },
     {
       title: language === 'pt' ? "Conclusão" : "Conclusion",
       description: language === 'pt' ? 
-        "Resumo das principais descobertas e recomendações" : 
-        "Summary of key findings and recommendations"
+        "Resumo das principais descobertas, implicações práticas e recomendações estratégicas." : 
+        "Summary of key findings, practical implications, and strategic recommendations."
     }
   ];
   
@@ -180,26 +182,26 @@ export const generateReportTopics = (topic: string, language: string): ReportTop
       {
         title: language === 'pt' ? "Tendências de Inovação" : "Innovation Trends",
         description: language === 'pt' ? 
-          "Análise das tendências atuais e emergentes" : 
-          "Analysis of current and emerging trends"
+          "Análise das tendências atuais, tecnologias emergentes e sua adoção no mercado." : 
+          "Analysis of current trends, emerging technologies, and their market adoption."
       },
       {
         title: language === 'pt' ? "Ecossistema de Startups" : "Startup Ecosystem",
         description: language === 'pt' ? 
-          "Avaliação do cenário de startups e empreendedorismo" : 
-          "Assessment of the startup and entrepreneurship landscape"
+          "Avaliação do cenário de startups, incubadoras, aceleradoras e infraestrutura de apoio." : 
+          "Assessment of the startup landscape, incubators, accelerators, and support infrastructure."
       },
       {
         title: language === 'pt' ? "Investimentos em P&D" : "R&D Investments",
         description: language === 'pt' ? 
-          "Panorama dos investimentos em pesquisa e desenvolvimento" : 
-          "Overview of research and development investments"
+          "Panorama dos investimentos públicos e privados em pesquisa e desenvolvimento." : 
+          "Overview of public and private investments in research and development."
       },
       {
         title: language === 'pt' ? "Impacto Econômico" : "Economic Impact",
         description: language === 'pt' ? 
-          "Análise do impacto econômico das atividades de inovação" : 
-          "Analysis of the economic impact of innovation activities"
+          "Análise quantitativa e qualitativa do impacto econômico da inovação no setor." : 
+          "Quantitative and qualitative analysis of the economic impact of innovation in the sector."
       }
     ];
   } else if (topic.toLowerCase().includes('finan') || topic.toLowerCase().includes('fund')) {
@@ -207,26 +209,26 @@ export const generateReportTopics = (topic: string, language: string): ReportTop
       {
         title: language === 'pt' ? "Programas de Financiamento" : "Funding Programs",
         description: language === 'pt' ? 
-          "Visão geral dos programas de financiamento disponíveis" : 
-          "Overview of available funding programs"
+          "Detalhamento dos principais programas de financiamento disponíveis e seus requisitos." : 
+          "Details of the main funding programs available and their requirements."
       },
       {
         title: language === 'pt' ? "Distribuição de Investimentos" : "Investment Distribution",
         description: language === 'pt' ? 
-          "Análise da distribuição de investimentos por setor e região" : 
-          "Analysis of investment distribution by sector and region"
+          "Análise da alocação de recursos financeiros por setor, região e tipo de projeto." : 
+          "Analysis of financial resource allocation by sector, region, and project type."
       },
       {
         title: language === 'pt' ? "Tendências de Captação" : "Fundraising Trends",
         description: language === 'pt' ? 
-          "Tendências e padrões observados na captação de recursos" : 
-          "Observed trends and patterns in fundraising"
+          "Padrões emergentes na captação de recursos e estratégias bem-sucedidas." : 
+          "Emerging patterns in fundraising and successful strategies."
       },
       {
         title: language === 'pt' ? "Retorno sobre Investimento" : "Return on Investment",
         description: language === 'pt' ? 
-          "Avaliação do ROI em diferentes programas de financiamento" : 
-          "ROI assessment across different funding programs"
+          "Métricas de desempenho e retorno dos diferentes mecanismos de financiamento." : 
+          "Performance metrics and returns from different funding mechanisms."
       }
     ];
   } else if (topic.toLowerCase().includes('polit') || topic.toLowerCase().includes('polic')) {
@@ -234,26 +236,26 @@ export const generateReportTopics = (topic: string, language: string): ReportTop
       {
         title: language === 'pt' ? "Quadro Regulatório" : "Regulatory Framework",
         description: language === 'pt' ? 
-          "Análise do quadro regulatório atual" : 
-          "Analysis of the current regulatory framework"
+          "Análise da legislação vigente, diretrizes e normas que impactam o setor." : 
+          "Analysis of current legislation, guidelines, and standards impacting the sector."
       },
       {
         title: language === 'pt' ? "Incentivos Fiscais" : "Tax Incentives",
         description: language === 'pt' ? 
-          "Visão geral dos incentivos fiscais para inovação" : 
-          "Overview of tax incentives for innovation"
+          "Detalhamento dos benefícios fiscais disponíveis e seu impacto no desenvolvimento." : 
+          "Details of available tax benefits and their impact on development."
       },
       {
         title: language === 'pt' ? "Iniciativas Governamentais" : "Government Initiatives",
         description: language === 'pt' ? 
-          "Análise das iniciativas governamentais de apoio" : 
-          "Analysis of supporting government initiatives"
+          "Programas governamentais de apoio, parcerias público-privadas e resultados." : 
+          "Government support programs, public-private partnerships, and results."
       },
       {
         title: language === 'pt' ? "Impacto das Políticas" : "Policy Impact",
         description: language === 'pt' ? 
-          "Avaliação do impacto das políticas existentes" : 
-          "Assessment of the impact of existing policies"
+          "Avaliação da eficácia das políticas implementadas e recomendações de ajustes." : 
+          "Assessment of the effectiveness of implemented policies and adjustment recommendations."
       }
     ];
   } else {
@@ -262,26 +264,26 @@ export const generateReportTopics = (topic: string, language: string): ReportTop
       {
         title: language === 'pt' ? "Análise de Mercado" : "Market Analysis",
         description: language === 'pt' ? 
-          "Visão geral do mercado e tendências principais" : 
-          "Overview of the market and key trends"
+          "Avaliação do tamanho de mercado, segmentação, concorrência e oportunidades." : 
+          "Assessment of market size, segmentation, competition, and opportunities."
       },
       {
         title: language === 'pt' ? "Desafios e Oportunidades" : "Challenges and Opportunities",
         description: language === 'pt' ? 
-          "Principais desafios e oportunidades identificados" : 
-          "Key challenges and opportunities identified"
+          "Identificação de barreiras, riscos e áreas de potencial crescimento." : 
+          "Identification of barriers, risks, and areas of potential growth."
       },
       {
         title: language === 'pt' ? "Estudos de Caso" : "Case Studies",
         description: language === 'pt' ? 
-          "Exemplos relevantes e lições aprendidas" : 
-          "Relevant examples and lessons learned"
+          "Exemplos práticos, histórias de sucesso e lições aprendidas no setor." : 
+          "Practical examples, success stories, and lessons learned in the sector."
       },
       {
         title: language === 'pt' ? "Recomendações" : "Recommendations",
         description: language === 'pt' ? 
-          "Recomendações estratégicas baseadas na análise" : 
-          "Strategic recommendations based on the analysis"
+          "Sugestões estratégicas, próximos passos e potenciais áreas de foco." : 
+          "Strategic suggestions, next steps, and potential focus areas."
       }
     ];
   }

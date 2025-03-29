@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -144,15 +143,12 @@ const AIReportDetail = () => {
     console.log("Processing content with length:", content ? content.length : 0);
     
     // If the content is an object with a value property, use the value
-    let contentToProcess: string | null = content;
-    if (typeof content === 'object' && content._type === 'String' && content.value) {
-      contentToProcess = content.value;
+    let contentToProcess: string = '';
+    if (typeof content === 'string') {
+      contentToProcess = content;
+    } else if (typeof content === 'object' && content && '_type' in content && content._type === 'String' && 'value' in content) {
+      contentToProcess = (content as any).value || '';
       console.log("Found content as object, using value property instead");
-    }
-    
-    // Check if contentToProcess exists before trying to match
-    if (!contentToProcess || typeof contentToProcess !== 'string') {
-      return null;
     }
     
     console.log("Visualization markers:", contentToProcess.match(visualizationRegex));
@@ -266,8 +262,8 @@ const AIReportDetail = () => {
   let contentForWordCount = "";
   if (report && report.content) {
     contentForWordCount = typeof report.content === 'string' ? report.content : '';
-    if (typeof report.content === 'object' && report.content._type === 'String' && report.content.value) {
-      contentForWordCount = report.content.value;
+    if (typeof report.content === 'object' && report.content && '_type' in report.content && report.content._type === 'String' && 'value' in report.content) {
+      contentForWordCount = (report.content as any).value || '';
     }
   }
   

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -202,7 +203,7 @@ export const ReportGenerator = () => {
           description: language === 'pt' 
             ? "O relatório foi gerado mas não pôde ser salvo no banco de dados. Você ainda pode visualizá-lo." 
             : "The report was generated but couldn't be saved to the database. You can still view it.",
-          variant: "warning"
+          variant: "default"
         });
         
         setTimeout(() => {
@@ -297,19 +298,21 @@ export const ReportGenerator = () => {
                 </h3>
                 <div className="space-y-2">
                   {topics.map((topicItem, index) => (
-                    <div key={index} className="flex items-center p-2 rounded border">
-                      {index === currentTopicIndex ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-500" />
-                      ) : index < currentTopicIndex ? (
-                        <FileText className="h-4 w-4 mr-2 text-green-500" />
-                      ) : (
-                        <FileText className="h-4 w-4 mr-2 text-gray-400" />
-                      )}
-                      <div>
-                        <p className={`font-medium ${index === currentTopicIndex ? 'text-blue-500' : index < currentTopicIndex ? 'text-green-500' : 'text-gray-400'}`}>
+                    <div key={index} className="flex items-start p-3 rounded border">
+                      <div className="flex-shrink-0 mt-0.5 mr-2">
+                        {index === currentTopicIndex ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        ) : index < currentTopicIndex ? (
+                          <FileText className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-medium ${index === currentTopicIndex ? 'text-blue-500' : index < currentTopicIndex ? 'text-green-500' : 'text-gray-700'}`}>
                           {topicItem.title}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 mt-1">
                           {topicItem.description}
                         </p>
                       </div>
