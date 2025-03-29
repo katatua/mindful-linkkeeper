@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 
@@ -470,9 +471,24 @@ export const generateTopicContent = (topic: ReportTopic, mainTopic: string, lang
         { trend: language === 'pt' ? "Sustentabilidade" : "Sustainability", growth: Math.floor(Math.random() * 30) + 40 },
         { trend: language === 'pt' ? "Automação" : "Automation", growth: Math.floor(Math.random() * 35) + 45 },
         { trend: language === 'pt' ? "Personalização" : "Personalization", growth: Math.floor(Math.random() * 25) + 35 },
-        { trend: language === 'pt' ? "Experiência do Usu
-
-[Visualization:${vizString}]\n`);
+        { trend: language === 'pt' ? "Experiência do Usuário" : "User Experience", growth: Math.floor(Math.random() * 20) + 30 }
+      ],
+      xAxisKey: 'trend',
+      dataKey: 'growth'
+    };
+    
+    const vizString = JSON.stringify(trendsViz);
+    paragraphs.push(`\n[Visualization:${vizString}]\n`);
+    
+    if (language === 'pt') {
+      paragraphs.push(`A análise dos dados apresentados na visualização acima evidencia o ritmo acelerado de crescimento das principais tendências identificadas. A digitalização lidera este movimento, refletindo a contínua busca por eficiência operacional e novas formas de criar valor através de tecnologias digitais. Destaca-se também o crescimento expressivo da sustentabilidade, demonstrando como as preocupações ambientais estão se tornando centrais nas estratégias organizacionais e nos requisitos de mercado.`);
+      
+      paragraphs.push(`Olhando para o futuro, projeta-se uma intensificação destas tendências, com convergência crescente entre elas. Por exemplo, observamos como tecnologias digitais estão sendo aplicadas para viabilizar práticas mais sustentáveis, ou como a automação está sendo combinada com personalização para criar experiências únicas para usuários. Esta integração de múltiplas tendências representa tanto desafios complexos quanto oportunidades singulares para inovação e diferenciação no mercado relacionado a ${mainTopic}.`);
+    } else {
+      paragraphs.push(`The analysis of the data presented in the visualization above highlights the accelerated growth rate of the main identified trends. Digitalization leads this movement, reflecting the continuous search for operational efficiency and new ways to create value through digital technologies. The significant growth of sustainability also stands out, demonstrating how environmental concerns are becoming central to organizational strategies and market requirements.`);
+      
+      paragraphs.push(`Looking to the future, an intensification of these trends is projected, with increasing convergence between them. For example, we observe how digital technologies are being applied to enable more sustainable practices, or how automation is being combined with personalization to create unique experiences for users. This integration of multiple trends represents both complex challenges and unique opportunities for innovation and differentiation in the market related to ${mainTopic}.`);
+    }
   }
   else {
     // Generic content for other topics
@@ -525,9 +541,53 @@ export const generateTopicContent = (topic: ReportTopic, mainTopic: string, lang
   return paragraphs.join('\n\n');
 };
 
-export const generatePDF = async (report: AIGeneratedReport, topic: ReportTopic, mainTopic: string, language: string): Promise<jsPDF> => {
-  const content = generateTopicContent(topic, mainTopic, language);
+export const generatePDF = async (report: AIGeneratedReport): Promise<string> => {
   const doc = new jsPDF();
-  doc.text(content, 10, 10);
-  return doc;
+  
+  // Set title
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text(report.title, 20, 20);
+  
+  // Set content
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  
+  let contentToProcess = '';
+  if (typeof report.content === 'string') {
+    contentToProcess = report.content;
+  } else if (typeof report.content === 'object' && report.content !== null) {
+    const contentObj = report.content as any;
+    if (contentObj._type === 'String' && 'value' in contentObj) {
+      contentToProcess = contentObj.value || '';
+    }
+  }
+  
+  // Remove visualization markers for PDF content
+  const cleanContent = contentToProcess.replace(/\[Visualization:[^\]]+\]/g, '[Visualization data removed for PDF]');
+  
+  // Split content into pages
+  const splitText = doc.splitTextToSize(cleanContent, 170);
+  let yPosition = 30;
+  const lineHeight = 7;
+  
+  for (let i = 0; i < splitText.length; i++) {
+    if (yPosition > 280) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    doc.text(splitText[i], 20, yPosition);
+    yPosition += lineHeight;
+  }
+  
+  // Convert to data URI
+  return doc.output('datauristring');
+};
+
+export const assembleFullReport = (
+  title: string, 
+  topics: ReportTopic[], 
+  contents: string[]
+): string => {
+  return `# ${title}\n\n${contents.join('\n\n')}`;
 };
