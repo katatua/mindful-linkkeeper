@@ -1,3 +1,4 @@
+
 import { nanoid } from 'nanoid';
 
 // Generate a unique ID for tracking messages
@@ -28,6 +29,31 @@ export const formatDatabaseValue = (value: any, columnName: string) => {
   }
   
   return value.toString();
+};
+
+// Classification function for documents
+export const classifyDocument = async (data: { 
+  title: string; 
+  summary?: string; 
+  fileName?: string;
+}): Promise<string> => {
+  try {
+    const { data: response, error } = await fetch('/api/classify-document', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }).then(res => res.json());
+    
+    if (error) throw error;
+    
+    return response?.classification || 'general';
+  } catch (error) {
+    console.error('Error classifying document:', error);
+    // Default classification if something goes wrong
+    return 'general';
+  }
 };
 
 // Comprehensive suggested database questions in Portuguese

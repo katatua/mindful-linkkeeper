@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
+import { suggestedDatabaseQueries, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
@@ -30,6 +30,16 @@ interface Message {
   isPredefined?: boolean;
 }
 
+// Define response type to match all possible response shapes
+interface QueryResponse {
+  message: string;
+  sqlQuery: string;
+  results: any[] | null;
+  noResults?: boolean;
+  queryId?: string;
+  analysis?: any;
+}
+
 export const AIAssistant: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState<Message | null>(null);
   const [activeResponse, setActiveResponse] = useState<Message | null>(null);
@@ -38,7 +48,7 @@ export const AIAssistant: React.FC = () => {
   const { toast } = useToast();
   
   // Filter for Portuguese suggestions
-  const portugueseSuggestions = suggestedDatabaseQuestions.filter(q => 
+  const portugueseSuggestions = suggestedDatabaseQueries.filter(q => 
     /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
   ).slice(0, 6);
@@ -87,10 +97,10 @@ export const AIAssistant: React.FC = () => {
         sqlQuery: response.sqlQuery,
         results: response.results,
         role: 'assistant',
-        noResults: response.noResults,
+        noResults: response.noResults || false,
         timestamp: new Date(),
-        queryId: response.queryId,
-        analysis: response.analysis
+        queryId: response.queryId || "",
+        analysis: response.analysis || null
       };
       
       setActiveResponse(assistantMessage);
@@ -247,7 +257,7 @@ export const AIAssistant: React.FC = () => {
                 <div className="mt-2">
                   <PopulateDataButton 
                     query={activeQuestion.content}
-                    queryId={activeResponse.queryId}
+                    queryId={activeResponse.queryId || ""}
                   />
                 </div>
               </AlertDescription>
