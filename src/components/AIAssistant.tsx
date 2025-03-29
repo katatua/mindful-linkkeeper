@@ -312,7 +312,7 @@ export const AIAssistant: React.FC = () => {
                         <TabsContent value="resposta">
                           <div className="whitespace-pre-wrap">
                             {message.noResults ? (
-                              <Alert variant="warning" className="mb-3">
+                              <Alert variant="default" className="mb-3">
                                 <AlertTitle>No results found</AlertTitle>
                                 <AlertDescription>
                                   {message.content}
@@ -419,7 +419,7 @@ export const AIAssistant: React.FC = () => {
                               {renderResults(message.results)}
                             </div>
                           ) : message.noResults ? (
-                            <Alert variant="warning" className="mt-3">
+                            <Alert variant="default" className="mt-3">
                               <AlertTitle>No results found</AlertTitle>
                               <AlertDescription>
                                 The database doesn't contain data matching this query.

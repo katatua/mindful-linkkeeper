@@ -183,17 +183,20 @@ export const checkTablePermissions = async (tableName: string): Promise<{
       console.log(`No read permission for ${tableName}`);
     }
     
-    // Check write permissions using a dummy record (that will be rolled back)
+    // Check write permissions using a simple test (that will handle errors)
     let canWrite = false;
     try {
-      // Start a transaction that we'll roll back
-      const { error: txError } = await supabase.rpc('check_write_permission', {
-        table_name: tableName
+      // Try to check permissions by attempting a query that will be rejected if no permissions
+      // We'll use execute_sql_query for more flexibility
+      const { data, error } = await supabase.rpc('execute_sql_query', {
+        sql_query: `SELECT has_table_privilege(current_user, '${tableName}', 'INSERT') as can_insert`
       });
       
-      canWrite = !txError;
+      if (!error && data && data[0]) {
+        canWrite = data[0].can_insert;
+      }
     } catch (error) {
-      console.log(`No write permission for ${tableName}`);
+      console.log(`Error checking write permission for ${tableName}:`, error);
     }
     
     return { canRead, canWrite };
