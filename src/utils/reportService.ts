@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -331,9 +330,14 @@ export const deleteReport = async (id: string): Promise<void> => {
 
 export const saveReport = async (reportData: Partial<AIGeneratedReport>): Promise<AIGeneratedReport> => {
   try {
+    // Ensure required fields are present
+    if (!reportData.title || !reportData.content) {
+      throw new Error("Report title and content are required");
+    }
+    
     const { data, error } = await supabase
       .from('ai_generated_reports')
-      .insert([reportData])
+      .insert([reportData]) // Pass as an array with a single object
       .select()
       .single();
 
