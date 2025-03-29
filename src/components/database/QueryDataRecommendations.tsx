@@ -99,13 +99,13 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
   return (
     <div className="mt-4 p-4 bg-muted/50 rounded-md border">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium">Recommended Data</h3>
+        <h3 className="text-sm font-medium">Dados Recomendados</h3>
         <Button
           size="sm"
-          variant="secondary"
+          variant="primary"
           onClick={handleInsertData}
           disabled={isInserting}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 bg-primary text-white hover:bg-primary/90"
         >
           {isInserting ? (
             <>
@@ -115,7 +115,7 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
           ) : (
             <>
               <ArrowDown className="h-4 w-4 mr-1" />
-              Insert in Database
+              Inserir no Banco de Dados
             </>
           )}
         </Button>
