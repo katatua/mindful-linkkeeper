@@ -334,7 +334,7 @@ const AIReportDetail = () => {
       
       <Card>
         <CardContent className="p-6">
-          <div className="prose max-w-none">
+          <div className="prose max-w-none" id="report-content">
             {report.content && renderContent(report.content)}
           </div>
         </CardContent>
