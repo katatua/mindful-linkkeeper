@@ -460,12 +460,32 @@ export const extractVisualizations = (content: string): Visualization[] => {
 
   const visualizations: Visualization[] = [];
   const vizRegex = /\[Visualization:([^\]]+)\]/g;
+  
+  // Create a deterministic seed based on the content to ensure consistent "random" values
+  const createSeed = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  };
+  
+  // Deterministic random number generator
+  const seededRandom = (seed: number, index: number) => {
+    const x = Math.sin(seed + index) * 10000;
+    return Math.floor((x - Math.floor(x)) * 100);
+  };
+  
   let match;
+  let vizIndex = 0;
 
   while ((match = vizRegex.exec(content)) !== null) {
     try {
       const vizData = match[1].trim();
       const parts = vizData.split(';');
+      const vizSeed = createSeed(vizData); // Create a seed unique to this visualization
       
       if (parts.length < 3) {
         console.warn("Incomplete visualization data:", vizData);
@@ -495,19 +515,26 @@ export const extractVisualizations = (content: string): Visualization[] => {
         
         if (valueDimensions.length === 0) {
           // Simple case: just one value dimension
-          const values = parts.find(p => p.startsWith('values:'))?.split(':')[1]?.split(',').map(Number) || [];
+          let values = parts.find(p => p.startsWith('values:'))?.split(':')[1]?.split(',').map(Number) || [];
+          
+          // If values aren't provided or are incomplete, generate deterministic values
+          if (values.length === 0 || values.length < xItems.length) {
+            values = xItems.map((_, idx) => seededRandom(vizSeed, idx));
+          }
+          
           data = xItems.map((item, index) => ({
             name: item,
-            value: values[index] || Math.floor(Math.random() * 100)
+            value: values[index] || seededRandom(vizSeed, index)
           }));
         } else {
           // Multiple value dimensions
           data = xItems.map((item, index) => {
             const result: any = { name: item };
             
-            valueDimensions.forEach(dim => {
+            valueDimensions.forEach((dim, dimIndex) => {
               const values = parts.find(p => p.startsWith(dim + ':'))?.split(':')[1]?.split(',').map(Number) || [];
-              result[dim] = values[index] || Math.floor(Math.random() * 100);
+              // Use the provided value or generate a deterministic one
+              result[dim] = values[index] !== undefined ? values[index] : seededRandom(vizSeed, index + (dimIndex * 100));
             });
             
             return result;
@@ -517,11 +544,16 @@ export const extractVisualizations = (content: string): Visualization[] => {
         // For pie charts
         const segmentKey = parts.find(p => p.includes('segments:')) ? 'segments' : 'categories';
         const segments = parts.find(p => p.startsWith(segmentKey + ':'))?.split(':')[1]?.split(',') || [];
-        const values = parts.find(p => p.startsWith('values:'))?.split(':')[1]?.split(',').map(Number) || [];
+        let values = parts.find(p => p.startsWith('values:'))?.split(':')[1]?.split(',').map(Number) || [];
+        
+        // If values aren't provided or are incomplete, generate deterministic values
+        if (values.length === 0 || values.length < segments.length) {
+          values = segments.map((_, idx) => seededRandom(vizSeed, idx));
+        }
         
         data = segments.map((segment, index) => ({
           name: segment,
-          value: values[index] || Math.floor(Math.random() * 100)
+          value: values[index] || seededRandom(vizSeed, index)
         }));
       }
       
@@ -544,6 +576,7 @@ export const extractVisualizations = (content: string): Visualization[] => {
         colors
       });
       
+      vizIndex++;
     } catch (err) {
       console.error("Error parsing visualization:", match[0], err);
     }

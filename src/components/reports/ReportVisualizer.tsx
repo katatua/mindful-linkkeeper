@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Visualization } from '@/utils/reportService';
 import { BarChart, LineChart, PieChart, ResponsiveContainer, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Pie, Cell } from 'recharts';
 
@@ -10,17 +10,18 @@ interface ReportVisualizerProps {
 export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualization }) => {
   const { type, title, description, data, colors = ['#36B37E', '#00B8D9', '#6554C0', '#FF5630', '#FFAB00'] } = visualization;
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-        <h3 className="font-medium text-gray-800">{title}</h3>
-        <p className="text-sm text-gray-500">{description}</p>
-        <p className="text-sm text-red-500 mt-4">No data available for visualization</p>
-      </div>
-    );
-  }
+  // Memoize the chart to prevent unnecessary re-renders
+  const memoizedChart = useMemo(() => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+          <h3 className="font-medium text-gray-800">{title}</h3>
+          <p className="text-sm text-gray-500">{description}</p>
+          <p className="text-sm text-red-500 mt-4">No data available for visualization</p>
+        </div>
+      );
+    }
 
-  const renderChart = () => {
     switch (type) {
       case 'bar':
         return (
@@ -97,13 +98,13 @@ export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualizatio
           </div>
         );
     }
-  };
+  }, [type, title, description, data, colors]);
 
   return (
     <div className="flex flex-col space-y-2">
       <h3 className="font-medium text-lg text-gray-800">{title}</h3>
       <p className="text-sm text-gray-500 mb-2">{description}</p>
-      {renderChart()}
+      {memoizedChart}
     </div>
   );
 };
