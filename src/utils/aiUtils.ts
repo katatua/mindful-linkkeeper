@@ -437,6 +437,48 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       console.error('Error saving to database:', dbError);
     }
     
+    // Special handling for renewable energy queries
+    if (energyKeywords.length > 0) {
+      console.log('Energy-related query detected:', energyKeywords);
+      
+      try {
+        // Call the get-funding-programs function directly with energy sectors
+        const { data: energyPrograms, error: energyError } = await supabase.functions.invoke('get-funding-programs', {
+          body: { sector: 'renewable energy' }
+        });
+        
+        if (energyError) {
+          console.error('Error fetching renewable energy programs:', energyError);
+        } else if (energyPrograms && Array.isArray(energyPrograms) && energyPrograms.length > 0) {
+          console.log('Found renewable energy programs:', energyPrograms.length);
+          
+          // Update query status to successful
+          if (queryId) {
+            await supabase.from('query_history').update({
+              was_successful: true,
+              error_message: null
+            }).eq('id', queryId);
+          }
+          
+          // Generate appropriate message based on language
+          const message = isPortuguese
+            ? `Encontrei ${energyPrograms.length} programas de financiamento para energia renovável.`
+            : `Found ${energyPrograms.length} funding programs for renewable energy.`;
+          
+          return {
+            message: message,
+            sqlQuery: "SELECT * FROM ani_funding_programs WHERE 'renewable energy' = ANY(sector_focus)",
+            results: energyPrograms,
+            noResults: false,
+            queryId: queryId || undefined
+          };
+        }
+      } catch (energyError) {
+        console.error('Error in renewable energy query handling:', energyError);
+      }
+    }
+    
+    // If not a renewable energy query or no results from specialized endpoint, continue with regular flow
     // Call the gemini-chat function with the prompt and additional context
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {

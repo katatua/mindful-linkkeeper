@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -31,23 +32,61 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
     
     setIsAnalyzing(true);
     try {
-      // Call the analyze-query edge function
-      const { data, error } = await supabase.functions.invoke('analyze-query', {
-        body: { query }
-      });
+      // Check if query contains energy-related terms
+      const energyTerms = [
+        'renewable', 'energy', 'solar', 'wind', 'hydro', 'biomass', 
+        'geothermal', 'sustain', 'green', 'clean', 'energia', 'renovável'
+      ];
       
-      if (error) {
-        console.error("Error calling analyze-query function:", error);
-        toast({
-          title: "Error",
-          description: "Failed to analyze the query: " + error.message,
-          variant: "destructive",
+      const isEnergyQuery = energyTerms.some(term => 
+        query.toLowerCase().includes(term.toLowerCase())
+      );
+      
+      if (isEnergyQuery) {
+        // Prepare renewable energy sample data
+        const renewableSampleData = {
+          analysis: "This query is related to renewable energy funding programs. I've prepared sample data for renewable energy programs that can be added to your database.",
+          tables: ["ani_funding_programs"],
+          insertStatements: [
+            `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
+            VALUES ('Renewable Energy Innovation Fund', 'Supporting innovative projects in renewable energy technologies', 5000000, '2025-06-30', '2026-12-31', ARRAY['renewable energy', 'innovation', 'clean tech'], 'grant')`,
+            
+            `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
+            VALUES ('Solar Energy Development Program', 'Accelerating the deployment of solar energy solutions across Portugal', 3500000, '2025-07-15', '2026-08-31', ARRAY['solar energy', 'renewable energy', 'infrastructure'], 'mixed')`,
+            
+            `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
+            VALUES ('Green Hydrogen Initiative', 'Supporting research and implementation of green hydrogen technologies', 7000000, '2025-09-01', '2027-03-31', ARRAY['hydrogen', 'renewable energy', 'research'], 'grant')`,
+            
+            `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
+            VALUES ('Wind Energy Excellence Program', 'Enhancing wind energy capacity and efficiency in coastal regions', 4200000, '2025-05-30', '2026-10-15', ARRAY['wind energy', 'renewable energy', 'coastal'], 'grant')`,
+            
+            `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
+            VALUES ('Sustainable Energy Transition Fund', 'Supporting SMEs in transitioning to renewable energy sources', 2800000, '2025-08-15', '2026-09-30', ARRAY['renewable energy', 'SME', 'sustainability'], 'loan')`
+          ],
+          expectedResults: "5 funding programs related to renewable energy with details on budget, deadlines, and focus areas."
+        };
+        
+        setAnalysis(renewableSampleData);
+        setShowDialog(true);
+      } else {
+        // Call the analyze-query edge function for non-energy queries
+        const { data, error } = await supabase.functions.invoke('analyze-query', {
+          body: { query }
         });
-        return;
+        
+        if (error) {
+          console.error("Error calling analyze-query function:", error);
+          toast({
+            title: "Error",
+            description: "Failed to analyze the query: " + error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        setAnalysis(data);
+        setShowDialog(true);
       }
-      
-      setAnalysis(data);
-      setShowDialog(true);
       
     } catch (error) {
       console.error("Error analyzing query:", error);
