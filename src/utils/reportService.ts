@@ -471,3 +471,63 @@ export const generateTopicContent = (topic: ReportTopic, mainTopic: string, lang
         { trend: language === 'pt' ? "Automação" : "Automation", growth: Math.floor(Math.random() * 35) + 45 },
         { trend: language === 'pt' ? "Personalização" : "Personalization", growth: Math.floor(Math.random() * 25) + 35 },
         { trend: language === 'pt' ? "Experiência do Usu
+
+[Visualization:${vizString}]\n`);
+  }
+  else {
+    // Generic content for other topics
+    if (language === 'pt') {
+      paragraphs.push(`# ${topic.title}\n\nEsta seção aborda aspectos importantes relacionados a ${topic.title} no contexto de ${mainTopic}. A análise apresentada visa oferecer uma compreensão aprofundada das dinâmicas específicas deste tema, considerando tendências atuais, desafios e oportunidades identificadas no setor.`);
+      
+      // Add 4-5 more paragraphs for complete content
+      paragraphs.push(`Uma análise detalhada do cenário atual revela padrões significativos que merecem atenção. Dados recentes indicam uma evolução constante nas práticas e abordagens relacionadas a este tema, com impactos diretos sobre os resultados observados em diferentes contextos organizacionais e geográficos. A integração de novas tecnologias tem acelerado transformações estruturais, criando tanto desafios adaptativos quanto oportunidades de inovação para os diversos atores envolvidos.`);
+      
+      paragraphs.push(`Entre os principais fatores que influenciam o desenvolvimento deste tema, destacam-se aspectos regulatórios, tendências de mercado, capacidade de investimento e disponibilidade de recursos humanos qualificados. A interação entre estes elementos cria um ambiente complexo que demanda abordagens estratégicas e adaptativas, capazes de responder às rápidas mudanças do contexto externo enquanto mantêm foco nos objetivos de longo prazo estabelecidos.`);
+    } else {
+      paragraphs.push(`# ${topic.title}\n\nThis section addresses important aspects related to ${topic.title} in the context of ${mainTopic}. The analysis presented aims to offer an in-depth understanding of the specific dynamics of this theme, considering current trends, challenges, and opportunities identified in the sector.`);
+      
+      // Add 4-5 more paragraphs for complete content
+      paragraphs.push(`A detailed analysis of the current scenario reveals significant patterns that deserve attention. Recent data indicate a constant evolution in practices and approaches related to this theme, with direct impacts on the results observed in different organizational and geographical contexts. The integration of new technologies has accelerated structural transformations, creating both adaptive challenges and innovation opportunities for the various actors involved.`);
+      
+      paragraphs.push(`Among the main factors that influence the development of this theme are regulatory aspects, market trends, investment capacity, and availability of qualified human resources. The interaction between these elements creates a complex environment that demands strategic and adaptive approaches, capable of responding to rapid changes in the external context while maintaining focus on established long-term objectives.`);
+    }
+    
+    // Add a visualization appropriate for the topic
+    const topicViz = {
+      type: 'bar',
+      title: language === 'pt' ? `Análise Comparativa: ${topic.title}` : `Comparative Analysis: ${topic.title}`,
+      description: language === 'pt' ? 'Principais indicadores por categoria' : 'Key indicators by category',
+      data: [
+        { category: 'A', value: Math.floor(Math.random() * 50) + 30 },
+        { category: 'B', value: Math.floor(Math.random() * 50) + 40 },
+        { category: 'C', value: Math.floor(Math.random() * 50) + 60 },
+        { category: 'D', value: Math.floor(Math.random() * 50) + 50 },
+        { category: 'E', value: Math.floor(Math.random() * 50) + 45 }
+      ],
+      xAxisKey: 'category',
+      dataKey: 'value'
+    };
+    
+    const vizString = JSON.stringify(topicViz);
+    paragraphs.push(`\n[Visualization:${vizString}]\n`);
+    
+    if (language === 'pt') {
+      paragraphs.push(`Os dados apresentados na visualização acima demonstram as variações significativas entre diferentes categorias de análise, refletindo a complexidade e diversidade do tema abordado. Esta heterogeneidade sugere a necessidade de abordagens personalizadas e contextualizadas, em oposição a soluções padronizadas que podem não atender adequadamente às especificidades de cada segmento ou área de aplicação.`);
+      
+      paragraphs.push(`Em conclusão, o desenvolvimento sustentável e efetivo relacionado a ${topic.title} requer uma compreensão multidimensional dos fatores envolvidos, bem como a capacidade de adaptação contínua frente às transformações do ambiente externo. As análises e recomendações apresentadas nesta seção buscam contribuir para este entendimento ampliado, oferecendo subsídios para decisões estratégicas e operacionais mais fundamentadas e alinhadas às melhores práticas identificadas no setor.`);
+    } else {
+      paragraphs.push(`The data presented in the visualization above demonstrate significant variations between different categories of analysis, reflecting the complexity and diversity of the addressed theme. This heterogeneity suggests the need for personalized and contextualized approaches, as opposed to standardized solutions that may not adequately address the specificities of each segment or application area.`);
+      
+      paragraphs.push(`In conclusion, sustainable and effective development related to ${topic.title} requires a multidimensional understanding of the factors involved, as well as the capacity for continuous adaptation in the face of transformations in the external environment. The analyses and recommendations presented in this section seek to contribute to this expanded understanding, offering subsidies for more informed strategic and operational decisions aligned with the best practices identified in the sector.`);
+    }
+  }
+  
+  return paragraphs.join('\n\n');
+};
+
+export const generatePDF = async (report: AIGeneratedReport, topic: ReportTopic, mainTopic: string, language: string): Promise<jsPDF> => {
+  const content = generateTopicContent(topic, mainTopic, language);
+  const doc = new jsPDF();
+  doc.text(content, 10, 10);
+  return doc;
+};
