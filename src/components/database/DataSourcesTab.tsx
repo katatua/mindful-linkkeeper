@@ -14,7 +14,7 @@ import { Database, FileText, FilePlus, Upload, RefreshCw, Loader2 } from 'lucide
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FonteDados } from '@/types/databaseTypes';
-import { fetchTableData } from '@/utils/databaseService';
+import { fetchTableData, insertTableData } from '@/utils/databaseService';
 import AddDataSourceModal from './AddDataSourceModal';
 
 export const DataSourcesTab: React.FC = () => {
@@ -23,11 +23,66 @@ export const DataSourcesTab: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  const additionalDefaultSources = [
+    {
+      nome_sistema: "Dados sobre Cooperação Internacional",
+      descricao: "Dados relativos à Bolsa de Tecnologia e Negócios, onde a procura e a oferta de tecnologias são valorizadas.",
+      tecnologia: "Outsystems (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados sobre Empreendedorismo, Inovação e Clusters",
+      descricao: "Dados relativos clusters de inovação colaborativa e empreendedorismo, que coabitam no mesmo local e possuem características e objetivos semelhantes.",
+      tecnologia: "Outsystems (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados constantes no Portal da Inovação SNI",
+      descricao: "Dados relativos à atribuição de financiamento através de fundos europeus a entidades empresariais e não empresariais",
+      tecnologia: "Outsystems (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados sobre a ENEI 2020",
+      descricao: "Dados relativos à estratégia nacional para especialização inteligente dando prioridade às intervenções públicas em matéria de I&D e Inovação.",
+      tecnologia: "Azure (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados sobre projetos da Missão Interface",
+      descricao: "Dados relativos a projetos/candidaturas ao programa de financiamento base das instituições interface, visando alavancar a sua capacidade de mediação e articulação entre a academia e as empresas.",
+      tecnologia: ".NET + SQL Server",
+      entidade: "ANI"
+    }
+  ];
+  
   const fetchDataSources = async () => {
     setIsLoading(true);
     try {
       const data = await fetchTableData('fontes_dados');
-      setDataSources(data as FonteDados[]);
+      
+      // If no data sources exist or there are fewer than expected, add the default ones
+      if (data.length < 2 + additionalDefaultSources.length) {
+        console.log("Adding default data sources");
+        
+        // Only add additional sources if they don't already exist
+        for (const source of additionalDefaultSources) {
+          const exists = data.some(
+            existingSource => existingSource.nome_sistema === source.nome_sistema
+          );
+          
+          if (!exists) {
+            console.log(`Adding source: ${source.nome_sistema}`);
+            await insertTableData('fontes_dados', source);
+          }
+        }
+        
+        // Fetch again to get the updated list including our newly added sources
+        const updatedData = await fetchTableData('fontes_dados');
+        setDataSources(updatedData as FonteDados[]);
+      } else {
+        setDataSources(data as FonteDados[]);
+      }
     } catch (error) {
       console.error('Error fetching data sources:', error);
       // Set some initial data if fetch fails
@@ -41,11 +96,20 @@ export const DataSourcesTab: React.FC = () => {
         },
         {
           id: 2,
-          nome_sistema: "Dados de projetos financiados por Fundos Europeus de gestão centralizada (Horizonte Europa, Programa Europa Digital)",
+          nome_sistema: "Dados de projetos financiados por Fundos Europeus de gestão centralizada",
           descricao: "Dados relativos à atribuição de financiamento através de fundos europeus de gestão centralizada a entidades empresariais e não empresariais.",
           tecnologia: "Outsystems (SQL Server)",
           data_importacao: new Date().toISOString()
-        }
+        },
+        // Include additional sources in the fallback data as well
+        ...additionalDefaultSources.map((source, index) => ({
+          id: 3 + index,
+          nome_sistema: source.nome_sistema,
+          descricao: source.descricao,
+          tecnologia: source.tecnologia,
+          entidade: source.entidade,
+          data_importacao: new Date().toISOString()
+        }))
       ]);
     } finally {
       setIsLoading(false);

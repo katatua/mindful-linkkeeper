@@ -1,4 +1,3 @@
-
 import { supabase, getTable } from '@/integrations/supabase/client';
 
 export interface DatabaseTable {
