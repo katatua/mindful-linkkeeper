@@ -381,75 +381,133 @@ export const generatePDF = async (report: AIGeneratedReport): Promise<string> =>
   try {
     console.log("Generating PDF for report:", report.title);
     
-    // We would normally render the report to a DOM element,
-    // capture it with html2canvas, and then use jsPDF to create a PDF
-    // For demonstration, we'll simulate this process
+    // Extract visualizations from the report content
+    const visualizations = extractVisualizations(report.content || '');
+    console.log(`Found ${visualizations.length} visualizations to include in PDF`);
     
-    return simulatePDFGeneration(report);
+    // Create a new PDF document
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Add title
+    pdf.setFontSize(22);
+    pdf.text(report.title, 20, 30);
+    
+    // Add metadata
+    pdf.setFontSize(12);
+    pdf.text(`Report ID: ${report.id}`, 20, 45);
+    pdf.text(`Generated: ${new Date(report.created_at).toLocaleDateString()}`, 20, 55);
+    if (report.report_type) {
+      pdf.text(`Type: ${report.report_type}`, 20, 65);
+    }
+    
+    // Add content
+    pdf.setFontSize(16);
+    pdf.text("Report Content", 20, 85);
+    
+    pdf.setFontSize(12);
+    let yPosition = 95;
+    
+    // Process the content to handle markdown formatting and visualizations
+    let contentSegments: string[] = [];
+    
+    if (report.content) {
+      // Replace visualization tags with markers for positioning
+      let processedContent = report.content;
+      let vizIndex = 0;
+      processedContent = processedContent.replace(/\[Visualization:[^\]]+\]/g, () => {
+        const marker = `[VIZ_PLACEHOLDER_${vizIndex}]`;
+        vizIndex++;
+        return marker;
+      });
+      
+      // Split content into segments based on visualization markers
+      contentSegments = processedContent.split(/\[VIZ_PLACEHOLDER_\d+\]/);
+    }
+    
+    // Add text segments and visualizations
+    let vizIndex = 0;
+    for (let i = 0; i < contentSegments.length; i++) {
+      // Add text segment
+      const segment = contentSegments[i]
+        .replace(/#+\s(.*)/g, '$1') // Remove headers
+        .replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold formatting
+      
+      const textLines = pdf.splitTextToSize(segment, 170);
+      for (const line of textLines) {
+        if (yPosition > 270) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.text(line, 20, yPosition);
+        yPosition += 7;
+      }
+      
+      // Add visualization if available
+      if (i < contentSegments.length - 1 && vizIndex < visualizations.length) {
+        const viz = visualizations[vizIndex];
+        vizIndex++;
+        
+        // Add some space
+        yPosition += 10;
+        
+        if (yPosition > 200) { // If not enough space for chart, move to next page
+          pdf.addPage();
+          yPosition = 30;
+        }
+        
+        // Add visualization title
+        pdf.setFontSize(14);
+        pdf.text(viz.title, 20, yPosition);
+        yPosition += 10;
+        
+        // Add visualization description if it exists
+        if (viz.description) {
+          pdf.setFontSize(10);
+          const descriptionLines = pdf.splitTextToSize(viz.description, 170);
+          for (const line of descriptionLines) {
+            pdf.text(line, 20, yPosition);
+            yPosition += 5;
+          }
+          yPosition += 5;
+        }
+        
+        // Add a placeholder text for the visualization (we can't actually render the charts)
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(30, yPosition, 150, 60, 'F');
+        pdf.setFontSize(12);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`[${viz.type.toUpperCase()} CHART: ${viz.title}]`, 55, yPosition + 30);
+        
+        // Reset text color
+        pdf.setTextColor(0, 0, 0);
+        
+        // Move position for next content
+        yPosition += 70;
+        
+        // Reset font size for regular content
+        pdf.setFontSize(12);
+      }
+    }
+    
+    // Add footer
+    pdf.setFontSize(10);
+    const totalPages = pdf.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.text(`Page ${i} of ${totalPages}`, pdf.internal.pageSize.getWidth() / 2, 287, { align: 'center' });
+      pdf.text(`ANI Innovation Portal - Generated Report`, 20, 287);
+    }
+    
+    // Convert to base64 and return
+    return pdf.output('datauristring');
   } catch (error) {
     console.error("Error generating PDF:", error);
     throw new Error("Failed to generate PDF");
   }
-};
-
-// Helper to simulate PDF generation (in a real app, this would use html2canvas and jsPDF)
-const simulatePDFGeneration = (report: AIGeneratedReport): string => {
-  // Create a new PDF document
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4'
-  });
-  
-  // Add title
-  pdf.setFontSize(22);
-  pdf.text(report.title, 20, 30);
-  
-  // Add metadata
-  pdf.setFontSize(12);
-  pdf.text(`Report ID: ${report.id}`, 20, 45);
-  pdf.text(`Generated: ${new Date(report.created_at).toLocaleDateString()}`, 20, 55);
-  if (report.report_type) {
-    pdf.text(`Type: ${report.report_type}`, 20, 65);
-  }
-  
-  // Add content
-  pdf.setFontSize(16);
-  pdf.text("Report Content", 20, 85);
-  
-  pdf.setFontSize(12);
-  let yPosition = 95;
-  
-  // Convert the content to plain text if it has markdown formatting
-  let plainTextContent = report.content
-    .replace(/#+\s(.*)/g, '$1') // Remove headers
-    .replace(/\[.*?\]/g, '') // Remove visualization tags
-    .replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold formatting
-  
-  // Split content into lines
-  const contentLines = pdf.splitTextToSize(plainTextContent, 170);
-  
-  // Add lines with pagination
-  for (let i = 0; i < contentLines.length; i++) {
-    if (yPosition > 270) {
-      pdf.addPage();
-      yPosition = 20;
-    }
-    pdf.text(contentLines[i], 20, yPosition);
-    yPosition += 7;
-  }
-  
-  // Add footer
-  pdf.setFontSize(10);
-  const totalPages = pdf.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    pdf.setPage(i);
-    pdf.text(`Page ${i} of ${totalPages}`, pdf.internal.pageSize.getWidth() / 2, 287, { align: 'center' });
-    pdf.text(`ANI Innovation Portal - Generated Report`, 20, 287);
-  }
-  
-  // Convert to base64 and return
-  return pdf.output('datauristring');
 };
 
 export const extractVisualizations = (content: string): Visualization[] => {
