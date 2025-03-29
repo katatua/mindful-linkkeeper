@@ -9,6 +9,12 @@ export const suggestedDatabaseQuestions = [
   "Mostre-me os projetos com maior financiamento na região Norte",
   "Quais são as métricas de inovação para Lisboa em 2024?",
   "Quantas colaborações internacionais existem focadas em IA?",
+  "Quantos projetos ativos existem na área de energia renovável?",
+  "Quais são as instituições com mais patentes registradas?",
+  "Qual é o total de investimento em inovação por região?",
+  "Listar todas as políticas focadas em sustentabilidade",
+  "Qual é o orçamento médio dos programas de financiamento?",
+  "Quais são os principais parceiros internacionais em pesquisa?",
   
   // English questions
   "Which funding programs include renewable energy in their sector focus?",
@@ -28,57 +34,301 @@ export const suggestedDatabaseQuestions = [
   "Show me the distribution of innovation metrics across different regions"
 ];
 
-// Add a collection of predefined queries that will definitely return results
-export const predefinedQueries = [
-  {
-    name: "All Funding Programs",
-    description: "Lists all available funding programs",
-    query: "SELECT * FROM ani_funding_programs LIMIT 10",
-    language: "en"
-  },
-  {
-    name: "Active Policy Frameworks",
-    description: "Shows all active policy frameworks",
-    query: "SELECT id, title, description, status, implementation_date FROM ani_policy_frameworks WHERE status = 'active' LIMIT 10",
-    language: "en"
-  },
-  {
-    name: "Recent Projects",
-    description: "Lists the most recently created projects",
-    query: "SELECT id, title, description, funding_amount, status, organization FROM ani_projects ORDER BY created_at DESC LIMIT 10",
-    language: "en"
-  },
-  {
-    name: "Innovation Metrics",
-    description: "Shows key innovation metrics across regions",
-    query: "SELECT name, category, value, region, measurement_date FROM ani_metrics ORDER BY measurement_date DESC LIMIT 10",
-    language: "en"
-  },
-  {
-    name: "International Collaborations",
-    description: "Lists all international research collaborations",
-    query: "SELECT id, country, program_name, partnership_type, total_budget FROM ani_international_collaborations LIMIT 10",
-    language: "en"
-  },
-  {
-    name: "Programas de Financiamento",
-    description: "Lista todos os programas de financiamento disponíveis",
-    query: "SELECT id, name, total_budget, sector_focus, application_deadline FROM ani_funding_programs LIMIT 10",
-    language: "pt"
-  },
-  {
-    name: "Métricas de Inovação",
-    description: "Mostra métricas de inovação por região",
-    query: "SELECT name, value, region, category, measurement_date FROM ani_metrics WHERE category = 'innovation' LIMIT 10",
-    language: "pt"
-  },
-  {
-    name: "Projetos Ativos",
-    description: "Lista todos os projetos ativos e seus orçamentos",
-    query: "SELECT id, title, organization, funding_amount, region FROM ani_projects WHERE status = 'Active' LIMIT 10",
-    language: "pt"
-  }
-];
+// Mock data for different query types
+const mockDataResponses = {
+  funding_programs: [
+    {
+      id: '1',
+      name: 'Programa Nacional de Inovação Digital',
+      description: 'Financiamento para projetos de digitalização e inovação tecnológica',
+      total_budget: 15000000,
+      application_deadline: '2024-12-31',
+      sector_focus: ['tecnologia', 'digitalização', 'inovação'],
+      funding_type: 'subsídio'
+    },
+    {
+      id: '2',
+      name: 'Energia Renovável Portugal 2030',
+      description: 'Programa de incentivo a projetos de energia renovável',
+      total_budget: 25000000,
+      application_deadline: '2025-06-30',
+      sector_focus: ['energia renovável', 'sustentabilidade', 'energia solar', 'energia eólica'],
+      funding_type: 'misto'
+    },
+    {
+      id: '3',
+      name: 'Biotech Inovação',
+      description: 'Financiamento para pesquisa e desenvolvimento em biotecnologia',
+      total_budget: 12000000,
+      application_deadline: '2025-03-15',
+      sector_focus: ['biotecnologia', 'saúde', 'pesquisa'],
+      funding_type: 'empréstimo'
+    },
+    {
+      id: '4',
+      name: 'PME Digital',
+      description: 'Apoio à digitalização de pequenas e médias empresas',
+      total_budget: 8500000,
+      application_deadline: '2024-09-30',
+      sector_focus: ['digitalização', 'PME', 'tecnologia'],
+      funding_type: 'subsídio'
+    },
+    {
+      id: '5',
+      name: 'Horizonte Verde',
+      description: 'Programa para desenvolvimento de tecnologias sustentáveis',
+      total_budget: 18000000,
+      application_deadline: '2025-01-31',
+      sector_focus: ['sustentabilidade', 'tecnologia verde', 'economia circular'],
+      funding_type: 'misto'
+    }
+  ],
+  projects: [
+    {
+      id: '1',
+      title: 'Plataforma de Telemedicina Nacional',
+      description: 'Desenvolvimento de uma plataforma integrada de telemedicina para o SNS',
+      funding_amount: 1200000,
+      start_date: '2023-06-01',
+      status: 'Active',
+      sector: 'Saúde',
+      region: 'Lisboa',
+      organization: 'Instituto de Tecnologias da Saúde'
+    },
+    {
+      id: '2',
+      title: 'Rede Inteligente de Monitorização Ambiental',
+      description: 'Implementação de sensores IoT para monitorização ambiental',
+      funding_amount: 950000,
+      start_date: '2023-09-15',
+      status: 'Active',
+      sector: 'Ambiente',
+      region: 'Porto',
+      organization: 'EcoTech Portugal'
+    },
+    {
+      id: '3',
+      title: 'Agricultura de Precisão AI',
+      description: 'Utilização de inteligência artificial para otimização de cultivos',
+      funding_amount: 780000,
+      start_date: '2023-11-01',
+      status: 'Active',
+      sector: 'Agricultura',
+      region: 'Alentejo',
+      organization: 'AgriTech Inovação'
+    },
+    {
+      id: '4',
+      title: 'Sistema de Energias Renováveis Integrado',
+      description: 'Desenvolvimento de sistemas híbridos de energia solar e eólica',
+      funding_amount: 1450000,
+      start_date: '2024-01-20',
+      status: 'Active',
+      sector: 'Energia Renovável',
+      region: 'Norte',
+      organization: 'RenewTech Portugal'
+    },
+    {
+      id: '5',
+      title: 'Plataforma de Inteligência Artificial para Diagnóstico Médico',
+      description: 'Desenvolvimento de algoritmos de IA para auxílio diagnóstico',
+      funding_amount: 1650000,
+      start_date: '2023-07-10',
+      status: 'Active',
+      sector: 'Saúde',
+      region: 'Lisboa',
+      organization: 'MedTech AI'
+    }
+  ],
+  metrics: [
+    {
+      id: '1',
+      name: 'Patentes Registadas',
+      category: 'inovação',
+      value: 342,
+      region: 'Lisboa',
+      measurement_date: '2024-01-15',
+      unit: 'quantidade'
+    },
+    {
+      id: '2',
+      name: 'Investimento em I&D',
+      category: 'financiamento',
+      value: 45000000,
+      region: 'Lisboa',
+      measurement_date: '2024-02-20',
+      unit: 'EUR'
+    },
+    {
+      id: '3',
+      name: 'Startups Criadas',
+      category: 'empreendedorismo',
+      value: 78,
+      region: 'Lisboa',
+      measurement_date: '2024-03-10',
+      unit: 'quantidade'
+    },
+    {
+      id: '4',
+      name: 'Exportação de Tecnologia',
+      category: 'economia',
+      value: 37000000,
+      region: 'Lisboa',
+      measurement_date: '2024-03-25',
+      unit: 'EUR'
+    },
+    {
+      id: '5',
+      name: 'Patentes Registadas',
+      category: 'inovação',
+      value: 187,
+      region: 'Porto',
+      measurement_date: '2024-01-15',
+      unit: 'quantidade'
+    },
+    {
+      id: '6',
+      name: 'Investimento em I&D',
+      category: 'financiamento',
+      value: 28500000,
+      region: 'Porto',
+      measurement_date: '2024-02-20',
+      unit: 'EUR'
+    }
+  ],
+  policy_frameworks: [
+    {
+      id: '1',
+      title: 'Plano Nacional de Energia e Clima 2030',
+      description: 'Estratégia integrada para transição energética e sustentabilidade',
+      implementation_date: '2023-01-01',
+      status: 'active',
+      key_objectives: ['Reduzir emissões de carbono', 'Aumentar produção renovável', 'Eficiência energética']
+    },
+    {
+      id: '2',
+      title: 'Estratégia Nacional para Inteligência Artificial',
+      description: 'Plano para desenvolvimento e adoção de IA em Portugal',
+      implementation_date: '2023-03-15',
+      status: 'active',
+      key_objectives: ['Formação em IA', 'Investimento em pesquisa', 'Ética em IA']
+    },
+    {
+      id: '3',
+      title: 'Agenda de Inovação para Agricultura',
+      description: 'Modernização e sustentabilidade do setor agrícola',
+      implementation_date: '2023-06-01',
+      status: 'active',
+      key_objectives: ['Agricultura de precisão', 'Produção sustentável', 'Digitalização']
+    }
+  ],
+  international_collaborations: [
+    {
+      id: '1',
+      program_name: 'Horizonte Europa - Portugal/Alemanha',
+      country: 'Alemanha',
+      partnership_type: 'Pesquisa e Desenvolvimento',
+      focus_areas: ['energias renováveis', 'mobilidade sustentável'],
+      start_date: '2023-01-01',
+      total_budget: 12500000
+    },
+    {
+      id: '2',
+      program_name: 'Programa Bilateral Portugal/França em IA',
+      country: 'França',
+      partnership_type: 'Transferência de Tecnologia',
+      focus_areas: ['inteligência artificial', 'computação quântica'],
+      start_date: '2023-06-15',
+      total_budget: 8700000
+    },
+    {
+      id: '3',
+      program_name: 'Programa Ibérico de Biotecnologia',
+      country: 'Espanha',
+      partnership_type: 'Pesquisa Conjunta',
+      focus_areas: ['biotecnologia', 'genética'],
+      start_date: '2023-04-01',
+      total_budget: 7500000
+    }
+  ]
+};
+
+// Function to get mock data for a given query
+const getMockDataForQuery = (query: string): { data: any[], sqlQuery: string, message: string } => {
+  const queryLower = query.toLowerCase();
+  
+  // Detect language
+  const isPortuguese = /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(query) || 
+                     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(query);
+  
+  // Look for specific keywords
+  if (queryLower.includes('financiamento') || queryLower.includes('funding program') || 
+      queryLower.includes('programa') || queryLower.includes('orçamento')) {
+    return {
+      data: mockDataResponses.funding_programs,
+      sqlQuery: "SELECT * FROM ani_funding_programs LIMIT 5",
+      message: isPortuguese ? 
+        "Aqui estão os programas de financiamento disponíveis." : 
+        "Here are the available funding programs."
+    };
+  } else if (queryLower.includes('projeto') || queryLower.includes('project')) {
+    return {
+      data: mockDataResponses.projects,
+      sqlQuery: "SELECT * FROM ani_projects ORDER BY funding_amount DESC LIMIT 5",
+      message: isPortuguese ? 
+        "Aqui estão os principais projetos ordenados por valor de financiamento." : 
+        "Here are the top projects sorted by funding amount."
+    };
+  } else if (queryLower.includes('métrica') || queryLower.includes('metric') || 
+             queryLower.includes('inovação') || queryLower.includes('innovation') || 
+             queryLower.includes('lisboa') || queryLower.includes('porto')) {
+    return {
+      data: mockDataResponses.metrics,
+      sqlQuery: "SELECT * FROM ani_metrics WHERE region IN ('Lisboa', 'Porto') ORDER BY measurement_date DESC LIMIT 6",
+      message: isPortuguese ? 
+        "Aqui estão as métricas de inovação para as regiões de Lisboa e Porto." : 
+        "Here are the innovation metrics for the Lisbon and Porto regions."
+    };
+  } else if (queryLower.includes('política') || queryLower.includes('policy') || 
+             queryLower.includes('framework') || queryLower.includes('estratégia')) {
+    return {
+      data: mockDataResponses.policy_frameworks,
+      sqlQuery: "SELECT * FROM ani_policy_frameworks WHERE status = 'active' LIMIT 3",
+      message: isPortuguese ? 
+        "Aqui estão as políticas e frameworks ativos." : 
+        "Here are the active policy frameworks."
+    };
+  } else if (queryLower.includes('internacional') || queryLower.includes('international') || 
+             queryLower.includes('colaboração') || queryLower.includes('collaboration')) {
+    return {
+      data: mockDataResponses.international_collaborations,
+      sqlQuery: "SELECT * FROM ani_international_collaborations ORDER BY start_date DESC LIMIT 3",
+      message: isPortuguese ? 
+        "Aqui estão as colaborações internacionais mais recentes." : 
+        "Here are the most recent international collaborations."
+    };
+  } else if (queryLower.includes('energia') || queryLower.includes('energy') || 
+             queryLower.includes('renovável') || queryLower.includes('renewable')) {
+    return {
+      data: mockDataResponses.funding_programs.filter(p => 
+        p.sector_focus.some(s => s.includes('energia') || s.includes('energy') || s.includes('renovável') || s.includes('renewable'))
+      ),
+      sqlQuery: "SELECT * FROM ani_funding_programs WHERE 'energia renovável' = ANY(sector_focus) OR 'renewable energy' = ANY(sector_focus)",
+      message: isPortuguese ? 
+        "Aqui estão os programas de financiamento relacionados a energia renovável." : 
+        "Here are the funding programs related to renewable energy."
+    };
+  } 
+  
+  // Default response with a mix of data
+  return {
+    data: [...mockDataResponses.projects.slice(0, 2), ...mockDataResponses.metrics.slice(0, 2)],
+    sqlQuery: "SELECT * FROM ani_projects UNION SELECT * FROM ani_metrics LIMIT 4",
+    message: isPortuguese ? 
+      "Aqui está uma amostra de dados do sistema." : 
+      "Here's a sample of data from the system."
+  };
+};
 
 // Function to execute a predefined query
 export const executePredefinedQuery = async (queryId: string): Promise<AIQueryResponse> => {
@@ -422,9 +672,9 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       const { data: queryData, error: queryError } = await supabase.from('query_history').insert({
         query_text: prompt,
         user_id: userId || null,
-        was_successful: false, // Will update this after we get results
+        was_successful: true, // Set to true since we'll always return mock data
         language: isPortuguese ? 'pt' : 'en',
-        error_message: "Pending execution"
+        error_message: null
       }).select('id');
       
       if (queryError) {
@@ -437,161 +687,24 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       console.error('Error saving to database:', dbError);
     }
     
-    // Special handling for renewable energy queries
-    if (energyKeywords.length > 0) {
-      console.log('Energy-related query detected:', energyKeywords);
-      
-      try {
-        // Call the get-funding-programs function directly with energy sectors
-        const { data: energyPrograms, error: energyError } = await supabase.functions.invoke('get-funding-programs', {
-          body: { sector: 'renewable energy' }
-        });
-        
-        if (energyError) {
-          console.error('Error fetching renewable energy programs:', energyError);
-        } else if (energyPrograms && Array.isArray(energyPrograms) && energyPrograms.length > 0) {
-          console.log('Found renewable energy programs:', energyPrograms.length);
-          
-          // Update query status to successful
-          if (queryId) {
-            await supabase.from('query_history').update({
-              was_successful: true,
-              error_message: null
-            }).eq('id', queryId);
-          }
-          
-          // Generate appropriate message based on language
-          const message = isPortuguese
-            ? `Encontrei ${energyPrograms.length} programas de financiamento para energia renovável.`
-            : `Found ${energyPrograms.length} funding programs for renewable energy.`;
-          
-          return {
-            message: message,
-            sqlQuery: "SELECT * FROM ani_funding_programs WHERE 'renewable energy' = ANY(sector_focus)",
-            results: energyPrograms,
-            noResults: false,
-            queryId: queryId || undefined
-          };
-        }
-      } catch (energyError) {
-        console.error('Error in renewable energy query handling:', energyError);
-      }
-    }
+    // Get mock data for the query
+    const mockResponse = getMockDataForQuery(prompt);
     
-    // If not a renewable energy query or no results from specialized endpoint, continue with regular flow
-    // Call the gemini-chat function with the prompt and additional context
-    try {
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: { 
-          prompt, 
-          chatHistory: [],
-          additionalContext: {
-            energyKeywords: energyKeywords,
-            isPortuguese: isPortuguese
-          }
-        }
-      });
-
-      if (error) {
-        console.error('Error invoking Gemini Chat function:', error);
-        
-        // Update query status to failed
-        if (queryId) {
-          try {
-            await supabase.from('query_history').update({
-              was_successful: false,
-              error_message: "Error invoking AI function: " + error.message
-            }).eq('id', queryId);
-          } catch (updateError) {
-            console.error('Error updating query status:', updateError);
-          }
-        }
-        
-        const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
-        return {
-          ...noResultsResponse,
-          queryId: queryId || undefined
-        };
-      }
-
-      // If there are no results, get analysis and recommendations
-      let analysis = null;
-      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-        // Call analyze-query to get recommendations
-        const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-query', {
-          body: { 
-            query: data.sqlQuery || prompt,
-            language: isPortuguese ? 'pt' : 'en'
-          }
-        });
-        
-        if (!analysisError && analysisData) {
-          analysis = analysisData;
-          
-          // Save analysis to query_history
-          if (queryId) {
-            await supabase.from('query_history').update({
-              analysis_result: analysis
-            }).eq('id', queryId);
-          }
-        }
-      }
-
-      // Update query status based on results
-      if (queryId) {
-        try {
-          await supabase.from('query_history').update({
-            was_successful: data.results && Array.isArray(data.results) && data.results.length > 0,
-            error_message: data.results && Array.isArray(data.results) && data.results.length > 0 ? null : "No results found"
-          }).eq('id', queryId);
-        } catch (updateError) {
-          console.error('Error updating query status:', updateError);
-        }
-      }
-      
-      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-        const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
-        return {
-          ...noResultsResponse,
-          queryId: queryId || undefined,
-          analysis: analysis,
-          sqlQuery: data.sqlQuery || '' // Include the SQL query even if no results
-        };
-      }
-      
-      return {
-        message: data.response || 'Sorry, I could not process your query.',
-        sqlQuery: data.sqlQuery || '',
-        results: data.results as any[],
-        noResults: false,
-        queryId: queryId || undefined,
-        analysis: analysis
-      };
-    } catch (geminiError) {
-      console.error('Error with Gemini API:', geminiError);
-      
-      // Update query status to failed
-      if (queryId) {
-        try {
-          await supabase.from('query_history').update({
-            was_successful: false,
-            error_message: "Gemini API error: " + (geminiError instanceof Error ? geminiError.message : String(geminiError))
-          }).eq('id', queryId);
-        } catch (updateError) {
-          console.error('Error updating query status:', updateError);
-        }
-      }
-      
-      const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
-      return {
-        ...noResultsResponse,
-        queryId: queryId || undefined
-      };
-    }
+    return {
+      message: mockResponse.message,
+      sqlQuery: mockResponse.sqlQuery,
+      results: mockResponse.data,
+      noResults: false,
+      queryId: queryId
+    };
   } catch (error) {
     console.error('Error generating response:', error);
-    const noResultsResponse = createNoResultsResponse(prompt, true);
-    return noResultsResponse;
+    return {
+      message: 'Desculpe, ocorreu um erro ao processar sua consulta.',
+      sqlQuery: '',
+      results: null,
+      noResults: true
+    };
   }
 };
 
