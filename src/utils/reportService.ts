@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 
@@ -120,37 +119,56 @@ export const deleteReport = async (id: string) => {
   return true;
 };
 
-export const extractVisualizations = (content: string | null): any[] => {
-  if (!content) return [];
+export const extractVisualizations = (content: string): any[] => {
+  if (!content || typeof content !== 'string') return [];
   
-  let contentToProcess: string = '';
-  if (typeof content === 'string') {
-    contentToProcess = content;
-  } else if (typeof content === 'object' && content !== null) {
-    // Type guard to safely check for _type property
-    const contentObj = content as any;
-    if (contentObj._type === 'String' && 'value' in contentObj) {
-      contentToProcess = contentObj.value || '';
-    }
+  try {
+    const visualizationMarkers = content.match(/\[Visualization:[^\]]+\]/g) || [];
+    
+    return visualizationMarkers.map(marker => {
+      try {
+        // Extract the portion after "Visualization:" and before closing "]"
+        const jsonStartIndex = marker.indexOf(':', 13) + 1;
+        const jsonStr = marker.substring(jsonStartIndex, marker.length - 1).trim();
+        
+        // Try to parse the JSON, and if it fails, attempt some basic fixes
+        try {
+          return JSON.parse(jsonStr);
+        } catch (parseError) {
+          console.error('Error parsing visualization data:', parseError);
+          
+          // Attempt to fix common JSON parse errors - add missing closing brackets/braces
+          let fixedJson = jsonStr;
+          
+          const openBraces = (jsonStr.match(/{/g) || []).length;
+          const closeBraces = (jsonStr.match(/}/g) || []).length;
+          const openBrackets = (jsonStr.match(/\[/g) || []).length;
+          const closeBrackets = (jsonStr.match(/\]/g) || []).length;
+          
+          for (let i = 0; i < openBraces - closeBraces; i++) {
+            fixedJson += '}';
+          }
+          
+          for (let i = 0; i < openBrackets - closeBrackets; i++) {
+            fixedJson += ']';
+          }
+          
+          try {
+            return JSON.parse(fixedJson);
+          } catch (e) {
+            console.error('Failed to fix and parse JSON:', e);
+            return null;
+          }
+        }
+      } catch (e) {
+        console.error('Error extracting visualization data:', e);
+        return null;
+      }
+    }).filter(Boolean);
+  } catch (e) {
+    console.error('Error extracting visualizations from content:', e);
+    return [];
   }
-  
-  if (!contentToProcess) return [];
-  
-  const visualizationMarkers = contentToProcess.match(/\[Visualization:[^\]]+\]/g) || [];
-  console.log("Found visualization markers:", visualizationMarkers.length);
-  
-  return visualizationMarkers.map(marker => {
-    try {
-      // Fix the colon issue in the visualization JSON parsing
-      const jsonStart = marker.indexOf(':', 13) + 1;  // Find the first colon after "Visualization"
-      const jsonStr = marker.substring(jsonStart, marker.length - 1).trim();
-      console.log("Parsing visualization JSON:", jsonStr.substring(0, 50) + "...");
-      return JSON.parse(jsonStr);
-    } catch (e) {
-      console.error('Error parsing visualization data:', e);
-      return null;
-    }
-  }).filter(Boolean);
 };
 
 export const generateReportTopics = (topic: string, language: string): ReportTopic[] => {
@@ -442,7 +460,7 @@ export const generateTopicContent = (topic: ReportTopic, mainTopic: string, lang
     } else {
       paragraphs.push(`For the analysis of temporal trends, appropriate statistical models were applied, including time series analyses and scenario-based projections. Correlations between variables were examined using multivariate analysis techniques, with special attention to confounding factors and possible causality relationships. All statistical analyses were performed using specialized software, and the results were reviewed by experts in quantitative methods to ensure correct interpretation.`);
       
-      paragraphs.push(`It is important to highlight the methodological limitations of this study. Despite efforts to ensure representativeness and accuracy, issues such as limited availability of data in certain areas, possible biases in survey responses, and the dynamic nature of the sector may affect the results. These limitations are explicitly recognized throughout the report, and conclusions are presented considering the appropriate interpretive cautions. Future research may address these limitations with complementary methods and additional data sources.`);
+      paragraphs.push(`It is important to highlight the methodological limitations of this study. Despite the efforts to ensure representativeness and accuracy, issues such as limited availability of data in certain areas, possible biases in survey responses, and the dynamic nature of the sector may affect the results. These limitations are explicitly recognized throughout the report, and conclusions are presented considering the appropriate interpretive cautions. Future research may address these limitations with complementary methods and additional data sources.`);
     }
   }
   else if (topic.title.includes(language === 'pt' ? "Tendências" : "Trends")) {

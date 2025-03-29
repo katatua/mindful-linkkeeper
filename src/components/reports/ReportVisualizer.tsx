@@ -288,14 +288,61 @@ export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualizatio
 };
 
 export const extractVisualizations = (content: string): VisualizationData[] => {
-  const visualizationMarkers = content.match(/\[Visualization:([^\]]+)\]/g) || [];
+  if (!content) return [];
+  
+  const visualizationMarkers = content.match(/\[Visualization:[^\]]+\]/g) || [];
   
   return visualizationMarkers.map(marker => {
     try {
-      const jsonStr = marker.substring(14, marker.length - 1);
-      return JSON.parse(jsonStr);
+      // Extract the portion after "Visualization:" and before closing "]"
+      const jsonStartIndex = marker.indexOf(':', 13) + 1;
+      const jsonStr = marker.substring(jsonStartIndex, marker.length - 1).trim();
+      
+      // Check if the JSON is complete (has closing brackets/braces)
+      let jsonData: any;
+
+      try {
+        jsonData = JSON.parse(jsonStr);
+      } catch (parseError) {
+        console.error('Error parsing visualization data:', parseError);
+        
+        // Attempt to fix common JSON parse errors
+        // 1. Try adding missing closing brackets/braces
+        let fixedJson = jsonStr;
+        
+        // Count opening and closing braces/brackets
+        const openBraces = (jsonStr.match(/{/g) || []).length;
+        const closeBraces = (jsonStr.match(/}/g) || []).length;
+        const openBrackets = (jsonStr.match(/\[/g) || []).length;
+        const closeBrackets = (jsonStr.match(/\]/g) || []).length;
+        
+        // Add missing closing braces/brackets
+        for (let i = 0; i < openBraces - closeBraces; i++) {
+          fixedJson += '}';
+        }
+        
+        for (let i = 0; i < openBrackets - closeBrackets; i++) {
+          fixedJson += ']';
+        }
+        
+        try {
+          jsonData = JSON.parse(fixedJson);
+          console.log('Successfully fixed and parsed JSON:', jsonData);
+        } catch (secondError) {
+          console.error('Failed to fix JSON:', secondError);
+          return null;
+        }
+      }
+      
+      // Validate the required fields for a visualization
+      if (!jsonData.type || !jsonData.data) {
+        console.error('Invalid visualization data: missing required fields');
+        return null;
+      }
+      
+      return jsonData;
     } catch (e) {
-      console.error('Error parsing visualization data:', e);
+      console.error('Error processing visualization marker:', e);
       return null;
     }
   }).filter(Boolean);

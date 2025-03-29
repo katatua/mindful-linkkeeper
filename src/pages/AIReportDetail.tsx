@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -155,9 +156,12 @@ const AIReportDetail = () => {
       }
     }
     
-    console.log("Visualization markers:", contentToProcess.match(visualizationRegex));
+    // Extract all visualizations from the content first
+    const visualizations = extractVisualizations(contentToProcess);
+    console.log(`Found ${visualizations.length} visualizations in content`);
     
     // Process content paragraph by paragraph, inserting visualizations at their marked positions
+    let vizIndex = 0;
     while ((match = visualizationRegex.exec(contentToProcess)) !== null) {
       // Add text before the visualization
       if (match.index > lastIndex) {
@@ -165,23 +169,29 @@ const AIReportDetail = () => {
         parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
       }
       
-      // Process the visualization
-      try {
-        const vizMarker = match[0];
-        // Fix the JSON parsing by finding the actual JSON start after the colon
-        const jsonStart = vizMarker.indexOf(':', 13) + 1; // Find the first colon after "Visualization"
-        const jsonStr = vizMarker.substring(jsonStart, vizMarker.length - 1).trim();
-        console.log("Parsing visualization JSON:", jsonStr);
-        const vizData = JSON.parse(jsonStr);
-        console.log("Parsed visualization data:", vizData);
+      // Get the corresponding visualization data
+      if (vizIndex < visualizations.length) {
+        const vizData = visualizations[vizIndex];
+        vizIndex++;
         
-        parts.push(
-          <div key={`viz-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-            <ReportVisualizer visualization={vizData} />
-          </div>
-        );
-      } catch (e) {
-        console.error('Error rendering visualization:', e);
+        if (vizData) {
+          parts.push(
+            <div key={`viz-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <ReportVisualizer visualization={vizData} />
+            </div>
+          );
+        } else {
+          // Display a placeholder for invalid visualizations
+          parts.push(
+            <div key={`viz-error-${parts.length}`} className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <p className="text-center text-red-500">
+                {language === 'pt' 
+                  ? "Não foi possível renderizar esta visualização"
+                  : "Could not render this visualization"}
+              </p>
+            </div>
+          );
+        }
       }
       
       lastIndex = match.index + match[0].length;
