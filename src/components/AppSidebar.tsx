@@ -9,15 +9,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Menu } from "lucide-react";
-import { useTheme } from "@/components/theme-provider"
-import { MoonIcon, SunIcon } from "@radix-ui/react-icons"
+import { Menu, MoonIcon, SunIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { DatabaseIcon, Search } from 'lucide-react';
 
+// Use next-themes for theme management
+import { useTheme } from "next-themes"
+
 export function AppSidebar() {
   const { pathname } = useLocation();
-  const { setTheme, mode } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
 
   return (
     <div className="border-r flex-col bg-background md:flex hidden">
