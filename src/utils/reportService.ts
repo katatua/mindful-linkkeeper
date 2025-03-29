@@ -156,7 +156,7 @@ const generateMarketAnalysisContent = (topic: string, language: string): string 
     : `One of the main indicators is the market distribution among different segments. This segmentation allows for identifying niches with higher growth and opportunities not yet adequately explored.\n\n`;
   
   content += isPortuguese
-    ? `[Visualization: pie-chart;Distribuição do Mercado;Segmentação por setor em ${topic};segments:Tecnologia,Saúde,Energia,Manufatura,Serviços;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`
+    ? `[Visualization: pie-chart;Distribuição do Mercado;Segmentaç��o por setor em ${topic};segments:Tecnologia,Saúde,Energia,Manufatura,Serviços;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`
     : `[Visualization: pie-chart;Market Distribution;Segmentation by sector in ${topic};segments:Technology,Healthcare,Energy,Manufacturing,Services;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`;
   
   content += isPortuguese
@@ -290,7 +290,7 @@ const generateConclusionsContent = (topic: string, language: string): string => 
   return content;
 };
 
-// Missing functions to implement
+// Database functions
 export const fetchReports = async (language: string): Promise<AIGeneratedReport[]> => {
   try {
     const { data, error } = await supabase
@@ -328,16 +328,20 @@ export const deleteReport = async (id: string): Promise<void> => {
   }
 };
 
-export const saveReport = async (reportData: Partial<AIGeneratedReport>): Promise<AIGeneratedReport> => {
+export const saveReport = async (reportData: {
+  title: string;
+  content: string;
+  language: string;
+  user_id?: string | null;
+  metadata?: any;
+  chart_data?: any;
+  report_type?: string | null;
+  file_url?: string | null;
+}): Promise<AIGeneratedReport> => {
   try {
-    // Ensure required fields are present
-    if (!reportData.title || !reportData.content) {
-      throw new Error("Report title and content are required");
-    }
-    
     const { data, error } = await supabase
       .from('ai_generated_reports')
-      .insert([reportData]) // Pass as an array with a single object
+      .insert(reportData)  // Now TypeScript knows this object has required fields
       .select()
       .single();
 
