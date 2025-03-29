@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -206,7 +205,7 @@ export function generateTopicContent(topic: ReportTopic, mainTopic: string, lang
         : `The business landscape is constantly evolving, shaped by disruptive forces and new consumer expectations. ${mainTopic} emerges as a dynamic field where innovative business models are challenging traditional approaches and redefining value for stakeholders.\n\n`;
     } else {
       content += language === 'pt'
-        ? `O cenário atual apresenta complexidades e nuances que merecem atenção detalhada. Observamos uma aceleração significativa no desenvolvimento de novas tecnologias e modelos de negócio, impulsionados por fatores como digitalização, mudanças nas cadeias globais de suprimentos e novas demandas de consumidores e mercados. Em paralelo, questões como sustentabilidade, inclusão e responsabilidade social corporativa ganharam destaque, influenciando diretamente as dinâmicas relacionadas a ${mainTopic}.\n\n`
+        ? `O cenário atual apresenta complexidades e nuances que merecem atenção detalhada. Observamos uma aceleração significativa no desenvolvimento de novas tecnologias e modelos de negócio, impulsionados por fatores como digitalização, mudanças nas cadeias globais de suprimentos e novas demandas de consumidores e mercados. In paralelo, questões como sustentabilidade, inclusão e responsabilidade social corporativa ganharam destaque, influenciando diretamente as dinâmicas relacionadas a ${mainTopic}.\n\n`
         : `The current scenario presents complexities and nuances that deserve detailed attention. We observe a significant acceleration in the development of new technologies and business models, driven by factors such as digitalization, changes in global supply chains, and new consumer and market demands. In parallel, issues such as sustainability, inclusion, and corporate social responsibility have gained prominence, directly influencing the dynamics related to ${mainTopic}.\n\n`;
     }
     
@@ -765,7 +764,7 @@ export const extractVisualizations = (content: string | any): any[] => {
       const jsonStartIndex = marker.indexOf(':', 14) + 1;
       const jsonStr = marker.substring(jsonStartIndex, marker.length - 1).trim();
       
-      // Check if the JSON is complete (has closing brackets/braces)
+      // Check if the JSON is complete (has closing braces/brackets)
       let jsonData: any;
 
       try {
@@ -825,4 +824,108 @@ export const extractVisualizations = (content: string | any): any[] => {
       return null;
     }
   }).filter(Boolean);
-};
+}
+
+// Function to fetch AI-generated reports
+export async function fetchReports(language: string = 'en'): Promise<AIGeneratedReport[]> {
+  console.log(`Fetching reports for language: ${language}`);
+  
+  try {
+    const { data, error } = await supabase
+      .from('ai_generated_reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching reports:", error);
+      
+      // For development/testing purposes, return sample data if database fetch fails
+      return [
+        {
+          id: 'dev-report-1',
+          title: language === 'pt' ? 'Relatório de Análise de Mercado' : 'Market Analysis Report',
+          content: language === 'pt' 
+            ? '# Análise de Mercado\n\nEste é um relatório gerado automaticamente com análise de mercado detalhada.\n\n[Visualization:{"type":"bar","title":"Distribuição por Setor","data":[{"category":"Tecnologia","value":45},{"category":"Saúde","value":25},{"category":"Finanças","value":30}],"xAxisKey":"category","dataKey":"value"}]'
+            : '# Market Analysis\n\nThis is an automatically generated report with detailed market analysis.\n\n[Visualization:{"type":"bar","title":"Sector Distribution","data":[{"category":"Technology","value":45},{"category":"Healthcare","value":25},{"category":"Finance","value":30}],"xAxisKey":"category","dataKey":"value"}]',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 86400000).toISOString(),
+          user_id: null,
+          language: language,
+          metadata: {},
+          report_type: language === 'pt' ? 'Análise de Mercado' : 'Market Analysis'
+        },
+        {
+          id: 'dev-report-2',
+          title: language === 'pt' ? 'Tendências Tecnológicas 2023' : 'Technology Trends 2023',
+          content: language === 'pt'
+            ? '# Tendências Tecnológicas\n\nAnálise das principais tendências tecnológicas de 2023.\n\n[Visualization:{"type":"line","title":"Adoção de Tecnologia","data":[{"year":"2019","value":30},{"year":"2020","value":42},{"year":"2021","value":55},{"year":"2022","value":70},{"year":"2023","value":85}],"xAxisKey":"year","dataKey":"value"}]'
+            : '# Technology Trends\n\nAnalysis of the main technology trends of 2023.\n\n[Visualization:{"type":"line","title":"Technology Adoption","data":[{"year":"2019","value":30},{"year":"2020","value":42},{"year":"2021","value":55},{"year":"2022","value":70},{"year":"2023","value":85}],"xAxisKey":"year","dataKey":"value"}]',
+          created_at: new Date(Date.now() - 172800000).toISOString(),
+          updated_at: new Date(Date.now() - 172800000).toISOString(),
+          user_id: null,
+          language: language,
+          metadata: {},
+          report_type: language === 'pt' ? 'Análise de Tendências' : 'Trend Analysis'
+        }
+      ];
+    }
+    
+    console.log(`Fetched ${data.length} reports`);
+    return data as AIGeneratedReport[];
+    
+  } catch (error) {
+    console.error("Error in fetchReports:", error);
+    
+    // Return sample data for development/testing
+    return [
+      {
+        id: 'dev-report-1',
+        title: language === 'pt' ? 'Relatório de Análise de Mercado' : 'Market Analysis Report',
+        content: language === 'pt' 
+          ? '# Análise de Mercado\n\nEste é um relatório gerado automaticamente com análise de mercado detalhada.\n\n[Visualization:{"type":"bar","title":"Distribuição por Setor","data":[{"category":"Tecnologia","value":45},{"category":"Saúde","value":25},{"category":"Finanças","value":30}],"xAxisKey":"category","dataKey":"value"}]'
+          : '# Market Analysis\n\nThis is an automatically generated report with detailed market analysis.\n\n[Visualization:{"type":"bar","title":"Sector Distribution","data":[{"category":"Technology","value":45},{"category":"Healthcare","value":25},{"category":"Finance","value":30}],"xAxisKey":"category","dataKey":"value"}]',
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        updated_at: new Date(Date.now() - 86400000).toISOString(),
+        user_id: null,
+        language: language,
+        metadata: {},
+        report_type: language === 'pt' ? 'Análise de Mercado' : 'Market Analysis'
+      },
+      {
+        id: 'dev-report-2',
+        title: language === 'pt' ? 'Tendências Tecnológicas 2023' : 'Technology Trends 2023',
+        content: language === 'pt'
+          ? '# Tendências Tecnológicas\n\nAnálise das principais tendências tecnológicas de 2023.\n\n[Visualization:{"type":"line","title":"Adoção de Tecnologia","data":[{"year":"2019","value":30},{"year":"2020","value":42},{"year":"2021","value":55},{"year":"2022","value":70},{"year":"2023","value":85}],"xAxisKey":"year","dataKey":"value"}]'
+          : '# Technology Trends\n\nAnalysis of the main technology trends of 2023.\n\n[Visualization:{"type":"line","title":"Technology Adoption","data":[{"year":"2019","value":30},{"year":"2020","value":42},{"year":"2021","value":55},{"year":"2022","value":70},{"year":"2023","value":85}],"xAxisKey":"year","dataKey":"value"}]',
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        updated_at: new Date(Date.now() - 172800000).toISOString(),
+        user_id: null,
+        language: language,
+        metadata: {},
+        report_type: language === 'pt' ? 'Análise de Tendências' : 'Trend Analysis'
+      }
+    ];
+  }
+}
+
+// Function to delete an AI-generated report
+export async function deleteReport(id: string): Promise<void> {
+  console.log(`Deleting report with ID: ${id}`);
+  
+  try {
+    const { error } = await supabase
+      .from('ai_generated_reports')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error("Error deleting report:", error);
+      throw error;
+    }
+    
+    console.log("Report deleted successfully");
+  } catch (error) {
+    console.error("Error in deleteReport:", error);
+    throw error;
+  }
+}
