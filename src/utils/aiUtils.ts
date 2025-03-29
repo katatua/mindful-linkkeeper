@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and include Portuguese questions
@@ -40,8 +41,174 @@ export const suggestedDatabaseQuestions = [
 
 // Mock data for different query types
 const mockDataResponses = {
-  // ... keep existing code (funding_programs, projects, metrics, policy_frameworks, international_collaborations)
+  funding_programs: [
+    {
+      id: '1',
+      name: 'Horizonte Europa',
+      description: 'Programa de financiamento para pesquisa e inovação na Europa',
+      total_budget: 95000000000,
+      application_deadline: '2023-05-15',
+      end_date: '2027-12-31',
+      sector_focus: ['pesquisa científica', 'inovação tecnológica', 'energia renovável'],
+      funding_type: 'grant'
+    },
+    {
+      id: '2',
+      name: 'Portugal 2030',
+      description: 'Programa nacional de financiamento para modernização',
+      total_budget: 23000000000,
+      application_deadline: '2023-08-30',
+      end_date: '2030-12-31',
+      sector_focus: ['transformação digital', 'energia renovável', 'biotecnologia'],
+      funding_type: 'mixed'
+    },
+    {
+      id: '3',
+      name: 'Programa Operacional Competitividade e Internacionalização',
+      description: 'Apoio à competitividade das PME portuguesas',
+      total_budget: 4500000000,
+      application_deadline: '2023-06-22',
+      end_date: '2027-12-31',
+      sector_focus: ['internacionalização', 'competitividade empresarial'],
+      funding_type: 'grant'
+    }
+  ],
 
+  projects: [
+    {
+      id: '1',
+      title: 'Desenvolvimento de tecnologias sustentáveis para tratamento de água',
+      description: 'Pesquisa e implementação de métodos inovadores para purificação de água',
+      funding_amount: 750000,
+      start_date: '2022-03-15',
+      end_date: '2025-03-14',
+      status: 'active',
+      sector: 'Ambiente',
+      region: 'Norte',
+      organization: 'Universidade do Porto'
+    },
+    {
+      id: '2',
+      title: 'Aplicação de Inteligência Artificial em diagnósticos médicos',
+      description: 'Desenvolvimento de algoritmos para auxiliar diagnósticos precoces',
+      funding_amount: 1200000,
+      start_date: '2022-06-01',
+      end_date: '2024-05-31',
+      status: 'active',
+      sector: 'Saúde',
+      region: 'Lisboa',
+      organization: 'Instituto Superior Técnico'
+    },
+    {
+      id: '3',
+      title: 'Sistemas energéticos inteligentes para edifícios comerciais',
+      description: 'Implementação de redes elétricas inteligentes com gestão por IA',
+      funding_amount: 830000,
+      start_date: '2022-01-15',
+      end_date: '2023-12-31',
+      status: 'completed',
+      sector: 'Energia',
+      region: 'Centro',
+      organization: 'Universidade de Coimbra'
+    }
+  ],
+
+  metrics: [
+    {
+      id: '1',
+      name: 'Investimento em R&D',
+      category: 'Financiamento',
+      value: 3200000000,
+      unit: 'EUR',
+      measurement_date: '2023-12-31',
+      region: 'Portugal',
+      sector: 'Todos',
+      source: 'INE'
+    },
+    {
+      id: '2',
+      name: 'Patentes Registradas',
+      category: 'Propriedade Intelectual',
+      value: 143,
+      unit: 'Quantidade',
+      measurement_date: '2022-12-31',
+      region: 'Lisboa',
+      sector: 'Tecnologia',
+      source: 'INPI'
+    },
+    {
+      id: '3',
+      name: 'Startups Criadas',
+      category: 'Empreendedorismo',
+      value: 856,
+      unit: 'Quantidade',
+      measurement_date: '2023-12-31',
+      region: 'Portugal',
+      sector: 'Todos',
+      source: 'Startup Portugal'
+    }
+  ],
+
+  policy_frameworks: [
+    {
+      id: '1',
+      title: 'Estratégia Nacional para o Hidrogénio',
+      description: 'Plano para implementação de infraestrutura de hidrogénio verde em Portugal',
+      implementation_date: '2023-02-15',
+      status: 'active',
+      key_objectives: ['Descarbonização', 'Transição energética', 'Criação de empregos verdes']
+    },
+    {
+      id: '2',
+      title: 'Agenda de Inovação para a Agricultura',
+      description: 'Transformação do setor agrícola através de tecnologia e práticas sustentáveis',
+      implementation_date: '2022-05-10',
+      status: 'active',
+      key_objectives: ['Modernização agrícola', 'Sustentabilidade', 'Economia circular']
+    },
+    {
+      id: '3',
+      title: 'Plano Nacional de Ação para a Eficiência Energética',
+      description: 'Medidas para aumentar a eficiência energética em todos os setores',
+      implementation_date: '2021-11-30',
+      status: 'active',
+      key_objectives: ['Redução do consumo energético', 'Eficiência energética', 'Metas climáticas']
+    }
+  ],
+
+  international_collaborations: [
+    {
+      id: '1',
+      program_name: 'Portugal-Alemanha em IA',
+      country: 'Alemanha',
+      partnership_type: 'Bilateral',
+      focus_areas: ['Inteligência Artificial', 'Machine Learning', 'Robótica'],
+      start_date: '2022-06-15',
+      end_date: '2026-06-14',
+      total_budget: 5000000
+    },
+    {
+      id: '2',
+      program_name: 'Cooperação Portugal-Brasil em Biotecnologia',
+      country: 'Brasil',
+      partnership_type: 'Bilateral',
+      focus_areas: ['Biotecnologia', 'Saúde', 'Agricultura'],
+      start_date: '2021-09-01',
+      end_date: '2025-08-31',
+      total_budget: 3800000
+    },
+    {
+      id: '3',
+      program_name: 'Rede Ibérica de Energias Renováveis',
+      country: 'Espanha',
+      partnership_type: 'Regional',
+      focus_areas: ['Energia Solar', 'Energia Eólica', 'Redes Inteligentes'],
+      start_date: '2022-01-20',
+      end_date: '2027-01-19',
+      total_budget: 12000000
+    }
+  ],
+  
   patents: [
     {
       id: '1',
