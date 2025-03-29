@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle } from 'lucide-react';
+import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle, Loader2 } from 'lucide-react';
 import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -40,6 +41,21 @@ export const AIAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { toast } = useToast();
+  
+  // Add event listener for setting input from examples
+  useEffect(() => {
+    const handleSetQueryInput = (e: CustomEvent) => {
+      if (e.detail?.query) {
+        setInput(e.detail.query);
+      }
+    };
+    
+    window.addEventListener('set-query-input', handleSetQueryInput as EventListener);
+    
+    return () => {
+      window.removeEventListener('set-query-input', handleSetQueryInput as EventListener);
+    };
+  }, []);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,32 +243,17 @@ export const AIAssistant: React.FC = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>AI Database Assistant</CardTitle>
-        <div className="flex gap-2">
-          {messages.length > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={resetConversation}
-              className="flex items-center gap-1"
-            >
-              <PlusCircle className="h-4 w-4 mr-1" />
-              New Query
-            </Button>
-          )}
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setShowSuggestions(!showSuggestions)}
-            aria-label="Show example questions"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="w-full">
+      <div className="mb-4">
+        {messages.length === 0 && (
+          <Alert variant="default" className="mb-4">
+            <AlertDescription>
+              This assistant helps you query the database using natural language in English or Portuguese.
+              Type a question like <strong>"Qual o investimento em R&D em 2023?"</strong> or <strong>"Show me all funding programs for renewable energy"</strong>.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {showSuggestions && (
           <div className="mb-4 p-4 bg-slate-50 rounded-md">
             <h3 className="text-sm font-medium mb-2">Example Questions:</h3>
@@ -270,200 +271,223 @@ export const AIAssistant: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
 
-        <ScrollArea className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1">
-          {messages.length === 0 ? (
-            <div className="text-center text-gray-500 py-6">
-              <p>Ask a question about the database, such as:</p>
-              <p className="italic mt-2">
-                "Which funding programs include renewable energy in their sector focus?" or
-                "Show me projects with the highest funding amounts in the technology sector"
+      <ScrollArea className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1 border rounded-md bg-gray-50">
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 py-6">
+            <p>Ask a question about the database, such as:</p>
+            <p className="italic mt-2">
+              "Qual o investimento em R&D em 2023?" or
+              "Show me projects with the highest funding amounts in the technology sector"
+            </p>
+          </div>
+        ) : (
+          messages.map(message => (
+            <div 
+              key={message.id} 
+              className={`p-3 rounded-lg mb-4 ${
+                message.role === 'user' 
+                  ? 'bg-blue-100 ml-8' 
+                  : message.error 
+                    ? 'bg-red-50 border border-red-200 mr-8' 
+                    : 'bg-gray-100 mr-8'
+              }`}
+            >
+              <p className="text-sm font-semibold mb-1">
+                {message.role === 'user' ? 'You' : 'AI Assistant'}
               </p>
-            </div>
-          ) : (
-            messages.map(message => (
-              <div 
-                key={message.id} 
-                className={`p-3 rounded-lg mb-4 ${
-                  message.role === 'user' 
-                    ? 'bg-blue-100 ml-8' 
-                    : message.error 
-                      ? 'bg-red-50 border border-red-200 mr-8' 
-                      : 'bg-gray-100 mr-8'
-                }`}
-              >
-                <p className="text-sm font-semibold mb-1">
-                  {message.role === 'user' ? 'You' : 'AI Assistant'}
-                </p>
-                {message.error ? (
-                  <Alert variant="destructive" className="bg-transparent border-none p-0">
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    <AlertDescription className="whitespace-pre-wrap">{message.content}</AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    {message.role === 'assistant' ? (
-                      <Tabs defaultValue="resposta" className="w-full">
-                        <TabsList className="mb-2">
-                          <TabsTrigger value="resposta">Resposta</TabsTrigger>
-                          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="resposta">
-                          <div className="whitespace-pre-wrap">
-                            {message.noResults ? (
-                              <Alert variant="default" className="mb-3">
-                                <AlertTitle>No results found</AlertTitle>
-                                <AlertDescription>
-                                  {message.content}
-                                  <div className="mt-2">
-                                    <PopulateDataButton 
-                                      query={
-                                        messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
-                                      } 
-                                      queryId={message.queryId}
-                                    />
-                                  </div>
-                                </AlertDescription>
-                              </Alert>
-                            ) : message.results && message.results.length > 0 ? (
-                              <div>
-                                <div className="font-medium text-primary mb-4">{message.content.split('\n')[0]}</div>
-                                {renderResults(message.results)}
-                              </div>
-                            ) : (
-                              message.content
-                            )}
-                          </div>
-                        </TabsContent>
-                        
-                        <TabsContent value="detalhes">
-                          <div className="whitespace-pre-wrap">{message.content}</div>
-                          
-                          {message.sqlQuery && (
-                            <div className="mt-3">
-                              <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                                <Code className="h-4 w-4" />
-                                <span>SQL Query:</span>
-                              </div>
-                              <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
-                                {message.sqlQuery}
-                              </pre>
-                            </div>
-                          )}
-                          
-                          {message.analysis && message.analysis.insertStatements && message.analysis.insertStatements.length > 0 && (
-                            <QueryDataRecommendations
-                              query={messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""}
-                              queryId={message.queryId}
-                              insertStatements={message.analysis.insertStatements}
-                              onInsertSuccess={() => {
-                                const updatedMessages = [...messages];
-                                const index = updatedMessages.findIndex(m => m.id === message.id);
-                                if (index >= 0) {
-                                  updatedMessages[index] = {
-                                    ...message,
-                                    content: "Data has been populated successfully. Please try your query again.",
-                                    noResults: false
-                                  };
-                                  setMessages(updatedMessages);
-                                }
-                              }}
-                            />
-                          )}
-                          
-                          {message.queryId && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              Query ID: {message.queryId}
-                            </div>
-                          )}
-                          
-                          {message.timestamp && (
-                            <div className="mt-1 text-xs text-gray-500">
-                              Time: {message.timestamp.toLocaleString()}
-                            </div>
-                          )}
-                          
-                          {message.results && message.results.length > 0 ? (
-                            <div className="mt-3">
-                              <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                                <Database className="h-4 w-4" />
-                                <span>Results:</span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-xs h-6 ml-auto"
-                                  onClick={() => {
-                                    try {
-                                      const jsonStr = JSON.stringify(message.results, null, 2);
-                                      const blob = new Blob([jsonStr], { type: 'application/json' });
-                                      const url = URL.createObjectURL(blob);
-                                      const a = document.createElement('a');
-                                      a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
-                                      a.href = url;
-                                      a.click();
-                                      URL.revokeObjectURL(url);
-                                    } catch (e) {
-                                      console.error('Error downloading results:', e);
-                                      toast({
-                                        title: "Error",
-                                        description: "Failed to download results.",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                >
-                                  Download JSON
-                                </Button>
-                              </div>
-                              {renderResults(message.results)}
-                            </div>
-                          ) : message.noResults ? (
-                            <Alert variant="default" className="mt-3">
+              {message.error ? (
+                <Alert variant="destructive" className="bg-transparent border-none p-0">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertDescription className="whitespace-pre-wrap">{message.content}</AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  {message.role === 'assistant' ? (
+                    <Tabs defaultValue="resposta" className="w-full">
+                      <TabsList className="mb-2">
+                        <TabsTrigger value="resposta">Resposta</TabsTrigger>
+                        <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="resposta">
+                        <div className="whitespace-pre-wrap">
+                          {message.noResults ? (
+                            <Alert variant="default" className="mb-3">
                               <AlertTitle>No results found</AlertTitle>
                               <AlertDescription>
-                                The database doesn't contain data matching this query.
+                                {message.content}
                                 <div className="mt-2">
                                   <PopulateDataButton 
                                     query={
                                       messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
-                                    }
+                                    } 
                                     queryId={message.queryId}
                                   />
                                 </div>
                               </AlertDescription>
                             </Alert>
-                          ) : null}
-                        </TabsContent>
-                      </Tabs>
-                    ) : (
-                      <div className="whitespace-pre-wrap">{message.content}</div>
-                    )}
-                  </>
-                )}
-              </div>
-            ))
-          )}
-          {isLoading && (
-            <div className="flex justify-center items-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                          ) : message.results && message.results.length > 0 ? (
+                            <div>
+                              <div className="font-medium text-primary mb-4">{message.content.split('\n')[0]}</div>
+                              {renderResults(message.results)}
+                            </div>
+                          ) : (
+                            message.content
+                          )}
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="detalhes">
+                        <div className="whitespace-pre-wrap">{message.content}</div>
+                        
+                        {message.sqlQuery && (
+                          <div className="mt-3">
+                            <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                              <Code className="h-4 w-4" />
+                              <span>SQL Query:</span>
+                            </div>
+                            <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                              {message.sqlQuery}
+                            </pre>
+                          </div>
+                        )}
+                        
+                        {message.analysis && message.analysis.insertStatements && message.analysis.insertStatements.length > 0 && (
+                          <QueryDataRecommendations
+                            query={messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""}
+                            queryId={message.queryId}
+                            insertStatements={message.analysis.insertStatements}
+                            onInsertSuccess={() => {
+                              const updatedMessages = [...messages];
+                              const index = updatedMessages.findIndex(m => m.id === message.id);
+                              if (index >= 0) {
+                                updatedMessages[index] = {
+                                  ...message,
+                                  content: "Data has been populated successfully. Please try your query again.",
+                                  noResults: false
+                                };
+                                setMessages(updatedMessages);
+                              }
+                            }}
+                          />
+                        )}
+                        
+                        {message.queryId && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            Query ID: {message.queryId}
+                          </div>
+                        )}
+                        
+                        {message.timestamp && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            Time: {message.timestamp.toLocaleString()}
+                          </div>
+                        )}
+                        
+                        {message.results && message.results.length > 0 ? (
+                          <div className="mt-3">
+                            <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                              <Database className="h-4 w-4" />
+                              <span>Results:</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-xs h-6 ml-auto"
+                                onClick={() => {
+                                  try {
+                                    const jsonStr = JSON.stringify(message.results, null, 2);
+                                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
+                                    a.href = url;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                  } catch (e) {
+                                    console.error('Error downloading results:', e);
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to download results.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                Download JSON
+                              </Button>
+                            </div>
+                            {renderResults(message.results)}
+                          </div>
+                        ) : message.noResults ? (
+                          <Alert variant="default" className="mt-3">
+                            <AlertTitle>No results found</AlertTitle>
+                            <AlertDescription>
+                              The database doesn't contain data matching this query.
+                              <div className="mt-2">
+                                <PopulateDataButton 
+                                  query={
+                                    messages[messages.findIndex(m => m.id === message.id) - 1]?.content || ""
+                                  }
+                                  queryId={message.queryId}
+                                />
+                              </div>
+                            </AlertDescription>
+                          </Alert>
+                        ) : null}
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                  )}
+                </>
+              )}
             </div>
-          )}
-        </ScrollArea>
-        
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Ask a question about the database..."
-            className="resize-none"
-            disabled={isLoading}
-          />
-          <Button type="submit" size="icon" disabled={isLoading}>
-            <Send className="h-4 w-4" />
+          ))
+        )}
+        {isLoading && (
+          <div className="flex justify-center items-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
+      </ScrollArea>
+      
+      <div className="flex items-center gap-2">
+        {messages.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={resetConversation}
+            className="flex items-center gap-1"
+          >
+            <PlusCircle className="h-4 w-4 mr-1" />
+            New Query
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        )}
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setShowSuggestions(!showSuggestions)}
+          aria-label="Show example questions"
+        >
+          <HelpCircle className="h-4 w-4 mr-1" />
+          {showSuggestions ? 'Hide Examples' : 'Show Examples'}
+        </Button>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+        <Textarea
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Ask a question about the database in English or Portuguese..."
+          className="resize-none"
+          disabled={isLoading}
+        />
+        <Button type="submit" size="icon" disabled={isLoading}>
+          <Send className="h-4 w-4" />
+        </Button>
+      </form>
+    </div>
   );
 };

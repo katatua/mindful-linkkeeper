@@ -14,7 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Clock, Trash2, RefreshCw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Clock, Trash2, RefreshCw, CheckCircle, XCircle, Loader2, MessageSquare } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface QueryHistoryItem {
   id: string;
@@ -23,6 +24,7 @@ interface QueryHistoryItem {
   was_successful: boolean;
   language: string;
   error_message?: string;
+  analysis_result?: any;
 }
 
 export const QueryHistory: React.FC = () => {
@@ -89,6 +91,12 @@ export const QueryHistory: React.FC = () => {
     return new Date(timestamp).toLocaleString();
   };
 
+  const hasAnalysis = (item: QueryHistoryItem) => {
+    return item.analysis_result && 
+           (item.analysis_result.insertStatements?.length > 0 || 
+            item.analysis_result.analysis);
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -126,6 +134,7 @@ export const QueryHistory: React.FC = () => {
                   <TableHead className="w-[50%]">Query</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Language</TableHead>
+                  <TableHead>Analysis</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -150,8 +159,27 @@ export const QueryHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {item.language === 'pt' ? '🇵🇹' : '🇬🇧'} {item.language}
+                        {item.language === 'pt' ? '🇵🇹' : '🇬🇧'} {item.language === 'pt' ? 'Portuguese' : 'English'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {hasAnalysis(item) ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                Available
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>AI analysis and suggestions available</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-400">None</Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,7 +1,7 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import * as GoogleAuth from "https://deno.land/x/googlejwtsa@v0.1.5/mod.ts";
 
 const googleApiKey = Deno.env.get('GEMINI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -57,28 +57,29 @@ async function getAIModel(): Promise<string> {
 
 function formatNaturalLanguageResponse(originalQuestion: string, message: string, results: any[] | null, sqlQuery: string): string {
   // Start with the original question
-  let formattedResponse = `${originalQuestion}\n`;
-  
-  // Extract a brief introduction (first sentence)
-  const briefIntro = message.split('.')[0] + '.';
-  formattedResponse += `${briefIntro}\n\n`;
+  let formattedResponse = `${originalQuestion}\n\n`;
   
   // If there are no results, show a message and return early
   if (!results || results.length === 0) {
     return `${formattedResponse}**Não foram encontrados resultados para esta consulta.**`;
   }
   
-  // Add the Results section with formatted table immediately after the brief intro
+  // Add a brief introduction
+  const briefIntro = message.split('.')[0] + '.';
+  formattedResponse += `${briefIntro}\n\n`;
+  
+  // Add the Results section with formatted table
   formattedResponse += "**Resultados:**\n";
   
-  // Create a formatted table for the results right at the top
+  // Create a formatted table for the results
   if (results.length > 0) {
     // Generate table headers
     const headers = Object.keys(results[0]);
     formattedResponse += headers.join('\t') + '\n';
     
-    // Generate table rows
-    results.forEach(row => {
+    // Generate table rows (limited to 10 for readability)
+    const displayResults = results.slice(0, 10);
+    displayResults.forEach(row => {
       const values = headers.map(header => {
         const value = row[header];
         if (value === null || value === undefined) return '';
@@ -87,6 +88,11 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
       });
       formattedResponse += values.join('\t') + '\n';
     });
+    
+    // Indicate if there are more results
+    if (results.length > 10) {
+      formattedResponse += `\n*Mostrando 10 dos ${results.length} resultados encontrados.*\n`;
+    }
   }
   
   // Add the rest of the explanatory text after the results table
@@ -94,18 +100,11 @@ function formatNaturalLanguageResponse(originalQuestion: string, message: string
     formattedResponse += `\n${message.substring(briefIntro.length).trim()}\n\n`;
   }
   
-  // Add domain-specific context for energy-related queries
-  if (message.includes("energia renovável") || 
-      sqlQuery.toLowerCase().includes("energy") || 
-      sqlQuery.toLowerCase().includes("renewable")) {
-    formattedResponse += "**Informações adicionais:**\n";
-    formattedResponse += "Estes programas apoiam tipicamente o desenvolvimento e implementação de tecnologias como solar, eólica, hídrica, biomassa e geotérmica. Os tipos de financiamento comuns incluem subvenções, empréstimos e incentivos fiscais, alinhados com os objetivos de Portugal de atingir 80% de eletricidade renovável até 2030 e com o Pacto Ecológico Europeu.\n\n";
-  }
-  
   // Add a summary section with bullet points
   formattedResponse += "**Resumo dos Resultados:**\n\n";
   
-  results.forEach((item, index) => {
+  const displayResults = results.slice(0, 5); // Limit to 5 for the summary
+  displayResults.forEach((item, index) => {
     const itemDetails = Object.entries(item)
       .map(([key, value]) => {
         if (value === null || value === undefined) return null;
@@ -144,15 +143,9 @@ The database contains the following tables:
 5. ani_international_collaborations - International research partnerships
    - id, program_name, country, partnership_type, focus_areas (array), start_date, end_date, total_budget
 
-When users ask about renewable energy programs, here are some key details to include:
-- Renewable energy programs often focus on solar, wind, hydroelectric, biomass, and geothermal technologies
-- Common funding types include grants, loans, tax incentives, and equity investments
-- Portugal has set a target of 80% renewable electricity by 2030
-- Important metrics include: CO2 emissions avoided, energy capacity installed (MW), and cost per kWh
-- The European Green Deal and Portugal's National Energy and Climate Plan are key policy frameworks
-- Funding success rates for renewable energy projects range from 25-40% depending on program competitiveness
+You are a helpful assistant specialized in Portuguese language interactions about research and innovation data.
 
-When users ask questions about the database, you should:
+When users ask questions, even in Portuguese, you should:
 1. Generate appropriate SQL to query the database (only use standard PostgreSQL syntax)
 2. Format your response to be clear, concise and helpful, focusing on insights from the data
 3. Always present the information in Portuguese, as this is a Portuguese database
@@ -166,31 +159,45 @@ For SQL queries, make sure to REMOVE ANY SEMICOLONS from the end of the query.
 
 Your main goal is to provide CLEAR INSIGHTS about the data, not just raw data. Explain patterns, notable details, and summarize the information.
 
-For energy/renewable energy topics, be flexible in your search. Consider these variations:
-- For ENERGY searches include 'renewable energy', 'clean energy', 'green energy', 'sustainable energy', 'alternative energy'
-- For specific TECHNOLOGIES include 'solar', 'wind', 'hydro', 'hydroelectric', 'biomass', 'geothermal', 'tidal'
-- Other relevant terms: 'photovoltaic', 'renewable', 'clean power', 'green power', 'sustainability'
+For R&D (Pesquisa e Desenvolvimento) questions:
+- Look for metrics related to research investment
+- Check funding amounts in the projects table
+- Consider programs focused on research and innovation
+- Use SUM, AVG, and other aggregate functions to provide meaningful insights
 
-When searching for renewable energy in arrays, use the ILIKE operator with wildcards for partial matching.
+For time-based queries (like "2023"), be sure to:
+- Filter date fields appropriately using EXTRACT(YEAR FROM date_field) = year
+- For projects, check both start_date and end_date
+- For metrics, use measurement_date
+
+When searching for topics like R&D:
+- Try multiple variations: 'R&D', 'Research and Development', 'Pesquisa e Desenvolvimento'
+- Use the ILIKE operator with wildcards for partial matching
+- Check in name, description, and other text fields
+
+Special instructions for Portuguese queries:
+- Recognize terms like "investimento" (investment), "pesquisa" (research), "desenvolvimento" (development)
+- Use appropriate currency formatting for values in EUR
+- Ensure your responses maintain formal Portuguese with proper grammar
 
 Here are examples of questions users might ask and how to respond:
-1. Q: "Show me funding programs for renewable energy"
-   A: Aqui estão os programas de financiamento relacionados à energia renovável:
+1. Q: "Qual o investimento em R&D em 2023?"
+   A: Para encontrar o investimento em Pesquisa e Desenvolvimento em 2023:
+      <SQL>
+      SELECT SUM(funding_amount) as total_investimento
+      FROM ani_projects 
+      WHERE EXTRACT(YEAR FROM start_date) = 2023 
+      AND (sector ILIKE '%research%' OR sector ILIKE '%R&D%' OR sector ILIKE '%desenvolvimento%')
+      </SQL>
+      
+2. Q: "Quais são os programas de financiamento para energia renovável?"
+   A: Estes são os programas de financiamento relacionados à energia renovável:
       <SQL>
       SELECT name, description, total_budget, application_deadline, funding_type
       FROM ani_funding_programs
       WHERE ARRAY_TO_STRING(sector_focus, ',') ILIKE '%renewable%' 
          OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energy%'
-         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%solar%'
-         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%wind%'
-      </SQL>
-      
-2. Q: "What is the average funding amount for biotech projects?"
-   A: O valor médio de financiamento para projetos de biotecnologia é:
-      <SQL>
-      SELECT AVG(funding_amount)
-      FROM ani_projects
-      WHERE sector ILIKE 'biotech'
+         OR ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energia%'
       </SQL>
     `;
 }
@@ -221,6 +228,15 @@ serve(async (req) => {
       enhancedPrompt = `${prompt}\n\nNote: This query is about renewable energy. Consider these related terms when searching the database: ${energyKeywords.join(', ')}. Use flexible matching with ILIKE and wildcards.`;
     }
 
+    // Detect language to improve prompt
+    const isPortuguese = (/[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(prompt) || 
+                         /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(prompt));
+    
+    if (isPortuguese) {
+      console.log("Portuguese query detected");
+      enhancedPrompt = `${prompt}\n\nNote: This query is in Portuguese. Please respond in Portuguese and use appropriate SQL operations for any date fields and text searches.`;
+    }
+
     // Construct the conversation
     const messages = [
       { role: "user", parts: [{ text: systemPrompt }] },
@@ -244,8 +260,8 @@ serve(async (req) => {
         body: JSON.stringify({
           contents: messages,
           generationConfig: {
-            temperature: 0.4,
-            topP: 0.9,
+            temperature: 0.3,
+            topP: 0.95,
             topK: 40,
             maxOutputTokens: 2048,
           },

@@ -1,7 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Update the suggested questions to better match our database schema and sample data
+// Update the suggested questions to better match our database schema and include Portuguese questions
 export const suggestedDatabaseQuestions = [
+  // Portuguese questions
+  "Qual o investimento em R&D em 2023?",
+  "Quais são os programas de financiamento para energia renovável?",
+  "Qual a média de financiamento para projetos no sector de biotecnologia?",
+  "Mostre-me os projetos com maior financiamento na região Norte",
+  "Quais são as métricas de inovação para Lisboa em 2024?",
+  "Quantas colaborações internacionais existem focadas em IA?",
+  
+  // English questions
   "Which funding programs include renewable energy in their sector focus?",
   "Show me the top 5 projects with highest funding amounts in the technology sector",
   "What are the innovation metrics for the Lisbon region from 2024?",
@@ -16,17 +25,7 @@ export const suggestedDatabaseQuestions = [
   "What policy frameworks were implemented in 2023?",
   "List funding programs specifically targeting SMEs",
   "Which sectors receive the highest average funding amounts?",
-  "Show me the distribution of innovation metrics across different regions",
-  "Which researchers have the highest h-index in biotech?",
-  "Compare the funding success rates between technology and renewable energy sectors",
-  "What institutions have the most international collaborations?",
-  "What is the trend of R&D investment in Portugal over the last 3 years?",
-  "Which funding programs have the highest success rates?",
-  "What are the key objectives of renewable energy policy frameworks?",
-  "List all renewable energy projects with funding over 1 million euros",
-  "Show me innovation metrics related to clean energy technologies",
-  "Which international collaborations focus on sustainable energy development?",
-  "What is the total budget allocated to renewable energy programs?"
+  "Show me the distribution of innovation metrics across different regions"
 ];
 
 // Add function to get the current AI model
@@ -110,7 +109,13 @@ export const isMonetaryColumn = (columnName: string): boolean => {
     'investment',
     'expense',
     'revenue',
-    'income'
+    'income',
+    'orçamento',
+    'financiamento',
+    'investimento',
+    'custo',
+    'preço',
+    'valor'
   ];
   
   const nonMonetaryTerms = [
@@ -123,7 +128,14 @@ export const isMonetaryColumn = (columnName: string): boolean => {
     'projects',
     'startups',
     'collaborations',
-    'patents'
+    'patents',
+    'contagem',
+    'total',
+    'número',
+    'quantidade',
+    'aplicações',
+    'projetos',
+    'patentes'
   ];
   
   const colName = columnName.toLowerCase();
@@ -145,29 +157,38 @@ export const isMonetaryColumn = (columnName: string): boolean => {
 
 // Helper function to identify if a query lacks sufficient context or is not in supported language
 function isInvalidOrUnrecognizedQuery(query: string): boolean {
-  if (query.trim().length < 10) return true;
+  if (query.trim().length < 5) return true;
   
+  // Database query words in English and Portuguese
   const databaseQueryWords = [
+    // English query words
     'show', 'select', 'list', 'find', 'what', 'which', 'how', 'where', 'who',
+    // Portuguese query words
     'mostrar', 'selecionar', 'listar', 'encontrar', 'qual', 'quais', 'como', 'onde', 'quem'
   ];
   
+  // Database entities in English and Portuguese
   const databaseEntities = [
+    // English entities
     'project', 'funding', 'program', 'metric', 'policy', 'collaboration', 
+    'research', 'innovation', 'technology', 'renewable', 'energy',
+    // Portuguese entities
     'projeto', 'financiamento', 'programa', 'métrica', 'política', 'colaboração',
-    'research', 'innovation', 'tecnology', 'renewable', 'energy',
     'pesquisa', 'inovação', 'tecnologia', 'renovável', 'energia'
   ];
   
+  // Check if query contains at least one query word
   const hasQueryWord = databaseQueryWords.some(word => 
     query.toLowerCase().includes(word.toLowerCase())
   );
   
+  // Check if query contains at least one entity
   const hasEntity = databaseEntities.some(entity => 
     query.toLowerCase().includes(entity.toLowerCase())
   );
   
-  return !(hasQueryWord && hasEntity);
+  // Return true if the query is invalid (missing either query word or entity)
+  return !(hasQueryWord || hasEntity);
 }
 
 // Define the response type for consistency
@@ -176,18 +197,30 @@ export interface AIQueryResponse {
   sqlQuery: string;
   results: any[] | null;
   noResults: boolean;
-  queryId?: string;  // Make queryId optional
-  analysis?: any;    // Add analysis field
+  queryId?: string;
+  analysis?: any;
 }
 
 // Helper function to create a consistent "no results" response
 function createNoResultsResponse(prompt: string, isInvalid: boolean): AIQueryResponse {
+  // Detect language for appropriate message
+  const isPortuguese = (/[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(prompt) || 
+                       /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(prompt));
+  
   let message = '';
   
-  if (isInvalid) {
-    message = `No results found for your query: "${prompt}". The query format is not recognized or the requested information doesn't match our database schema.`;
+  if (isPortuguese) {
+    if (isInvalid) {
+      message = `Nenhum resultado encontrado para sua consulta: "${prompt}". O formato da consulta não é reconhecido ou as informações solicitadas não correspondem ao esquema do nosso banco de dados.`;
+    } else {
+      message = `Nenhum resultado encontrado para sua consulta: "${prompt}". Os dados solicitados não estão atualmente em nosso banco de dados, mas você pode populá-lo usando o botão abaixo.`;
+    }
   } else {
-    message = `No results found for your query: "${prompt}". The requested data is not currently in our database, but you can populate it using the button below.`;
+    if (isInvalid) {
+      message = `No results found for your query: "${prompt}". The query format is not recognized or the requested information doesn't match our database schema.`;
+    } else {
+      message = `No results found for your query: "${prompt}". The requested data is not currently in our database, but you can populate it using the button below.`;
+    }
   }
   
   return {
@@ -195,7 +228,7 @@ function createNoResultsResponse(prompt: string, isInvalid: boolean): AIQueryRes
     sqlQuery: '',
     results: null,
     noResults: true,
-    queryId: undefined  // Explicitly set to undefined for consistency
+    queryId: undefined
   };
 }
 
@@ -203,20 +236,40 @@ function createNoResultsResponse(prompt: string, isInvalid: boolean): AIQueryRes
 const extractEnergyKeywords = (query: string): string[] => {
   const lowercaseQuery = query.toLowerCase();
   
+  // Energy terms in English and Portuguese
   const energyTerms = [
+    // English terms
     'renewable energy', 'clean energy', 'green energy', 
     'sustainable energy', 'alternative energy',
     'solar', 'wind', 'hydro', 'biomass', 'geothermal',
-    'photovoltaic', 'renewable', 'clean power', 'green power'
+    'photovoltaic', 'renewable', 'clean power', 'green power',
+    // Portuguese terms
+    'energia renovável', 'energia limpa', 'energia verde',
+    'energia sustentável', 'energia alternativa',
+    'solar', 'eólica', 'hídrica', 'biomassa', 'geotérmica',
+    'fotovoltaica', 'renovável'
   ];
   
   return energyTerms.filter(term => lowercaseQuery.includes(term));
 };
 
+// Function to identify Portuguese language in query
+const isPortugueseQuery = (query: string): boolean => {
+  // Check for accented characters common in Portuguese
+  const hasAccentedChars = /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(query);
+  
+  // Check for common Portuguese question words
+  const hasPortugueseWords = /\b(qual|como|onde|quem|porque|quais|quando|mostrar|listar|encontrar)\b/i.test(query);
+  
+  return hasAccentedChars || hasPortugueseWords;
+};
+
 // Add function to handle database queries and AI responses
 export const generateResponse = async (prompt: string): Promise<AIQueryResponse> => {
   try {
+    // Detect language and keywords to enhance the prompt
     const energyKeywords = extractEnergyKeywords(prompt);
+    const isPortuguese = isPortugueseQuery(prompt);
     
     // Store the query in the database first to get a queryId
     let queryId = '';
@@ -228,7 +281,7 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
         query_text: prompt,
         user_id: userId || null,
         was_successful: false, // Will update this after we get results
-        language: 'en',
+        language: isPortuguese ? 'pt' : 'en',
         error_message: "Pending execution"
       }).select('id');
       
@@ -242,59 +295,15 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       console.error('Error saving to database:', dbError);
     }
     
-    // If the query is about renewable energy, directly call the get-funding-programs endpoint
-    if (energyKeywords.length > 0) {
-      console.log('Energy-related query detected with keywords:', energyKeywords);
-      
-      try {
-        // Call the get-funding-programs function directly
-        const { data: programsData, error: programsError } = await supabase.functions.invoke('get-funding-programs', {
-          body: { sector: 'renewable energy' }
-        });
-        
-        if (programsError) {
-          console.error('Error fetching funding programs:', programsError);
-          throw programsError;
-        }
-        
-        if (!programsData || programsData.length === 0) {
-          return {
-            message: 'No renewable energy funding programs found.',
-            sqlQuery: 'SELECT * FROM ani_funding_programs WHERE sector_focus ILIKE \'%renewable energy%\'',
-            results: null,
-            noResults: true,
-            queryId: queryId || undefined
-          };
-        }
-        
-        // Update query status
-        if (queryId) {
-          await supabase.from('query_history').update({
-            was_successful: true,
-            error_message: null
-          }).eq('id', queryId);
-        }
-        
-        return {
-          message: 'Here are the funding programs related to renewable energy:',
-          sqlQuery: 'SELECT * FROM ani_funding_programs WHERE sector_focus ILIKE \'%renewable energy%\'',
-          results: programsData,
-          noResults: false,
-          queryId: queryId || undefined
-        };
-      } catch (error) {
-        console.error('Error handling energy-related query:', error);
-      }
-    }
-    
-    // Continue with the regular Gemini flow for non-energy queries
+    // Call the gemini-chat function with the prompt and additional context
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
           prompt, 
           chatHistory: [],
           additionalContext: {
-            energyKeywords: energyKeywords
+            energyKeywords: energyKeywords,
+            isPortuguese: isPortuguese
           }
         }
       });
@@ -327,7 +336,10 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
         try {
           // Call analyze-query to get recommendations
           const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-query', {
-            body: { query: data.sqlQuery || prompt }
+            body: { 
+              query: data.sqlQuery || prompt,
+              language: isPortuguese ? 'pt' : 'en'
+            }
           });
           
           if (!analysisError && analysisData) {
@@ -362,7 +374,8 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
         return {
           ...noResultsResponse,
           queryId: queryId || undefined,
-          analysis: analysis
+          analysis: analysis,
+          sqlQuery: data.sqlQuery || '' // Include the SQL query even if no results
         };
       }
       
@@ -399,34 +412,6 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
     console.error('Error generating response:', error);
     const noResultsResponse = createNoResultsResponse(prompt, true);
     return noResultsResponse;
-  }
-};
-
-// Update interface for document classification
-export interface DocumentToClassify {
-  title: string;
-  summary?: string;
-  fileName?: string;
-}
-
-// Add function to classify documents
-export const classifyDocument = async (document: DocumentToClassify): Promise<string> => {
-  try {
-    const { title, summary = '', fileName = '' } = document;
-    
-    const { data, error } = await supabase.functions.invoke('classify-document', {
-      body: { title, summary, fileName }
-    });
-    
-    if (error) {
-      console.error('Error classifying document:', error);
-      return 'Unclassified';
-    }
-    
-    return data?.classification || 'Unclassified';
-  } catch (error) {
-    console.error('Error in document classification:', error);
-    return 'Unclassified';
   }
 };
 
