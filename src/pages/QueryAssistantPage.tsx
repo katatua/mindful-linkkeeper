@@ -13,7 +13,7 @@ export const QueryAssistantPage: React.FC = () => {
   return (
     <Layout>
       <div className="container mx-auto py-6">
-        <h1 className="text-2xl font-bold mb-2">Assistente de consultas SQL</h1>
+        <h1 className="text-2xl font-bold mb-2">Assistente ANI</h1>
         <p className="text-gray-500 mb-6">
           Faça as suas perguntas sobre a base de dados em português.
         </p>
