@@ -103,6 +103,12 @@ export const fetchTableData = async (tableName: string, limit: number = 50): Pro
     
     if (error) {
       console.error(`Error fetching data from ${tableName}:`, error);
+      
+      // Check for RLS policy violations
+      if (error.code === '42501' || (error.message && error.message.includes('row-level security policy'))) {
+        throw new Error(`Permissão negada: Você não tem acesso para ler os dados da tabela ${tableName}. Erro: ${error.message}`);
+      }
+      
       throw error;
     }
     
@@ -110,7 +116,7 @@ export const fetchTableData = async (tableName: string, limit: number = 50): Pro
     return data || [];
   } catch (error) {
     console.error(`Failed to fetch data from ${tableName}:`, error);
-    return [];
+    throw error; // Re-throw the error to be handled by the caller
   }
 };
 
@@ -121,6 +127,12 @@ export const insertTableData = async (tableName: string, data: any): Promise<boo
     
     if (error) {
       console.error(`Error inserting data into ${tableName}:`, error);
+      
+      // Check for RLS policy violations
+      if (error.code === '42501' || (error.message && error.message.includes('row-level security policy'))) {
+        throw new Error(`Permissão negada: Você não tem permissão para inserir dados na tabela ${tableName}. Erro: ${error.message}`);
+      }
+      
       throw error;
     }
     
@@ -128,7 +140,7 @@ export const insertTableData = async (tableName: string, data: any): Promise<boo
     return true;
   } catch (error) {
     console.error(`Failed to insert data into ${tableName}:`, error);
-    return false;
+    throw error; // Re-throw the error to be handled by the caller
   }
 };
 
@@ -150,5 +162,43 @@ export const updateDatabaseTables = async (): Promise<boolean> => {
   } catch (error) {
     console.error("Failed to update database tables:", error);
     return false;
+  }
+};
+
+// Add new function to check permissions on a table
+export const checkTablePermissions = async (tableName: string): Promise<{
+  canRead: boolean;
+  canWrite: boolean;
+}> => {
+  try {
+    // Check read permissions
+    let canRead = false;
+    try {
+      const { data: readData, error: readError } = await getTable(tableName)
+        .select('*')
+        .limit(1);
+      
+      canRead = !readError;
+    } catch (error) {
+      console.log(`No read permission for ${tableName}`);
+    }
+    
+    // Check write permissions using a dummy record (that will be rolled back)
+    let canWrite = false;
+    try {
+      // Start a transaction that we'll roll back
+      const { error: txError } = await supabase.rpc('check_write_permission', {
+        table_name: tableName
+      });
+      
+      canWrite = !txError;
+    } catch (error) {
+      console.log(`No write permission for ${tableName}`);
+    }
+    
+    return { canRead, canWrite };
+  } catch (error) {
+    console.error(`Error checking permissions for ${tableName}:`, error);
+    return { canRead: false, canWrite: false };
   }
 };

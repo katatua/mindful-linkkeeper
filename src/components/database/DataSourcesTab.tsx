@@ -8,15 +8,16 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, FilePlus, Upload, RefreshCw, Loader2 } from 'lucide-react';
+import { Database, FileText, FilePlus, Upload, RefreshCw, Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FonteDados } from '@/types/databaseTypes';
 import { fetchTableData, fetchDatabaseTables, DatabaseTable, insertTableData } from '@/utils/databaseService';
 import AddDataSourceModal from './AddDataSourceModal';
 import { useToast } from '@/components/ui/use-toast';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Predefined data sources based on provided information
 const predefinedDataSources: Partial<FonteDados>[] = [
@@ -93,10 +94,12 @@ export const DataSourcesTab: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [accessError, setAccessError] = useState<string | null>(null);
   const { toast } = useToast();
   
   const initializeDataSources = async () => {
     setIsInitializing(true);
+    setAccessError(null);
     try {
       // Check if we already have data sources
       const existingData = await fetchTableData('fontes_dados');
@@ -105,20 +108,41 @@ export const DataSourcesTab: React.FC = () => {
       if (existingData.length === 0) {
         console.log("No data sources found. Initializing with predefined data...");
         
+        let successCount = 0;
+        let errorCount = 0;
+        
         // Insert each predefined data source sequentially
         for (const source of predefinedDataSources) {
           try {
             await insertTableData('fontes_dados', source);
             console.log(`Added data source: ${source.nome_sistema}`);
+            successCount++;
           } catch (error) {
             console.error(`Error adding data source: ${source.nome_sistema}`, error);
+            errorCount++;
+            
+            // If we're seeing RLS policy violations, break early
+            if (error.message && error.message.includes('row-level security policy')) {
+              setAccessError('Erro de permissão: Você não tem permissão para inserir dados. Contacte o administrador do sistema.');
+              break;
+            }
           }
         }
         
-        toast({
-          title: "Fontes de dados inicializadas",
-          description: "As fontes de dados predefinidas foram carregadas com sucesso.",
-        });
+        if (successCount > 0) {
+          toast({
+            title: `${successCount} fontes de dados inicializadas`,
+            description: "As fontes de dados predefinidas foram carregadas com sucesso.",
+          });
+        }
+        
+        if (errorCount > 0 && !accessError) {
+          toast({
+            title: `Erro ao inicializar ${errorCount} fontes de dados`,
+            description: "Algumas fontes de dados não puderam ser carregadas.",
+            variant: "destructive"
+          });
+        }
         
         // Fetch the newly inserted data
         await fetchDataSources();
@@ -127,6 +151,14 @@ export const DataSourcesTab: React.FC = () => {
       }
     } catch (error) {
       console.error("Error initializing data sources:", error);
+      
+      // Check if this is an RLS policy error
+      if (error.message && error.message.includes('row-level security policy')) {
+        setAccessError('Erro de permissão: Você não tem permissão para inserir dados. Contacte o administrador do sistema.');
+      } else {
+        setAccessError('Erro ao acessar o banco de dados. Verifique sua conexão ou contacte o suporte.');
+      }
+      
       toast({
         title: "Erro ao inicializar fontes de dados",
         description: "Não foi possível carregar as fontes de dados predefinidas.",
@@ -139,6 +171,7 @@ export const DataSourcesTab: React.FC = () => {
 
   const fetchDataSources = async () => {
     setIsLoading(true);
+    setAccessError(null);
     try {
       // Fetch database tables first
       const tables = await fetchDatabaseTables();
@@ -153,14 +186,18 @@ export const DataSourcesTab: React.FC = () => {
         setDataSources(data as FonteDados[]);
       } else {
         setDataSources([]);
-        // If no data and not already initializing, try to initialize
-        if (!isInitializing) {
-          await initializeDataSources();
-        }
       }
     } catch (error) {
       console.error('Error fetching data sources:', error);
       setDataSources([]);
+      
+      // Check if this is an RLS policy error
+      if (error.message && error.message.includes('row-level security policy')) {
+        setAccessError('Erro de permissão: Você não tem permissão para acessar dados. Contacte o administrador do sistema.');
+      } else {
+        setAccessError('Erro ao acessar o banco de dados. Verifique sua conexão ou contacte o suporte.');
+      }
+      
       toast({
         title: "Erro ao carregar fontes de dados",
         description: "Não foi possível carregar as fontes de dados. Tente novamente mais tarde.",
@@ -210,6 +247,42 @@ export const DataSourcesTab: React.FC = () => {
       )}
     </Button>
   );
+  
+  if (accessError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Fontes de Dados</h2>
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Tentar Novamente
+          </Button>
+        </div>
+        
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro de Acesso ao Banco de Dados</AlertTitle>
+          <AlertDescription>
+            {accessError}
+          </AlertDescription>
+        </Alert>
+        
+        <Card className="py-8">
+          <div className="flex flex-col items-center justify-center text-center p-4">
+            <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+            <h3 className="text-lg font-medium">Permissões Insuficientes</h3>
+            <p className="text-muted-foreground mt-2 mb-4">
+              Você não tem permissões suficientes para acessar ou modificar as fontes de dados.
+              Isso pode ser devido a políticas de segurança de linha (Row-Level Security) configuradas no banco de dados.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Por favor, verifique se você está autenticado corretamente ou contacte o administrador do sistema.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
