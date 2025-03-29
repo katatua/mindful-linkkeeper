@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -88,7 +87,7 @@ const AIReportDetail = () => {
     loadReport();
   }, [id, navigate, toast, language]);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!report) return;
     
     try {
@@ -99,7 +98,7 @@ const AIReportDetail = () => {
           : "Generating PDF for download..."
       });
       
-      const dataUri = generatePDF(report);
+      const dataUri = await generatePDF(report);
       
       // Create a link element and trigger the download
       const link = document.createElement('a');

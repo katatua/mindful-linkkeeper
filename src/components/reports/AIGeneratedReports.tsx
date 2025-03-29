@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +52,6 @@ export const AIGeneratedReports = () => {
   };
 
   const handleViewReport = (report: AIGeneratedReport) => {
-    // Store the report in session storage for viewing in detail
     sessionStorage.setItem('currentReport', JSON.stringify(report));
     navigate(`/reports/ai/${report.id}`);
   };
@@ -82,7 +80,7 @@ export const AIGeneratedReports = () => {
     setReportToDelete(null);
   };
 
-  const handleDownloadPDF = (report: AIGeneratedReport) => {
+  const handleDownloadPDF = async (report: AIGeneratedReport) => {
     try {
       toast({
         title: language === 'pt' ? "Preparando download" : "Preparing download",
@@ -91,9 +89,8 @@ export const AIGeneratedReports = () => {
           "Generating PDF for download..."
       });
       
-      const dataUri = generatePDF(report);
+      const dataUri = await generatePDF(report);
       
-      // Create a link element and trigger the download
       const link = document.createElement('a');
       const fileName = report.title.replace(/\s+/g, '-').toLowerCase() + '.pdf';
       link.href = dataUri;
@@ -121,7 +118,6 @@ export const AIGeneratedReports = () => {
   };
   
   const getWordCount = (content: string): number => {
-    // Remove visualization markers before counting words
     const cleanText = content.replace(/\[Visualization:[^\]]+\]/g, '');
     return cleanText.split(/\s+/).length;
   };
