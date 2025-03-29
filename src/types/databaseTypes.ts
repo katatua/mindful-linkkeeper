@@ -4,6 +4,7 @@ export interface FonteDados {
   nome_sistema: string;
   descricao: string;
   tecnologia: string;
+  entidade?: string;
   data_importacao?: string;
 }
 

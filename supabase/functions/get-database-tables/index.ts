@@ -24,6 +24,19 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Check if we need to refresh the tables
+    let isRefresh = false;
+    try {
+      const body = await req.json();
+      isRefresh = body?.refresh === true;
+    } catch (e) {
+      // Not a JSON body or no refresh parameter, continue normally
+    }
+    
+    if (isRefresh) {
+      console.log("Performing a refresh of database tables");
+    }
+    
     // First, check if the supabase credentials work by getting a list of all tables
     console.log("Querying information_schema to list all tables");
     const { data: allTables, error: tablesError } = await supabase
@@ -40,7 +53,7 @@ serve(async (req) => {
     
     console.log(`Found ${allTables?.length || 0} total tables in the database`);
     
-    // Get relevant database tables - prefer ani_ prefixed tables if they exist
+    // Get all tables in the public schema
     const query = `
       SELECT 
         table_name,
@@ -55,13 +68,12 @@ serve(async (req) => {
         information_schema.columns
       WHERE 
         table_schema = 'public' 
-        AND (table_name LIKE 'ani_%' OR table_name IN (
+        AND table_name IN (
           SELECT table_name 
           FROM information_schema.tables 
           WHERE table_schema = 'public' 
           AND table_type = 'BASE TABLE'
-          LIMIT 20
-        ))
+        )
       GROUP BY 
         table_name
       ORDER BY 

@@ -755,6 +755,65 @@ export type Database = {
           },
         ]
       }
+      cooperacao_internacional: {
+        Row: {
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          nome_parceiro: string
+          outros_detalhes: string | null
+          tipo_interacao: string
+        }
+        Insert: {
+          data_fim?: string | null
+          data_inicio: string
+          id?: string
+          nome_parceiro: string
+          outros_detalhes?: string | null
+          tipo_interacao: string
+        }
+        Update: {
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          nome_parceiro?: string
+          outros_detalhes?: string | null
+          tipo_interacao?: string
+        }
+        Relationships: []
+      }
+      dados_extraidos: {
+        Row: {
+          conteudo: Json
+          data_extracao: string | null
+          fonte_id: number | null
+          id: string
+          tipo: string
+        }
+        Insert: {
+          conteudo: Json
+          data_extracao?: string | null
+          fonte_id?: number | null
+          id?: string
+          tipo: string
+        }
+        Update: {
+          conteudo?: Json
+          data_extracao?: string | null
+          fonte_id?: number | null
+          id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dados_extraidos_fonte_id_fkey"
+            columns: ["fonte_id"]
+            isOneToOne: false
+            referencedRelation: "fontes_dados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deployments: {
         Row: {
           deployed_at: string
@@ -828,6 +887,56 @@ export type Database = {
           },
         ]
       }
+      documentos_extraidos: {
+        Row: {
+          ai_analysis: string | null
+          ai_summary: string | null
+          conteudo: string | null
+          data_extracao: string | null
+          fonte_id: number | null
+          id: string
+          metadata: Json | null
+          nome: string
+          status: string | null
+          tamanho: string | null
+          tipo: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          ai_summary?: string | null
+          conteudo?: string | null
+          data_extracao?: string | null
+          fonte_id?: number | null
+          id?: string
+          metadata?: Json | null
+          nome: string
+          status?: string | null
+          tamanho?: string | null
+          tipo: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          ai_summary?: string | null
+          conteudo?: string | null
+          data_extracao?: string | null
+          fonte_id?: number | null
+          id?: string
+          metadata?: Json | null
+          nome?: string
+          status?: string | null
+          tamanho?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_extraidos_fonte_id_fkey"
+            columns: ["fonte_id"]
+            isOneToOne: false
+            referencedRelation: "fontes_dados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       esp_providers: {
         Row: {
           api_key: string
@@ -855,6 +964,33 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           settings?: Json | null
+        }
+        Relationships: []
+      }
+      fontes_dados: {
+        Row: {
+          data_importacao: string | null
+          descricao: string
+          entidade: string | null
+          id: number
+          nome_sistema: string
+          tecnologia: string
+        }
+        Insert: {
+          data_importacao?: string | null
+          descricao: string
+          entidade?: string | null
+          id?: number
+          nome_sistema: string
+          tecnologia: string
+        }
+        Update: {
+          data_importacao?: string | null
+          descricao?: string
+          entidade?: string | null
+          id?: number
+          nome_sistema?: string
+          tecnologia?: string
         }
         Relationships: []
       }
@@ -975,6 +1111,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      instituicoes: {
+        Row: {
+          area_atividade: string | null
+          id: string
+          localizacao: string | null
+          nome_instituicao: string
+          outros_detalhes: string | null
+        }
+        Insert: {
+          area_atividade?: string | null
+          id?: string
+          localizacao?: string | null
+          nome_instituicao: string
+          outros_detalhes?: string | null
+        }
+        Update: {
+          area_atividade?: string | null
+          id?: string
+          localizacao?: string | null
+          nome_instituicao?: string
+          outros_detalhes?: string | null
+        }
+        Relationships: []
       }
       links: {
         Row: {
