@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -13,10 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Database as DatabaseIcon, FileQuestion, Search, FileText, History, RefreshCw, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
 import { useLocation } from 'react-router-dom';
-import { fetchDatabaseTables, fetchTableData, DatabaseTable } from '@/utils/databaseService';
+import { fetchDatabaseTables, fetchTableData, updateDatabaseTables, DatabaseTable } from '@/utils/databaseService';
 
 interface GenericTableData {
   id?: string;
