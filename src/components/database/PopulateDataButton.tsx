@@ -23,8 +23,8 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
   const handleAnalyze = async () => {
     if (!query.trim()) {
       toast({
-        title: "Error",
-        description: "Cannot analyze an empty query.",
+        title: "Erro",
+        description: "Não é possível analisar uma consulta vazia.",
         variant: "destructive",
       });
       return;
@@ -45,25 +45,25 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
       if (isEnergyQuery) {
         // Prepare renewable energy sample data
         const renewableSampleData = {
-          analysis: "This query is related to renewable energy funding programs. I've prepared sample data for renewable energy programs that can be added to your database.",
+          analysis: "Esta consulta está relacionada a programas de financiamento de energia renovável. Preparei dados de amostra para programas de energia renovável que podem ser adicionados à sua base de dados.",
           tables: ["ani_funding_programs"],
           insertStatements: [
             `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-            VALUES ('Renewable Energy Innovation Fund', 'Supporting innovative projects in renewable energy technologies', 5000000, '2025-06-30', '2026-12-31', ARRAY['renewable energy', 'innovation', 'clean tech'], 'grant')`,
+            VALUES ('Fundo de Inovação em Energia Renovável', 'Apoio a projetos inovadores em tecnologias de energia renovável', 5000000, '2025-06-30', '2026-12-31', ARRAY['energia renovável', 'inovação', 'tecnologia limpa'], 'subsídio')`,
             
             `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-            VALUES ('Solar Energy Development Program', 'Accelerating the deployment of solar energy solutions across Portugal', 3500000, '2025-07-15', '2026-08-31', ARRAY['solar energy', 'renewable energy', 'infrastructure'], 'mixed')`,
+            VALUES ('Programa de Desenvolvimento de Energia Solar', 'Acelerando a implantação de soluções de energia solar em Portugal', 3500000, '2025-07-15', '2026-08-31', ARRAY['energia solar', 'energia renovável', 'infraestrutura'], 'misto')`,
             
             `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-            VALUES ('Green Hydrogen Initiative', 'Supporting research and implementation of green hydrogen technologies', 7000000, '2025-09-01', '2027-03-31', ARRAY['hydrogen', 'renewable energy', 'research'], 'grant')`,
+            VALUES ('Iniciativa de Hidrogênio Verde', 'Apoio à pesquisa e implementação de tecnologias de hidrogênio verde', 7000000, '2025-09-01', '2027-03-31', ARRAY['hidrogênio', 'energia renovável', 'pesquisa'], 'subsídio')`,
             
             `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-            VALUES ('Wind Energy Excellence Program', 'Enhancing wind energy capacity and efficiency in coastal regions', 4200000, '2025-05-30', '2026-10-15', ARRAY['wind energy', 'renewable energy', 'coastal'], 'grant')`,
+            VALUES ('Programa de Excelência em Energia Eólica', 'Aprimorando a capacidade e eficiência da energia eólica em regiões costeiras', 4200000, '2025-05-30', '2026-10-15', ARRAY['energia eólica', 'energia renovável', 'costeiro'], 'subsídio')`,
             
             `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-            VALUES ('Sustainable Energy Transition Fund', 'Supporting SMEs in transitioning to renewable energy sources', 2800000, '2025-08-15', '2026-09-30', ARRAY['renewable energy', 'SME', 'sustainability'], 'loan')`
+            VALUES ('Fundo de Transição Energética Sustentável', 'Apoio às PMEs na transição para fontes de energia renovável', 2800000, '2025-08-15', '2026-09-30', ARRAY['energia renovável', 'PME', 'sustentabilidade'], 'empréstimo')`
           ],
-          expectedResults: "5 funding programs related to renewable energy with details on budget, deadlines, and focus areas."
+          expectedResults: "5 programas de financiamento relacionados à energia renovável com detalhes sobre orçamento, prazos e áreas de foco."
         };
         
         setAnalysis(renewableSampleData);
@@ -75,10 +75,10 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
         });
         
         if (error) {
-          console.error("Error calling analyze-query function:", error);
+          console.error("Erro ao chamar a função analyze-query:", error);
           toast({
-            title: "Error",
-            description: "Failed to analyze the query: " + error.message,
+            title: "Erro",
+            description: "Falha ao analisar a consulta: " + error.message,
             variant: "destructive",
           });
           return;
@@ -89,10 +89,10 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
       }
       
     } catch (error) {
-      console.error("Error analyzing query:", error);
+      console.error("Erro ao analisar consulta:", error);
       toast({
-        title: "Error",
-        description: "Failed to analyze the query: " + (error instanceof Error ? error.message : String(error)),
+        title: "Erro",
+        description: "Falha ao analisar a consulta: " + (error instanceof Error ? error.message : String(error)),
         variant: "destructive",
       });
     } finally {
@@ -103,8 +103,8 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
   const handlePopulate = async () => {
     if (!query.trim()) {
       toast({
-        title: "Error",
-        description: "Cannot request data for an empty query.",
+        title: "Erro",
+        description: "Não é possível solicitar dados para uma consulta vazia.",
         variant: "destructive",
       });
       return;
@@ -132,12 +132,12 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
         {isAnalyzing ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Analyzing Query...
+            Analisando Consulta...
           </>
         ) : (
           <>
             <DatabaseIcon className="h-4 w-4 mr-2" />
-            Request Data for This Query
+            Solicitar Dados para Esta Consulta
           </>
         )}
       </Button>
@@ -145,9 +145,9 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Database Population Analysis</DialogTitle>
+            <DialogTitle>Análise de População de Banco de Dados</DialogTitle>
             <DialogDescription>
-              The AI has analyzed your query and suggested data to populate the database.
+              A IA analisou sua consulta e sugeriu dados para popular o banco de dados.
             </DialogDescription>
           </DialogHeader>
           
@@ -155,13 +155,13 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
             {analysis ? (
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold mb-1">Analysis</h3>
+                  <h3 className="text-sm font-semibold mb-1">Análise</h3>
                   <p className="text-sm">{analysis.analysis}</p>
                 </div>
                 
                 {analysis.tables && analysis.tables.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-1">Tables Requiring Data</h3>
+                    <h3 className="text-sm font-semibold mb-1">Tabelas que Requerem Dados</h3>
                     <ul className="list-disc pl-5 text-sm">
                       {analysis.tables.map((table: string, i: number) => (
                         <li key={i}>{table}</li>
@@ -181,7 +181,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
                 
                 {analysis.expectedResults && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-1">Expected Results</h3>
+                    <h3 className="text-sm font-semibold mb-1">Resultados Esperados</h3>
                     <div className="bg-slate-100 p-3 rounded text-sm">
                       <pre>{typeof analysis.expectedResults === 'string' 
                         ? analysis.expectedResults 
@@ -192,8 +192,8 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
                 
                 <Alert>
                   <AlertDescription>
-                    This will execute the SQL INSERT statements above to populate your database with sample data.
-                    After execution, try running your query again.
+                    Isso executará as instruções SQL INSERT acima para popular seu banco de dados com dados de amostra.
+                    Após a execução, tente executar sua consulta novamente.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -206,7 +206,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
           
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setShowDialog(false)}>
-              Close
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle, Loader2 } from 'lucide-react';
+import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
 import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue, executePredefinedQuery } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -40,8 +39,13 @@ export const AIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const { toast } = useToast();
+  
+  // Filter for Portuguese suggestions
+  const portugueseSuggestions = suggestedDatabaseQuestions.filter(q => 
+    /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
+    /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
+  ).slice(0, 6);
   
   // Add event listener for setting input from examples
   useEffect(() => {
@@ -75,7 +79,6 @@ export const AIAssistant: React.FC = () => {
   
   const executePredefinedQueryHandler = async (queryName: string) => {
     setIsLoading(true);
-    setShowSuggestions(false);
     
     try {
       const userMessage: Message = {
@@ -108,7 +111,7 @@ export const AIAssistant: React.FC = () => {
       
       const errorMessage: Message = {
         id: genId(),
-        content: `Failed to execute predefined query: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        content: `Falha ao executar consulta predefinida: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         role: 'assistant',
         error: true,
         timestamp: new Date()
@@ -117,13 +120,18 @@ export const AIAssistant: React.FC = () => {
       setMessages(prev => [...prev, errorMessage]);
       
       toast({
-        title: "Error",
-        description: "Failed to execute predefined query. Please try again.",
+        title: "Erro",
+        description: "Falha ao executar consulta predefinida. Por favor, tente novamente.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleSuggestionClick = async (question: string) => {
+    setInput(question);
+    await handleSubmit(new CustomEvent('click') as unknown as React.FormEvent);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,7 +149,6 @@ export const AIAssistant: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    setShowSuggestions(false);
     
     try {
       const response = await generateResponse(input);
@@ -186,7 +193,7 @@ export const AIAssistant: React.FC = () => {
       
       const errorMessage: Message = {
         id: genId(),
-        content: `Failed to get a response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or rephrase your question.`,
+        content: `Falha ao obter resposta: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Por favor, tente novamente ou reformule sua pergunta.`,
         role: 'assistant',
         error: true,
         timestamp: new Date()
@@ -195,8 +202,8 @@ export const AIAssistant: React.FC = () => {
       setMessages(prev => [...prev, errorMessage]);
       
       toast({
-        title: "Error",
-        description: "Failed to get a response. Please try again.",
+        title: "Erro",
+        description: "Falha ao obter resposta. Por favor, tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -204,15 +211,9 @@ export const AIAssistant: React.FC = () => {
     }
   };
 
-  const handleSuggestionClick = (question: string) => {
-    setInput(question);
-    setShowSuggestions(false);
-  };
-
   const resetConversation = () => {
     setMessages([]);
     setInput('');
-    setShowSuggestions(false);
   };
 
   const checkQueryStatus = async (queryId: string) => {
@@ -251,7 +252,7 @@ export const AIAssistant: React.FC = () => {
             hasUpdates = true;
             updatedMessages[i] = {
               ...message,
-              content: `The data for your query has been populated. Please try your query again.`,
+              content: `Os dados para sua consulta foram populados. Por favor, tente sua consulta novamente.`,
               noResults: false
             };
           }
@@ -261,8 +262,8 @@ export const AIAssistant: React.FC = () => {
       if (hasUpdates) {
         setMessages(updatedMessages);
         toast({
-          title: "Database Updated",
-          description: "New data has been added to the database. You can run your query again.",
+          title: "Base de Dados Atualizada",
+          description: "Novos dados foram adicionados à base de dados. Você pode executar sua consulta novamente.",
         });
       }
     }, 15000);
@@ -272,7 +273,7 @@ export const AIAssistant: React.FC = () => {
 
   const renderResults = (results: any[] | null) => {
     if (!results || results.length === 0) {
-      return <p className="text-gray-500 italic">No results found</p>;
+      return <p className="text-gray-500 italic">Nenhum resultado encontrado</p>;
     }
 
     const columns = Object.keys(results[0]);
@@ -304,7 +305,7 @@ export const AIAssistant: React.FC = () => {
         </Table>
         {results.length > 10 && (
           <div className="text-xs text-gray-500 p-2 text-center border-t">
-            Showing 10 of {results.length} results
+            Mostrando 10 de {results.length} resultados
           </div>
         )}
       </div>
@@ -314,41 +315,39 @@ export const AIAssistant: React.FC = () => {
   return (
     <div className="w-full">
       <div className="mb-4">
+        <div className="mb-6">
+          <h3 className="text-base font-semibold mb-3">Consultas Sugeridas:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {portugueseSuggestions.map((question, index) => (
+              <Button 
+                key={index} 
+                variant="outline"
+                className="text-left justify-start h-auto py-2 px-3 text-sm"
+                onClick={() => handleSuggestionClick(question)}
+              >
+                {question}
+              </Button>
+            ))}
+          </div>
+        </div>
+        
         {messages.length === 0 && (
           <Alert variant="default" className="mb-4">
             <AlertDescription>
-              This assistant helps you query the database using natural language in English or Portuguese.
-              Type a question like <strong>"Qual o investimento em R&D em 2023?"</strong> or <strong>"Show me all funding programs for renewable energy"</strong>.
+              Este assistente ajuda você a consultar a base de dados usando linguagem natural em português.
+              Digite uma pergunta como <strong>"Qual o investimento em R&D em 2023?"</strong> ou <strong>"Mostrar todos os programas de financiamento para energia renovável"</strong>.
             </AlertDescription>
           </Alert>
-        )}
-        
-        {showSuggestions && (
-          <div className="mb-4 p-4 bg-slate-50 rounded-md">
-            <h3 className="text-sm font-medium mb-2">Example Questions:</h3>
-            <div className="flex flex-wrap gap-2">
-              {suggestedDatabaseQuestions.slice(0, 8).map((question, index) => (
-                <Badge 
-                  key={index} 
-                  variant="outline" 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => handleSuggestionClick(question)}
-                >
-                  {question}
-                </Badge>
-              ))}
-            </div>
-          </div>
         )}
       </div>
 
       <ScrollArea className="space-y-4 mb-4 max-h-[400px] overflow-y-auto p-1 border rounded-md bg-gray-50">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 py-6">
-            <p>Ask a question about the database, such as:</p>
+            <p>Faça uma pergunta sobre a base de dados, como:</p>
             <p className="italic mt-2">
-              "Qual o investimento em R&D em 2023?" or
-              "Show me projects with the highest funding amounts in the technology sector"
+              "Qual o investimento em R&D em 2023?" ou
+              "Mostrar todos os projetos com maiores valores de financiamento no setor de tecnologia"
             </p>
           </div>
         ) : (
@@ -364,9 +363,9 @@ export const AIAssistant: React.FC = () => {
               }`}
             >
               <p className="text-sm font-semibold mb-1">
-                {message.role === 'user' ? 'You' : 'AI Assistant'}
+                {message.role === 'user' ? 'Você' : 'Assistente'}
                 {message.isPredefined && message.role === 'user' && (
-                  <span className="ml-2 text-xs text-blue-600">(Predefined Query)</span>
+                  <span className="ml-2 text-xs text-blue-600">(Consulta Predefinida)</span>
                 )}
               </p>
               {message.error ? (
@@ -387,7 +386,7 @@ export const AIAssistant: React.FC = () => {
                         <div className="whitespace-pre-wrap">
                           {message.noResults ? (
                             <Alert variant="default" className="mb-3">
-                              <AlertTitle>No results found</AlertTitle>
+                              <AlertTitle>Nenhum resultado encontrado</AlertTitle>
                               <AlertDescription>
                                 {message.content}
                                 <div className="mt-2">
@@ -417,8 +416,8 @@ export const AIAssistant: React.FC = () => {
                         {message.sqlQuery && (
                           <div className="mt-3">
                             <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                              <Code className="h-4 w-4" />
-                              <span>SQL Query:</span>
+                              <Database className="h-4 w-4" />
+                              <span>Consulta SQL:</span>
                             </div>
                             <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
                               {message.sqlQuery}
@@ -437,7 +436,7 @@ export const AIAssistant: React.FC = () => {
                               if (index >= 0) {
                                 updatedMessages[index] = {
                                   ...message,
-                                  content: "Data has been populated successfully. Please try your query again.",
+                                  content: "Os dados foram populados com sucesso. Por favor, tente sua consulta novamente.",
                                   noResults: false
                                 };
                                 setMessages(updatedMessages);
@@ -448,13 +447,13 @@ export const AIAssistant: React.FC = () => {
                         
                         {message.queryId && (
                           <div className="mt-2 text-xs text-gray-500">
-                            Query ID: {message.queryId}
+                            ID da Consulta: {message.queryId}
                           </div>
                         )}
                         
                         {message.timestamp && (
                           <div className="mt-1 text-xs text-gray-500">
-                            Time: {message.timestamp.toLocaleString()}
+                            Hora: {message.timestamp.toLocaleString()}
                           </div>
                         )}
                         
@@ -462,7 +461,7 @@ export const AIAssistant: React.FC = () => {
                           <div className="mt-3">
                             <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
                               <Database className="h-4 w-4" />
-                              <span>Results:</span>
+                              <span>Resultados:</span>
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
@@ -473,30 +472,30 @@ export const AIAssistant: React.FC = () => {
                                     const blob = new Blob([jsonStr], { type: 'application/json' });
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
-                                    a.download = `query-results-${new Date().toISOString().slice(0, 10)}.json`;
+                                    a.download = `resultados-consulta-${new Date().toISOString().slice(0, 10)}.json`;
                                     a.href = url;
                                     a.click();
                                     URL.revokeObjectURL(url);
                                   } catch (e) {
                                     console.error('Error downloading results:', e);
                                     toast({
-                                      title: "Error",
-                                      description: "Failed to download results.",
+                                      title: "Erro",
+                                      description: "Falha ao baixar resultados.",
                                       variant: "destructive",
                                     });
                                   }
                                 }}
                               >
-                                Download JSON
+                                Baixar JSON
                               </Button>
                             </div>
                             {renderResults(message.results)}
                           </div>
                         ) : message.noResults ? (
                           <Alert variant="default" className="mt-3">
-                            <AlertTitle>No results found</AlertTitle>
+                            <AlertTitle>Nenhum resultado encontrado</AlertTitle>
                             <AlertDescription>
-                              The database doesn't contain data matching this query.
+                              A base de dados não contém dados correspondentes a esta consulta.
                               <div className="mt-2">
                                 <PopulateDataButton 
                                   query={
@@ -525,34 +524,23 @@ export const AIAssistant: React.FC = () => {
         )}
       </ScrollArea>
       
-      <div className="flex items-center gap-2">
-        {messages.length > 0 && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={resetConversation}
-            className="flex items-center gap-1"
-          >
-            <PlusCircle className="h-4 w-4 mr-1" />
-            New Query
-          </Button>
-        )}
+      {messages.length > 0 && (
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => setShowSuggestions(!showSuggestions)}
-          aria-label="Show example questions"
+          onClick={resetConversation}
+          className="flex items-center gap-1 mb-4"
         >
-          <HelpCircle className="h-4 w-4 mr-1" />
-          {showSuggestions ? 'Hide Examples' : 'Show Examples'}
+          <PlusCircle className="h-4 w-4 mr-1" />
+          Nova Consulta
         </Button>
-      </div>
+      )}
       
       <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
         <Textarea
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Ask a question about the database in English or Portuguese..."
+          placeholder="Faça uma pergunta sobre a base de dados em português..."
           className="resize-none"
           disabled={isLoading}
         />

@@ -47,8 +47,8 @@ export const QueryHistory: React.FC = () => {
     } catch (err) {
       console.error('Error fetching query history:', err);
       toast({
-        title: 'Error',
-        description: 'Failed to load query history.',
+        title: 'Erro',
+        description: 'Falha ao carregar histórico de consultas.',
         variant: 'destructive',
       });
     } finally {
@@ -61,7 +61,7 @@ export const QueryHistory: React.FC = () => {
   }, []);
 
   const clearHistory = async () => {
-    const shouldDelete = confirm('Are you sure you want to clear all query history?');
+    const shouldDelete = confirm('Tem certeza que deseja limpar todo o histórico de consultas?');
     if (!shouldDelete) return;
     
     try {
@@ -74,14 +74,14 @@ export const QueryHistory: React.FC = () => {
       
       setHistory([]);
       toast({
-        title: 'Success',
-        description: 'Query history has been cleared.',
+        title: 'Sucesso',
+        description: 'O histórico de consultas foi limpo.',
       });
     } catch (err) {
       console.error('Error clearing history:', err);
       toast({
-        title: 'Error',
-        description: 'Failed to clear query history.',
+        title: 'Erro',
+        description: 'Falha ao limpar o histórico de consultas.',
         variant: 'destructive',
       });
     }
@@ -103,16 +103,16 @@ export const QueryHistory: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold flex items-center">
             <Clock className="mr-2 h-5 w-5" />
-            Recent Queries
+            Consultas Recentes
           </h2>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={fetchQueryHistory}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              Atualizar
             </Button>
             <Button variant="outline" size="sm" onClick={clearHistory}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear History
+              Limpar Histórico
             </Button>
           </div>
         </div>
@@ -123,18 +123,18 @@ export const QueryHistory: React.FC = () => {
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No query history found.</p>
+            <p>Nenhum histórico de consulta encontrado.</p>
           </div>
         ) : (
           <ScrollArea className="h-[500px]">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead className="w-[50%]">Query</TableHead>
+                  <TableHead>Data e Hora</TableHead>
+                  <TableHead className="w-[50%]">Consulta</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Language</TableHead>
-                  <TableHead>Analysis</TableHead>
+                  <TableHead>Idioma</TableHead>
+                  <TableHead>Análise</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,18 +148,18 @@ export const QueryHistory: React.FC = () => {
                       {item.was_successful ? (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
-                          Success
+                          Sucesso
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1">
                           <XCircle className="h-3 w-3" />
-                          Failed
+                          Falha
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {item.language === 'pt' ? '🇵🇹' : '🇬🇧'} {item.language === 'pt' ? 'Portuguese' : 'English'}
+                        {item.language === 'pt' ? '🇵🇹' : '🇬🇧'} {item.language === 'pt' ? 'Português' : 'Inglês'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -169,16 +169,16 @@ export const QueryHistory: React.FC = () => {
                             <TooltipTrigger asChild>
                               <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1">
                                 <MessageSquare className="h-3 w-3" />
-                                Available
+                                Disponível
                               </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>AI analysis and suggestions available</p>
+                              <p>Análise e sugestões de IA disponíveis</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       ) : (
-                        <Badge variant="outline" className="text-gray-400">None</Badge>
+                        <Badge variant="outline" className="text-gray-400">Nenhuma</Badge>
                       )}
                     </TableCell>
                   </TableRow>
