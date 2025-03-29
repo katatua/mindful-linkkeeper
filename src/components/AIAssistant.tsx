@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue, executePredefinedQuery } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 

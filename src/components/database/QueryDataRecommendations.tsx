@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Database as DatabaseIcon, ArrowDown, Loader2 } from 'lucide-react';
+import { ArrowDown, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface QueryDataRecommendationsProps {
@@ -24,8 +24,8 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
   const handleInsertData = async () => {
     if (!insertStatements || insertStatements.length === 0) {
       toast({
-        title: "Error",
-        description: "No insert statements to execute.",
+        title: "Erro",
+        description: "Não há instruções de inserção para executar.",
         variant: "destructive",
       });
       return;
@@ -42,32 +42,22 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
           tables.push(tableMatch[1]);
         }
         
-        console.log("Executing SQL:", insertSql);
+        console.log("Executando SQL:", insertSql);
         
         const { data, error } = await supabase.rpc('execute_sql_query', {
           sql_query: insertSql
         });
         
-        console.log("SQL execution result:", data, error);
+        console.log("Resultado da execução SQL:", data, error);
         
-        // Check if data is an object with status property
-        const hasError = error || (
-          data && 
-          typeof data === 'object' && 
-          'status' in data && 
-          data.status === 'error'
-        );
+        if (error) {
+          throw new Error(`Erro ao executar SQL: ${error.message}`);
+        }
         
-        if (hasError) {
-          const errorMessage = error ? error.message : (
-            data && 
-            typeof data === 'object' && 
-            'message' in data ? 
-            data.message : 
-            'Unknown error'
-          );
-          
-          throw new Error(`Error executing SQL: ${errorMessage}`);
+        // Check if data has an error status
+        if (data && typeof data === 'object' && 'status' in data && data.status === 'error') {
+          const errorMessage = 'message' in data ? data.message : 'Erro desconhecido';
+          throw new Error(`Erro ao executar SQL: ${errorMessage}`);
         }
       }
       
@@ -81,8 +71,8 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
       }
       
       toast({
-        title: "Success",
-        description: "Database successfully populated with sample data. Try your query again.",
+        title: "Sucesso",
+        description: "Banco de dados populado com sucesso. Tente sua consulta novamente.",
       });
       
       // Call the onInsertSuccess callback if provided
@@ -91,10 +81,10 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
       }
       
     } catch (error) {
-      console.error("Error executing inserts:", error);
+      console.error("Erro ao executar inserções:", error);
       toast({
-        title: "Error",
-        description: `Failed to populate database: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: "Erro",
+        description: `Falha ao popular banco de dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
       });
     } finally {
@@ -120,7 +110,7 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
           {isInserting ? (
             <>
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              Inserting...
+              Inserindo...
             </>
           ) : (
             <>

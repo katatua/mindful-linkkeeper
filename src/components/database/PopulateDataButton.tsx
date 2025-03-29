@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -127,11 +128,14 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
       setAnalysis(sampleAnalysis);
       setShowDialog(true);
       
+      // Try to call the edge function in the background
       supabase.functions.invoke('analyze-query', {
         body: { query }
       }).then(({ data, error }) => {
         if (!error && data) {
           setAnalysis(data);
+        } else {
+          console.log("Background analyze-query call failed, using sample data instead:", error);
         }
       }).catch(err => {
         console.log("Background analyze-query call failed, using sample data instead:", err);
