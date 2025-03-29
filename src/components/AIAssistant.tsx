@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
@@ -114,6 +114,22 @@ export const AIAssistant: React.FC = () => {
     setActiveResponse(null);
     setInput('');
   };
+  
+  // Effect to retry the query if the query ID changes (after data has been populated)
+  useEffect(() => {
+    // Check URL parameters for a queryToRetry parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryToRetry = urlParams.get('queryToRetry');
+    
+    if (queryToRetry) {
+      // Remove the parameter from the URL to prevent infinite retries
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Process the query
+      processQuery(queryToRetry);
+    }
+  }, []);
 
   const renderResults = (results: any[] | null) => {
     if (!results || results.length === 0) {

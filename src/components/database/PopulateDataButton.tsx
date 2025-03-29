@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,7 +22,26 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
   const generateSampleAnalysis = (queryText: string) => {
     const queryLower = queryText.toLowerCase();
     
-    if (queryLower.includes("financiamento") || queryLower.includes("funding")) {
+    if (queryLower.includes("métrica") || queryLower.includes("inovação") || queryLower.includes("lisboa")) {
+      return {
+        analysis: "Esta consulta está relacionada a métricas de inovação. Preparei dados de amostra para métricas que podem ser adicionados à sua base de dados.",
+        tables: ["ani_metrics"],
+        insertStatements: [
+          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
+          VALUES ('Patentes Registadas', 'inovação', 342, 'Lisboa', '2024-01-15', 'Número total de patentes registadas', 'quantidade')`,
+          
+          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
+          VALUES ('Investimento em I&D', 'financiamento', 45000000, 'Lisboa', '2024-02-20', 'Total do investimento em Investigação e Desenvolvimento', 'EUR')`,
+          
+          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
+          VALUES ('Startups Criadas', 'empreendedorismo', 78, 'Lisboa', '2024-03-10', 'Número de novas startups criadas', 'quantidade')`,
+          
+          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
+          VALUES ('Exportação de Tecnologia', 'economia', 37000000, 'Lisboa', '2024-03-25', 'Valor total de exportações tecnológicas', 'EUR')`
+        ],
+        expectedResults: "4 métricas de inovação para a região de Lisboa em 2024."
+      };
+    } else if (queryLower.includes("financiamento") || queryLower.includes("funding")) {
       return {
         analysis: "Esta consulta está relacionada a programas de financiamento. Preparei dados de amostra para programas de financiamento que podem ser adicionados à sua base de dados.",
         tables: ["ani_funding_programs"],
@@ -54,25 +72,6 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
           VALUES ('Agricultura de Precisão AI', 'Utilização de inteligência artificial para otimização de cultivos', 780000, 'Submitted', 'Agricultura', 'Alentejo', 'AgriTech Inovação')`
         ],
         expectedResults: "3 projetos com detalhes sobre financiamento, estado, setor e organização responsável."
-      };
-    } else if (queryLower.includes("métrica") || queryLower.includes("metric")) {
-      return {
-        analysis: "Esta consulta está relacionada a métricas de inovação. Preparei dados de amostra para métricas que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
-        insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Patentes Registadas', 'inovação', 342, 'Nacional', '2024-01-15', 'Número total de patentes registadas', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Investimento em I&D', 'financiamento', 125000000, 'Nacional', '2024-02-20', 'Total do investimento em Investigação e Desenvolvimento', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Startups Criadas', 'empreendedorismo', 78, 'Lisboa', '2024-03-10', 'Número de novas startups criadas', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Exportação de Tecnologia', 'economia', 67000000, 'Norte', '2024-03-25', 'Valor total de exportações tecnológicas', 'EUR')`
-        ],
-        expectedResults: "4 métricas de inovação com valores, regiões e categorias diferentes."
       };
     } else if (queryLower.includes("energia") || queryLower.includes("renovável") || queryLower.includes("energy") || queryLower.includes("renewable")) {
       return {
@@ -169,6 +168,30 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
     await handleAnalyze();
   };
   
+  const handleInsertSuccess = () => {
+    setShowDialog(false);
+    
+    // Give user a helpful message
+    toast({
+      title: "Dados inseridos com sucesso",
+      description: "Tente fazer sua consulta novamente para ver os resultados.",
+    });
+    
+    // If we're on a page with a refresh function, try to call it
+    if (window.location.pathname.includes('query-assistant')) {
+      // Attempt to refresh the query by simulating a click on the same suggestion button
+      setTimeout(() => {
+        const buttons = document.querySelectorAll('button');
+        for (const button of buttons) {
+          if (button.textContent && button.textContent.includes(query)) {
+            button.click();
+            return;
+          }
+        }
+      }, 1000);
+    }
+  };
+  
   return (
     <>
       <Button 
@@ -224,7 +247,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({ query, q
                     query={query}
                     queryId={queryId}
                     insertStatements={analysis.insertStatements}
-                    onInsertSuccess={() => setShowDialog(false)}
+                    onInsertSuccess={handleInsertSuccess}
                   />
                 )}
                 

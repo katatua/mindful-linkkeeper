@@ -35,6 +35,8 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
     try {
       // Execute each insert statement
       const tables: string[] = [];
+      let hasErrors = false;
+      
       for (const insertSql of insertStatements) {
         // Extract table name from INSERT INTO statement
         const tableMatch = insertSql.match(/INSERT INTO\s+([^\s\(]+)/i);
@@ -51,33 +53,51 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
         console.log("Resultado da execução SQL:", data, error);
         
         if (error) {
-          throw new Error(`Erro ao executar SQL: ${error.message}`);
+          console.error("Erro ao executar SQL:", error);
+          toast({
+            title: "Erro",
+            description: `Falha ao executar SQL: ${error.message}`,
+            variant: "destructive",
+          });
+          hasErrors = true;
+          break;
         }
         
         // Check if data has an error status
         if (data && typeof data === 'object' && 'status' in data && data.status === 'error') {
           const errorMessage = 'message' in data ? data.message : 'Erro desconhecido';
-          throw new Error(`Erro ao executar SQL: ${errorMessage}`);
+          console.error("Erro no resultado SQL:", errorMessage);
+          toast({
+            title: "Erro",
+            description: `Erro ao executar SQL: ${errorMessage}`,
+            variant: "destructive",
+          });
+          hasErrors = true;
+          break;
         }
       }
       
-      // Update query_history to indicate data was populated
-      if (queryId) {
-        await supabase.from('query_history').update({
-          was_successful: true,
-          created_tables: tables,
-          error_message: null
-        }).eq('id', queryId);
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: "Banco de dados populado com sucesso. Tente sua consulta novamente.",
-      });
-      
-      // Call the onInsertSuccess callback if provided
-      if (onInsertSuccess) {
-        onInsertSuccess();
+      if (!hasErrors) {
+        // Update query_history to indicate data was populated
+        if (queryId) {
+          await supabase.from('query_history').update({
+            was_successful: true,
+            created_tables: tables,
+            error_message: null
+          }).eq('id', queryId);
+        }
+        
+        toast({
+          title: "Sucesso",
+          description: "Banco de dados populado com sucesso. Tente sua consulta novamente.",
+        });
+        
+        // Call the onInsertSuccess callback if provided
+        if (onInsertSuccess) {
+          setTimeout(() => {
+            onInsertSuccess();
+          }, 500); // Small delay to allow UI to update
+        }
       }
       
     } catch (error) {
@@ -99,7 +119,7 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
   return (
     <div className="mt-4 p-4 bg-muted/50 rounded-md border">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium">Dados Recomendados</h3>
+        <h3 className="text-sm font-semibold mb-1">Dados Recomendados</h3>
         <Button
           size="sm"
           variant="default"
