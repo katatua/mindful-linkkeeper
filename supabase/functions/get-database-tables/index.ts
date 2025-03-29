@@ -38,6 +38,8 @@ serve(async (req) => {
     }
 
     console.log("Querying information_schema for tables");
+    
+    // Corrected query: don't prepend public to information_schema
     const { data: tables, error: tablesError } = await supabase
       .from('information_schema.columns')
       .select('table_name, column_name, data_type, is_nullable')
@@ -46,7 +48,24 @@ serve(async (req) => {
       
     if (tablesError) {
       console.error("Error querying tables:", tablesError);
-      throw tablesError;
+      
+      // Fallback to a more direct SQL approach if the RPC method fails
+      console.log("Trying alternative approach with direct SQL query");
+      const { data: sqlData, error: sqlError } = await supabase.rpc('get_database_tables');
+      
+      if (sqlError) {
+        console.error("SQL fallback also failed:", sqlError);
+        throw sqlError;
+      }
+      
+      console.log(`Successfully retrieved schema using SQL fallback for ${sqlData ? JSON.parse(sqlData).length : 0} tables`);
+      return new Response(
+        sqlData,
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
     }
     
     // Group by table name to organize the data
