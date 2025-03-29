@@ -28,6 +28,34 @@ export const suggestedDatabaseQuestions = [
   "Show me the distribution of innovation metrics across different regions"
 ];
 
+// Add function to classify documents based on title and content
+export const classifyDocument = async (data: {
+  title: string;
+  summary?: string;
+  fileName?: string;
+}): Promise<string> => {
+  try {
+    // Call the classify-document edge function
+    const { data: classificationData, error } = await supabase.functions.invoke('classify-document', {
+      body: {
+        title: data.title,
+        summary: data.summary || "",
+        fileName: data.fileName || ""
+      }
+    });
+    
+    if (error) {
+      console.error('Error classifying document:', error);
+      return 'unclassified';
+    }
+    
+    return classificationData?.classification || 'unclassified';
+  } catch (error) {
+    console.error('Error in document classification:', error);
+    return 'unclassified';
+  }
+};
+
 // Add function to get the current AI model
 export const getCurrentAIModel = async () => {
   try {
