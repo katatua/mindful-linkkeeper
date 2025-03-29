@@ -330,7 +330,7 @@ export const deleteReport = async (id: string): Promise<void> => {
   }
 };
 
-export const saveReport = async (reportData: {
+export interface SaveReportData {
   title: string;
   content: string;
   language: string;
@@ -339,7 +339,9 @@ export const saveReport = async (reportData: {
   chart_data?: any;
   report_type?: string | null;
   file_url?: string | null;
-}): Promise<AIGeneratedReport> => {
+}
+
+export const saveReport = async (reportData: SaveReportData): Promise<AIGeneratedReport> => {
   try {
     const { data, error } = await supabase
       .from('ai_generated_reports')
@@ -359,32 +361,7 @@ export const saveReport = async (reportData: {
   }
 };
 
-export const generateTopicContent = (topic: ReportTopic, mainTopic: string, language: string): string => {
-  console.log(`Generating content for ${topic.title} with main topic ${mainTopic} in ${language}`);
-  const isPortuguese = language === 'pt';
-  
-  let content = `## ${topic.title}\n\n`;
-  
-  // Add topic introduction based on its description
-  content += `${topic.description}.\n\n`;
-  
-  // Generate dummy paragraphs specific to each topic type
-  if (topic.title.includes("Overview") || topic.title.includes("Visão Geral")) {
-    content += generateOverviewContent(mainTopic, language);
-  } else if (topic.title.includes("Market") || topic.title.includes("Mercado")) {
-    content += generateMarketAnalysisContent(mainTopic, language);
-  } else if (topic.title.includes("Challenges") || topic.title.includes("Desafios")) {
-    content += generateChallengesContent(mainTopic, language);
-  } else if (topic.title.includes("Strategies") || topic.title.includes("Estratégias")) {
-    content += generateStrategiesContent(mainTopic, language);
-  } else if (topic.title.includes("Metrics") || topic.title.includes("Métricas")) {
-    content += generateMetricsContent(mainTopic, language);
-  } else if (topic.title.includes("Conclusions") || topic.title.includes("Conclusões")) {
-    content += generateConclusionsContent(mainTopic, language);
-  }
-  
-  return content;
-};
+// I removed the duplicate generateTopicContent function here
 
 export const assembleFullReport = (title: string, topics: ReportTopic[], contents: string[]): string => {
   console.log(`Assembling full report titled "${title}" with ${topics.length} topics and ${contents.length} content sections`);
