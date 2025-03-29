@@ -126,8 +126,12 @@ export const extractVisualizations = (content: string | null): any[] => {
   let contentToProcess: string = '';
   if (typeof content === 'string') {
     contentToProcess = content;
-  } else if (typeof content === 'object' && content && '_type' in content && content._type === 'String' && 'value' in content) {
-    contentToProcess = (content as any).value || '';
+  } else if (typeof content === 'object' && content !== null) {
+    // Type guard to safely check for _type property
+    const contentObj = content as any;
+    if (contentObj._type === 'String' && 'value' in contentObj) {
+      contentToProcess = contentObj.value || '';
+    }
   }
   
   if (!contentToProcess) return [];

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -146,9 +147,13 @@ const AIReportDetail = () => {
     let contentToProcess: string = '';
     if (typeof content === 'string') {
       contentToProcess = content;
-    } else if (typeof content === 'object' && content && '_type' in content && content._type === 'String' && 'value' in content) {
-      contentToProcess = (content as any).value || '';
-      console.log("Found content as object, using value property instead");
+    } else if (typeof content === 'object' && content !== null) {
+      // Type guard to safely check for _type property
+      const contentObj = content as any;
+      if (contentObj._type === 'String' && 'value' in contentObj) {
+        contentToProcess = contentObj.value || '';
+        console.log("Found content as object, using value property instead");
+      }
     }
     
     console.log("Visualization markers:", contentToProcess.match(visualizationRegex));
@@ -262,8 +267,12 @@ const AIReportDetail = () => {
   let contentForWordCount = "";
   if (report && report.content) {
     contentForWordCount = typeof report.content === 'string' ? report.content : '';
-    if (typeof report.content === 'object' && report.content && '_type' in report.content && report.content._type === 'String' && 'value' in report.content) {
-      contentForWordCount = (report.content as any).value || '';
+    if (typeof report.content === 'object' && report.content !== null) {
+      // Type guard to safely check for _type property
+      const contentObj = report.content as any;
+      if (contentObj._type === 'String' && 'value' in contentObj) {
+        contentForWordCount = contentObj.value || '';
+      }
     }
   }
   
