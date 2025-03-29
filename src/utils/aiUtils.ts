@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and include Portuguese questions
@@ -27,6 +28,119 @@ export const suggestedDatabaseQuestions = [
   "Which sectors receive the highest average funding amounts?",
   "Show me the distribution of innovation metrics across different regions"
 ];
+
+// Add a collection of predefined queries that will definitely return results
+export const predefinedQueries = [
+  {
+    name: "All Funding Programs",
+    description: "Lists all available funding programs",
+    query: "SELECT * FROM ani_funding_programs LIMIT 10",
+    language: "en"
+  },
+  {
+    name: "Active Policy Frameworks",
+    description: "Shows all active policy frameworks",
+    query: "SELECT id, title, description, status, implementation_date FROM ani_policy_frameworks WHERE status = 'active' LIMIT 10",
+    language: "en"
+  },
+  {
+    name: "Recent Projects",
+    description: "Lists the most recently created projects",
+    query: "SELECT id, title, description, funding_amount, status, organization FROM ani_projects ORDER BY created_at DESC LIMIT 10",
+    language: "en"
+  },
+  {
+    name: "Innovation Metrics",
+    description: "Shows key innovation metrics across regions",
+    query: "SELECT name, category, value, region, measurement_date FROM ani_metrics ORDER BY measurement_date DESC LIMIT 10",
+    language: "en"
+  },
+  {
+    name: "International Collaborations",
+    description: "Lists all international research collaborations",
+    query: "SELECT id, country, program_name, partnership_type, total_budget FROM ani_international_collaborations LIMIT 10",
+    language: "en"
+  },
+  {
+    name: "Programas de Financiamento",
+    description: "Lista todos os programas de financiamento disponíveis",
+    query: "SELECT id, name, total_budget, sector_focus, application_deadline FROM ani_funding_programs LIMIT 10",
+    language: "pt"
+  },
+  {
+    name: "Métricas de Inovação",
+    description: "Mostra métricas de inovação por região",
+    query: "SELECT name, value, region, category, measurement_date FROM ani_metrics WHERE category = 'innovation' LIMIT 10",
+    language: "pt"
+  },
+  {
+    name: "Projetos Ativos",
+    description: "Lista todos os projetos ativos e seus orçamentos",
+    query: "SELECT id, title, organization, funding_amount, region FROM ani_projects WHERE status = 'Active' LIMIT 10",
+    language: "pt"
+  }
+];
+
+// Function to execute a predefined query
+export const executePredefinedQuery = async (queryId: string): Promise<AIQueryResponse> => {
+  const predefinedQuery = predefinedQueries.find(q => q.name === queryId);
+  
+  if (!predefinedQuery) {
+    return {
+      message: "Predefined query not found",
+      sqlQuery: "",
+      results: null,
+      noResults: true
+    };
+  }
+  
+  try {
+    // Execute the predefined SQL query
+    const { data, error } = await supabase.rpc('execute_sql_query', {
+      sql_query: predefinedQuery.query
+    });
+    
+    if (error) {
+      console.error('Error executing predefined query:', error);
+      return {
+        message: `Error executing query: ${error.message}`,
+        sqlQuery: predefinedQuery.query,
+        results: null,
+        noResults: true
+      };
+    }
+    
+    if (!data || data.length === 0) {
+      return {
+        message: "The query executed successfully but returned no results.",
+        sqlQuery: predefinedQuery.query,
+        results: null,
+        noResults: true
+      };
+    }
+    
+    // Generate a human-readable response based on the predefined query
+    const isPortuguese = predefinedQuery.language === 'pt';
+    const message = isPortuguese
+      ? `Aqui estão os resultados para "${predefinedQuery.description}". Encontramos ${data.length} registros.`
+      : `Here are the results for "${predefinedQuery.description}". Found ${data.length} records.`;
+    
+    return {
+      message: message,
+      sqlQuery: predefinedQuery.query,
+      results: data,
+      noResults: false
+    };
+  } catch (error) {
+    console.error('Error in executePredefinedQuery:', error);
+    return {
+      message: `Failed to execute query: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      sqlQuery: predefinedQuery.query,
+      results: null,
+      noResults: true
+    };
+  }
+};
 
 // Add function to classify documents based on title and content
 export const classifyDocument = async (data: {

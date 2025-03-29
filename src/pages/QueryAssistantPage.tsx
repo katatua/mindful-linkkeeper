@@ -6,9 +6,9 @@ import { AIAssistant } from '@/components/AIAssistant';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QueryHistory } from '@/components/database/QueryHistory';
 import { Button } from '@/components/ui/button';
-import { Database, History, ListTodo } from 'lucide-react';
+import { Database, History, ListTodo, PlayCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { suggestedDatabaseQuestions } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, predefinedQueries } from '@/utils/aiUtils';
 
 export const QueryAssistantPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('assistant');
@@ -26,6 +26,10 @@ export const QueryAssistantPage: React.FC = () => {
             <TabsTrigger value="assistant" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               AI Assistant
+            </TabsTrigger>
+            <TabsTrigger value="predefined" className="flex items-center gap-2">
+              <PlayCircle className="h-4 w-4" />
+              Predefined Queries
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <History className="h-4 w-4" />
@@ -47,6 +51,86 @@ export const QueryAssistantPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <AIAssistant />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="predefined">
+            <Card>
+              <CardHeader>
+                <CardTitle>Predefined Queries</CardTitle>
+                <CardDescription>
+                  These queries are guaranteed to return results from the database
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert className="mb-4">
+                  <AlertDescription>
+                    Click on any query to execute it directly and see the results
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Portuguese Queries</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {predefinedQueries
+                        .filter(q => q.language === 'pt')
+                        .map((query, idx) => (
+                          <Button 
+                            key={idx} 
+                            variant="outline" 
+                            className="w-full justify-start text-left h-auto py-2 px-4"
+                            onClick={() => {
+                              setActiveTab('assistant');
+                              // Custom event to execute predefined query
+                              window.dispatchEvent(new CustomEvent('execute-predefined-query', { 
+                                detail: { queryName: query.name } 
+                              }));
+                            }}
+                          >
+                            <div>
+                              <div className="font-medium">{query.name}</div>
+                              <div className="text-sm text-gray-500">{query.description}</div>
+                            </div>
+                          </Button>
+                        ))
+                      }
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">English Queries</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {predefinedQueries
+                        .filter(q => q.language === 'en')
+                        .map((query, idx) => (
+                          <Button 
+                            key={idx} 
+                            variant="outline" 
+                            className="w-full justify-start text-left h-auto py-2 px-4"
+                            onClick={() => {
+                              setActiveTab('assistant');
+                              // Custom event to execute predefined query
+                              window.dispatchEvent(new CustomEvent('execute-predefined-query', { 
+                                detail: { queryName: query.name } 
+                              }));
+                            }}
+                          >
+                            <div>
+                              <div className="font-medium">{query.name}</div>
+                              <div className="text-sm text-gray-500">{query.description}</div>
+                            </div>
+                          </Button>
+                        ))
+                      }
+                    </CardContent>
+                  </Card>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

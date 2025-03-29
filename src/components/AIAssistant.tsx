@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, HelpCircle, Code, Database, PlusCircle, Loader2 } from 'lucide-react';
-import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
+import { suggestedDatabaseQuestions, generateResponse, genId, formatDatabaseValue, executePredefinedQuery } from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ interface Message {
   timestamp?: Date;
   queryId?: string;
   analysis?: any;
+  isPredefined?: boolean;
 }
 
 export const AIAssistant: React.FC = () => {
@@ -56,6 +57,74 @@ export const AIAssistant: React.FC = () => {
       window.removeEventListener('set-query-input', handleSetQueryInput as EventListener);
     };
   }, []);
+  
+  // Add event listener for executing predefined queries
+  useEffect(() => {
+    const handleExecutePredefinedQuery = async (e: CustomEvent) => {
+      if (e.detail?.queryName) {
+        await executePredefinedQueryHandler(e.detail.queryName);
+      }
+    };
+    
+    window.addEventListener('execute-predefined-query', handleExecutePredefinedQuery as EventListener);
+    
+    return () => {
+      window.removeEventListener('execute-predefined-query', handleExecutePredefinedQuery as EventListener);
+    };
+  }, []);
+  
+  const executePredefinedQueryHandler = async (queryName: string) => {
+    setIsLoading(true);
+    setShowSuggestions(false);
+    
+    try {
+      const userMessage: Message = {
+        id: genId(),
+        content: `Execute predefined query: ${queryName}`,
+        role: 'user',
+        timestamp: new Date(),
+        isPredefined: true
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      
+      const response = await executePredefinedQuery(queryName);
+      
+      const assistantMessage: Message = {
+        id: genId(),
+        content: response.message,
+        sqlQuery: response.sqlQuery,
+        results: response.results,
+        role: 'assistant',
+        noResults: response.noResults,
+        timestamp: new Date(),
+        isPredefined: true
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
+    } catch (error) {
+      console.error('Error executing predefined query:', error);
+      
+      const errorMessage: Message = {
+        id: genId(),
+        content: `Failed to execute predefined query: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        role: 'assistant',
+        error: true,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Error",
+        description: "Failed to execute predefined query. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,6 +365,9 @@ export const AIAssistant: React.FC = () => {
             >
               <p className="text-sm font-semibold mb-1">
                 {message.role === 'user' ? 'You' : 'AI Assistant'}
+                {message.isPredefined && message.role === 'user' && (
+                  <span className="ml-2 text-xs text-blue-600">(Predefined Query)</span>
+                )}
               </p>
               {message.error ? (
                 <Alert variant="destructive" className="bg-transparent border-none p-0">
