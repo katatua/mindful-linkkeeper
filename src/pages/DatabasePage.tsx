@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -49,17 +48,25 @@ export const DatabasePage: React.FC = () => {
     const loadDatabaseTables = async () => {
       setTablesLoading(true);
       try {
+        console.log("DatabasePage: Loading database tables");
         const tables = await fetchDatabaseTables();
+        console.log("DatabasePage: Tables received:", tables);
         setDatabaseTables(tables);
         
         if (tables.length > 0 && !activeTable) {
           setActiveTable(tables[0].table_name);
+        } else if (tables.length === 0) {
+          toast({
+            title: 'No Tables Found',
+            description: 'No tables were found in the database. You may need to create tables first.',
+            variant: 'destructive',
+          });
         }
       } catch (err) {
         console.error('Error loading database tables:', err);
         toast({
           title: 'Error',
-          description: 'Failed to load database tables',
+          description: 'Failed to load database tables. Check console for details.',
           variant: 'destructive',
         });
       } finally {
@@ -145,6 +152,64 @@ export const DatabasePage: React.FC = () => {
     );
   };
 
+  const renderSchemaContent = () => {
+    if (tablesLoading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    
+    if (databaseTables.length === 0) {
+      return (
+        <div className="py-8 text-center">
+          <FileQuestion className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Database Tables Found</h3>
+          <p className="text-muted-foreground">
+            There don't appear to be any tables in your database yet. <br />
+            You may need to run migrations or create tables.
+          </p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-6">
+        {databaseTables.map((table) => (
+          <div key={table.table_name} className="border rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-medium">{table.table_name}</h3>
+              <Badge variant="outline">{table.columns.length} columns</Badge>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Column</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Nullable</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {table.columns.map((column) => (
+                  <TableRow key={`${table.table_name}-${column.column_name}`}>
+                    <TableCell className="font-medium">{column.column_name}</TableCell>
+                    <TableCell>
+                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                        {column.data_type}
+                      </code>
+                    </TableCell>
+                    <TableCell>{column.is_nullable}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6">
@@ -182,46 +247,7 @@ export const DatabasePage: React.FC = () => {
                 <CardTitle>Database Schema</CardTitle>
               </CardHeader>
               <CardContent>
-                {tablesLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : databaseTables.length > 0 ? (
-                  <div className="space-y-6">
-                    {databaseTables.map((table) => (
-                      <div key={table.table_name} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h3 className="text-lg font-medium">{table.table_name}</h3>
-                          <Badge variant="outline">{table.columns.length} columns</Badge>
-                        </div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Column</TableHead>
-                              <TableHead>Type</TableHead>
-                              <TableHead>Nullable</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {table.columns.map((column) => (
-                              <TableRow key={`${table.table_name}-${column.column_name}`}>
-                                <TableCell className="font-medium">{column.column_name}</TableCell>
-                                <TableCell>
-                                  <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
-                                    {column.data_type}
-                                  </code>
-                                </TableCell>
-                                <TableCell>{column.is_nullable}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-4">No database tables found</p>
-                )}
+                {renderSchemaContent()}
               </CardContent>
             </Card>
           </TabsContent>

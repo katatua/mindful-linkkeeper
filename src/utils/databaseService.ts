@@ -12,11 +12,18 @@ export interface DatabaseTable {
 
 export const fetchDatabaseTables = async (): Promise<DatabaseTable[]> => {
   try {
+    console.log("Fetching database tables...");
     const { data, error } = await supabase.functions.invoke('get-database-tables');
     
     if (error) {
       console.error("Error fetching database tables:", error);
       throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log("No tables found in the database");
+    } else {
+      console.log(`Found ${data.length} tables in the database`);
     }
     
     return data as DatabaseTable[];
@@ -47,6 +54,7 @@ export const fetchDatabaseTables = async (): Promise<DatabaseTable[]> => {
 
 export const fetchTableData = async (tableName: string, limit: number = 50): Promise<any[]> => {
   try {
+    console.log(`Fetching data from table: ${tableName}`);
     // Use the getTable helper function which safely handles dynamic table names
     const { data, error } = await getTable(tableName)
       .select('*')
@@ -57,6 +65,7 @@ export const fetchTableData = async (tableName: string, limit: number = 50): Pro
       throw error;
     }
     
+    console.log(`Fetched ${data?.length || 0} rows from ${tableName}`);
     return data || [];
   } catch (error) {
     console.error(`Failed to fetch data from ${tableName}:`, error);
