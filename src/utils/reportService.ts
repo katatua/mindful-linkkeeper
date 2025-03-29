@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -33,6 +34,7 @@ export interface Visualization {
   title: string;
   description: string;
   data: any[];
+  colors?: string[];
 }
 
 // Report Topic Generator
@@ -156,7 +158,7 @@ const generateMarketAnalysisContent = (topic: string, language: string): string 
     : `One of the main indicators is the market distribution among different segments. This segmentation allows for identifying niches with higher growth and opportunities not yet adequately explored.\n\n`;
   
   content += isPortuguese
-    ? `[Visualization: pie-chart;Distribuição do Mercado;Segmentaç��o por setor em ${topic};segments:Tecnologia,Saúde,Energia,Manufatura,Serviços;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`
+    ? `[Visualization: pie-chart;Distribuição do Mercado;Segmentação por setor em ${topic};segments:Tecnologia,Saúde,Energia,Manufatura,Serviços;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`
     : `[Visualization: pie-chart;Market Distribution;Segmentation by sector in ${topic};segments:Technology,Healthcare,Energy,Manufacturing,Services;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`;
   
   content += isPortuguese
@@ -341,7 +343,7 @@ export const saveReport = async (reportData: {
   try {
     const { data, error } = await supabase
       .from('ai_generated_reports')
-      .insert(reportData)  // Now TypeScript knows this object has required fields
+      .insert(reportData)
       .select()
       .single();
 
@@ -355,6 +357,33 @@ export const saveReport = async (reportData: {
     console.error("Error in saveReport:", error);
     throw new Error("Failed to save report");
   }
+};
+
+export const generateTopicContent = (topic: ReportTopic, mainTopic: string, language: string): string => {
+  console.log(`Generating content for ${topic.title} with main topic ${mainTopic} in ${language}`);
+  const isPortuguese = language === 'pt';
+  
+  let content = `## ${topic.title}\n\n`;
+  
+  // Add topic introduction based on its description
+  content += `${topic.description}.\n\n`;
+  
+  // Generate dummy paragraphs specific to each topic type
+  if (topic.title.includes("Overview") || topic.title.includes("Visão Geral")) {
+    content += generateOverviewContent(mainTopic, language);
+  } else if (topic.title.includes("Market") || topic.title.includes("Mercado")) {
+    content += generateMarketAnalysisContent(mainTopic, language);
+  } else if (topic.title.includes("Challenges") || topic.title.includes("Desafios")) {
+    content += generateChallengesContent(mainTopic, language);
+  } else if (topic.title.includes("Strategies") || topic.title.includes("Estratégias")) {
+    content += generateStrategiesContent(mainTopic, language);
+  } else if (topic.title.includes("Metrics") || topic.title.includes("Métricas")) {
+    content += generateMetricsContent(mainTopic, language);
+  } else if (topic.title.includes("Conclusions") || topic.title.includes("Conclusões")) {
+    content += generateConclusionsContent(mainTopic, language);
+  }
+  
+  return content;
 };
 
 export const assembleFullReport = (title: string, topics: ReportTopic[], contents: string[]): string => {
@@ -392,9 +421,62 @@ export const generatePDF = async (report: AIGeneratedReport): Promise<string> =>
 
 // Helper to simulate PDF generation (in a real app, this would use html2canvas and jsPDF)
 const simulatePDFGeneration = (report: AIGeneratedReport): string => {
-  // In a real implementation, this would use html2canvas and jsPDF
-  // For demo purposes, we'll return a data URI
-  return `data:application/pdf;base64,JVBERi0xLjcKJeLjz9MKNSAwIG9iago8PCAvVHlwZSAvWE9iamVjdCAvU3VidHlwZSAvSW1hZ2UgL1dpZHRoIDEyMDAgL0hlaWdodCA2MDAgL0NvbG9yU3BhY2UgWyAvSW5kZXhlZCAvRGV2aWNlUkdCIDI1NSA8MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwPl0gL0JpdHNQZXJDb21wb25lbnQgOCAvRmlsdGVyIC9GbGF0ZURlY29kZSAvTGVuZ3RoIDY0ID4+CnN0cmVhbQp4nO3BAQ0AAADCoPdPbQ8HFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPgwNEAAAQplbmRzdHJlYW0KZW5kb2JqCjYgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nID4+CmVuZG9iago3IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYS1Cb2xkIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nID4+CmVuZG9iago4IDAgb2JqCjw8IC9UeXBlIC9YT2JqZWN0IC9TdWJ0eXBlIC9Gb3JtIC9Gb3JtVHlwZSAxIC9CQm94IFsgMCAwIDYxMi4wIDc5Mi4wIF0gL01hdHJpeCBbIDEgMCAwIDEgMCAwIF0gL1Jlc291cmNlcyA8PCAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXSAvRm9udCA8PCAvRjEgNiAwIFIgL0YyIDcgMCBSID4+IC9YT2JqZWN0IDw8IC9JbTEgNSAwIFIgPj4gPj4gPj4gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFsgMiAwIFIgXSAvQ291bnQgMSA+PgplbmRvYmoKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMyAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAzIDAgUiAvUmVzb3VyY2VzIDw8IC9YT2JqZWN0IDw8IC9YMSAyIDAgUiAvWDIgNCAwIFIgPj4gL1Byb2NTZXQgWyAvUERGIC9UZXh0IC9JbWFnZUIgL0ltYWdlQyAvSW1hZ2VJIF0gL0ZvbnQgPDwgL0YxIDYgMCBSIC9GMiA3IDAgUiA+PiA+PiAvQ29udGVudHMgWyAxIDAgUiBdID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9YT2JqZWN0IC9TdWJ0eXBlIC9Gb3JtIC9Gb3JtVHlwZSAxIC9CQm94IFsgMCAwIDYxMi4wIDc5Mi4wIF0gL01hdHJpeCBbIDEgMCAwIDEgMCAwIF0gL1Jlc291cmNlcyA8PCAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXSAvRm9udCA8PCAvRjEgNiAwIFIgL0YyIDcgMCBSID4+IC9YT2JqZWN0IDw8IC9JbTEgNSAwIFIgPj4gPj4gL0xlbmd0aCA0OCA+PgpzdHJlYW0KcQoxIDAgMCAxIDAgMCBjbQovSW0xIERvClEKL0YyIDI0IFRmCjUwIDc1MCBUZAooKSBUagplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCA5CjAwMDAwMDAwMDAgNjU1MzUgZgowMDAwMDAwNTg1IDAwMDAwIG4KMDAwMDAwMDYzNSAwMDAwMCBuCjAwMDAwMDA1MjcgMDAwMDAgbgowMDAwMDAwODA5IDAwMDAwIG4KMDAwMDAwMDAxMCAwMDAwMCBuCjAwMDAwMDAyMTEgMDAwMDAgbgowMDAwMDAwMzA5IDAwMDAwIG4KMDAwMDAwMDQxMCAwMDAwMCBuCnRyYWlsZXIKPDwgL1NpemUgOSAvUm9vdCAxIDAgUiAvSW5mbyA5IDAgUiA+PgpzdGFydHhyZWYKMTA3MwolJUVPRgo=`;
+  // Create a new PDF document
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+  
+  // Add title
+  pdf.setFontSize(22);
+  pdf.text(report.title, 20, 30);
+  
+  // Add metadata
+  pdf.setFontSize(12);
+  pdf.text(`Report ID: ${report.id}`, 20, 45);
+  pdf.text(`Generated: ${new Date(report.created_at).toLocaleDateString()}`, 20, 55);
+  if (report.report_type) {
+    pdf.text(`Type: ${report.report_type}`, 20, 65);
+  }
+  
+  // Add content
+  pdf.setFontSize(16);
+  pdf.text("Report Content", 20, 85);
+  
+  pdf.setFontSize(12);
+  let yPosition = 95;
+  
+  // Convert the content to plain text if it has markdown formatting
+  let plainTextContent = report.content
+    .replace(/#+\s(.*)/g, '$1') // Remove headers
+    .replace(/\[.*?\]/g, '') // Remove visualization tags
+    .replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold formatting
+  
+  // Split content into lines
+  const contentLines = pdf.splitTextToSize(plainTextContent, 170);
+  
+  // Add lines with pagination
+  for (let i = 0; i < contentLines.length; i++) {
+    if (yPosition > 270) {
+      pdf.addPage();
+      yPosition = 20;
+    }
+    pdf.text(contentLines[i], 20, yPosition);
+    yPosition += 7;
+  }
+  
+  // Add footer
+  pdf.setFontSize(10);
+  const totalPages = pdf.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    pdf.text(`Page ${i} of ${totalPages}`, pdf.internal.pageSize.getWidth() / 2, 287, { align: 'center' });
+    pdf.text(`ANI Innovation Portal - Generated Report`, 20, 287);
+  }
+  
+  // Convert to base64 and return
+  return pdf.output('datauristring');
 };
 
 export const extractVisualizations = (content: string): Visualization[] => {
@@ -426,6 +508,7 @@ export const extractVisualizations = (content: string): Visualization[] => {
       
       // Parse the data based on the visualization type
       let data: any[] = [];
+      let colors: string[] = [];
       
       if (type === 'bar' || type === 'line') {
         // For bar and line charts, look for dimension and values
@@ -471,7 +554,6 @@ export const extractVisualizations = (content: string): Visualization[] => {
       
       // Extract colors if provided
       const colorsStr = parts.find(p => p.startsWith('color') || p.startsWith('colors'));
-      let colors: string[] = [];
       
       if (colorsStr) {
         const colorValues = colorsStr.split(':')[1];
@@ -487,7 +569,7 @@ export const extractVisualizations = (content: string): Visualization[] => {
         description,
         data,
         colors
-      } as Visualization);
+      });
       
     } catch (err) {
       console.error("Error parsing visualization:", match[0], err);

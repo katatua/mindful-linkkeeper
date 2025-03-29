@@ -28,7 +28,7 @@ const AIReportDetail = () => {
         const storedReport = sessionStorage.getItem('currentReport');
         if (storedReport) {
           const parsedReport = JSON.parse(storedReport);
-          if (parsedReport.id === id || (id && id.startsWith('dev-report-') && parsedReport.id.startsWith('dev-report-'))) {
+          if (parsedReport.id === id) {
             console.log("Loading report from session storage:", parsedReport);
             setReport(parsedReport);
             setIsLoading(false);
@@ -37,38 +37,89 @@ const AIReportDetail = () => {
         }
         
         // If not in session storage or ID doesn't match, fetch from database
-        const { data, error } = await supabase
-          .from('ai_generated_reports')
-          .select('*')
-          .eq('id', id)
-          .single();
-          
-        if (error) {
-          // For development testing with dev-report IDs
-          if (id && id.startsWith('dev-report-') && storedReport) {
-            const parsedReport = JSON.parse(storedReport);
-            console.log("Using stored report for development:", parsedReport);
-            setReport(parsedReport);
-            setIsLoading(false);
-            return;
+        try {
+          const { data, error } = await supabase
+            .from('ai_generated_reports')
+            .select('*')
+            .eq('id', id)
+            .single();
+            
+          if (error) {
+            throw error;
           }
           
-          console.error("Error fetching report:", error);
-          throw error;
-        }
-        
-        if (data) {
-          console.log("Loaded report from database:", data);
-          setReport(data as AIGeneratedReport);
-        } else {
-          navigate('/reports');
-          toast({
-            title: language === 'pt' ? "Relatório não encontrado" : "Report not found",
-            description: language === 'pt' 
-              ? "O relatório solicitado não existe ou foi removido." 
-              : "The requested report does not exist or has been removed.",
-            variant: "destructive"
-          });
+          if (data) {
+            console.log("Loaded report from database:", data);
+            setReport(data as AIGeneratedReport);
+          } else {
+            // For sample reports with REP or SCH prefixes, create a placeholder report
+            if (id && (id.startsWith('REP-') || id.startsWith('SCH-'))) {
+              console.log("Creating placeholder for sample report:", id);
+              
+              // Try loading from session again with less strict matching
+              if (storedReport) {
+                const parsedReport = JSON.parse(storedReport);
+                // Use the session report if it matches the ID pattern
+                if (parsedReport.id.startsWith('REP-') || parsedReport.id.startsWith('SCH-')) {
+                  console.log("Using session report as placeholder:", parsedReport);
+                  setReport(parsedReport);
+                  setIsLoading(false);
+                  return;
+                }
+              }
+              
+              // Create a generic placeholder report
+              const placeholderReport: AIGeneratedReport = {
+                id: id,
+                title: "Sample Report",
+                content: "This is a sample report content. In a real application, this would contain the actual report content.",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                language: 'en',
+                report_type: id.startsWith('REP-') ? "Sample Report" : "Scheduled Report"
+              };
+              
+              setReport(placeholderReport);
+              setIsLoading(false);
+              return;
+            }
+            
+            navigate('/reports');
+            toast({
+              title: language === 'pt' ? "Relatório não encontrado" : "Report not found",
+              description: language === 'pt' 
+                ? "O relatório solicitado não existe ou foi removido." 
+                : "The requested report does not exist or has been removed.",
+              variant: "destructive"
+            });
+          }
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          
+          // If this is a demo report (REP-* or SCH-*), create a placeholder
+          if (id && (id.startsWith('REP-') || id.startsWith('SCH-'))) {
+            const demoReport: AIGeneratedReport = {
+              id: id,
+              title: id.startsWith('REP-') ? "Sample Report" : "Scheduled Report",
+              content: "This is a sample report content for demonstration purposes.",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              language: 'en',
+              report_type: id.startsWith('REP-') ? "Sample Report" : "Scheduled Report"
+            };
+            
+            console.log("Created demo report:", demoReport);
+            setReport(demoReport);
+          } else {
+            toast({
+              title: language === 'pt' ? "Erro ao carregar relatório" : "Error loading report",
+              description: language === 'pt' 
+                ? "Não foi possível carregar os detalhes do relatório." 
+                : "Could not load the report details.",
+              variant: "destructive"
+            });
+            navigate('/reports');
+          }
         }
       } catch (error) {
         console.error("Error loading report:", error);
@@ -143,29 +194,16 @@ const AIReportDetail = () => {
     
     console.log("Processing content with length:", content ? content.length : 0);
     
-    // If the content is an object with a value property, use the value
-    let contentToProcess: string = '';
-    if (typeof content === 'string') {
-      contentToProcess = content;
-    } else if (typeof content === 'object' && content !== null) {
-      // Type guard to safely check for _type property
-      const contentObj = content as any;
-      if (contentObj._type === 'String' && 'value' in contentObj) {
-        contentToProcess = contentObj.value || '';
-        console.log("Found content as object, using value property instead");
-      }
-    }
-    
     // Extract all visualizations from the content first
-    const visualizations = extractVisualizations(contentToProcess);
+    const visualizations = extractVisualizations(content);
     console.log(`Found ${visualizations.length} visualizations in content`);
     
     // Process content paragraph by paragraph, inserting visualizations at their marked positions
     let vizIndex = 0;
-    while ((match = visualizationRegex.exec(contentToProcess)) !== null) {
+    while ((match = visualizationRegex.exec(content)) !== null) {
       // Add text before the visualization
       if (match.index > lastIndex) {
-        const textSegment = contentToProcess.substring(lastIndex, match.index);
+        const textSegment = content.substring(lastIndex, match.index);
         parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
       }
       
@@ -198,8 +236,8 @@ const AIReportDetail = () => {
     }
     
     // Add any remaining text after the last visualization
-    if (contentToProcess && lastIndex < contentToProcess.length) {
-      const textSegment = contentToProcess.substring(lastIndex);
+    if (content && lastIndex < content.length) {
+      const textSegment = content.substring(lastIndex);
       parts.push(renderTextSegment(textSegment, `text-${parts.length}`));
     }
     
@@ -273,20 +311,10 @@ const AIReportDetail = () => {
   }
 
   // Calculate word count for display
-  let contentForWordCount = "";
-  if (report && report.content) {
-    contentForWordCount = typeof report.content === 'string' ? report.content : '';
-    if (typeof report.content === 'object' && report.content !== null) {
-      // Type guard to safely check for _type property
-      const contentObj = report.content as any;
-      if (contentObj._type === 'String' && 'value' in contentObj) {
-        contentForWordCount = contentObj.value || '';
-      }
-    }
-  }
+  let contentForWordCount = report.content || '';
   
   const wordCount = contentForWordCount ? contentForWordCount.replace(/\[Visualization:[^\]]+\]/g, '').split(/\s+/).length : 0;
-  const visualizationCount = (report && report.content) ? extractVisualizations(report.content).length : 0;
+  const visualizationCount = report.content ? extractVisualizations(report.content).length : 0;
 
   return (
     <div className="container mx-auto py-6 space-y-6">

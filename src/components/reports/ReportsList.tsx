@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -152,8 +153,28 @@ export const ReportsList = ({ searchQuery }: ReportsListProps) => {
   };
 
   const handleViewReport = (report: any) => {
+    // Create a temporary report object to store in session
+    const reportObject = {
+      id: report.id,
+      title: report.title,
+      content: report.content,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      language: 'en',
+      report_type: report.type,
+      user_id: null,
+      metadata: {
+        author: report.author,
+        date: report.date,
+        status: report.status
+      }
+    };
+    
+    // Store the report in session storage for the detail page to access
+    sessionStorage.setItem('currentReport', JSON.stringify(reportObject));
+    
     // Navigate to the report detail page
-    navigate(`/reports/${report.id}`);
+    navigate(`/ai-report/${report.id}`);
   };
 
   const handleShareReport = (report: any) => {
