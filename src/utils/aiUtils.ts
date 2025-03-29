@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Update the suggested questions to better match our database schema and include Portuguese questions
@@ -110,7 +109,8 @@ export const executePredefinedQuery = async (queryId: string): Promise<AIQueryRe
       };
     }
     
-    if (!data || data.length === 0) {
+    // Check if data is an array and has items
+    if (!data || !Array.isArray(data) || data.length === 0) {
       return {
         message: "The query executed successfully but returned no results.",
         sqlQuery: predefinedQuery.query,
@@ -297,8 +297,8 @@ export const isMonetaryColumn = (columnName: string): boolean => {
   return false;
 };
 
-// Helper function to identify if a query lacks sufficient context or is not in supported language
-function isInvalidOrUnrecognizedQuery(query: string): boolean {
+// Helper function to detect and clean numeric values
+export const isInvalidOrUnrecognizedQuery = (query: string): boolean => {
   if (query.trim().length < 5) return true;
   
   // Database query words in English and Portuguese
@@ -331,7 +331,7 @@ function isInvalidOrUnrecognizedQuery(query: string): boolean {
   
   // Return true if the query is invalid (missing either query word or entity)
   return !(hasQueryWord || hasEntity);
-}
+};
 
 // Define the response type for consistency
 export interface AIQueryResponse {
@@ -474,28 +474,24 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
 
       // If there are no results, get analysis and recommendations
       let analysis = null;
-      if (!data.results || data.results.length === 0) {
-        try {
-          // Call analyze-query to get recommendations
-          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-query', {
-            body: { 
-              query: data.sqlQuery || prompt,
-              language: isPortuguese ? 'pt' : 'en'
-            }
-          });
-          
-          if (!analysisError && analysisData) {
-            analysis = analysisData;
-            
-            // Save analysis to query_history
-            if (queryId) {
-              await supabase.from('query_history').update({
-                analysis_result: analysis
-              }).eq('id', queryId);
-            }
+      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
+        // Call analyze-query to get recommendations
+        const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-query', {
+          body: { 
+            query: data.sqlQuery || prompt,
+            language: isPortuguese ? 'pt' : 'en'
           }
-        } catch (analysisError) {
-          console.error('Error analyzing query:', analysisError);
+        });
+        
+        if (!analysisError && analysisData) {
+          analysis = analysisData;
+          
+          // Save analysis to query_history
+          if (queryId) {
+            await supabase.from('query_history').update({
+              analysis_result: analysis
+            }).eq('id', queryId);
+          }
         }
       }
 
@@ -503,15 +499,15 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       if (queryId) {
         try {
           await supabase.from('query_history').update({
-            was_successful: data.results && data.results.length > 0,
-            error_message: data.results && data.results.length > 0 ? null : "No results found"
+            was_successful: data.results && Array.isArray(data.results) && data.results.length > 0,
+            error_message: data.results && Array.isArray(data.results) && data.results.length > 0 ? null : "No results found"
           }).eq('id', queryId);
         } catch (updateError) {
           console.error('Error updating query status:', updateError);
         }
       }
       
-      if (!data.results || data.results.length === 0) {
+      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
         const noResultsResponse = createNoResultsResponse(prompt, isInvalidOrUnrecognizedQuery(prompt));
         return {
           ...noResultsResponse,
@@ -524,7 +520,7 @@ export const generateResponse = async (prompt: string): Promise<AIQueryResponse>
       return {
         message: data.response || 'Sorry, I could not process your query.',
         sqlQuery: data.sqlQuery || '',
-        results: data.results || null,
+        results: data.results as any[],
         noResults: false,
         queryId: queryId || undefined,
         analysis: analysis
