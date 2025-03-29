@@ -102,10 +102,10 @@ export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> =
         <h3 className="text-sm font-medium">Dados Recomendados</h3>
         <Button
           size="sm"
-          variant="primary"
+          variant="default"
           onClick={handleInsertData}
           disabled={isInserting}
-          className="flex items-center gap-1 bg-primary text-white hover:bg-primary/90"
+          className="flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700"
         >
           {isInserting ? (
             <>
