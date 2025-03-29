@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -91,7 +90,6 @@ export const generateReportTopics = (topic: string, language: string): ReportTop
   return topics;
 };
 
-// Generate content for each topic
 export const generateTopicContent = (topic: ReportTopic, mainTopic: string, language: string): string => {
   console.log(`Generating content for ${topic.title} with main topic ${mainTopic} in ${language}`);
   const isPortuguese = language === 'pt';
@@ -158,7 +156,7 @@ const generateMarketAnalysisContent = (topic: string, language: string): string 
     : `One of the main indicators is the market distribution among different segments. This segmentation allows for identifying niches with higher growth and opportunities not yet adequately explored.\n\n`;
   
   content += isPortuguese
-    ? `[Visualization: pie-chart;Distribuição do Mercado;Segmentação por setor em ${topic};segments:Tecnologia,Saúde,Energia,Manufatura,Serviços;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`
+    ? `[Visualization: pie-chart;Distribuiç��o do Mercado;Segmentação por setor em ${topic};segments:Tecnologia,Saúde,Energia,Manufatura,Serviços;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`
     : `[Visualization: pie-chart;Market Distribution;Segmentation by sector in ${topic};segments:Technology,Healthcare,Energy,Manufacturing,Services;values:35,20,15,15,15;colors:#36B37E,#00B8D9,#6554C0,#FF5630,#FFAB00]\n\n`;
   
   content += isPortuguese
@@ -360,8 +358,6 @@ export const saveReport = async (reportData: SaveReportData): Promise<AIGenerate
     throw new Error("Failed to save report");
   }
 };
-
-// I removed the duplicate generateTopicContent function here
 
 export const assembleFullReport = (title: string, topics: ReportTopic[], contents: string[]): string => {
   console.log(`Assembling full report titled "${title}" with ${topics.length} topics and ${contents.length} content sections`);
