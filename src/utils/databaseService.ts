@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getTable } from '@/integrations/supabase/client';
 
 export interface DatabaseTable {
   table_name: string;
@@ -47,8 +47,8 @@ export const fetchDatabaseTables = async (): Promise<DatabaseTable[]> => {
 
 export const fetchTableData = async (tableName: string, limit: number = 50): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
-      .from(tableName)
+    // Use the getTable helper function which safely handles dynamic table names
+    const { data, error } = await getTable(tableName)
       .select('*')
       .limit(limit);
     
