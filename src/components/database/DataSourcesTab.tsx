@@ -92,39 +92,49 @@ export const DataSourcesTab: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const { toast } = useToast();
   
   const initializeDataSources = async () => {
-    // Check if we already have data sources
-    const existingData = await fetchTableData('fontes_dados');
-    
-    // If no data, insert the predefined data sources
-    if (existingData.length === 0) {
-      console.log("No data sources found. Initializing with predefined data...");
+    setIsInitializing(true);
+    try {
+      // Check if we already have data sources
+      const existingData = await fetchTableData('fontes_dados');
       
-      // Insert each predefined data source sequentially
-      for (const source of predefinedDataSources) {
-        try {
-          await insertTableData('fontes_dados', source);
-          console.log(`Added data source: ${source.nome_sistema}`);
-        } catch (error) {
-          console.error(`Error adding data source: ${source.nome_sistema}`, error);
+      // If no data, insert the predefined data sources
+      if (existingData.length === 0) {
+        console.log("No data sources found. Initializing with predefined data...");
+        
+        // Insert each predefined data source sequentially
+        for (const source of predefinedDataSources) {
+          try {
+            await insertTableData('fontes_dados', source);
+            console.log(`Added data source: ${source.nome_sistema}`);
+          } catch (error) {
+            console.error(`Error adding data source: ${source.nome_sistema}`, error);
+          }
         }
+        
+        toast({
+          title: "Fontes de dados inicializadas",
+          description: "As fontes de dados predefinidas foram carregadas com sucesso.",
+        });
+        
+        // Fetch the newly inserted data
+        await fetchDataSources();
+      } else {
+        console.log(`Data sources already exist in the database: ${existingData.length} records found.`);
       }
-      
+    } catch (error) {
+      console.error("Error initializing data sources:", error);
       toast({
-        title: "Fontes de dados inicializadas",
-        description: "As fontes de dados predefinidas foram carregadas com sucesso.",
+        title: "Erro ao inicializar fontes de dados",
+        description: "Não foi possível carregar as fontes de dados predefinidas.",
+        variant: "destructive"
       });
-      
-      // Fetch the newly inserted data
-      await fetchDataSources();
-    } else {
-      console.log("Data sources already exist in the database.");
+    } finally {
+      setIsInitializing(false);
     }
-    
-    setHasInitialized(true);
   };
 
   const fetchDataSources = async () => {
@@ -136,12 +146,17 @@ export const DataSourcesTab: React.FC = () => {
       
       // Fetch data from fontes_dados table
       const data = await fetchTableData('fontes_dados');
+      console.log(`Fetched ${data.length} data sources from fontes_dados table`);
       
       // If we have data, use it
       if (data && data.length > 0) {
         setDataSources(data as FonteDados[]);
       } else {
         setDataSources([]);
+        // If no data and not already initializing, try to initialize
+        if (!isInitializing) {
+          await initializeDataSources();
+        }
       }
     } catch (error) {
       console.error('Error fetching data sources:', error);
@@ -163,13 +178,7 @@ export const DataSourcesTab: React.FC = () => {
   };
 
   useEffect(() => {
-    // First fetch the data sources
-    fetchDataSources().then(() => {
-      // After fetching, check if we need to initialize
-      if (!hasInitialized) {
-        initializeDataSources();
-      }
-    });
+    fetchDataSources();
   }, []);
   
   // Function to find matching database table for a data source
@@ -181,6 +190,26 @@ export const DataSourcesTab: React.FC = () => {
       fonte.nome_sistema.toLowerCase().includes(table.table_name.toLowerCase().replace(/_/g, ' '))
     );
   };
+  
+  // Button to manually initialize data sources if empty
+  const InitializeButton = () => (
+    <Button 
+      onClick={initializeDataSources} 
+      disabled={isInitializing || dataSources.length > 0}
+    >
+      {isInitializing ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Inicializando...
+        </>
+      ) : (
+        <>
+          <Upload className="mr-2 h-4 w-4" />
+          Inicializar Fontes Predefinidas
+        </>
+      )}
+    </Button>
+  );
   
   return (
     <div className="space-y-6">
@@ -292,12 +321,15 @@ export const DataSourcesTab: React.FC = () => {
             <FileText className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium">Nenhuma fonte de dados encontrada</h3>
             <p className="text-muted-foreground mt-2 mb-4">
-              Adicione sua primeira fonte de dados clicando no botão abaixo.
+              Inicialize as fontes de dados predefinidas ou adicione uma nova fonte manualmente.
             </p>
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Adicionar Fonte
-            </Button>
+            <div className="flex gap-2">
+              <InitializeButton />
+              <Button onClick={() => setIsModalOpen(true)}>
+                <FilePlus className="mr-2 h-4 w-4" />
+                Adicionar Fonte
+              </Button>
+            </div>
           </div>
         </Card>
       )}
