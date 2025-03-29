@@ -15,6 +15,8 @@ export const suggestedDatabaseQuestions = [
   "Listar todas as políticas focadas em sustentabilidade",
   "Qual é o orçamento médio dos programas de financiamento?",
   "Quais são os principais parceiros internacionais em pesquisa?",
+  "Quantas patentes foram registadas em 2022?",
+  "Quais são as áreas com maior número de patentes?",
   
   // English questions
   "Which funding programs include renewable energy in their sector focus?",
@@ -31,224 +33,129 @@ export const suggestedDatabaseQuestions = [
   "What policy frameworks were implemented in 2023?",
   "List funding programs specifically targeting SMEs",
   "Which sectors receive the highest average funding amounts?",
-  "Show me the distribution of innovation metrics across different regions"
+  "Show me the distribution of innovation metrics across different regions",
+  "How many patents were registered in 2022?",
+  "Which institutions hold the most patents?"
 ];
 
 // Mock data for different query types
 const mockDataResponses = {
-  funding_programs: [
+  // ... keep existing code (funding_programs, projects, metrics, policy_frameworks, international_collaborations)
+
+  patents: [
     {
       id: '1',
-      name: 'Programa Nacional de Inovação Digital',
-      description: 'Financiamento para projetos de digitalização e inovação tecnológica',
-      total_budget: 15000000,
-      application_deadline: '2024-12-31',
-      sector_focus: ['tecnologia', 'digitalização', 'inovação'],
-      funding_type: 'subsídio'
-    },
-    {
-      id: '2',
-      name: 'Energia Renovável Portugal 2030',
-      description: 'Programa de incentivo a projetos de energia renovável',
-      total_budget: 25000000,
-      application_deadline: '2025-06-30',
-      sector_focus: ['energia renovável', 'sustentabilidade', 'energia solar', 'energia eólica'],
-      funding_type: 'misto'
-    },
-    {
-      id: '3',
-      name: 'Biotech Inovação',
-      description: 'Financiamento para pesquisa e desenvolvimento em biotecnologia',
-      total_budget: 12000000,
-      application_deadline: '2025-03-15',
-      sector_focus: ['biotecnologia', 'saúde', 'pesquisa'],
-      funding_type: 'empréstimo'
-    },
-    {
-      id: '4',
-      name: 'PME Digital',
-      description: 'Apoio à digitalização de pequenas e médias empresas',
-      total_budget: 8500000,
-      application_deadline: '2024-09-30',
-      sector_focus: ['digitalização', 'PME', 'tecnologia'],
-      funding_type: 'subsídio'
-    },
-    {
-      id: '5',
-      name: 'Horizonte Verde',
-      description: 'Programa para desenvolvimento de tecnologias sustentáveis',
-      total_budget: 18000000,
-      application_deadline: '2025-01-31',
-      sector_focus: ['sustentabilidade', 'tecnologia verde', 'economia circular'],
-      funding_type: 'misto'
-    }
-  ],
-  projects: [
-    {
-      id: '1',
-      title: 'Plataforma de Telemedicina Nacional',
-      description: 'Desenvolvimento de uma plataforma integrada de telemedicina para o SNS',
-      funding_amount: 1200000,
-      start_date: '2023-06-01',
-      status: 'Active',
-      sector: 'Saúde',
-      region: 'Lisboa',
-      organization: 'Instituto de Tecnologias da Saúde'
-    },
-    {
-      id: '2',
-      title: 'Rede Inteligente de Monitorização Ambiental',
-      description: 'Implementação de sensores IoT para monitorização ambiental',
-      funding_amount: 950000,
-      start_date: '2023-09-15',
-      status: 'Active',
-      sector: 'Ambiente',
-      region: 'Porto',
-      organization: 'EcoTech Portugal'
-    },
-    {
-      id: '3',
-      title: 'Agricultura de Precisão AI',
-      description: 'Utilização de inteligência artificial para otimização de cultivos',
-      funding_amount: 780000,
-      start_date: '2023-11-01',
-      status: 'Active',
-      sector: 'Agricultura',
-      region: 'Alentejo',
-      organization: 'AgriTech Inovação'
-    },
-    {
-      id: '4',
-      title: 'Sistema de Energias Renováveis Integrado',
-      description: 'Desenvolvimento de sistemas híbridos de energia solar e eólica',
-      funding_amount: 1450000,
-      start_date: '2024-01-20',
-      status: 'Active',
+      patent_title: 'Sistema de Energia Renovável Integrada',
+      filing_date: '2022-03-15',
+      grant_date: '2022-08-22',
+      organization: 'Instituto de Tecnologia Energética',
+      inventor_names: ['Maria Silva', 'João Costa'],
       sector: 'Energia Renovável',
-      region: 'Norte',
-      organization: 'RenewTech Portugal'
-    },
-    {
-      id: '5',
-      title: 'Plataforma de Inteligência Artificial para Diagnóstico Médico',
-      description: 'Desenvolvimento de algoritmos de IA para auxílio diagnóstico',
-      funding_amount: 1650000,
-      start_date: '2023-07-10',
-      status: 'Active',
-      sector: 'Saúde',
-      region: 'Lisboa',
-      organization: 'MedTech AI'
-    }
-  ],
-  metrics: [
-    {
-      id: '1',
-      name: 'Patentes Registadas',
-      category: 'inovação',
-      value: 342,
-      region: 'Lisboa',
-      measurement_date: '2024-01-15',
-      unit: 'quantidade'
+      registration_year: 2022,
+      region: 'Lisboa'
     },
     {
       id: '2',
-      name: 'Investimento em I&D',
-      category: 'financiamento',
-      value: 45000000,
-      region: 'Lisboa',
-      measurement_date: '2024-02-20',
-      unit: 'EUR'
+      patent_title: 'Método de Purificação de Água usando Nanotecnologia',
+      filing_date: '2022-05-03',
+      grant_date: '2022-11-10',
+      organization: 'Universidade de Lisboa',
+      inventor_names: ['António Ferreira', 'Carolina Pereira'],
+      sector: 'Ambiente',
+      registration_year: 2022,
+      region: 'Lisboa'
     },
     {
       id: '3',
-      name: 'Startups Criadas',
-      category: 'empreendedorismo',
-      value: 78,
-      region: 'Lisboa',
-      measurement_date: '2024-03-10',
-      unit: 'quantidade'
+      patent_title: 'Dispositivo Médico para Monitorização Cardíaca',
+      filing_date: '2022-01-20',
+      grant_date: '2022-07-18',
+      organization: 'Faculdade de Medicina do Porto',
+      inventor_names: ['Ricardo Santos', 'Ana Rodrigues'],
+      sector: 'Saúde',
+      registration_year: 2022,
+      region: 'Porto'
     },
     {
       id: '4',
-      name: 'Exportação de Tecnologia',
-      category: 'economia',
-      value: 37000000,
-      region: 'Lisboa',
-      measurement_date: '2024-03-25',
-      unit: 'EUR'
+      patent_title: 'Algoritmo de Inteligência Artificial para Previsão de Mercado',
+      filing_date: '2022-08-05',
+      grant_date: '2023-01-15',
+      organization: 'Instituto Superior Técnico',
+      inventor_names: ['Miguel Costa', 'Sofia Lopes'],
+      sector: 'Tecnologia',
+      registration_year: 2022,
+      region: 'Lisboa'
     },
     {
       id: '5',
-      name: 'Patentes Registadas',
-      category: 'inovação',
-      value: 187,
-      region: 'Porto',
-      measurement_date: '2024-01-15',
-      unit: 'quantidade'
+      patent_title: 'Método de Produção de Bioplástico Biodegradável',
+      filing_date: '2022-06-12',
+      grant_date: '2022-12-20',
+      organization: 'Universidade do Minho',
+      inventor_names: ['Pedro Oliveira', 'Mariana Santos'],
+      sector: 'Biotecnologia',
+      registration_year: 2022,
+      region: 'Norte'
     },
     {
       id: '6',
-      name: 'Investimento em I&D',
-      category: 'financiamento',
-      value: 28500000,
+      patent_title: 'Sistema de Irrigação Inteligente',
+      filing_date: '2022-04-08',
+      grant_date: '2022-10-05',
+      organization: 'Instituto Politécnico de Beja',
+      inventor_names: ['Joaquim Mendes', 'Teresa Almeida'],
+      sector: 'Agricultura',
+      registration_year: 2022,
+      region: 'Alentejo'
+    }
+  ],
+  
+  patent_holders: [
+    {
+      id: '1',
+      organization_name: 'Universidade de Lisboa',
+      sector: 'Académico',
+      region: 'Lisboa',
+      patent_count: 45,
+      patents_in_2022: 12,
+      innovation_index: 87.5
+    },
+    {
+      id: '2',
+      organization_name: 'Instituto Superior Técnico',
+      sector: 'Académico',
+      region: 'Lisboa',
+      patent_count: 38,
+      patents_in_2022: 9,
+      innovation_index: 92.3
+    },
+    {
+      id: '3',
+      organization_name: 'Universidade do Porto',
+      sector: 'Académico',
       region: 'Porto',
-      measurement_date: '2024-02-20',
-      unit: 'EUR'
-    }
-  ],
-  policy_frameworks: [
-    {
-      id: '1',
-      title: 'Plano Nacional de Energia e Clima 2030',
-      description: 'Estratégia integrada para transição energética e sustentabilidade',
-      implementation_date: '2023-01-01',
-      status: 'active',
-      key_objectives: ['Reduzir emissões de carbono', 'Aumentar produção renovável', 'Eficiência energética']
+      patent_count: 32,
+      patents_in_2022: 7,
+      innovation_index: 84.1
     },
     {
-      id: '2',
-      title: 'Estratégia Nacional para Inteligência Artificial',
-      description: 'Plano para desenvolvimento e adoção de IA em Portugal',
-      implementation_date: '2023-03-15',
-      status: 'active',
-      key_objectives: ['Formação em IA', 'Investimento em pesquisa', 'Ética em IA']
+      id: '4',
+      organization_name: 'Universidade do Minho',
+      sector: 'Académico',
+      region: 'Norte',
+      patent_count: 28,
+      patents_in_2022: 6,
+      innovation_index: 79.8
     },
     {
-      id: '3',
-      title: 'Agenda de Inovação para Agricultura',
-      description: 'Modernização e sustentabilidade do setor agrícola',
-      implementation_date: '2023-06-01',
-      status: 'active',
-      key_objectives: ['Agricultura de precisão', 'Produção sustentável', 'Digitalização']
-    }
-  ],
-  international_collaborations: [
-    {
-      id: '1',
-      program_name: 'Horizonte Europa - Portugal/Alemanha',
-      country: 'Alemanha',
-      partnership_type: 'Pesquisa e Desenvolvimento',
-      focus_areas: ['energias renováveis', 'mobilidade sustentável'],
-      start_date: '2023-01-01',
-      total_budget: 12500000
-    },
-    {
-      id: '2',
-      program_name: 'Programa Bilateral Portugal/França em IA',
-      country: 'França',
-      partnership_type: 'Transferência de Tecnologia',
-      focus_areas: ['inteligência artificial', 'computação quântica'],
-      start_date: '2023-06-15',
-      total_budget: 8700000
-    },
-    {
-      id: '3',
-      program_name: 'Programa Ibérico de Biotecnologia',
-      country: 'Espanha',
-      partnership_type: 'Pesquisa Conjunta',
-      focus_areas: ['biotecnologia', 'genética'],
-      start_date: '2023-04-01',
-      total_budget: 7500000
+      id: '5',
+      organization_name: 'Hovione',
+      sector: 'Farmacêutico',
+      region: 'Lisboa',
+      patent_count: 25,
+      patents_in_2022: 5,
+      innovation_index: 88.3
     }
   ]
 };
@@ -290,6 +197,18 @@ export const predefinedQueries = [
     query: "SELECT * FROM ani_projects ORDER BY funding_amount DESC LIMIT 10",
     description: "Top 10 projetos com maior financiamento",
     language: "pt"
+  },
+  {
+    name: "patents_2022",
+    query: "SELECT * FROM ani_patents WHERE EXTRACT(YEAR FROM filing_date) = 2022",
+    description: "Patentes registadas em 2022",
+    language: "pt"
+  },
+  {
+    name: "patent_holders",
+    query: "SELECT * FROM ani_patent_holders ORDER BY patent_count DESC",
+    description: "Instituições com mais patentes",
+    language: "pt"
   }
 ];
 
@@ -299,9 +218,47 @@ const getMockDataForQuery = (query: string): { data: any[], sqlQuery: string, me
   
   // Detect language
   const isPortuguese = /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(query) || 
-                     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(query);
+                     /\b(qual|como|onde|quem|porque|quais|quando|quantas)\b/i.test(query);
   
-  // Look for specific keywords
+  // Patent-specific queries
+  if (queryLower.includes('patente') || queryLower.includes('patent') || 
+      queryLower.includes('registad') || queryLower.includes('register')) {
+    
+    // Check for year-specific patent queries
+    if (queryLower.includes('2022')) {
+      return {
+        data: mockDataResponses.patents.filter(p => p.registration_year === 2022),
+        sqlQuery: "SELECT * FROM ani_patents WHERE EXTRACT(YEAR FROM filing_date) = 2022",
+        message: isPortuguese ? 
+          `Foram registadas ${mockDataResponses.patents.filter(p => p.registration_year === 2022).length} patentes em 2022. Aqui estão os detalhes:` : 
+          `There were ${mockDataResponses.patents.filter(p => p.registration_year === 2022).length} patents registered in 2022. Here are the details:`
+      };
+    }
+    
+    // General patent queries
+    return {
+      data: mockDataResponses.patents,
+      sqlQuery: "SELECT * FROM ani_patents ORDER BY filing_date DESC",
+      message: isPortuguese ? 
+        "Aqui estão os dados de patentes disponíveis no sistema:" : 
+        "Here are the patent data available in the system:"
+    };
+  }
+  
+  // Institution patent holders
+  if ((queryLower.includes('instituição') || queryLower.includes('institution') || 
+       queryLower.includes('organização') || queryLower.includes('organization')) && 
+      (queryLower.includes('patente') || queryLower.includes('patent'))) {
+    return {
+      data: mockDataResponses.patent_holders,
+      sqlQuery: "SELECT * FROM ani_patent_holders ORDER BY patent_count DESC",
+      message: isPortuguese ? 
+        "Aqui estão as instituições com mais patentes registradas:" : 
+        "Here are the institutions with the most registered patents:"
+    };
+  }
+  
+  // Look for specific keywords for other types of queries
   if (queryLower.includes('financiamento') || queryLower.includes('funding program') || 
       queryLower.includes('programa') || queryLower.includes('orçamento')) {
     return {
@@ -594,19 +551,19 @@ export const isInvalidOrUnrecognizedQuery = (query: string): boolean => {
   // Database query words in English and Portuguese
   const databaseQueryWords = [
     // English query words
-    'show', 'select', 'list', 'find', 'what', 'which', 'how', 'where', 'who',
+    'show', 'select', 'list', 'find', 'what', 'which', 'how', 'where', 'who', 'how many',
     // Portuguese query words
-    'mostrar', 'selecionar', 'listar', 'encontrar', 'qual', 'quais', 'como', 'onde', 'quem'
+    'mostrar', 'selecionar', 'listar', 'encontrar', 'qual', 'quais', 'como', 'onde', 'quem', 'quantas', 'quantos'
   ];
   
   // Database entities in English and Portuguese
   const databaseEntities = [
     // English entities
     'project', 'funding', 'program', 'metric', 'policy', 'collaboration', 
-    'research', 'innovation', 'technology', 'renewable', 'energy',
+    'research', 'innovation', 'technology', 'renewable', 'energy', 'patent',
     // Portuguese entities
     'projeto', 'financiamento', 'programa', 'métrica', 'política', 'colaboração',
-    'pesquisa', 'inovação', 'tecnologia', 'renovável', 'energia'
+    'pesquisa', 'inovação', 'tecnologia', 'renovável', 'energia', 'patente'
   ];
   
   // Check if query contains at least one query word
