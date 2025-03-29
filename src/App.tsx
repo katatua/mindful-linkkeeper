@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -40,6 +39,7 @@ function App() {
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/ai-report/:id" element={<AIReportDetail />} />
+                <Route path="/reports/ai/:id" element={<AIReportDetail />} />
                 <Route path="/report/:reportId" element={<ReportDetailPage />} />
                 <Route path="/policies" element={<PoliciesPage />} />
                 <Route path="/assistant" element={<AIAssistant />} />
