@@ -253,6 +253,46 @@ const mockDataResponses = {
   ]
 };
 
+// Define predefined queries that users can run
+export const predefinedQueries = [
+  {
+    name: "funding_renewable_energy",
+    query: "SELECT * FROM ani_funding_programs WHERE 'energia renovável' = ANY(sector_focus) OR 'renewable energy' = ANY(sector_focus)",
+    description: "Programas de financiamento para energia renovável",
+    language: "pt"
+  },
+  {
+    name: "recent_projects",
+    query: "SELECT * FROM ani_projects ORDER BY start_date DESC LIMIT 5",
+    description: "Projetos mais recentes",
+    language: "pt"
+  },
+  {
+    name: "lisbon_metrics",
+    query: "SELECT * FROM ani_metrics WHERE region = 'Lisboa' ORDER BY measurement_date DESC",
+    description: "Métricas de inovação para Lisboa",
+    language: "pt"
+  },
+  {
+    name: "active_policies",
+    query: "SELECT * FROM ani_policy_frameworks WHERE status = 'active'",
+    description: "Políticas e frameworks ativos",
+    language: "pt"
+  },
+  {
+    name: "international_ai_collaborations",
+    query: "SELECT * FROM ani_international_collaborations WHERE ARRAY_TO_STRING(focus_areas, ',') ILIKE '%inteligência artificial%' OR ARRAY_TO_STRING(focus_areas, ',') ILIKE '%ai%'",
+    description: "Colaborações internacionais em IA",
+    language: "pt"
+  },
+  {
+    name: "top_funded_projects",
+    query: "SELECT * FROM ani_projects ORDER BY funding_amount DESC LIMIT 10",
+    description: "Top 10 projetos com maior financiamento",
+    language: "pt"
+  }
+];
+
 // Function to get mock data for a given query
 const getMockDataForQuery = (query: string): { data: any[], sqlQuery: string, message: string } => {
   const queryLower = query.toLowerCase();
