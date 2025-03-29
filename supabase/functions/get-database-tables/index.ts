@@ -37,59 +37,20 @@ serve(async (req) => {
       console.log("Performing a refresh of database tables");
     }
 
-    console.log("Querying information_schema for tables");
+    console.log("Calling the get_database_tables SQL function directly");
     
-    // Corrected query: don't prepend public to information_schema
-    const { data: tables, error: tablesError } = await supabase
-      .from('information_schema.columns')
-      .select('table_name, column_name, data_type, is_nullable')
-      .eq('table_schema', 'public')
-      .neq('table_name', 'schema_migrations');
-      
-    if (tablesError) {
-      console.error("Error querying tables:", tablesError);
-      
-      // Fallback to a more direct SQL approach if the RPC method fails
-      console.log("Trying alternative approach with direct SQL query");
-      const { data: sqlData, error: sqlError } = await supabase.rpc('get_database_tables');
-      
-      if (sqlError) {
-        console.error("SQL fallback also failed:", sqlError);
-        throw sqlError;
-      }
-      
-      console.log(`Successfully retrieved schema using SQL fallback for ${sqlData ? JSON.parse(sqlData).length : 0} tables`);
-      return new Response(
-        sqlData,
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      );
+    // Use the SQL function that was created in the migration
+    const { data, error } = await supabase.rpc('get_database_tables');
+    
+    if (error) {
+      console.error("Error calling get_database_tables function:", error);
+      throw error;
     }
     
-    // Group by table name to organize the data
-    const groupedTables = {};
-    tables?.forEach(column => {
-      if (!groupedTables[column.table_name]) {
-        groupedTables[column.table_name] = {
-          table_name: column.table_name,
-          columns: []
-        };
-      }
-      
-      groupedTables[column.table_name].columns.push({
-        column_name: column.column_name,
-        data_type: column.data_type,
-        is_nullable: column.is_nullable
-      });
-    });
-    
-    const result = Object.values(groupedTables);
-    console.log(`Returning schema for ${result.length} tables`);
-    
+    // Return the data directly without parsing
+    console.log(`Successfully retrieved schema for tables`);
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify(data),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
