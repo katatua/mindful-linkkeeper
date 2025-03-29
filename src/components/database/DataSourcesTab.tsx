@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -53,6 +52,60 @@ export const DataSourcesTab: React.FC = () => {
       descricao: "Dados relativos a projetos/candidaturas ao programa de financiamento base das instituições interface, visando alavancar a sua capacidade de mediação e articulação entre a academia e as empresas.",
       tecnologia: ".NET + SQL Server",
       entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados sobre a Qualificação e Certificação de Reconhecimento de Idoneidade",
+      descricao: "Dados relativos a projetos/candidaturas que consistem em ambientes físicos, geograficamente localizados, em ambiente real ou quase real, utilizados para a realização de testes e experimentação de processos inovadores de base tecnologia.",
+      tecnologia: "Outsystems (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados de projetos com enquadramento em Zonas Livres Tecnológicas",
+      descricao: "Fonte de informação complementar sobre investimentos públicos (estradas, aeroportos, ferrovia, educação).",
+      tecnologia: "Outsystems (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Dados com enquadramento em Test-beds",
+      descricao: "No âmbito do PRR, as test beds são candidaturas a projetos que têm como propósito disponibilizar as condições necessárias às empresas para o teste e experimentação de novos produtos e serviços inovadores, em espaço físico ou via simulação virtual de PME e start-ups.",
+      tecnologia: "Outsystems (SQL Server)",
+      entidade: "ANI"
+    },
+    {
+      nome_sistema: "Estatísticas da Educação Básica e Secundária",
+      descricao: "Conjunto de indicadores anuais referentes à educação básica, secundária e não superior.",
+      tecnologia: "Banco de Dados",
+      entidade: "DGEEC"
+    },
+    {
+      nome_sistema: "Estatísticas do Ensino Superior",
+      descricao: "Conjunto de indicadores anuais referentes a vagas, diplomados e pessoal docente.",
+      tecnologia: "Banco de Dados",
+      entidade: "DGEEC"
+    },
+    {
+      nome_sistema: "Inquérito ao Potencial Científico e Tecnológico Nacional",
+      descricao: "Informação sobre a I&D desenvolvida e número de pessoas envolvidas em atividades de I&D em Portugal.",
+      tecnologia: "Banco de Dados",
+      entidade: "DGEEC"
+    },
+    {
+      nome_sistema: "Estatísticas dos Laboratórios de Estado",
+      descricao: "Informação sobre os Laboratórios de Estado, sobre despesa em I&D e recursos humanos.",
+      tecnologia: "Banco de Dados",
+      entidade: "DGEEC"
+    },
+    {
+      nome_sistema: "Produção Científica Portuguesa",
+      descricao: "Indicadores bibliométricos sobre projetos e fontes de dados relacionados com entidades (mapeamentos por exemplo).",
+      tecnologia: "Banco de Dados",
+      entidade: "DGEEC"
+    },
+    {
+      nome_sistema: "Inquérito aos Doutorados",
+      descricao: "Informação sobre a formação, carreira/percurso profissional, grau de satisfação com a profissão/condições de trabalho e padrões de mobilidade dos doutorados a residir em Portugal.",
+      tecnologia: "Banco de Dados",
+      entidade: "DGEEC"
     }
   ];
   
@@ -61,11 +114,9 @@ export const DataSourcesTab: React.FC = () => {
     try {
       const data = await fetchTableData('fontes_dados');
       
-      // If no data sources exist or there are fewer than expected, add the default ones
       if (data.length < 2 + additionalDefaultSources.length) {
         console.log("Adding default data sources");
         
-        // Only add additional sources if they don't already exist
         for (const source of additionalDefaultSources) {
           const exists = data.some(
             existingSource => existingSource.nome_sistema === source.nome_sistema
@@ -77,7 +128,6 @@ export const DataSourcesTab: React.FC = () => {
           }
         }
         
-        // Fetch again to get the updated list including our newly added sources
         const updatedData = await fetchTableData('fontes_dados');
         setDataSources(updatedData as FonteDados[]);
       } else {
@@ -85,7 +135,6 @@ export const DataSourcesTab: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching data sources:', error);
-      // Set some initial data if fetch fails
       setDataSources([
         {
           id: 1,
@@ -101,7 +150,6 @@ export const DataSourcesTab: React.FC = () => {
           tecnologia: "Outsystems (SQL Server)",
           data_importacao: new Date().toISOString()
         },
-        // Include additional sources in the fallback data as well
         ...additionalDefaultSources.map((source, index) => ({
           id: 3 + index,
           nome_sistema: source.nome_sistema,

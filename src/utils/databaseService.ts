@@ -89,6 +89,9 @@ export const fetchDatabaseTables = async (): Promise<DatabaseTable[]> => {
         ]
       }
     ];
+  } catch (error) {
+    console.error("Failed to fetch database tables:", error);
+    return [];
   }
 };
 
@@ -113,7 +116,6 @@ export const fetchTableData = async (tableName: string, limit: number = 50): Pro
   }
 };
 
-// Add a helper function to insert data into tables
 export const insertTableData = async (tableName: string, data: any): Promise<boolean> => {
   try {
     console.log(`Inserting data into table: ${tableName}`, data);
@@ -132,7 +134,6 @@ export const insertTableData = async (tableName: string, data: any): Promise<boo
   }
 };
 
-// Update the edge function to ensure it returns the new tables
 export const updateDatabaseTables = async (): Promise<boolean> => {
   try {
     const { error } = await supabase.functions.invoke('get-database-tables', {
