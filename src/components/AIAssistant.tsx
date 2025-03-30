@@ -1,9 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
-import { suggestedDatabaseQueries, generateResponse, genId, formatDatabaseValue } from '@/utils/aiUtils';
+import { 
+  suggestedDatabaseQueries, 
+  generateResponse, 
+  genId, 
+  formatDatabaseValue,
+  QueryResponseType 
+} from '@/utils/aiUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
@@ -28,16 +33,6 @@ interface Message {
   queryId?: string;
   analysis?: any;
   isPredefined?: boolean;
-}
-
-// Define response type to match all possible response shapes
-interface QueryResponse {
-  message: string;
-  sqlQuery: string;
-  results: any[] | null;
-  noResults?: boolean;
-  queryId?: string;
-  analysis?: any;
 }
 
 export const AIAssistant: React.FC = () => {
