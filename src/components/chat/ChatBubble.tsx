@@ -19,6 +19,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   
   // Insert the chat widget script
   useEffect(() => {
@@ -28,24 +29,78 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       script.id = 'ani-chat-widget-script';
       script.type = 'text/javascript';
       script.innerHTML = `(function(){d=document;s=d.createElement("script");s.src="https://bai.chat4b.ai/js/loadwidget.js?key=ki3ZfrxYn6G2JocE4A95sNRvwSd17hulamLPXDFbTWqeHjVBUgIy8CMzpK0OQtAuRHk5weX4fclx0KUt8rCgJO3EF1vsNGzPQWYb&assistant_key=1R5ZBwLgGOMlVSj4p6Ar0H8DX9NKhcfseU2v3CtYJ7PqaIbWkzEoyuximTQdnFSfNaIsoJczCYkjLM3He9pU42EvxVg57Aw60uBd";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();`;
+      
+      script.onload = () => {
+        console.log("BAI chat widget script loaded successfully");
+        setIsScriptLoaded(true);
+      };
+      
+      script.onerror = (e) => {
+        console.error("Failed to load BAI chat widget script:", e);
+      };
+      
       document.getElementsByTagName('head')[0].appendChild(script);
+      
+      // Set a timeout to check if the script loaded after 3 seconds
+      setTimeout(() => {
+        if (!window.BAI) {
+          console.log("BAI chat widget not detected after timeout. Attempting to reinitialize.");
+          // Try to reinitialize if needed
+          document.getElementsByTagName('head')[0].removeChild(script);
+          document.getElementsByTagName('head')[0].appendChild(script);
+        }
+      }, 3000);
+    } else {
+      setIsScriptLoaded(true);
     }
   }, []);
 
   // Function to maximize the widget
   const maximizeWidget = () => {
     setIsMaximized(true);
+    console.log("Attempting to maximize widget. BAI object available:", !!window.BAI);
+    
     // Call the widget's maximize function if available
     if (window.BAI && typeof window.BAI.maximizeWidget === 'function') {
+      console.log("Calling BAI.maximizeWidget()");
       window.BAI.maximizeWidget();
     } else {
+      console.log("BAI.maximizeWidget not available, trying to find maximize button");
       // If the widget API isn't available, try to find and click the maximize button
       const widgetMaximizeButton = document.querySelector('.bai-widget-maximize-button');
       if (widgetMaximizeButton && widgetMaximizeButton instanceof HTMLElement) {
+        console.log("Found maximize button, clicking it");
         widgetMaximizeButton.click();
+      } else {
+        console.log("Maximize button not found");
+        
+        // Try to find the widget iframe and interact with it
+        const widgetIframe = document.querySelector('iframe[src*="bai.chat4b.ai"]');
+        if (widgetIframe) {
+          console.log("Found widget iframe");
+          // Try to make it visible/maximized
+          if (widgetIframe.parentElement) {
+            widgetIframe.parentElement.style.width = '100%';
+            widgetIframe.parentElement.style.height = '100%';
+            widgetIframe.parentElement.style.zIndex = '9999';
+            widgetIframe.parentElement.style.position = 'fixed';
+            widgetIframe.parentElement.style.bottom = '0';
+            widgetIframe.parentElement.style.right = '0';
+            widgetIframe.parentElement.style.display = 'block';
+          }
+        } else {
+          console.log("Widget iframe not found");
+        }
       }
     }
   };
+
+  // Remove the ANIPortal ChatBubble to avoid duplicate floating buttons
+  useEffect(() => {
+    return () => {
+      console.log("ChatBubble component unmounted");
+    };
+  }, []);
 
   return (
     <>

@@ -3,6 +3,7 @@ import React from 'react';
 import { Header } from './Header';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { AppSidebar } from './AppSidebar';
+import { ChatBubble } from './chat/ChatBubble';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export function Layout({ children }: LayoutProps) {
           {children}
         </main>
       </div>
+      <ChatBubble title="Assistente ANI" />
     </div>
   );
 }

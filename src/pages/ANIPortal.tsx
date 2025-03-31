@@ -13,7 +13,6 @@ import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChatBubble } from "@/components/chat/ChatBubble";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -75,8 +74,6 @@ const ANIPortal = () => {
           </TabsContent>
         </Tabs>
       </main>
-      
-      <ChatBubble title={t('assistant.title')} />
       
       <Toaster />
     </div>
