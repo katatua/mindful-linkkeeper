@@ -53,6 +53,9 @@ interface FundingProgram {
   success_rate: number;
 }
 
+// Store funding programs at the module level to persist between renders
+let persistentFundingPrograms: FundingProgram[] = [];
+
 export const AIAssistant: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState<Message | null>(null);
   const [activeResponse, setActiveResponse] = useState<Message | null>(null);
@@ -65,6 +68,15 @@ export const AIAssistant: React.FC = () => {
     /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
   ).slice(0, 6);
+  
+  // Generate funding programs on component mount if not already created
+  useEffect(() => {
+    if (persistentFundingPrograms.length === 0) {
+      generateFundingProgramsData(true);
+    } else {
+      setDummyPrograms(persistentFundingPrograms);
+    }
+  }, []);
   
   const handleSuggestionClick = async (question: string) => {
     setInput(question);
@@ -205,7 +217,7 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
-  const generateFundingProgramsData = () => {
+  const generateFundingProgramsData = (silent: boolean = false) => {
     setIsLoading(true);
     
     try {
@@ -255,41 +267,47 @@ export const AIAssistant: React.FC = () => {
         });
       }
       
+      // Store the data persistently
+      persistentFundingPrograms = programs;
       setDummyPrograms(programs);
       
-      toast({
-        title: "Success",
-        description: `Generated ${programs.length} funding programs in memory (not saved to database).`,
-      });
-      
-      const assistantMessage: Message = {
-        id: genId(),
-        content: `I've generated ${programs.length} dummy funding programs. These are only stored in memory and not saved to the database.`,
-        role: 'assistant',
-        results: programs,
-        timestamp: new Date()
-      };
-      
-      setActiveResponse(assistantMessage);
+      if (!silent) {
+        toast({
+          title: "Success",
+          description: `Generated ${programs.length} funding programs in memory (not saved to database).`,
+        });
+        
+        const assistantMessage: Message = {
+          id: genId(),
+          content: `I've generated ${programs.length} dummy funding programs. These are only stored in memory and not saved to the database.`,
+          role: 'assistant',
+          results: programs,
+          timestamp: new Date()
+        };
+        
+        setActiveResponse(assistantMessage);
+      }
       
     } catch (error) {
       console.error('Error generating funding programs:', error);
       
-      const errorMessage: Message = {
-        id: genId(),
-        content: `Failed to generate funding programs: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
-        role: 'assistant',
-        error: true,
-        timestamp: new Date()
-      };
-      
-      setActiveResponse(errorMessage);
-      
-      toast({
-        title: "Error",
-        description: "Failed to generate funding programs. Please try again.",
-        variant: "destructive",
-      });
+      if (!silent) {
+        const errorMessage: Message = {
+          id: genId(),
+          content: `Failed to generate funding programs: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+          role: 'assistant',
+          error: true,
+          timestamp: new Date()
+        };
+        
+        setActiveResponse(errorMessage);
+        
+        toast({
+          title: "Error",
+          description: "Failed to generate funding programs. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -316,7 +334,7 @@ export const AIAssistant: React.FC = () => {
           <Button
             variant="outline"
             className="flex items-center gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-            onClick={generateFundingProgramsData}
+            onClick={() => generateFundingProgramsData(false)}
             disabled={isLoading}
           >
             <Download className="h-4 w-4" />
