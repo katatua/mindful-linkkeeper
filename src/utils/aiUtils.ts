@@ -1,4 +1,3 @@
-
 import { nanoid } from 'nanoid';
 import { loadFromLocalStorage, STORAGE_KEYS } from './storageUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,9 +178,29 @@ export const suggestedDatabaseQueries = [
   "Como posso liderar com integridade e transparência?",
   "Como posso inspirar e motivar os outros a alcançar o seu potencial máximo?",
   "Como posso criar um legado duradouro?",
+  
+  "Quais são os setores tecnológicos com maior crescimento em Portugal?",
+  "Como as políticas de inovação estão impactando o empreendedorismo?",
+  "Quais universidades têm mais patentes registradas?",
+  "Qual o investimento médio em startups por região em Portugal?",
+  "Quais são as áreas de pesquisa mais promissoras nas universidades portuguesas?",
+  "Como as colaborações internacionais estão influenciando a inovação em Portugal?",
+  "Quais são os principais desafios para startups de tecnologia em Portugal?",
+  "Como os fundos de capital de risco estão distribuídos geograficamente?",
+  "Quais políticas de incentivo existem para empresas de tecnologia?",
+  "Qual o perfil dos pesquisadores mais produtivos em Portugal?",
+  "Como o financiamento público impacta a criação de novas empresas tecnológicas?",
+  "Quais são os programas de apoio à internacionalização de startups?",
+  "Como a digitalização está transformando diferentes setores econômicos?",
+  "Quais tecnologias emergentes têm mais investimento em Portugal?",
+  "Como as políticas de inovação estão promovendo a sustentabilidade?",
+  "Qual o impacto econômico das startups nos últimos 5 anos?",
+  "Como as universidades colaboram com o setor empresarial?",
+  "Quais são os principais obstáculos à inovação em Portugal?",
+  "Como os incentivos fiscais estão estimulando a pesquisa e desenvolvimento?",
+  "Qual a representatividade de mulheres em cargos de liderança em startups?"
 ];
 
-// Define the return type for generateResponse to ensure consistent shape
 export interface QueryResponseType {
   message: string;
   sqlQuery: string;
@@ -192,13 +211,11 @@ export interface QueryResponseType {
   error?: boolean;
 }
 
-// Verifica se a consulta está relacionada a tipos específicos de dados
 const matchQuery = (query: string, keywords: string[]): boolean => {
   const normalizedQuery = query.toLowerCase();
   return keywords.some(keyword => normalizedQuery.includes(keyword.toLowerCase()));
 };
 
-// Function to check if a query is related to patents
 const isPatentQuery = (query: string): boolean => {
   const normalizedQuery = query.toLowerCase();
   
@@ -211,20 +228,18 @@ const isPatentQuery = (query: string): boolean => {
   return patentKeywords.some(keyword => normalizedQuery.includes(keyword));
 }
 
-// Function to check if a query is related to renewable energy
 const isEnergyQuery = (query: string): boolean => {
   const normalizedQuery = query.toLowerCase();
   
   const energyKeywords = [
     'energia', 'renovável', 'renováveis', 'solar', 'eólica', 
     'hídrica', 'fotovoltaica', 'sustentável', 'limpa',
-    'hidrogénio', 'hidrogênio', 'energy', 'renewable', 'green energy'
+    'hidrogénio', 'hidrogénio', 'energy', 'renewable', 'green energy'
   ];
   
   return energyKeywords.some(keyword => normalizedQuery.includes(keyword));
 }
 
-// Function to check if a query is related to startups
 const isStartupQuery = (query: string): boolean => {
   const normalizedQuery = query.toLowerCase();
   
@@ -237,7 +252,6 @@ const isStartupQuery = (query: string): boolean => {
   return startupKeywords.some(keyword => normalizedQuery.includes(keyword));
 }
 
-// Function to check if a query is related to research institutions
 const isInstitutionQuery = (query: string): boolean => {
   const normalizedQuery = query.toLowerCase();
   
@@ -250,7 +264,6 @@ const isInstitutionQuery = (query: string): boolean => {
   return institutionKeywords.some(keyword => normalizedQuery.includes(keyword));
 }
 
-// Function to check if query is about researcher data
 const isResearcherQuery = (query: string): boolean => {
   const normalizedQuery = query.toLowerCase();
   
@@ -263,7 +276,6 @@ const isResearcherQuery = (query: string): boolean => {
   return researcherKeywords.some(keyword => normalizedQuery.includes(keyword));
 }
 
-// Helper function to check if query is asking about existing data types
 const getDataFromLocalStorage = (query: string): {data: any[] | null, message: string, sqlQuery: string} => {
   const normalizedQuery = query.toLowerCase().trim();
   
@@ -379,11 +391,9 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   return { data: null, message: "", sqlQuery: "" };
 };
 
-// Improved function for predefined responses to common questions
 const getPredefinedResponse = (query: string): QueryResponseType | null => {
   const normalizedQuery = query.toLowerCase().trim();
   
-  // Centros de inovação em Portugal
   if (normalizedQuery.includes('onde') && 
       (normalizedQuery.includes('centros de inovação') || normalizedQuery.includes('centros de inovacao')) && 
       normalizedQuery.includes('portugal')) {
@@ -394,18 +404,15 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
       (inst.specialization_areas && inst.specialization_areas.some((area: string) => area.toLowerCase().includes('inovação')))
     );
     
-    // Importante: definir noResults como false mesmo se não houver resultados específicos,
-    // já que temos uma resposta predefinida para esta pergunta
     return {
       message: `Os principais centros de inovação em Portugal estão localizados principalmente em Lisboa, Porto e Braga, com centros menores em Coimbra e no Algarve. A maior concentração está na região de Lisboa e Vale do Tejo, seguida pelo Norte.`,
       sqlQuery: "SELECT institution_name, type, region FROM ani_institutions WHERE type ILIKE '%inovação%' OR institution_name ILIKE '%inovação%'",
       results: centrosInovacao.length > 0 ? centrosInovacao : [],
-      noResults: false, // Importante: definir como false pois temos uma resposta textual mesmo sem resultados
+      noResults: false,
       queryId: genId(),
     };
   }
   
-  // Investidores em startups portuguesas
   if ((normalizedQuery.includes('quem') || normalizedQuery.includes('quais')) && 
       normalizedQuery.includes('investidores') && 
       (normalizedQuery.includes('startup') || normalizedQuery.includes('startups'))) {
@@ -419,12 +426,11 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
       message: `Os principais investidores em startups portuguesas incluem fundos de capital de risco nacionais como a Portugal Ventures, bem como investidores internacionais como Indico Capital Partners, Armilar Venture Partners, Faber Ventures e Bright Pixel. Além destes, há programas do Governo Português e da União Europeia que oferecem financiamento.`,
       sqlQuery: "SELECT program_name, country, partnership_type, total_budget FROM ani_international_collaborations WHERE partnership_type ILIKE '%investimento%' OR partnership_type ILIKE '%financeiro%'",
       results: investidores.length > 0 ? investidores : [],
-      noResults: false, // Mesmo comentário aqui
+      noResults: false,
       queryId: genId(),
     };
   }
   
-  // ANI e desenvolvimento tecnológico
   if (normalizedQuery.includes('como') && normalizedQuery.includes('ani') && 
       (normalizedQuery.includes('contribui') || normalizedQuery.includes('contribuindo') || 
        normalizedQuery.includes('contribuição') || normalizedQuery.includes('contribuicao')) && 
@@ -440,7 +446,7 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
       message: `A ANI (Agência Nacional de Inovação) contribui para o desenvolvimento tecnológico em Portugal através de múltiplas iniciativas: 1) Financiamento de programas de I&D em áreas prioritárias, 2) Coordenação de parcerias entre universidades e empresas, 3) Gestão dos programas europeus de inovação em Portugal, 4) Promoção da internacionalização de empresas tecnológicas portuguesas, e 5) Apoio à criação de startups e transferência de tecnologia.`,
       sqlQuery: "SELECT title, description, key_objectives FROM ani_policy_frameworks WHERE title ILIKE '%tecnológico%' OR description ILIKE '%tecnológico%'",
       results: politicasDesenvolvimento.length > 0 ? politicasDesenvolvimento : [],
-      noResults: false, // Mesmo comentário aqui
+      noResults: false,
       queryId: genId(),
     };
   }
@@ -448,7 +454,6 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
   return null;
 };
 
-// Generate a response to a user query
 export const generateResponse = async (query: string): Promise<QueryResponseType> => {
   console.log("Generating response for:", query);
   
@@ -510,7 +515,6 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     console.error("Exception querying Supabase:", supabaseError);
   }
   
-  // Check for specific types of queries and suggest appropriate table data
   if (isPatentQuery(query)) {
     return {
       message: "Não encontrei dados sobre patentes. Você gostaria de popular a base de dados com informações sobre patentes em Portugal?",
