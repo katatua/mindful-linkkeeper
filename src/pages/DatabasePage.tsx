@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -17,9 +18,10 @@ import { Database as DatabaseIcon, FileQuestion, Search, FileText, History, Refr
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { DataSourcesTab } from '@/components/database/DataSourcesTab';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchDatabaseTables, fetchTableData, updateDatabaseTables, DatabaseTable } from '@/utils/databaseService';
 import { Link } from 'react-router-dom';
+import { QueryHistory } from '@/components/database/QueryHistory';
 
 interface GenericTableData {
   id?: string;
@@ -28,6 +30,7 @@ interface GenericTableData {
 
 export const DatabasePage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [tableData, setTableData] = useState<GenericTableData[]>([]);
   const [loading, setLoading] = useState(true);
   const [tablesLoading, setTablesLoading] = useState(true);
@@ -46,6 +49,12 @@ export const DatabasePage: React.FC = () => {
   useEffect(() => {
     setActiveTab(getActiveTabFromURL());
   }, [location.search]);
+
+  // Handle tab changes and update URL
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/database?tab=${value}`, { replace: true });
+  };
 
   useEffect(() => {
     const loadDatabaseTables = async () => {
@@ -243,7 +252,7 @@ export const DatabasePage: React.FC = () => {
           </Button>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList className="mb-4">
             <TabsTrigger value="schema">
               <DatabaseIcon className="w-4 h-4 mr-2" />
@@ -345,27 +354,18 @@ export const DatabasePage: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   The Query Assistant feature helps you explore data with natural language.
                 </p>
-                <Link to="/query-assistant">
-                  <Button>
+                <Button asChild>
+                  <Link to="/query-assistant?tab=assistente">
                     <Search className="h-4 w-4 mr-2" />
                     Open Query Assistant
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
           
           <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>Query History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Your query history will appear here. We're still working on this feature.
-                </p>
-              </CardContent>
-            </Card>
+            <QueryHistory />
           </TabsContent>
         </Tabs>
       </div>
