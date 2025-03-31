@@ -88,42 +88,18 @@ export const initializeDummyDataIfNeeded = async (): Promise<void> => {
     sampleFundingApplications
   } = await import('../scripts/sampleData');
 
-  // Only initialize data if it doesn't exist in localStorage
-  if (loadFromLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, sampleFundingPrograms);
-  }
+  // Always initialize data, overriding any existing data
+  console.log('Initializing all dummy data in localStorage');
   
-  if (loadFromLocalStorage(STORAGE_KEYS.PROJECTS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.PROJECTS, sampleProjects);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.METRICS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.METRICS, sampleMetrics);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.RESEARCHERS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.RESEARCHERS, sampleResearchers);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.INSTITUTIONS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.INSTITUTIONS, sampleInstitutions);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.PATENT_HOLDERS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.PATENT_HOLDERS, samplePatentHolders);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, samplePolicyFrameworks);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, sampleCollaborations);
-  }
-  
-  if (loadFromLocalStorage(STORAGE_KEYS.FUNDING_APPLICATIONS, []).length === 0) {
-    saveToLocalStorage(STORAGE_KEYS.FUNDING_APPLICATIONS, sampleFundingApplications);
-  }
+  saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, sampleFundingPrograms);
+  saveToLocalStorage(STORAGE_KEYS.PROJECTS, sampleProjects);
+  saveToLocalStorage(STORAGE_KEYS.METRICS, sampleMetrics);
+  saveToLocalStorage(STORAGE_KEYS.RESEARCHERS, sampleResearchers);
+  saveToLocalStorage(STORAGE_KEYS.INSTITUTIONS, sampleInstitutions);
+  saveToLocalStorage(STORAGE_KEYS.PATENT_HOLDERS, samplePatentHolders);
+  saveToLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, samplePolicyFrameworks);
+  saveToLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, sampleCollaborations);
+  saveToLocalStorage(STORAGE_KEYS.FUNDING_APPLICATIONS, sampleFundingApplications);
   
   console.log('Local storage initialized with dummy data');
 };

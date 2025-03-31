@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, Database, PlusCircle, Loader2, Download } from 'lucide-react';
+import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
 import { 
   suggestedDatabaseQueries, 
   generateResponse, 
@@ -63,7 +64,7 @@ export const AIAssistant: React.FC = () => {
   const [activeResponse, setActiveResponse] = useState<Message | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [dummyPrograms, setDummyPrograms] = useState<FundingProgram[]>([]);
+  const [isInitializing, setIsInitializing] = useState(true);
   const { toast } = useToast();
   
   const portugueseSuggestions = suggestedDatabaseQueries.filter(q => 
@@ -73,21 +74,28 @@ export const AIAssistant: React.FC = () => {
   
   useEffect(() => {
     const loadDummyData = async () => {
-      await initializeDummyDataIfNeeded();
-      
-      const savedPrograms = loadFromLocalStorage<FundingProgram[]>(STORAGE_KEYS.FUNDING_PROGRAMS, []);
-      
-      if (savedPrograms.length > 0) {
-        console.log(`Loaded ${savedPrograms.length} funding programs from localStorage`);
-        setDummyPrograms(savedPrograms);
-      } else {
-        console.log('No funding programs found in localStorage, generating new data');
-        generateFundingProgramsData(true);
+      setIsInitializing(true);
+      try {
+        await initializeDummyDataIfNeeded();
+        console.log('All dummy data loaded successfully');
+        toast({
+          title: "Dados Carregados",
+          description: "Todos os dados de amostra foram carregados com sucesso.",
+        });
+      } catch (error) {
+        console.error('Error initializing dummy data:', error);
+        toast({
+          title: "Erro",
+          description: "Falha ao carregar dados de amostra. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsInitializing(false);
       }
     };
     
     loadDummyData();
-  }, []);
+  }, [toast]);
   
   const handleSuggestionClick = async (question: string) => {
     setInput(question);
@@ -337,18 +345,6 @@ export const AIAssistant: React.FC = () => {
             </Button>
           ))}
         </div>
-        
-        <div className="mt-4">
-          <Button
-            variant="outline"
-            className="flex items-center gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-            onClick={() => generateFundingProgramsData(false)}
-            disabled={isLoading}
-          >
-            <Download className="h-4 w-4" />
-            Generate Dummy Funding Programs
-          </Button>
-        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
@@ -357,81 +353,90 @@ export const AIAssistant: React.FC = () => {
           onChange={e => setInput(e.target.value)}
           placeholder="Faça uma pergunta sobre a base de dados em português..."
           className="resize-none"
-          disabled={isLoading}
+          disabled={isLoading || isInitializing}
         />
-        <Button type="submit" size="icon" disabled={isLoading}>
+        <Button type="submit" size="icon" disabled={isLoading || isInitializing}>
           <Send className="h-4 w-4" />
         </Button>
       </form>
 
-      {activeQuestion && (
-        <div className="mb-4 p-3 rounded-lg bg-blue-100">
-          <p className="text-sm font-semibold mb-1">Você</p>
-          <div className="whitespace-pre-wrap">{activeQuestion.content}</div>
-        </div>
-      )}
-
-      {isLoading ? (
+      {isInitializing ? (
         <div className="flex justify-center items-center py-4">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+          <span>Carregando dados de amostra...</span>
         </div>
-      ) : activeResponse ? (
-        <div className="p-3 rounded-lg bg-gray-100">
-          <p className="text-sm font-semibold mb-1">Assistente</p>
-          
-          {activeResponse.error ? (
-            <Alert variant="destructive" className="bg-transparent border-none p-0">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription className="whitespace-pre-wrap">{activeResponse.content}</AlertDescription>
-            </Alert>
-          ) : activeResponse.noResults ? (
-            <Alert variant="default" className="mb-3">
-              <AlertTitle>Nenhum resultado encontrado</AlertTitle>
-              <AlertDescription>
-                {activeResponse.content}
-                <div className="mt-2">
-                  <PopulateDataButton 
-                    query={activeQuestion.content}
-                    queryId={activeResponse.queryId || ""}
-                  />
-                </div>
-              </AlertDescription>
-            </Alert>
-          ) : activeResponse.results && activeResponse.results.length > 0 ? (
-            <div>
-              <div className="font-medium text-primary mb-4">
-                {activeResponse.content.split('\n')[0]}
-              </div>
-              {renderResults(activeResponse.results)}
+      ) : (
+        <>
+          {activeQuestion && (
+            <div className="mb-4 p-3 rounded-lg bg-blue-100">
+              <p className="text-sm font-semibold mb-1">Você</p>
+              <div className="whitespace-pre-wrap">{activeQuestion.content}</div>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex justify-center items-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : activeResponse ? (
+            <div className="p-3 rounded-lg bg-gray-100">
+              <p className="text-sm font-semibold mb-1">Assistente</p>
               
-              {activeResponse.sqlQuery && (
-                <div className="mt-3 pt-3 border-t">
-                  <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
-                    <Database className="h-4 w-4" />
-                    <span>Consulta SQL:</span>
+              {activeResponse.error ? (
+                <Alert variant="destructive" className="bg-transparent border-none p-0">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertDescription className="whitespace-pre-wrap">{activeResponse.content}</AlertDescription>
+                </Alert>
+              ) : activeResponse.noResults ? (
+                <Alert variant="default" className="mb-3">
+                  <AlertTitle>Nenhum resultado encontrado</AlertTitle>
+                  <AlertDescription>
+                    {activeResponse.content}
+                    <div className="mt-2">
+                      <PopulateDataButton 
+                        query={activeQuestion.content}
+                        queryId={activeResponse.queryId || ""}
+                      />
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : activeResponse.results && activeResponse.results.length > 0 ? (
+                <div>
+                  <div className="font-medium text-primary mb-4">
+                    {activeResponse.content.split('\n')[0]}
                   </div>
-                  <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
-                    {activeResponse.sqlQuery}
-                  </pre>
+                  {renderResults(activeResponse.results)}
+                  
+                  {activeResponse.sqlQuery && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                        <Database className="h-4 w-4" />
+                        <span>Consulta SQL:</span>
+                      </div>
+                      <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                        {activeResponse.sqlQuery}
+                      </pre>
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <div className="whitespace-pre-wrap">{activeResponse.content}</div>
               )}
             </div>
-          ) : (
-            <div className="whitespace-pre-wrap">{activeResponse.content}</div>
+          ) : null}
+          
+          {(activeQuestion || activeResponse) && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={resetConversation}
+              className="flex items-center gap-1 mt-4"
+            >
+              <PlusCircle className="h-4 w-4 mr-1" />
+              Nova Consulta
+            </Button>
           )}
-        </div>
-      ) : null}
-      
-      {(activeQuestion || activeResponse) && (
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={resetConversation}
-          className="flex items-center gap-1 mt-4"
-        >
-          <PlusCircle className="h-4 w-4 mr-1" />
-          Nova Consulta
-        </Button>
+        </>
       )}
     </div>
   );
