@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
@@ -21,10 +22,11 @@ async function getAIModel(): Promise<string> {
     });
     
     if (error) throw error;
-    return data || 'gemini-2.5-pro-exp-03-25';
+    // Return a more reliable model name instead of the experimental one
+    return data || 'gemini-1.5-pro';
   } catch (error) {
     console.error('Error fetching AI model:', error);
-    return 'gemini-2.5-pro-exp-03-25';
+    return 'gemini-1.5-pro';
   }
 }
 
