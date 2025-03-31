@@ -1,3 +1,4 @@
+
 import { nanoid } from 'nanoid';
 import { loadFromLocalStorage, STORAGE_KEYS } from './storageUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -317,6 +318,7 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
 const getPredefinedResponse = (query: string): QueryResponseType | null => {
   const normalizedQuery = query.toLowerCase().trim();
   
+  // Centros de inovação em Portugal
   if (normalizedQuery.includes('onde') && 
       (normalizedQuery.includes('centros de inovação') || normalizedQuery.includes('centros de inovacao')) && 
       normalizedQuery.includes('portugal')) {
@@ -327,15 +329,18 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
       (inst.specialization_areas && inst.specialization_areas.some((area: string) => area.toLowerCase().includes('inovação')))
     );
     
+    // Importante: definir noResults como false mesmo se não houver resultados específicos,
+    // já que temos uma resposta predefinida para esta pergunta
     return {
       message: `Os principais centros de inovação em Portugal estão localizados principalmente em Lisboa, Porto e Braga, com centros menores em Coimbra e no Algarve. A maior concentração está na região de Lisboa e Vale do Tejo, seguida pelo Norte.`,
       sqlQuery: "SELECT institution_name, type, region FROM ani_institutions WHERE type ILIKE '%inovação%' OR institution_name ILIKE '%inovação%'",
-      results: centrosInovacao,
-      noResults: centrosInovacao.length === 0,
+      results: centrosInovacao.length > 0 ? centrosInovacao : [],
+      noResults: false, // Importante: definir como false pois temos uma resposta textual mesmo sem resultados
       queryId: genId(),
     };
   }
   
+  // Investidores em startups portuguesas
   if ((normalizedQuery.includes('quem') || normalizedQuery.includes('quais')) && 
       normalizedQuery.includes('investidores') && 
       (normalizedQuery.includes('startup') || normalizedQuery.includes('startups'))) {
@@ -348,12 +353,13 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
     return {
       message: `Os principais investidores em startups portuguesas incluem fundos de capital de risco nacionais como a Portugal Ventures, bem como investidores internacionais como Indico Capital Partners, Armilar Venture Partners, Faber Ventures e Bright Pixel. Além destes, há programas do Governo Português e da União Europeia que oferecem financiamento.`,
       sqlQuery: "SELECT program_name, country, partnership_type, total_budget FROM ani_international_collaborations WHERE partnership_type ILIKE '%investimento%' OR partnership_type ILIKE '%financeiro%'",
-      results: investidores,
-      noResults: investidores.length === 0,
+      results: investidores.length > 0 ? investidores : [],
+      noResults: false, // Mesmo comentário aqui
       queryId: genId(),
     };
   }
   
+  // ANI e desenvolvimento tecnológico
   if (normalizedQuery.includes('como') && normalizedQuery.includes('ani') && 
       (normalizedQuery.includes('contribui') || normalizedQuery.includes('contribuindo') || 
        normalizedQuery.includes('contribuição') || normalizedQuery.includes('contribuicao')) && 
@@ -368,8 +374,8 @@ const getPredefinedResponse = (query: string): QueryResponseType | null => {
     return {
       message: `A ANI (Agência Nacional de Inovação) contribui para o desenvolvimento tecnológico em Portugal através de múltiplas iniciativas: 1) Financiamento de programas de I&D em áreas prioritárias, 2) Coordenação de parcerias entre universidades e empresas, 3) Gestão dos programas europeus de inovação em Portugal, 4) Promoção da internacionalização de empresas tecnológicas portuguesas, e 5) Apoio à criação de startups e transferência de tecnologia.`,
       sqlQuery: "SELECT title, description, key_objectives FROM ani_policy_frameworks WHERE title ILIKE '%tecnológico%' OR description ILIKE '%tecnológico%'",
-      results: politicasDesenvolvimento,
-      noResults: politicasDesenvolvimento.length === 0,
+      results: politicasDesenvolvimento.length > 0 ? politicasDesenvolvimento : [],
+      noResults: false, // Mesmo comentário aqui
       queryId: genId(),
     };
   }

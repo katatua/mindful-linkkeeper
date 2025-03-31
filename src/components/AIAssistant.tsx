@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -189,7 +190,8 @@ export const AIAssistant: React.FC = () => {
         sqlQuery: response.sqlQuery,
         results: response.results,
         role: 'assistant',
-        noResults: response.noResults || false,
+        // Correção: só definir noResults como true se results for null ou vazio e não houver mensagem definida
+        noResults: (response.noResults === true) && (!response.results || response.results.length === 0),
         timestamp: new Date(),
         queryId: response.queryId || "",
         analysis: response.analysis || null
@@ -420,3 +422,4 @@ export const AIAssistant: React.FC = () => {
     </div>
   );
 };
+
