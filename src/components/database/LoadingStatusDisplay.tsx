@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { loadFromLocalStorage, STORAGE_KEYS } from '@/utils/storageUtils';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, InfoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DataStatus {
   key: string;
@@ -17,19 +18,34 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
   const [statuses, setStatuses] = useState<DataStatus[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
+  const [expandedByDefault, setExpandedByDefault] = useState(false);
 
   const checkLoadedData = () => {
     const keys = Object.values(STORAGE_KEYS);
     const statusesResult: DataStatus[] = keys.map(key => {
       const friendlyName = key.replace('ani_', '').replace(/_/g, ' ');
       const data = loadFromLocalStorage(key, []);
+      const loaded = Array.isArray(data) && data.length > 0;
+      const count = Array.isArray(data) ? data.length : 0;
+      
+      // Log data for debugging
+      if (loaded) {
+        console.log(`${friendlyName} loaded with ${count} items`);
+      } else {
+        console.log(`${friendlyName} not loaded or empty`);
+      }
+      
       return {
         key,
         name: friendlyName,
-        loaded: Array.isArray(data) && data.length > 0,
-        count: Array.isArray(data) ? data.length : 0
+        loaded,
+        count
       };
     });
+    
+    // If any data is not loaded, expand the accordion by default
+    const anyNotLoaded = statusesResult.some(status => !status.loaded);
+    setExpandedByDefault(anyNotLoaded);
     
     setStatuses(statusesResult);
     setLastChecked(new Date());
@@ -38,8 +54,8 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
 
   useEffect(() => {
     checkLoadedData();
-    // Check again every 3 seconds, não 5
-    const interval = setInterval(checkLoadedData, 3000);
+    // Check data status every 2 seconds for more responsive updates
+    const interval = setInterval(checkLoadedData, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -47,14 +63,19 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
     setIsRefreshing(true);
     try {
       await onRefresh();
-      // Damos um pequeno delay para garantir que os dados tenham tempo de ser salvos
+      // Small delay to ensure data has time to be saved
       setTimeout(() => {
-        checkLoadedData();
+        const newStatuses = checkLoadedData();
         setIsRefreshing(false);
+        
+        // Log the results of the refresh
+        const loadedCount = newStatuses.filter(s => s.loaded).length;
+        const totalCount = newStatuses.length;
+        console.log(`After refresh: ${loadedCount}/${totalCount} data tables loaded`);
       }, 500);
     } catch (error) {
       setIsRefreshing(false);
-      console.error("Erro ao atualizar dados:", error);
+      console.error("Error refreshing data:", error);
     }
   };
 
@@ -64,7 +85,22 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
   return (
     <div className="border rounded-md p-4 mb-4 bg-background">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium">Status de Carregamento dos Dados</h3>
+        <h3 className="text-sm font-medium flex items-center gap-2">
+          Status de Carregamento dos Dados
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs text-xs">
+                  Esta área mostra se os dados de amostra foram carregados corretamente.
+                  Se alguma tabela não estiver carregada, clique no botão de atualização.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </h3>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
             Última verificação: {lastChecked.toLocaleTimeString()}
@@ -100,7 +136,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
         </div>
       </div>
 
-      <Accordion type="single" collapsible>
+      <Accordion type="single" collapsible defaultValue={expandedByDefault ? "data-details" : undefined}>
         <AccordionItem value="data-details">
           <AccordionTrigger className="text-sm">Ver detalhes</AccordionTrigger>
           <AccordionContent>

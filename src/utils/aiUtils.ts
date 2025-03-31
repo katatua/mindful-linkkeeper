@@ -1,4 +1,6 @@
+
 import { nanoid } from 'nanoid';
+import { loadFromLocalStorage, STORAGE_KEYS } from './storageUtils';
 
 // Generate a unique ID for tracking messages
 export const genId = () => nanoid(8);
@@ -56,7 +58,7 @@ export const classifyDocument = async (data: {
   }
 };
 
-// Comprehensive suggested database questions in Portuguese
+// Comprehensive suggested database queries in Portuguese
 export const suggestedDatabaseQueries = [
   "Quais são os projetos de inovação com maior financiamento?",
   "Qual é o número total de startups criadas nos últimos 5 anos?",
@@ -184,9 +186,146 @@ export interface QueryResponseType {
   analysis?: any;
 }
 
+// Helper function to check if query is asking about existing data types
+const getDataFromLocalStorage = (query: string): {data: any[] | null, message: string, sqlQuery: string} => {
+  // Normalize the query for better matching
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // Match for funding programs
+  if (
+    normalizedQuery.includes('funding programs') || 
+    normalizedQuery.includes('programas de financiamento') ||
+    normalizedQuery.includes('que funding') ||
+    normalizedQuery.includes('quais funding') ||
+    normalizedQuery.includes('quais os funding') ||
+    normalizedQuery.includes('quais são os funding') ||
+    normalizedQuery.includes('listar funding') ||
+    normalizedQuery.includes('mostrar funding')
+  ) {
+    const fundingPrograms = loadFromLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, []);
+    const sqlQuery = "SELECT id, name, description, total_budget, funding_type FROM ani_funding_programs";
+    
+    if (fundingPrograms && fundingPrograms.length > 0) {
+      return {
+        data: fundingPrograms,
+        message: `Existem ${fundingPrograms.length} programas de financiamento disponíveis. Aqui estão os detalhes:`,
+        sqlQuery
+      };
+    }
+  }
+  
+  // Match for projects
+  if (
+    normalizedQuery.includes('projetos') || 
+    normalizedQuery.includes('projects') ||
+    (normalizedQuery.includes('quais') && normalizedQuery.includes('projeto'))
+  ) {
+    const projects = loadFromLocalStorage(STORAGE_KEYS.PROJECTS, []);
+    const sqlQuery = "SELECT id, title, description, funding_amount, status, organization FROM ani_projects";
+    
+    if (projects && projects.length > 0) {
+      return {
+        data: projects,
+        message: `Foram encontrados ${projects.length} projetos. Aqui estão os detalhes:`,
+        sqlQuery
+      };
+    }
+  }
+  
+  // Match for institutions
+  if (
+    normalizedQuery.includes('instituições') || 
+    normalizedQuery.includes('institutions') || 
+    normalizedQuery.includes('institutos')
+  ) {
+    const institutions = loadFromLocalStorage(STORAGE_KEYS.INSTITUTIONS, []);
+    const sqlQuery = "SELECT id, institution_name, type, region FROM ani_institutions";
+    
+    if (institutions && institutions.length > 0) {
+      return {
+        data: institutions,
+        message: `Foram encontradas ${institutions.length} instituições. Aqui estão os detalhes:`,
+        sqlQuery
+      };
+    }
+  }
+  
+  // Match for researchers
+  if (
+    normalizedQuery.includes('pesquisadores') || 
+    normalizedQuery.includes('researchers') || 
+    normalizedQuery.includes('investigadores')
+  ) {
+    const researchers = loadFromLocalStorage(STORAGE_KEYS.RESEARCHERS, []);
+    const sqlQuery = "SELECT id, name, specialization, h_index, publication_count FROM ani_researchers";
+    
+    if (researchers && researchers.length > 0) {
+      return {
+        data: researchers,
+        message: `Foram encontrados ${researchers.length} pesquisadores. Aqui estão os detalhes:`,
+        sqlQuery
+      };
+    }
+  }
+  
+  // Match for policy frameworks
+  if (
+    normalizedQuery.includes('política') || 
+    normalizedQuery.includes('policies') || 
+    normalizedQuery.includes('framework') || 
+    normalizedQuery.includes('políticas')
+  ) {
+    const policies = loadFromLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, []);
+    const sqlQuery = "SELECT id, title, description, status FROM ani_policy_frameworks";
+    
+    if (policies && policies.length > 0) {
+      return {
+        data: policies,
+        message: `Foram encontradas ${policies.length} políticas ou frameworks. Aqui estão os detalhes:`,
+        sqlQuery
+      };
+    }
+  }
+  
+  // Match for collaborations
+  if (
+    normalizedQuery.includes('colaborações') || 
+    normalizedQuery.includes('collaborations') || 
+    normalizedQuery.includes('parcerias') ||
+    normalizedQuery.includes('internacionais')
+  ) {
+    const collaborations = loadFromLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, []);
+    const sqlQuery = "SELECT id, program_name, country, partnership_type, total_budget FROM ani_international_collaborations";
+    
+    if (collaborations && collaborations.length > 0) {
+      return {
+        data: collaborations,
+        message: `Foram encontradas ${collaborations.length} colaborações internacionais. Aqui estão os detalhes:`,
+        sqlQuery
+      };
+    }
+  }
+  
+  return { data: null, message: "", sqlQuery: "" };
+};
+
 // Generate a response to a user query
 export const generateResponse = async (query: string): Promise<QueryResponseType> => {
   console.log("Generating response for:", query);
+  
+  // First, try to get data from localStorage based on the query
+  const { data, message, sqlQuery } = getDataFromLocalStorage(query);
+  
+  if (data && data.length > 0) {
+    return {
+      message,
+      sqlQuery,
+      results: data,
+      noResults: false,
+      queryId: genId(),
+      analysis: null
+    };
+  }
   
   // Example mock responses
   if (query.toLowerCase().includes('total de investimento')) {
