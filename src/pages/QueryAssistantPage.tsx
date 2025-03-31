@@ -12,7 +12,7 @@ export const QueryAssistantPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Pegar a aba ativa da URL, se disponível
+  // Get the active tab from URL, if available
   const getTabFromUrl = () => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.get('tab') || 'assistente';
@@ -20,13 +20,13 @@ export const QueryAssistantPage: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState(getTabFromUrl());
   
-  // Atualizar a URL quando a aba mudar
+  // Update the URL when the tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     navigate(`/query-assistant?tab=${value}`, { replace: true });
   };
   
-  // Sincronizar o estado com a URL se a URL mudar por outros meios
+  // Synchronize state with URL if the URL changes by other means
   useEffect(() => {
     setActiveTab(getTabFromUrl());
   }, [location.search]);
