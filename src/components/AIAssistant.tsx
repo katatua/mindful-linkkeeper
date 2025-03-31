@@ -74,6 +74,7 @@ export const AIAssistant: React.FC = () => {
       const data = loadFromLocalStorage(key, []);
       if (!Array.isArray(data) || data.length === 0) {
         allDataLoaded = false;
+        console.log(`Dados não carregados para: ${key}`);
         break;
       }
     }
@@ -134,6 +135,28 @@ export const AIAssistant: React.FC = () => {
     await processQuery(input);
   };
 
+  const logQueryHistory = async (question: string, response: QueryResponseType) => {
+    try {
+      const { data, error } = await supabase
+        .from('query_history')
+        .insert([
+          { 
+            query_text: question,
+            was_successful: !response.error && !response.noResults,
+            language: 'pt',
+            error_message: response.error ? response.message : null,
+            analysis_result: response.analysis || null
+          }
+        ]);
+
+      if (error) {
+        console.error('Erro ao salvar histórico de consulta:', error);
+      }
+    } catch (err) {
+      console.error('Falha ao salvar histórico de consulta:', err);
+    }
+  };
+
   const processQuery = async (queryText: string) => {
     console.log("Processing query:", queryText);
     
@@ -157,6 +180,9 @@ export const AIAssistant: React.FC = () => {
       console.log("Sending query to generateResponse:", queryText);
       const response = await generateResponse(queryText);
       console.log("Response received:", response);
+      
+      // Registrar consulta no histórico
+      await logQueryHistory(queryText, response);
       
       const assistantMessage: Message = {
         id: genId(),

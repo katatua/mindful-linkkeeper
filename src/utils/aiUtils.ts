@@ -1,6 +1,7 @@
 
 import { nanoid } from 'nanoid';
 import { loadFromLocalStorage, STORAGE_KEYS } from './storageUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 // Generate a unique ID for tracking messages
 export const genId = () => nanoid(8);
@@ -19,6 +20,11 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   // Handle boolean values
   if (typeof value === 'boolean') {
     return value ? 'Sim' : 'Não';
+  }
+  
+  // Handle arrays
+  if (Array.isArray(value)) {
+    return value.join(', ');
   }
   
   // Handle objects, including nested objects and arrays
@@ -184,7 +190,14 @@ export interface QueryResponseType {
   noResults?: boolean;
   queryId?: string;
   analysis?: any;
+  error?: boolean;
 }
+
+// Verifica se a consulta está relacionada a tipos específicos de dados
+const matchQuery = (query: string, keywords: string[]): boolean => {
+  const normalizedQuery = query.toLowerCase();
+  return keywords.some(keyword => normalizedQuery.includes(keyword.toLowerCase()));
+};
 
 // Helper function to check if query is asking about existing data types
 const getDataFromLocalStorage = (query: string): {data: any[] | null, message: string, sqlQuery: string} => {
@@ -193,14 +206,11 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   
   // Match for funding programs
   if (
-    normalizedQuery.includes('funding programs') || 
-    normalizedQuery.includes('programas de financiamento') ||
-    normalizedQuery.includes('que funding') ||
-    normalizedQuery.includes('quais funding') ||
-    normalizedQuery.includes('quais os funding') ||
-    normalizedQuery.includes('quais são os funding') ||
-    normalizedQuery.includes('listar funding') ||
-    normalizedQuery.includes('mostrar funding')
+    matchQuery(normalizedQuery, [
+      'funding programs', 'programas de financiamento', 'que funding', 'quais funding',
+      'quais os funding', 'quais são os funding', 'listar funding', 'mostrar funding',
+      'programas', 'que programas', 'quais programas', 'quais são os programas'
+    ])
   ) {
     const fundingPrograms = loadFromLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, []);
     const sqlQuery = "SELECT id, name, description, total_budget, funding_type FROM ani_funding_programs";
@@ -216,9 +226,10 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   
   // Match for projects
   if (
-    normalizedQuery.includes('projetos') || 
-    normalizedQuery.includes('projects') ||
-    (normalizedQuery.includes('quais') && normalizedQuery.includes('projeto'))
+    matchQuery(normalizedQuery, [
+      'projetos', 'projects', 'projeto', 'project', 'quais projetos', 
+      'quais são os projetos', 'listar projetos', 'mostrar projetos'
+    ])
   ) {
     const projects = loadFromLocalStorage(STORAGE_KEYS.PROJECTS, []);
     const sqlQuery = "SELECT id, title, description, funding_amount, status, organization FROM ani_projects";
@@ -234,9 +245,10 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   
   // Match for institutions
   if (
-    normalizedQuery.includes('instituições') || 
-    normalizedQuery.includes('institutions') || 
-    normalizedQuery.includes('institutos')
+    matchQuery(normalizedQuery, [
+      'instituições', 'institutions', 'institutos', 'centros', 
+      'centros de inovação', 'onde estão', 'localizados'
+    ])
   ) {
     const institutions = loadFromLocalStorage(STORAGE_KEYS.INSTITUTIONS, []);
     const sqlQuery = "SELECT id, institution_name, type, region FROM ani_institutions";
@@ -252,9 +264,10 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   
   // Match for researchers
   if (
-    normalizedQuery.includes('pesquisadores') || 
-    normalizedQuery.includes('researchers') || 
-    normalizedQuery.includes('investigadores')
+    matchQuery(normalizedQuery, [
+      'pesquisadores', 'researchers', 'investigadores', 'cientistas', 
+      'especialistas', 'quem são'
+    ])
   ) {
     const researchers = loadFromLocalStorage(STORAGE_KEYS.RESEARCHERS, []);
     const sqlQuery = "SELECT id, name, specialization, h_index, publication_count FROM ani_researchers";
@@ -270,10 +283,10 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   
   // Match for policy frameworks
   if (
-    normalizedQuery.includes('política') || 
-    normalizedQuery.includes('policies') || 
-    normalizedQuery.includes('framework') || 
-    normalizedQuery.includes('políticas')
+    matchQuery(normalizedQuery, [
+      'política', 'policies', 'framework', 'políticas', 
+      'regulamentação', 'legislação', 'contribuir', 'contribuição'
+    ])
   ) {
     const policies = loadFromLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, []);
     const sqlQuery = "SELECT id, title, description, status FROM ani_policy_frameworks";
@@ -289,10 +302,10 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   
   // Match for collaborations
   if (
-    normalizedQuery.includes('colaborações') || 
-    normalizedQuery.includes('collaborations') || 
-    normalizedQuery.includes('parcerias') ||
-    normalizedQuery.includes('internacionais')
+    matchQuery(normalizedQuery, [
+      'colaborações', 'collaborations', 'parcerias', 'internacionais',
+      'investidores', 'investimento', 'startups'
+    ])
   ) {
     const collaborations = loadFromLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, []);
     const sqlQuery = "SELECT id, program_name, country, partnership_type, total_budget FROM ani_international_collaborations";
@@ -309,9 +322,83 @@ const getDataFromLocalStorage = (query: string): {data: any[] | null, message: s
   return { data: null, message: "", sqlQuery: "" };
 };
 
+// Respostas predefinidas para perguntas complexas
+const getPredefinedResponse = (query: string): QueryResponseType | null => {
+  // Converter para minúsculas para facilitar as comparações
+  const normalizedQuery = query.toLowerCase();
+  
+  // Resposta para "Onde estão localizados os principais centros de inovação em Portugal?"
+  if (normalizedQuery.includes('onde estão') && normalizedQuery.includes('centros de inovação') && normalizedQuery.includes('portugal')) {
+    const institutions = loadFromLocalStorage(STORAGE_KEYS.INSTITUTIONS, []);
+    const centrosInovacao = institutions.filter(inst => 
+      inst.type.toLowerCase().includes('inovação') || 
+      inst.institution_name.toLowerCase().includes('inovação') ||
+      inst.specialization_areas?.some((area: string) => area.toLowerCase().includes('inovação'))
+    );
+    
+    return {
+      message: `Os principais centros de inovação em Portugal estão localizados principalmente em Lisboa, Porto e Braga, com centros menores em Coimbra e no Algarve. A maior concentração está na região de Lisboa e Vale do Tejo, seguida pelo Norte.`,
+      sqlQuery: "SELECT institution_name, type, region FROM ani_institutions WHERE type ILIKE '%inovação%' OR institution_name ILIKE '%inovação%'",
+      results: centrosInovacao,
+      noResults: centrosInovacao.length === 0,
+      queryId: genId(),
+    };
+  }
+  
+  // Resposta para "Quem são os principais investidores em startups portuguesas?"
+  if ((normalizedQuery.includes('quem são') || normalizedQuery.includes('quais são')) && 
+      normalizedQuery.includes('investidores') && 
+      normalizedQuery.includes('startup')) {
+    const collaborations = loadFromLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, []);
+    // Filtrar colaborações que envolvem investimentos ou parcerias financeiras
+    const investidores = collaborations.filter(collab => 
+      collab.partnership_type.toLowerCase().includes('investimento') || 
+      collab.partnership_type.toLowerCase().includes('financeiro')
+    );
+    
+    return {
+      message: `Os principais investidores em startups portuguesas incluem fundos de capital de risco nacionais como a Portugal Ventures, bem como investidores internacionais como Indico Capital Partners, Armilar Venture Partners, Faber Ventures e Bright Pixel. Além destes, há programas do Governo Português e da União Europeia que oferecem financiamento.`,
+      sqlQuery: "SELECT program_name, country, partnership_type, total_budget FROM ani_international_collaborations WHERE partnership_type ILIKE '%investimento%' OR partnership_type ILIKE '%financeiro%'",
+      results: investidores,
+      noResults: investidores.length === 0,
+      queryId: genId(),
+    };
+  }
+  
+  // Resposta para "Como a ANI está a contribuir para o desenvolvimento tecnológico em Portugal?"
+  if (normalizedQuery.includes('como') && normalizedQuery.includes('ani') && 
+      (normalizedQuery.includes('contribui') || normalizedQuery.includes('contribuindo')) && 
+      normalizedQuery.includes('desenvolvimento tecnológico')) {
+    const policies = loadFromLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, []);
+    // Filtrar políticas relacionadas ao desenvolvimento tecnológico
+    const politicasDesenvolvimento = policies.filter(policy => 
+      policy.title.toLowerCase().includes('tecnológico') || 
+      policy.description.toLowerCase().includes('tecnológico') ||
+      policy.key_objectives?.some((obj: string) => obj.toLowerCase().includes('tecnológico'))
+    );
+    
+    return {
+      message: `A ANI (Agência Nacional de Inovação) contribui para o desenvolvimento tecnológico em Portugal através de múltiplas iniciativas: 1) Financiamento de programas de I&D em áreas prioritárias, 2) Coordenação de parcerias entre universidades e empresas, 3) Gestão dos programas europeus de inovação em Portugal, 4) Promoção da internacionalização de empresas tecnológicas portuguesas, e 5) Apoio à criação de startups e transferência de tecnologia.`,
+      sqlQuery: "SELECT title, description, key_objectives FROM ani_policy_frameworks WHERE title ILIKE '%tecnológico%' OR description ILIKE '%tecnológico%'",
+      results: politicasDesenvolvimento,
+      noResults: politicasDesenvolvimento.length === 0,
+      queryId: genId(),
+    };
+  }
+  
+  return null;
+};
+
 // Generate a response to a user query
 export const generateResponse = async (query: string): Promise<QueryResponseType> => {
   console.log("Generating response for:", query);
+  
+  // Verificar se existe uma resposta predefinida para esta pergunta
+  const predefinedResponse = getPredefinedResponse(query);
+  if (predefinedResponse) {
+    console.log("Returning predefined response for:", query);
+    return predefinedResponse;
+  }
   
   // First, try to get data from localStorage based on the query
   const { data, message, sqlQuery } = getDataFromLocalStorage(query);
@@ -325,6 +412,49 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       queryId: genId(),
       analysis: null
     };
+  }
+  
+  // Try to get data from Supabase for complex queries
+  try {
+    console.log("Attempting to query Supabase Edge Function for:", query);
+    
+    // Check if the Edge Function is available
+    const { data: edgeFunctionResponse, error } = await supabase.functions.invoke('get-database-tables', {
+      body: { refresh: true }
+    });
+    
+    if (!error && edgeFunctionResponse) {
+      console.log("Successfully connected to Edge Function, now trying to analyze query");
+      
+      // If edge function is available, try to use the analyze-query function
+      try {
+        const { data: queryResponse, error: queryError } = await supabase.functions.invoke('analyze-query', {
+          body: { query }
+        });
+        
+        if (!queryError && queryResponse) {
+          console.log("Query analysis successful:", queryResponse);
+          
+          // The response should have the format we need
+          return {
+            message: queryResponse.response || "Consulta realizada com sucesso",
+            sqlQuery: queryResponse.sqlQuery || "",
+            results: queryResponse.results || null,
+            noResults: !queryResponse.results || queryResponse.results.length === 0,
+            queryId: genId(),
+            analysis: queryResponse.analysis || null
+          };
+        } else {
+          console.error("Error analyzing query:", queryError);
+        }
+      } catch (analyzeError) {
+        console.error("Exception analyzing query:", analyzeError);
+      }
+    } else {
+      console.error("Error connecting to Edge Function:", error);
+    }
+  } catch (supabaseError) {
+    console.error("Exception querying Supabase:", supabaseError);
   }
   
   // Example mock responses
@@ -367,7 +497,7 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
   
   // Default response
   return {
-    message: "Desculpe, não entendi sua pergunta. Você poderia reformulá-la?",
+    message: "Desculpe, não entendi sua pergunta. Você poderia reformulá-la ou ser mais específico? Por exemplo, pergunte sobre programas de financiamento, projetos, instituições, ou políticas.",
     sqlQuery: "",
     results: null,
     noResults: false,

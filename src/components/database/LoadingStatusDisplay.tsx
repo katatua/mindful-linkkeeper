@@ -54,8 +54,8 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
 
   useEffect(() => {
     checkLoadedData();
-    // Check data status every 2 seconds for more responsive updates
-    const interval = setInterval(checkLoadedData, 2000);
+    // Check data status every 1 second for more responsive updates
+    const interval = setInterval(checkLoadedData, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -81,6 +81,23 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
 
   const loadedCount = statuses.filter(s => s.loaded).length;
   const totalCount = statuses.length;
+
+  // Detalhes sobre os tipos de dados disponíveis
+  const getDataTypeDescription = (key: string): string => {
+    const typeMap: {[key: string]: string} = {
+      'ani_funding_programs': 'Programas de financiamento para pesquisa e inovação',
+      'ani_projects': 'Projetos de pesquisa e inovação financiados',
+      'ani_metrics': 'Métricas e estatísticas de inovação',
+      'ani_researchers': 'Pesquisadores e cientistas',
+      'ani_institutions': 'Instituições de pesquisa e empresas',
+      'ani_patent_holders': 'Titulares de patentes',
+      'ani_policy_frameworks': 'Estruturas de políticas de inovação',
+      'ani_international_collaborations': 'Colaborações internacionais de pesquisa',
+      'ani_funding_applications': 'Candidaturas a programas de financiamento'
+    };
+    
+    return typeMap[key] || 'Dados de inovação';
+  };
 
   return (
     <div className="border rounded-md p-4 mb-4 bg-background">
@@ -143,7 +160,10 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
             <div className="space-y-2">
               {statuses.map((status) => (
                 <div key={status.key} className="flex items-center justify-between text-sm">
-                  <span className="capitalize">{status.name}</span>
+                  <div className="flex flex-col">
+                    <span className="capitalize">{status.name}</span>
+                    <span className="text-xs text-muted-foreground">{getDataTypeDescription(status.key)}</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs">{status.count} itens</span>
                     {status.loaded ? (
@@ -154,6 +174,10 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="mt-4 text-xs text-muted-foreground">
+              <p>Estes dados são usados para responder consultas sobre programas de financiamento, 
+              projetos de inovação, instituições de pesquisa, pesquisadores, métricas e políticas no sistema ANI.</p>
             </div>
           </AccordionContent>
         </AccordionItem>
