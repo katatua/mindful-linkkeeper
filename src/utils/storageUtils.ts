@@ -287,19 +287,47 @@ const generateDummyData = () => {
 };
 
 export const initializeDummyDataIfNeeded = async (): Promise<void> => {
+  console.log("Iniciando carregamento de dados de amostra...");
   const dummyData = generateDummyData();
 
-  for (const key in dummyData) {
-    if (dummyData.hasOwnProperty(key)) {
-      const dataKey = key as keyof typeof STORAGE_KEYS;
-      let storedData = loadFromLocalStorage(dummyData[dataKey], []);
+  // Armazenar promessas de salvamento para aguardar todas concluírem
+  const savePromises = [];
+
+  for (const key in STORAGE_KEYS) {
+    if (STORAGE_KEYS.hasOwnProperty(key)) {
+      const storageKey = STORAGE_KEYS[key as keyof typeof STORAGE_KEYS];
+      const existingData = loadFromLocalStorage(storageKey, []);
       
-      if (!Array.isArray(storedData) || storedData.length === 0) {
-        console.log(`Inicializando dados de amostra para a chave: ${dummyData[dataKey]}`);
-        saveToLocalStorage(dummyData[dataKey], dummyData[dataKey]);
+      if (!Array.isArray(existingData) || existingData.length === 0) {
+        console.log(`Inicializando dados de amostra para a chave: ${storageKey}`);
+        // Verificar se temos dados para esta chave no dummyData
+        if (dummyData[storageKey] && Array.isArray(dummyData[storageKey])) {
+          // Adicionar à lista de promessas
+          savePromises.push(
+            new Promise<void>((resolve) => {
+              // Pequeno atraso para evitar problemas de concorrência no localStorage
+              setTimeout(() => {
+                saveToLocalStorage(storageKey, dummyData[storageKey]);
+                console.log(`Dados salvos com sucesso para: ${storageKey} (${dummyData[storageKey].length} itens)`);
+                resolve();
+              }, 50 * savePromises.length); // Escalonar os salvamentos para evitar conflitos
+            })
+          );
+        } else {
+          console.warn(`Nenhum dado dummy encontrado para a chave: ${storageKey}`);
+        }
       } else {
-        console.log(`Dados já existem em localStorage para a chave: ${dummyData[dataKey]}. Ignorando inicialização.`);
+        console.log(`Dados já existem em localStorage para a chave: ${storageKey}. Ignorando inicialização.`);
       }
     }
+  }
+
+  // Aguardar todas as operações de salvamento
+  if (savePromises.length > 0) {
+    console.log(`Aguardando ${savePromises.length} operações de salvamento...`);
+    await Promise.all(savePromises);
+    console.log("Todos os dados foram salvos com sucesso!");
+  } else {
+    console.log("Nenhum novo dado precisou ser salvo.");
   }
 };

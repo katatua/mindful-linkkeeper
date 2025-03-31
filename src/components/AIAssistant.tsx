@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,33 +55,33 @@ export const AIAssistant: React.FC = () => {
   });
   const { toast } = useToast();
   
-  // Use todos os exemplos portugueses, não apenas os primeiros 6
-  // Selecionar vários exemplos diferentes para exibir, incluindo as novas perguntas
   const getPortugueseSuggestions = () => {
-    // Filtrar para garantir que estamos mostrando apenas consultas em português
     const allPortugueseSuggestions = suggestedDatabaseQueries.filter(q => 
       /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
       /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
     );
     
-    // Garantir que temos uma boa mistura de perguntas originais e novas
-    // Selecionar algumas das perguntas originais (1-5)
-    const originalSuggestions = allPortugueseSuggestions.slice(0, 5);
+    const originalSuggestions = allPortugueseSuggestions.slice(0, 6);
     
-    // Selecionar algumas das perguntas mais recentes (adicionadas)
-    const recentSuggestions = allPortugueseSuggestions.slice(-15);
+    const recentSuggestions = allPortugueseSuggestions.slice(-20);
     
-    // Combinar e misturar para uma seleção diversa
-    let selectedSuggestions = [...originalSuggestions];
+    const randomRecentSuggestions = [];
+    const maxAdditional = Math.min(12, recentSuggestions.length);
     
-    // Adicionar consultas das novas adicionadas (evitando duplicações)
-    for (const suggestion of recentSuggestions) {
-      if (!selectedSuggestions.includes(suggestion) && selectedSuggestions.length < 12) {
-        selectedSuggestions.push(suggestion);
+    const availableSuggestions = [...recentSuggestions];
+    
+    for (let i = 0; i < maxAdditional && availableSuggestions.length > 0; i++) {
+      const randomIndex = Math.floor(Math.random() * availableSuggestions.length);
+      const suggestion = availableSuggestions.splice(randomIndex, 1)[0];
+      
+      if (!originalSuggestions.includes(suggestion) && 
+          !randomRecentSuggestions.includes(suggestion)) {
+        randomRecentSuggestions.push(suggestion);
       }
     }
     
-    return selectedSuggestions;
+    const selectedSuggestions = [...originalSuggestions, ...randomRecentSuggestions];
+    return selectedSuggestions.slice(0, 12);
   };
   
   const portugueseSuggestions = getPortugueseSuggestions();
@@ -94,16 +93,19 @@ export const AIAssistant: React.FC = () => {
   const checkAllDataLoaded = () => {
     const keys = Object.values(STORAGE_KEYS);
     let allDataLoaded = true;
+    let loadedCount = 0;
     
     for (const key of keys) {
       const data = loadFromLocalStorage(key, []);
       if (!Array.isArray(data) || data.length === 0) {
         allDataLoaded = false;
         console.log(`Dados não carregados para: ${key}`);
-        break;
+      } else {
+        loadedCount++;
       }
     }
     
+    console.log(`Status de carregamento: ${loadedCount}/${keys.length} tabelas carregadas`);
     return allDataLoaded;
   };
   
@@ -115,21 +117,25 @@ export const AIAssistant: React.FC = () => {
       console.log("Iniciando carregamento de dados de amostra...");
       await initializeDummyDataIfNeeded();
       
-      const allLoaded = checkAllDataLoaded();
-      
-      setDataLoadStatus({ 
-        allLoaded: allLoaded,
-        loading: false
-      });
-      
-      console.log('Verificação de carregamento de dados:', allLoaded ? 'Todos carregados' : 'Carregamento incompleto');
-      toast({
-        title: allLoaded ? "Dados Carregados" : "Atenção",
-        description: allLoaded 
-          ? "Todos os dados de amostra foram carregados com sucesso."
-          : "Alguns dados podem não ter sido carregados corretamente. Tente recarregar.",
-        variant: allLoaded ? "default" : "destructive",
-      });
+      setTimeout(() => {
+        const allLoaded = checkAllDataLoaded();
+        
+        setDataLoadStatus({ 
+          allLoaded: allLoaded,
+          loading: false
+        });
+        
+        console.log('Verificação de carregamento de dados:', allLoaded ? 'Todos carregados' : 'Carregamento incompleto');
+        toast({
+          title: allLoaded ? "Dados Carregados" : "Atenção",
+          description: allLoaded 
+            ? "Todos os dados de amostra foram carregados com sucesso."
+            : "Alguns dados podem não ter sido carregados corretamente. Tente recarregar.",
+          variant: allLoaded ? "default" : "destructive",
+        });
+        
+        setIsInitializing(false);
+      }, 1000);
     } catch (error) {
       console.error('Erro ao inicializar dados de amostra:', error);
       setDataLoadStatus({ 
@@ -141,7 +147,7 @@ export const AIAssistant: React.FC = () => {
         description: "Falha ao carregar dados de amostra. Por favor, tente novamente.",
         variant: "destructive",
       });
-    } finally {
+      
       setIsInitializing(false);
     }
   };

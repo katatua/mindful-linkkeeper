@@ -63,7 +63,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
     setIsRefreshing(true);
     try {
       await onRefresh();
-      // Small delay to ensure data has time to be saved
+      // Increase delay to ensure data has time to be saved
       setTimeout(() => {
         const newStatuses = checkLoadedData();
         setIsRefreshing(false);
@@ -72,7 +72,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
         const loadedCount = newStatuses.filter(s => s.loaded).length;
         const totalCount = newStatuses.length;
         console.log(`After refresh: ${loadedCount}/${totalCount} data tables loaded`);
-      }, 500);
+      }, 1000); // Increased from 500ms to 1000ms
     } catch (error) {
       setIsRefreshing(false);
       console.error("Error refreshing data:", error);
