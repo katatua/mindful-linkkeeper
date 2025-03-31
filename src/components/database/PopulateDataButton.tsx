@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,7 +25,46 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({
   const generateSampleAnalysis = (queryText: string) => {
     const queryLower = queryText.toLowerCase();
     
-    if (queryLower.includes("métrica") || queryLower.includes("inovação") || queryLower.includes("lisboa")) {
+    // Verifica se a consulta está relacionada com patentes
+    if (queryLower.includes("patente") || queryLower.includes("patentes") || 
+        queryLower.includes("propriedade intelectual") || queryLower.includes("inpi")) {
+      return {
+        analysis: "Esta consulta está relacionada a patentes e propriedade intelectual. Preparei dados de amostra para informações sobre patentes que podem ser adicionados à sua base de dados.",
+        tables: ["ani_patent_holders"],
+        insertStatements: [
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Universidade de Lisboa', 187, 8.4, 2023, 'Educação e Pesquisa', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Universidade do Porto', 156, 7.9, 2023, 'Educação e Pesquisa', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Universidade de Coimbra', 112, 7.2, 2023, 'Educação e Pesquisa', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Instituto Superior Técnico', 94, 8.6, 2023, 'Educação e Pesquisa', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('INESC TEC', 78, 8.0, 2023, 'Tecnologia', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Grupo Sonae', 65, 7.3, 2023, 'Empresarial', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Hovione', 59, 8.7, 2023, 'Farmacêutica', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Universidade do Minho', 53, 7.0, 2023, 'Educação e Pesquisa', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Universidade Nova de Lisboa', 48, 7.5, 2023, 'Educação e Pesquisa', 'Portugal')`,
+          
+          `INSERT INTO ani_patent_holders (organization_name, patent_count, innovation_index, year, sector, country) 
+          VALUES ('Universidade de Aveiro', 45, 6.9, 2023, 'Educação e Pesquisa', 'Portugal')`
+        ],
+        expectedResults: "10 registros de detentores de patentes em Portugal com detalhes sobre o número de patentes e índice de inovação."
+      };
+    } else if (queryLower.includes("métrica") || queryLower.includes("inovação") || queryLower.includes("lisboa")) {
       return {
         analysis: "Esta consulta está relacionada a métricas de inovação. Preparei dados de amostra para métricas que podem ser adicionados à sua base de dados.",
         tables: ["ani_metrics"],

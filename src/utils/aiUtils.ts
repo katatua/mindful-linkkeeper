@@ -198,6 +198,19 @@ const matchQuery = (query: string, keywords: string[]): boolean => {
   return keywords.some(keyword => normalizedQuery.includes(keyword.toLowerCase()));
 };
 
+// Function to check if a query is related to patents
+const isPatentQuery = (query: string): boolean => {
+  const normalizedQuery = query.toLowerCase();
+  
+  const patentKeywords = [
+    'patente', 'patentes', 'propriedade intelectual', 'inpi', 
+    'inovação patenteada', 'pedido de patente', 'registro de patente',
+    'registo de patente', 'depositadas', 'patenteado', 'patenteada'
+  ];
+  
+  return patentKeywords.some(keyword => normalizedQuery.includes(keyword));
+}
+
 // Helper function to check if query is asking about existing data types
 const getDataFromLocalStorage = (query: string): {data: any[] | null, message: string, sqlQuery: string} => {
   const normalizedQuery = query.toLowerCase().trim();
@@ -445,6 +458,22 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     console.error("Exception querying Supabase:", supabaseError);
   }
   
+  // Verificar se a consulta está relacionada com patentes
+  if (isPatentQuery(query)) {
+    return {
+      message: "Não encontrei dados sobre patentes. Você gostaria de popular a base de dados com informações sobre patentes em Portugal?",
+      sqlQuery: "SELECT * FROM ani_patent_holders WHERE country = 'Portugal'",
+      results: null,
+      noResults: true,
+      queryId: genId(),
+      analysis: {
+        recommendation: "Adicionar dados de patentes para Portugal",
+        tables: ["ani_patent_holders"],
+        expectedQuery: query
+      }
+    };
+  }
+  
   if (query.toLowerCase().includes('total de investimento')) {
     return {
       message: "O total de investimento em projetos de inovação é €45.000.000",
@@ -464,20 +493,6 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       noResults: false,
       queryId: genId(),
       analysis: null
-    };
-  }
-  
-  if (query.toLowerCase().includes('patentes') || query.toLowerCase().includes('proprietários de patentes')) {
-    return {
-      message: "Não encontrei dados sobre patentes. Você gostaria de popular a base de dados com informações sobre patentes?",
-      sqlQuery: "SELECT * FROM ani_patent_holders",
-      results: null,
-      noResults: true,
-      queryId: genId(),
-      analysis: {
-        recommendation: "Adicionar dados de patentes",
-        tables: ["ani_patent_holders"]
-      }
     };
   }
   
