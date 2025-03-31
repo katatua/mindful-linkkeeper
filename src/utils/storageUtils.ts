@@ -72,7 +72,7 @@ export const STORAGE_KEYS = {
 };
 
 /**
- * Initialize local storage with dummy data if it doesn't exist
+ * Initialize local storage with sample data
  * @returns A promise that resolves when all data is initialized
  */
 export const initializeDummyDataIfNeeded = async (): Promise<void> => {
@@ -89,40 +89,29 @@ export const initializeDummyDataIfNeeded = async (): Promise<void> => {
       sampleFundingApplications
     } = await import('../scripts/sampleData');
 
-    // Força a inicialização dos dados, independentemente se já existem ou não
-    console.log('Inicializando todos os dados de amostra no localStorage');
+    console.log('Initializing all sample data in localStorage');
     
-    // Salvando dados no localStorage um por um para garantir que tudo seja salvo
-    saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, sampleFundingPrograms);
-    console.log(`Salvos ${sampleFundingPrograms.length} programas de financiamento`);
+    // Save each dataset to localStorage with clear logging
+    const datasetMap = {
+      [STORAGE_KEYS.FUNDING_PROGRAMS]: sampleFundingPrograms,
+      [STORAGE_KEYS.PROJECTS]: sampleProjects,
+      [STORAGE_KEYS.METRICS]: sampleMetrics,
+      [STORAGE_KEYS.RESEARCHERS]: sampleResearchers,
+      [STORAGE_KEYS.INSTITUTIONS]: sampleInstitutions,
+      [STORAGE_KEYS.PATENT_HOLDERS]: samplePatentHolders,
+      [STORAGE_KEYS.POLICY_FRAMEWORKS]: samplePolicyFrameworks,
+      [STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS]: sampleCollaborations,
+      [STORAGE_KEYS.FUNDING_APPLICATIONS]: sampleFundingApplications
+    };
+
+    Object.entries(datasetMap).forEach(([key, data]) => {
+      saveToLocalStorage(key, data);
+      console.log(`Saved ${data.length} items for ${key}`);
+    });
     
-    saveToLocalStorage(STORAGE_KEYS.PROJECTS, sampleProjects);
-    console.log(`Salvos ${sampleProjects.length} projetos`);
-    
-    saveToLocalStorage(STORAGE_KEYS.METRICS, sampleMetrics);
-    console.log(`Salvos ${sampleMetrics.length} métricas`);
-    
-    saveToLocalStorage(STORAGE_KEYS.RESEARCHERS, sampleResearchers);
-    console.log(`Salvos ${sampleResearchers.length} pesquisadores`);
-    
-    saveToLocalStorage(STORAGE_KEYS.INSTITUTIONS, sampleInstitutions);
-    console.log(`Salvos ${sampleInstitutions.length} instituições`);
-    
-    saveToLocalStorage(STORAGE_KEYS.PATENT_HOLDERS, samplePatentHolders);
-    console.log(`Salvos ${samplePatentHolders.length} titulares de patentes`);
-    
-    saveToLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, samplePolicyFrameworks);
-    console.log(`Salvos ${samplePolicyFrameworks.length} estruturas de políticas`);
-    
-    saveToLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, sampleCollaborations);
-    console.log(`Salvos ${sampleCollaborations.length} colaborações internacionais`);
-    
-    saveToLocalStorage(STORAGE_KEYS.FUNDING_APPLICATIONS, sampleFundingApplications);
-    console.log(`Salvos ${sampleFundingApplications.length} aplicações de financiamento`);
-    
-    console.log('Local storage inicializado com dados de amostra');
+    console.log('Local storage initialized with sample data');
   } catch (error) {
-    console.error('Erro ao inicializar dados de amostra:', error);
+    console.error('Error initializing sample data:', error);
     throw error;
   }
 };
