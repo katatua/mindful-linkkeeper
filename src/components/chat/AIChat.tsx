@@ -36,6 +36,7 @@ interface Message {
   analysis?: any;
   isPredefined?: boolean;
   isAIResponse?: boolean;
+  baiResponse?: string; // Added baiResponse property to the Message interface
 }
 
 export const AIChat: React.FC = () => {
@@ -205,7 +206,8 @@ export const AIChat: React.FC = () => {
         timestamp: new Date(),
         queryId: response.queryId || "",
         analysis: response.analysis || null,
-        isAIResponse: response.isAIResponse || false
+        isAIResponse: response.isAIResponse || false,
+        baiResponse: response.baiResponse // Add the baiResponse from the API response
       };
       
       setActiveResponse(assistantMessage);
