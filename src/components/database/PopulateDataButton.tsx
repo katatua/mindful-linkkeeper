@@ -1,9 +1,18 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { ArrowDown, Loader2 } from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Database as DatabaseIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface QueryDataRecommendationsProps {
   query: string;
@@ -281,7 +290,7 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({
           VALUES ('Iniciativa de Hidrogênio Verde', 'Apoio à pesquisa e implementação de tecnologias de hidrogênio verde', 7000000, '2025-09-01', '2027-03-31', ARRAY['hidrogênio', 'energia renovável', 'pesquisa'], 'subsídio')`,
           
           `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-          VALUES ('Programa de Excelência em Energia Eólica', 'Aprimorando a capacidade e eficiência da energia eólica em regiões costeiras', 4200000, '2025-05-30', '2026-10-15', ARRAY['energia eólica', 'energia renovável', 'costeiro'], 'subsídio')`,
+          VALUES ('Programa de Excelência em Energia Eólica', 'Aprimorando a capacidade e eficiência da energia eólica em regiões costeiro', '4200000', '2025-05-30', '2026-10-15', ARRAY['energia eólica', 'energia renovável', 'costeiro'], 'subsídio')`,
           
           `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
           VALUES ('Fundo de Transição Energética Sustentável', 'Apoio às PMEs na transição para fontes de energia renovável', 2800000, '2025-08-15', '2026-09-30', ARRAY['energia renovável', 'PME', 'sustentabilidade'], 'empréstimo')`

@@ -1,62 +1,54 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface RequestBody {
-  title: string;
-  summary?: string;
-  fileName?: string;
-}
-
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { title, summary, fileName } = await req.json() as RequestBody;
-
-    // Prepare content for classification
-    const content = [
-      `Title: ${title}`,
-      summary ? `Summary: ${summary}` : '',
-      fileName ? `File: ${fileName}` : ''
-    ].filter(Boolean).join('\n');
-
-    console.log('Classification request:', { content });
-
-    // For now, return a simple classification based on keywords
-    // This is a fallback since the OpenAI call seems to have issues
-    const lowerContent = content.toLowerCase();
-    let classification = 'general';
+    const { title, summary, fileName } = await req.json();
     
-    if (lowerContent.includes('fund') || lowerContent.includes('grant') || lowerContent.includes('budget')) {
-      classification = 'funding';
-    } else if (lowerContent.includes('research') || lowerContent.includes('study') || lowerContent.includes('paper')) {
-      classification = 'research';
-    } else if (lowerContent.includes('policy') || lowerContent.includes('regulation') || lowerContent.includes('law')) {
-      classification = 'policy';
-    } else if (lowerContent.includes('tech') || lowerContent.includes('digital') || lowerContent.includes('innovation')) {
-      classification = 'technology';
-    } else if (lowerContent.includes('data') || lowerContent.includes('metrics') || lowerContent.includes('statistics')) {
-      classification = 'data';
+    // Simple classification logic based on keywords in the title and summary
+    // In a real application, you would use a more sophisticated algorithm or ML model
+    const text = `${title} ${summary} ${fileName}`.toLowerCase();
+    
+    let classification = "other";
+    
+    if (text.includes('patent') || text.includes('intellectual property') || text.includes('propriedade intelectual')) {
+      classification = "patent";
+    } else if (text.includes('startup') || text.includes('innovation') || text.includes('inovação')) {
+      classification = "startup";
+    } else if (text.includes('fund') || text.includes('grant') || text.includes('financiamento')) {
+      classification = "funding";
+    } else if (text.includes('research') || text.includes('paper') || text.includes('pesquisa') || text.includes('estudo')) {
+      classification = "research";
+    } else if (text.includes('policy') || text.includes('regulation') || text.includes('política') || text.includes('regulamento')) {
+      classification = "policy";
+    } else if (text.includes('tech') || text.includes('technology') || text.includes('tecnologia')) {
+      classification = "technology";
     }
-
-    console.log('Classification result:', { content, classification });
-
-    return new Response(JSON.stringify({ classification }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    
+    // Return the classification
+    return new Response(
+      JSON.stringify({ classification }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Error:', error);
-    return new Response(JSON.stringify({ classification: 'Unclassified', error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Error classifying document:', error);
+    
+    return new Response(
+      JSON.stringify({ error: error.message, classification: "unclassified" }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });

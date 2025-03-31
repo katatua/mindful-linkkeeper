@@ -168,3 +168,26 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     };
   }
 };
+
+// Document classification function
+export const classifyDocument = async (document: { title: string, summary: string, fileName: string }): Promise<string> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('classify-document', {
+      body: { 
+        title: document.title,
+        summary: document.summary,
+        fileName: document.fileName
+      }
+    });
+    
+    if (error) {
+      console.error("Error calling classify-document function:", error);
+      return "unclassified";
+    }
+    
+    return data?.classification || "unclassified";
+  } catch (error) {
+    console.error("Error in classifyDocument:", error);
+    return "unclassified";
+  }
+};
