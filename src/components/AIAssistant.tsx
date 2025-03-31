@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,7 +21,12 @@ import {
 } from '@/components/ui/table';
 import { PopulateDataButton } from '@/components/database/PopulateDataButton';
 import { supabase } from '@/integrations/supabase/client';
-import { saveToLocalStorage, loadFromLocalStorage, STORAGE_KEYS } from '@/utils/storageUtils';
+import { 
+  saveToLocalStorage, 
+  loadFromLocalStorage, 
+  STORAGE_KEYS, 
+  initializeDummyDataIfNeeded 
+} from '@/utils/storageUtils';
 
 interface Message {
   id: string;
@@ -67,18 +71,22 @@ export const AIAssistant: React.FC = () => {
     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
   ).slice(0, 6);
   
-  // Load funding programs on component mount
   useEffect(() => {
-    // Load programs from localStorage
-    const savedPrograms = loadFromLocalStorage<FundingProgram[]>(STORAGE_KEYS.FUNDING_PROGRAMS, []);
+    const loadDummyData = async () => {
+      await initializeDummyDataIfNeeded();
+      
+      const savedPrograms = loadFromLocalStorage<FundingProgram[]>(STORAGE_KEYS.FUNDING_PROGRAMS, []);
+      
+      if (savedPrograms.length > 0) {
+        console.log(`Loaded ${savedPrograms.length} funding programs from localStorage`);
+        setDummyPrograms(savedPrograms);
+      } else {
+        console.log('No funding programs found in localStorage, generating new data');
+        generateFundingProgramsData(true);
+      }
+    };
     
-    if (savedPrograms.length > 0) {
-      console.log(`Loaded ${savedPrograms.length} funding programs from localStorage`);
-      setDummyPrograms(savedPrograms);
-    } else {
-      console.log('No funding programs found in localStorage, generating new data');
-      generateFundingProgramsData(true);
-    }
+    loadDummyData();
   }, []);
   
   const handleSuggestionClick = async (question: string) => {
@@ -224,7 +232,6 @@ export const AIAssistant: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Valid funding types that comply with the database constraint
       const fundingTypes = ['european', 'national', 'private', 'regional', 'international'];
       const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation', 'Biotechnology', 'Quantum Computing', 'Aerospace', 'Marine Sciences', 'Cybersecurity'];
       
@@ -243,7 +250,6 @@ export const AIAssistant: React.FC = () => {
         const startDate = new Date(now);
         startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 30));
         
-        // Select 1-3 sectors for focus
         const sectorCount = Math.floor(Math.random() * 3) + 1;
         const sectorFocus: string[] = [];
         for (let j = 0; j < sectorCount; j++) {
@@ -270,7 +276,6 @@ export const AIAssistant: React.FC = () => {
         });
       }
       
-      // Save programs to localStorage to persist across sessions
       saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, programs);
       setDummyPrograms(programs);
       
