@@ -10,6 +10,7 @@ export interface QueryResponseType {
   queryId?: string;
   analysis?: any;
   isAIResponse?: boolean;
+  baiResponse?: string;
 }
 
 export const genId = () => uuidv4();
@@ -119,7 +120,7 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   return String(value);
 };
 
-const callBaiApi = async (query: string): Promise<any> => {
+const callBaiApi = async (query: string): Promise<string> => {
   try {
     console.log("Calling BAI API with query:", query);
     
@@ -150,7 +151,7 @@ const callBaiApi = async (query: string): Promise<any> => {
       throw new Error("No response from BAI API");
     }
     
-    return data;
+    return data.response;
   } catch (error) {
     console.error("Error calling BAI API:", error);
     throw error;
@@ -161,54 +162,37 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
   try {
     console.log("Generating response for query:", query);
     
-    let response;
+    const { data: dbData, error: dbError } = await supabase.functions.invoke('gemini-chat', {
+      body: { query }
+    });
     
+    if (dbError) {
+      console.error("Error from Edge Function:", dbError);
+      throw dbError;
+    }
+    
+    let baiResponse = null;
     if (suggestedDatabaseQueries.includes(query)) {
       try {
-        console.log("Using BAI API for suggested query");
-        const baiResponse = await callBaiApi(query);
-        
-        const { data: mockData, error } = await supabase.functions.invoke('gemini-chat', {
-          body: { query }
-        });
-        
-        response = {
-          message: baiResponse.response || "Sem resposta do assistente BAI.",
-          sqlQuery: mockData?.sqlQuery || "",
-          results: mockData?.results || [],
-          isAIResponse: true,
-          noResults: !mockData?.results || mockData.results.length === 0
-        };
-        
-        console.log("Final response:", response);
+        console.log("Query is in suggested list, calling BAI API");
+        baiResponse = await callBaiApi(query);
+        console.log("BAI API response:", baiResponse);
       } catch (baiError) {
-        console.error("Error with BAI API, falling back to edge function:", baiError);
-        
-        const { data, error } = await supabase.functions.invoke('gemini-chat', {
-          body: { query }
-        });
-        
-        if (error) throw error;
-        response = data;
+        console.error("Error when calling BAI API:", baiError);
+        baiResponse = `Não foi possível obter resposta do assistente BAI: ${baiError.message}`;
       }
-    } else {
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: { query }
-      });
-      
-      if (error) throw error;
-      response = data;
     }
     
     return {
-      message: response.message || "Sem resposta do assistente.",
-      sqlQuery: response.sqlQuery || "",
-      results: response.results || null,
-      error: response.error || false,
-      noResults: response.noResults || false,
-      queryId: response.queryId,
-      analysis: response.analysis,
-      isAIResponse: response.isAIResponse || false
+      message: dbData.message || "Sem resposta do assistente.",
+      sqlQuery: dbData.sqlQuery || "",
+      results: dbData.results || null,
+      error: dbData.error || false,
+      noResults: dbData.noResults || false,
+      queryId: dbData.queryId,
+      analysis: dbData.analysis,
+      isAIResponse: dbData.isAIResponse || false,
+      baiResponse: baiResponse
     };
   } catch (error) {
     console.error("Error in generateResponse:", error);

@@ -319,6 +319,7 @@ export const AIChat: React.FC = () => {
                     <ChatMessage
                       content={activeResponse.content}
                       role="assistant"
+                      baiResponse={activeResponse.baiResponse}
                     />
                     <div className="mt-2">
                       <PopulateDataButton 
@@ -333,6 +334,7 @@ export const AIChat: React.FC = () => {
                       content={activeResponse.isAIResponse ? activeResponse.content : activeResponse.content.split('\n')[0]}
                       role="assistant"
                       isAIResponse={activeResponse.isAIResponse}
+                      baiResponse={activeResponse.baiResponse}
                     />
                     
                     {activeResponse.results && activeResponse.results.length > 0 && (

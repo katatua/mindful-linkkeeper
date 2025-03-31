@@ -12,6 +12,7 @@ interface ChatMessageProps {
   results?: any[] | null;
   sqlQuery?: string;
   isAIResponse?: boolean;
+  baiResponse?: string; // Added to accept BAI response
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   results,
   sqlQuery,
   isAIResponse,
+  baiResponse,
   className,
 }) => {
   return (
@@ -60,6 +62,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           )}
         </div>
         <div className="whitespace-pre-wrap text-sm">{content}</div>
+        
+        {/* Display BAI Response if available */}
+        {baiResponse && (
+          <div className="mt-4 border-t pt-3">
+            <div className="flex items-center gap-1 mb-2">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Resposta do Assistente ANI:</span>
+            </div>
+            <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
+              {baiResponse}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
