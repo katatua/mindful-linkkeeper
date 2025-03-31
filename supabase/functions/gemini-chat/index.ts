@@ -1,4 +1,3 @@
-
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -98,7 +97,7 @@ async function processUserQuery(userQuery: string): Promise<{
   try {
     console.log("Processing user query:", userQuery);
     
-    // Use mock response if available and no API key is set
+    // Use mock response if no API key is set
     if (!googleApiKey) {
       console.log("No Gemini API key found, using mock response");
       
@@ -155,10 +154,10 @@ async function processUserQuery(userQuery: string): Promise<{
       };
     }
     
-    // The rest of the original function using Gemini API would go here
-    // For now we'll just return a message indicating Gemini API isn't configured
+    // Actual Gemini API call logic would go here
+    // For now, we'll keep the placeholder
     return {
-      message: "A API do Gemini não está configurada. Por favor, configure a API conforme as instruções.",
+      message: "A API do Gemini não está configurada completamente. Por favor, configure a chave da API nas configurações do projeto.",
       sqlQuery: "",
       results: null,
       error: true
