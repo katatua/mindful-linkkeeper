@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
+import { Send, AlertCircle, Database, PlusCircle, Loader2, Download } from 'lucide-react';
 import { 
   suggestedDatabaseQueries, 
   generateResponse, 
@@ -20,6 +20,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { PopulateDataButton } from '@/components/database/PopulateDataButton';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -42,7 +43,6 @@ export const AIAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  // Filter for Portuguese suggestions
   const portugueseSuggestions = suggestedDatabaseQueries.filter(q => 
     /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
@@ -76,7 +76,6 @@ export const AIAssistant: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Show a toast to let user know we're processing
       toast({
         title: "Processando consulta",
         description: "Aguarde enquanto processamos sua consulta...",
@@ -129,25 +128,20 @@ export const AIAssistant: React.FC = () => {
     setActiveResponse(null);
     setInput('');
     
-    // Remove any URL parameters
     const currentUrl = window.location.pathname;
     window.history.replaceState({}, document.title, currentUrl);
   };
   
-  // Effect to retry the query if the query ID changes (after data has been populated)
   useEffect(() => {
-    // Check URL parameters for a queryToRetry parameter
     const urlParams = new URLSearchParams(window.location.search);
     const queryToRetry = urlParams.get('queryToRetry');
     
     if (queryToRetry) {
       console.log("Found queryToRetry parameter, processing:", queryToRetry);
       
-      // Remove the parameter from the URL to prevent infinite retries
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
       
-      // Process the query
       processQuery(queryToRetry);
     }
   }, []);
@@ -193,6 +187,98 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
+  const generateFundingProgramsData = async () => {
+    setIsLoading(true);
+    
+    try {
+      const fundingTypes = ['grant', 'loan', 'tax_incentive', 'equity', 'hybrid', 'voucher', 'prize', 'accelerator'];
+      const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation'];
+      
+      const programs = [];
+      const now = new Date();
+      const oneYearFromNow = new Date(now);
+      oneYearFromNow.setFullYear(now.getFullYear() + 1);
+      
+      for (let i = 0; i < 15; i++) {
+        const applicationDeadline = new Date(now);
+        applicationDeadline.setDate(applicationDeadline.getDate() + Math.floor(Math.random() * 180) + 30);
+        
+        const endDate = new Date(applicationDeadline);
+        endDate.setMonth(applicationDeadline.getMonth() + Math.floor(Math.random() * 24) + 6);
+        
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 30));
+        
+        const sectorCount = Math.floor(Math.random() * 3) + 1;
+        const sectorFocus = [];
+        for (let j = 0; j < sectorCount; j++) {
+          const sector = sectors[Math.floor(Math.random() * sectors.length)];
+          if (!sectorFocus.includes(sector)) {
+            sectorFocus.push(sector);
+          }
+        }
+        
+        programs.push({
+          name: `${['Innovation', 'Research', 'Development', 'Technology'][Math.floor(Math.random() * 4)]} Program ${i + 1}`,
+          description: `Funding program for innovative projects in ${sectorFocus.join(' and ')}`,
+          total_budget: Math.floor(Math.random() * 10000000) + 500000,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          application_deadline: applicationDeadline.toISOString().split('T')[0],
+          next_call_date: new Date(now.getTime() + Math.random() * (applicationDeadline.getTime() - now.getTime())).toISOString().split('T')[0],
+          funding_type: fundingTypes[Math.floor(Math.random() * fundingTypes.length)],
+          sector_focus: sectorFocus,
+          eligibility_criteria: `Organizations must ${['be registered in Portugal', 'have operations in the EU', 'be SMEs'][Math.floor(Math.random() * 3)]}`,
+          application_process: 'Online application with required documentation',
+          review_time_days: Math.floor(Math.random() * 60) + 30,
+          success_rate: parseFloat((Math.random() * 0.5 + 0.2).toFixed(2)),
+        });
+      }
+      
+      const { error } = await supabase.from('ani_funding_programs').insert(programs);
+      
+      if (error) {
+        console.error('Error inserting funding programs:', error);
+        throw new Error(`Failed to insert funding programs: ${error.message}`);
+      }
+      
+      toast({
+        title: "Success",
+        description: `Generated and inserted ${programs.length} funding programs into the database.`,
+      });
+      
+      const assistantMessage: Message = {
+        id: genId(),
+        content: `I've successfully generated and inserted ${programs.length} funding programs into the database. You can now query this data using natural language queries.`,
+        role: 'assistant',
+        timestamp: new Date()
+      };
+      
+      setActiveResponse(assistantMessage);
+      
+    } catch (error) {
+      console.error('Error generating funding programs:', error);
+      
+      const errorMessage: Message = {
+        id: genId(),
+        content: `Failed to generate funding programs: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        role: 'assistant',
+        error: true,
+        timestamp: new Date()
+      };
+      
+      setActiveResponse(errorMessage);
+      
+      toast({
+        title: "Error",
+        description: "Failed to generate funding programs. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="mb-6">
@@ -208,6 +294,18 @@ export const AIAssistant: React.FC = () => {
               {question}
             </Button>
           ))}
+        </div>
+        
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+            onClick={generateFundingProgramsData}
+            disabled={isLoading}
+          >
+            <Download className="h-4 w-4" />
+            Generate Funding Programs Data
+          </Button>
         </div>
       </div>
       
