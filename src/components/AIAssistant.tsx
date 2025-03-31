@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { PopulateDataButton } from '@/components/database/PopulateDataButton';
 import { supabase } from '@/integrations/supabase/client';
+import { saveToLocalStorage, loadFromLocalStorage, STORAGE_KEYS } from '@/utils/storageUtils';
 
 interface Message {
   id: string;
@@ -53,9 +54,6 @@ interface FundingProgram {
   success_rate: number;
 }
 
-// Store funding programs at the module level to persist between renders
-let persistentFundingPrograms: FundingProgram[] = [];
-
 export const AIAssistant: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState<Message | null>(null);
   const [activeResponse, setActiveResponse] = useState<Message | null>(null);
@@ -69,12 +67,17 @@ export const AIAssistant: React.FC = () => {
     /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
   ).slice(0, 6);
   
-  // Generate funding programs on component mount if not already created
+  // Load funding programs on component mount
   useEffect(() => {
-    if (persistentFundingPrograms.length === 0) {
-      generateFundingProgramsData(true);
+    // Load programs from localStorage
+    const savedPrograms = loadFromLocalStorage<FundingProgram[]>(STORAGE_KEYS.FUNDING_PROGRAMS, []);
+    
+    if (savedPrograms.length > 0) {
+      console.log(`Loaded ${savedPrograms.length} funding programs from localStorage`);
+      setDummyPrograms(savedPrograms);
     } else {
-      setDummyPrograms(persistentFundingPrograms);
+      console.log('No funding programs found in localStorage, generating new data');
+      generateFundingProgramsData(true);
     }
   }, []);
   
@@ -267,19 +270,19 @@ export const AIAssistant: React.FC = () => {
         });
       }
       
-      // Store the data persistently
-      persistentFundingPrograms = programs;
+      // Save programs to localStorage to persist across sessions
+      saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, programs);
       setDummyPrograms(programs);
       
       if (!silent) {
         toast({
           title: "Success",
-          description: `Generated ${programs.length} funding programs in memory (not saved to database).`,
+          description: `Generated ${programs.length} funding programs and saved to localStorage.`,
         });
         
         const assistantMessage: Message = {
           id: genId(),
-          content: `I've generated ${programs.length} dummy funding programs. These are only stored in memory and not saved to the database.`,
+          content: `I've generated ${programs.length} funding programs. These have been saved to localStorage and will persist across browser sessions.`,
           role: 'assistant',
           results: programs,
           timestamp: new Date()
