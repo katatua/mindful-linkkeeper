@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, AlertCircle, Database, PlusCircle, Loader2 } from 'lucide-react';
+import { Send, AlertCircle, Database, PlusCircle, Loader2, BookOpen } from 'lucide-react';
 import { 
   suggestedDatabaseQueries, 
   generateResponse, 
@@ -41,6 +42,7 @@ interface Message {
   queryId?: string;
   analysis?: any;
   isPredefined?: boolean;
+  isAIResponse?: boolean;
 }
 
 export const AIAssistant: React.FC = () => {
@@ -176,7 +178,8 @@ export const AIAssistant: React.FC = () => {
             was_successful: !response.error && !response.noResults,
             language: 'pt',
             error_message: response.error ? response.message : null,
-            analysis_result: response.analysis || null
+            analysis_result: response.analysis || null,
+            is_ai_response: response.isAIResponse || false
           }
         ]);
 
@@ -225,7 +228,8 @@ export const AIAssistant: React.FC = () => {
         noResults: response.noResults,
         timestamp: new Date(),
         queryId: response.queryId || "",
-        analysis: response.analysis || null
+        analysis: response.analysis || null,
+        isAIResponse: response.isAIResponse || false
       };
       
       setActiveResponse(assistantMessage);
@@ -412,6 +416,14 @@ export const AIAssistant: React.FC = () => {
                     </div>
                   </AlertDescription>
                 </Alert>
+              ) : activeResponse.isAIResponse ? (
+                <div>
+                  <div className="flex items-center gap-1 text-sm font-medium text-blue-600 mb-2">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Resposta de Conhecimento Geral</span>
+                  </div>
+                  <div className="whitespace-pre-wrap">{activeResponse.content}</div>
+                </div>
               ) : activeResponse.results && activeResponse.results.length > 0 ? (
                 <div>
                   <div className="font-medium text-primary mb-4">
