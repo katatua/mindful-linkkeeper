@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -69,14 +68,7 @@ export const suggestedDatabaseQueries = [
   // Collaborations
   "Quais são os principais parceiros internacionais em projetos de inovação com Portugal?",
   "Quais colaborações internacionais têm o maior orçamento na área de energia renovável?",
-  "Como evoluíram as parcerias internacionais de Portugal na última década?",
-  
-  // General knowledge queries
-  "Explique o conceito de inovação aberta e suas vantagens",
-  "Como implementar uma cultura de inovação em uma empresa tradicional?",
-  "Quais são as tendências futuras em tecnologias de energia renovável?",
-  "O que é a Indústria 4.0 e como ela impacta o setor manufatureiro?",
-  "Explique o conceito de transformação digital e seus pilares principais"
+  "Como evoluíram as parcerias internacionais de Portugal na última década?"
 ];
 
 // Format database values for display

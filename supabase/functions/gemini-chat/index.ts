@@ -1,5 +1,3 @@
-
-// deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
@@ -27,167 +25,6 @@ async function getAIModel(): Promise<string> {
   } catch (error) {
     console.error('Error fetching AI model:', error);
     return 'gemini-2.5-pro-exp-03-25';
-  }
-}
-
-// Listas de palavras-chave para identificar consultas que não dependem de dados
-const generalKnowledgeKeywords = [
-  'o que é', 'como funciona', 'explique', 'desafios', 'benefícios',
-  'vantagens', 'desvantagens', 'comparar', 'diferença', 'impacto',
-  'futuro', 'tendências', 'história', 'evolução', 'aplicações',
-  'exemplos', 'casos de uso', 'melhores práticas', 'estratégias',
-  'riscos', 'oportunidades', 'adoção'
-];
-
-// Determina se uma consulta é de conhecimento geral (não depende de dados)
-function isGeneralKnowledgeQuery(query: string): boolean {
-  const queryLower = query.toLowerCase();
-  
-  // Verifica palavras-chave de conhecimento geral
-  for (const keyword of generalKnowledgeKeywords) {
-    if (queryLower.includes(keyword)) {
-      return true;
-    }
-  }
-  
-  // Verifica se a consulta contém palavras de questões específicas que normalmente são de conhecimento geral
-  if (queryLower.includes('desafios na adoção') || 
-      queryLower.includes('como implementar') || 
-      queryLower.includes('futuro da') ||
-      queryLower.includes('tendências') ||
-      queryLower.includes('impacto de') ||
-      queryLower.includes('explicar') ||
-      queryLower.includes('conceituar') ||
-      queryLower.includes('definir')) {
-    return true;
-  }
-  
-  return false;
-}
-
-async function handleGeneralKnowledgeQuery(query: string): Promise<any> {
-  try {
-    console.log("Processando consulta de conhecimento geral com IA:", query);
-    
-    // Obtém o modelo de IA a ser usado
-    const modelName = await getAIModel();
-    
-    // Se a GEMINI_API_KEY não estiver configurada, retorne um erro
-    if (!googleApiKey) {
-      console.error("GEMINI_API_KEY não está configurada");
-      return {
-        message: "Configuração incompleta: a chave de API do Gemini não está configurada.",
-        sqlQuery: "",
-        results: null,
-        error: true
-      };
-    }
-    
-    // Constrói o prompt para a consulta de conhecimento geral
-    const promptTemplate = `
-      Você é um assistente especializado em inovação, tecnologia e estratégias de negócios em Portugal.
-      Forneça uma resposta informativa e útil para a seguinte pergunta:
-      "${query}"
-      
-      Sua resposta deve:
-      1. Ser abrangente, mas objetiva
-      2. Incluir informações relevantes para o contexto português quando aplicável
-      3. Ser estruturada em parágrafos para fácil leitura
-      4. Incluir exemplos ou casos de uso quando apropriado
-      5. Ter entre 200-300 palavras
-    `;
-    
-    // Chamada para a API do Gemini
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${googleApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: promptTemplate }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Erro na API do Gemini:", errorData);
-      throw new Error(`Erro na API do Gemini: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Extrai o texto gerado pela IA
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-                       "Não foi possível gerar uma resposta para esta pergunta.";
-    
-    // Salvar a consulta no histórico
-    const queryId = crypto.randomUUID();
-    
-    try {
-      const { error: historyError } = await supabase
-        .from('query_history')
-        .insert([
-          { 
-            id: queryId,
-            query_text: query,
-            was_successful: true,
-            language: 'pt',
-            is_ai_response: true
-          }
-        ]);
-        
-      if (historyError) {
-        console.error("Erro ao salvar no histórico:", historyError);
-      }
-    } catch (historyErr) {
-      console.error("Exceção ao salvar no histórico:", historyErr);
-    }
-    
-    return {
-      message: aiResponse,
-      sqlQuery: "",
-      results: null,
-      queryId: queryId,
-      isAIResponse: true
-    };
-  } catch (error) {
-    console.error("Erro ao processar consulta de conhecimento geral:", error);
-    return {
-      message: `Ocorreu um erro ao processar sua consulta: ${error.message}`,
-      sqlQuery: "",
-      results: null,
-      error: true
-    };
   }
 }
 
@@ -468,53 +305,12 @@ serve(async (req) => {
       );
     }
 
-    console.log("Received query:", query);
-    
     const queryId = crypto.randomUUID();
-    let isAIResponse = false;
     
-    // Verifica se a consulta é de conhecimento geral (não depende de dados)
-    if (isGeneralKnowledgeQuery(query)) {
-      console.log("Identificada como consulta de conhecimento geral:", query);
-      const aiResult = await handleGeneralKnowledgeQuery(query);
-      
-      return new Response(
-        JSON.stringify({
-          ...aiResult,
-          queryId
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-    
-    // Continue com o fluxo normal para consultas baseadas em dados
     // Generate SQL from the query
     const sqlResult = await generateSQL(query);
     
     if (sqlResult.error) {
-      // Save the failed query to history
-      try {
-        const { error: historyError } = await supabase
-          .from('query_history')
-          .insert([
-            { 
-              id: queryId,
-              query_text: query,
-              was_successful: false,
-              language: 'pt',
-              error_message: sqlResult.message
-            }
-          ]);
-          
-        if (historyError) {
-          console.error("Error saving to history:", historyError);
-        }
-      } catch (historyErr) {
-        console.error("Exception saving to history:", historyErr);
-      }
-      
       return new Response(
         JSON.stringify({
           ...sqlResult,
@@ -530,28 +326,6 @@ serve(async (req) => {
     const executionResult = await executeSQL(sqlResult.sqlQuery);
     
     if (executionResult.error) {
-      // Save the failed query to history
-      try {
-        const { error: historyError } = await supabase
-          .from('query_history')
-          .insert([
-            { 
-              id: queryId,
-              query_text: query,
-              was_successful: false,
-              language: 'pt',
-              sql_query: sqlResult.sqlQuery,
-              error_message: executionResult.message
-            }
-          ]);
-          
-        if (historyError) {
-          console.error("Error saving to history:", historyError);
-        }
-      } catch (historyErr) {
-        console.error("Exception saving to history:", historyErr);
-      }
-      
       return new Response(
         JSON.stringify({
           ...executionResult,
@@ -564,51 +338,13 @@ serve(async (req) => {
       );
     }
     
-    // Process the execution results
     let responseMessage;
-    let analysisResult = null;
     
     if (executionResult.noResults) {
       responseMessage = "Não encontrei dados correspondentes à sua consulta. Você pode tentar reformular sua pergunta ou explorar outro tema.";
-      
-      // Try to analyze the query to see if we can provide more helpful information
-      try {
-        const { data: analysisData } = await supabase.functions.invoke('analyze-query', {
-          body: { query }
-        });
-        
-        if (analysisData) {
-          analysisResult = analysisData;
-        }
-      } catch (analysisError) {
-        console.error("Error calling analyze-query function:", analysisError);
-      }
     } else {
       // Generate a natural language response based on the results
       responseMessage = await generateResponse(query, sqlResult.sqlQuery, executionResult.results);
-    }
-    
-    // Save the successful query to history
-    try {
-      const { error: historyError } = await supabase
-        .from('query_history')
-        .insert([
-          { 
-            id: queryId,
-            query_text: query,
-            was_successful: true,
-            language: 'pt',
-            sql_query: sqlResult.sqlQuery,
-            result_count: executionResult.results ? executionResult.results.length : 0,
-            analysis_result: analysisResult
-          }
-        ]);
-        
-      if (historyError) {
-        console.error("Error saving to history:", historyError);
-      }
-    } catch (historyErr) {
-      console.error("Exception saving to history:", historyErr);
     }
     
     return new Response(
@@ -617,9 +353,7 @@ serve(async (req) => {
         sqlQuery: sqlResult.sqlQuery,
         results: executionResult.results,
         noResults: executionResult.noResults,
-        queryId,
-        analysis: analysisResult,
-        isAIResponse
+        queryId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
