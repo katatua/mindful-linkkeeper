@@ -93,7 +93,12 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
       'ani_patent_holders': 'Titulares de patentes',
       'ani_policy_frameworks': 'Estruturas de políticas de inovação',
       'ani_international_collaborations': 'Colaborações internacionais de pesquisa',
-      'ani_funding_applications': 'Candidaturas a programas de financiamento'
+      'ani_funding_applications': 'Candidaturas a programas de financiamento',
+      'ani_startups': 'Startups e empresas inovadoras',
+      'ani_tech_adoption': 'Adoção de tecnologias por setor',
+      'ani_innovation_networks': 'Redes de inovação e colaboração',
+      'ani_innovation_policies': 'Políticas de inovação implementadas',
+      'ani_research_publications': 'Publicações científicas e acadêmicas'
     };
     
     return typeMap[key] || 'Dados de inovação';

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,10 +56,36 @@ export const AIAssistant: React.FC = () => {
   });
   const { toast } = useToast();
   
-  const portugueseSuggestions = suggestedDatabaseQueries.filter(q => 
-    /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
-    /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
-  ).slice(0, 6);
+  // Use todos os exemplos portugueses, não apenas os primeiros 6
+  // Selecionar vários exemplos diferentes para exibir, incluindo as novas perguntas
+  const getPortugueseSuggestions = () => {
+    // Filtrar para garantir que estamos mostrando apenas consultas em português
+    const allPortugueseSuggestions = suggestedDatabaseQueries.filter(q => 
+      /[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/.test(q) || 
+      /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
+    );
+    
+    // Garantir que temos uma boa mistura de perguntas originais e novas
+    // Selecionar algumas das perguntas originais (1-5)
+    const originalSuggestions = allPortugueseSuggestions.slice(0, 5);
+    
+    // Selecionar algumas das perguntas mais recentes (adicionadas)
+    const recentSuggestions = allPortugueseSuggestions.slice(-15);
+    
+    // Combinar e misturar para uma seleção diversa
+    let selectedSuggestions = [...originalSuggestions];
+    
+    // Adicionar consultas das novas adicionadas (evitando duplicações)
+    for (const suggestion of recentSuggestions) {
+      if (!selectedSuggestions.includes(suggestion) && selectedSuggestions.length < 12) {
+        selectedSuggestions.push(suggestion);
+      }
+    }
+    
+    return selectedSuggestions;
+  };
+  
+  const portugueseSuggestions = getPortugueseSuggestions();
   
   useEffect(() => {
     loadDummyData();
