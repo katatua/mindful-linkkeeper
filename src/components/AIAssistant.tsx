@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -234,99 +233,6 @@ export const AIAssistant: React.FC = () => {
         )}
       </div>
     );
-  };
-
-  const generateFundingProgramsData = (silent: boolean = false) => {
-    setIsLoading(true);
-    
-    try {
-      const fundingTypes = ['european', 'national', 'private', 'regional', 'international'];
-      const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation', 'Biotechnology', 'Quantum Computing', 'Aerospace', 'Marine Sciences', 'Cybersecurity'];
-      
-      const programs: FundingProgram[] = [];
-      const now = new Date();
-      const oneYearFromNow = new Date(now);
-      oneYearFromNow.setFullYear(now.getFullYear() + 1);
-      
-      for (let i = 0; i < 15; i++) {
-        const applicationDeadline = new Date(now);
-        applicationDeadline.setDate(applicationDeadline.getDate() + Math.floor(Math.random() * 180) + 30);
-        
-        const endDate = new Date(applicationDeadline);
-        endDate.setMonth(applicationDeadline.getMonth() + Math.floor(Math.random() * 24) + 6);
-        
-        const startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 30));
-        
-        const sectorCount = Math.floor(Math.random() * 3) + 1;
-        const sectorFocus: string[] = [];
-        for (let j = 0; j < sectorCount; j++) {
-          const sector = sectors[Math.floor(Math.random() * sectors.length)];
-          if (!sectorFocus.includes(sector)) {
-            sectorFocus.push(sector);
-          }
-        }
-        
-        programs.push({
-          name: `${['Innovation', 'Research', 'Development', 'Technology', 'Horizon', 'Future', 'Next-Gen'][Math.floor(Math.random() * 7)]} Program ${i + 1} - ${sectors[Math.floor(Math.random() * sectors.length)]}`,
-          description: `This funding program aims to support innovative projects in ${sectorFocus.join(' and ')} with an emphasis on sustainable and scalable solutions for the Portuguese market and beyond.`,
-          total_budget: Math.floor(Math.random() * 10000000) + 500000,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0],
-          application_deadline: applicationDeadline.toISOString().split('T')[0],
-          next_call_date: new Date(now.getTime() + Math.random() * (applicationDeadline.getTime() - now.getTime())).toISOString().split('T')[0],
-          funding_type: fundingTypes[Math.floor(Math.random() * fundingTypes.length)],
-          sector_focus: sectorFocus,
-          eligibility_criteria: `Organizations must ${['be registered in Portugal', 'have operations in the EU', 'be SMEs with less than 250 employees', 'be research institutions'][Math.floor(Math.random() * 4)]} and have at least ${[1, 2, 3][Math.floor(Math.random() * 3)]} years of operation.`,
-          application_process: 'Online application with required documentation',
-          review_time_days: Math.floor(Math.random() * 60) + 30,
-          success_rate: parseFloat((Math.random() * 0.5 + 0.2).toFixed(2)),
-        });
-      }
-      
-      saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, programs);
-      setDummyPrograms(programs);
-      
-      if (!silent) {
-        toast({
-          title: "Success",
-          description: `Generated ${programs.length} funding programs and saved to localStorage.`,
-        });
-        
-        const assistantMessage: Message = {
-          id: genId(),
-          content: `I've generated ${programs.length} funding programs. These have been saved to localStorage and will persist across browser sessions.`,
-          role: 'assistant',
-          results: programs,
-          timestamp: new Date()
-        };
-        
-        setActiveResponse(assistantMessage);
-      }
-      
-    } catch (error) {
-      console.error('Error generating funding programs:', error);
-      
-      if (!silent) {
-        const errorMessage: Message = {
-          id: genId(),
-          content: `Failed to generate funding programs: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
-          role: 'assistant',
-          error: true,
-          timestamp: new Date()
-        };
-        
-        setActiveResponse(errorMessage);
-        
-        toast({
-          title: "Error",
-          description: "Failed to generate funding programs. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
