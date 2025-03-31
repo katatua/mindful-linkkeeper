@@ -135,17 +135,17 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           </CardHeader>
           <CardContent className="p-4 flex-1 overflow-auto">
             <div className="text-center mb-4">
-              <p className="text-sm text-gray-500">Para perguntas gerais sobre a ANI, use o assistente maximizado:</p>
+              <p className="text-sm text-gray-500">Para <strong>perguntas gerais sobre a ANI</strong>, use o assistente maximizado:</p>
               <Button 
                 variant="outline" 
                 className="mt-2"
                 onClick={maximizeWidget}
               >
-                Abrir Assistente ANI
+                Abrir Assistente ANI Geral
               </Button>
             </div>
             <div className="border-t pt-4">
-              <p className="text-sm text-gray-500 mb-4">Para consultas à base de dados:</p>
+              <p className="text-sm text-gray-500 mb-4">Para <strong>consultas sobre dados e estatísticas</strong>:</p>
               <AIChat />
             </div>
           </CardContent>

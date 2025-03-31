@@ -11,8 +11,8 @@ export const AIAssistant: React.FC = () => {
         <InfoIcon className="h-4 w-4 text-blue-500" />
         <AlertTitle>Dica de uso</AlertTitle>
         <AlertDescription>
-          Para consultas sobre dados e estatísticas, use este assistente.
-          Para perguntas gerais sobre a ANI, utilize o assistente flutuante no canto inferior direito.
+          Este assistente é dedicado exclusivamente para consultas sobre <strong>dados e estatísticas</strong> da base de dados.
+          Para perguntas gerais sobre a ANI ou outras informações, utilize o assistente flutuante no canto inferior direito.
         </AlertDescription>
       </Alert>
       <AIChat />
