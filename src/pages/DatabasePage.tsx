@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -52,6 +51,16 @@ export const DatabasePage: React.FC = () => {
 
   // Handle tab changes and update URL
   const handleTabChange = (value: string) => {
+    // If the tab is query or history, navigate to the query-assistant page
+    if (value === 'query') {
+      navigate('/query-assistant?tab=assistente');
+      return;
+    } else if (value === 'history') {
+      navigate('/query-assistant?tab=historia');
+      return;
+    }
+    
+    // Otherwise update the current page URL
     setActiveTab(value);
     navigate(`/database?tab=${value}`, { replace: true });
   };
@@ -365,7 +374,22 @@ export const DatabasePage: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="history">
-            <QueryHistory />
+            <Card>
+              <CardHeader>
+                <CardTitle>Query History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  View your recent query history and results.
+                </p>
+                <Button asChild>
+                  <Link to="/query-assistant?tab=historia">
+                    <History className="h-4 w-4 mr-2" />
+                    View Full Query History
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
