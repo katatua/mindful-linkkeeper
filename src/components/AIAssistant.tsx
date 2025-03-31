@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +27,7 @@ import {
   STORAGE_KEYS, 
   initializeDummyDataIfNeeded 
 } from '@/utils/storageUtils';
+import { LoadingStatusDisplay } from '@/components/database/LoadingStatusDisplay';
 
 interface Message {
   id: string;
@@ -73,30 +73,30 @@ export const AIAssistant: React.FC = () => {
   ).slice(0, 6);
   
   useEffect(() => {
-    const loadDummyData = async () => {
-      setIsInitializing(true);
-      try {
-        console.log("Iniciando carregamento de dados de amostra...");
-        await initializeDummyDataIfNeeded();
-        console.log('Todos os dados de amostra foram carregados com sucesso');
-        toast({
-          title: "Dados Carregados",
-          description: "Todos os dados de amostra foram carregados com sucesso.",
-        });
-      } catch (error) {
-        console.error('Erro ao inicializar dados de amostra:', error);
-        toast({
-          title: "Erro",
-          description: "Falha ao carregar dados de amostra. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-    
     loadDummyData();
   }, [toast]);
+  
+  const loadDummyData = async () => {
+    setIsInitializing(true);
+    try {
+      console.log("Iniciando carregamento de dados de amostra...");
+      await initializeDummyDataIfNeeded();
+      console.log('Todos os dados de amostra foram carregados com sucesso');
+      toast({
+        title: "Dados Carregados",
+        description: "Todos os dados de amostra foram carregados com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao inicializar dados de amostra:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao carregar dados de amostra. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsInitializing(false);
+    }
+  };
   
   const handleSuggestionClick = async (question: string) => {
     setInput(question);
@@ -239,6 +239,8 @@ export const AIAssistant: React.FC = () => {
 
   return (
     <div className="w-full">
+      <LoadingStatusDisplay onRefresh={loadDummyData} />
+      
       <div className="mb-6">
         <h3 className="text-base font-semibold mb-3">Consultas Sugeridas:</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
