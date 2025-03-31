@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
-// These values will still be defined but not used for now
+// These values will be defined but not used since we're using mock data
 const googleApiKey = Deno.env.get('GEMINI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -18,7 +18,7 @@ const corsHeaders = {
 };
 
 // Mock responses for development and testing
-const mockResponses = {
+const mockResponses: Record<string, any> = {
   "Quais são as fontes de dados mais recentes?": {
     sqlQuery: "SELECT * FROM fontes_dados ORDER BY data_importacao DESC LIMIT 10",
     results: [
@@ -62,6 +62,7 @@ const mockResponses = {
   }
 };
 
+// This function is not used since we're focusing on mock data
 async function executeQuery(query: string): Promise<{ data: any; error: any }> {
   try {
     console.log("Executing SQL query:", query);
@@ -133,7 +134,13 @@ async function processUserQuery(userQuery: string): Promise<{
     
     // Find fuzzy match in mock responses
     for (const [key, value] of Object.entries(mockResponses)) {
-      if (userQuery.toLowerCase().includes(key.toLowerCase().split(" ")[0])) {
+      // Check if key words from the mock response are in the user query
+      const keyWords = key.toLowerCase().split(" ");
+      const userQueryLower = userQuery.toLowerCase();
+      
+      // If one of the first two words (usually the most important) match, consider it a fuzzy match
+      if (keyWords.length > 0 && userQueryLower.includes(keyWords[0]) || 
+          (keyWords.length > 1 && userQueryLower.includes(keyWords[1]))) {
         console.log("Found fuzzy mock response match with:", key);
         return {
           message: `Resposta aproximada baseada em: "${key}"\n\n${value.explanation}`,
