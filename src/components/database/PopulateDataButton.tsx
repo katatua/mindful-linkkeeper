@@ -2,12 +2,154 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { DatabaseIcon, Loader2 } from 'lucide-react';
+import { ArrowDown, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { QueryDataRecommendations } from './QueryDataRecommendations';
+
+interface QueryDataRecommendationsProps {
+  query: string;
+  queryId?: string;
+  insertStatements: string[];
+  onInsertSuccess?: () => void;
+}
+
+export const QueryDataRecommendations: React.FC<QueryDataRecommendationsProps> = ({
+  query,
+  queryId,
+  insertStatements,
+  onInsertSuccess
+}) => {
+  const [isInserting, setIsInserting] = useState(false);
+  const { toast } = useToast();
+
+  const handleInsertData = async () => {
+    if (!insertStatements || insertStatements.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Não há instruções de inserção para executar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsInserting(true);
+    try {
+      // Execute each insert statement
+      const tables: string[] = [];
+      let hasErrors = false;
+      
+      for (const insertSql of insertStatements) {
+        // Extract table name from INSERT INTO statement
+        const tableMatch = insertSql.match(/INSERT INTO\s+([^\s\(]+)/i);
+        if (tableMatch && tableMatch[1] && !tables.includes(tableMatch[1])) {
+          tables.push(tableMatch[1]);
+        }
+        
+        console.log("Executando SQL:", insertSql);
+        
+        const { data, error } = await supabase.rpc('execute_sql_query', {
+          sql_query: insertSql
+        });
+        
+        console.log("Resultado da execução SQL:", data, error);
+        
+        if (error) {
+          console.error("Erro ao executar SQL:", error);
+          toast({
+            title: "Erro",
+            description: `Falha ao executar SQL: ${error.message}`,
+            variant: "destructive",
+          });
+          hasErrors = true;
+          break;
+        }
+        
+        // Check if data has an error status
+        if (data && typeof data === 'object' && 'status' in data && data.status === 'error') {
+          const errorMessage = 'message' in data ? data.message : 'Erro desconhecido';
+          console.error("Erro no resultado SQL:", errorMessage);
+          toast({
+            title: "Erro",
+            description: `Erro ao executar SQL: ${errorMessage}`,
+            variant: "destructive",
+          });
+          hasErrors = true;
+          break;
+        }
+      }
+      
+      if (!hasErrors) {
+        // Update query_history to indicate data was populated
+        if (queryId) {
+          await supabase.from('query_history').update({
+            was_successful: true,
+            created_tables: tables,
+            error_message: null
+          }).eq('id', queryId);
+        }
+        
+        toast({
+          title: "Sucesso",
+          description: "Banco de dados populado com sucesso. Tente sua consulta novamente.",
+        });
+        
+        // Call the onInsertSuccess callback if provided
+        // Add a significant delay to ensure database triggers complete
+        if (onInsertSuccess) {
+          console.log("Aguardando 2 segundos antes de chamar onInsertSuccess");
+          setTimeout(() => {
+            console.log("Chamando onInsertSuccess");
+            onInsertSuccess();
+          }, 2000); // Increase delay to ensure database triggers complete
+        }
+      }
+      
+    } catch (error) {
+      console.error("Erro ao executar inserções:", error);
+      toast({
+        title: "Erro",
+        description: `Falha ao popular banco de dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsInserting(false);
+    }
+  };
+
+  if (!insertStatements || insertStatements.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 p-4 bg-muted/50 rounded-md border">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold mb-1">Dados Recomendados</h3>
+        <Button
+          size="sm"
+          variant="default"
+          onClick={handleInsertData}
+          disabled={isInserting}
+          className="flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700"
+        >
+          {isInserting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              Inserindo...
+            </>
+          ) : (
+            <>
+              <ArrowDown className="h-4 w-4 mr-1" />
+              Inserir no Banco de Dados
+            </>
+          )}
+        </Button>
+      </div>
+      
+      <div className="bg-slate-100 p-3 rounded-md text-xs font-mono whitespace-pre-wrap max-h-[200px] overflow-y-auto">
+        {insertStatements.join(';\n\n')}
+      </div>
+    </div>
+  );
+};
 
 interface PopulateDataButtonProps {
   query: string;
@@ -183,28 +325,28 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({
     // 7. Startups
     else if (queryLower.includes("startup") || queryLower.includes("empreendedorismo") || queryLower.includes("entrepreneur")) {
       return {
-        analysis: "Esta consulta está relacionada a startups e empreendedorismo. Preparei dados de amostra para métricas de startups que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
+        analysis: "Esta consulta está relacionada a startups e empreendedorismo. Preparei dados de amostra para startups que podem ser adicionados à sua base de dados.",
+        tables: ["ani_startups"],
         insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Startups Criadas', 'empreendedorismo', 156, 'Lisboa', '2023-12-31', 'Número de startups criadas durante o ano', 'quantidade')`,
+          `INSERT INTO ani_startups (name, founding_year, sector, funding_raised, employees_count, region, description, status) 
+          VALUES ('Talkdesk', 2011, 'Tecnologia', 35000000, 1200, 'Lisboa', 'Software de contact center baseado em cloud', 'active')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Financiamento de Startups', 'empreendedorismo', 78500000, 'Lisboa', '2023-12-31', 'Total de investimento em startups', 'EUR')`,
+          `INSERT INTO ani_startups (name, founding_year, sector, funding_raised, employees_count, region, description, status) 
+          VALUES ('Feedzai', 2009, 'Fintech', 42500000, 600, 'Coimbra', 'Plataforma de prevenção de fraude em tempo real', 'active')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Startups Criadas', 'empreendedorismo', 94, 'Porto', '2023-12-31', 'Número de startups criadas durante o ano', 'quantidade')`,
+          `INSERT INTO ani_startups (name, founding_year, sector, funding_raised, employees_count, region, description, status) 
+          VALUES ('Unbabel', 2013, 'AI/Tradução', 31000000, 450, 'Lisboa', 'Serviço de tradução combinando IA e tradutores humanos', 'active')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Financiamento de Startups', 'empreendedorismo', 42300000, 'Porto', '2023-12-31', 'Total de investimento em startups', 'EUR')`,
+          `INSERT INTO ani_startups (name, founding_year, sector, funding_raised, employees_count, region, description, status) 
+          VALUES ('Veniam', 2012, 'IoT', 26500000, 120, 'Porto', 'Redes mesh para conectar veículos e cidades inteligentes', 'active')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Startups Criadas', 'empreendedorismo', 45, 'Braga', '2023-12-31', 'Número de startups criadas durante o ano', 'quantidade')`,
+          `INSERT INTO ani_startups (name, founding_year, sector, funding_raised, employees_count, region, description, status) 
+          VALUES ('Sword Health', 2015, 'Saúde', 33700000, 350, 'Porto', 'Fisioterapia digital usando sensores e IA', 'active')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Financiamento de Startups', 'empreendedorismo', 18700000, 'Braga', '2023-12-31', 'Total de investimento em startups', 'EUR')`
+          `INSERT INTO ani_startups (name, founding_year, sector, funding_raised, employees_count, region, description, status) 
+          VALUES ('Utrust', 2017, 'Blockchain', 21500000, 85, 'Braga', 'Plataforma de pagamento com criptomoedas', 'active')`
         ],
-        expectedResults: "6 métricas relacionadas a startups nas regiões de Lisboa, Porto e Braga, incluindo número de startups e valor de investimento."
+        expectedResults: "6 startups portuguesas com detalhes sobre financiamento, setor e localização."
       };
     }
     // 8. Instituições de Ensino
@@ -237,25 +379,22 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({
     // 9. Política de inovação
     else if (queryLower.includes("política") || queryLower.includes("regulamentação") || queryLower.includes("regulamento") || queryLower.includes("policy")) {
       return {
-        analysis: "Esta consulta está relacionada a políticas de inovação. Preparei dados de amostra para frameworks de políticas que podem ser adicionados à sua base de dados.",
-        tables: ["ani_policy_frameworks"],
+        analysis: "Esta consulta está relacionada a políticas de inovação. Preparei dados de amostra para políticas de inovação que podem ser adicionados à sua base de dados.",
+        tables: ["ani_innovation_policies"],
         insertStatements: [
-          `INSERT INTO ani_policy_frameworks (title, description, status, implementation_date, key_objectives) 
-          VALUES ('Estratégia Nacional de Inovação 2030', 'Plano estratégico para o desenvolvimento da inovação em Portugal até 2030', 'active', '2023-01-15', ARRAY['Aumentar investimento em I&D', 'Promover a transferência de tecnologia', 'Fortalecer o ecossistema de inovação'])`,
+          `INSERT INTO ani_innovation_policies (policy_name, implementation_year, policy_type, description, target_sectors, status, issuing_authority) 
+          VALUES ('Estratégia Nacional para a Investigação e Inovação 2030', 2021, 'Estratégia', 'Plano estratégico de longo prazo para fortalecer o sistema nacional de inovação e alcançar 3% do PIB em investimento em I&D até 2030', ARRAY['Todos os setores'], 'active', 'Ministério da Ciência, Tecnologia e Ensino Superior')`,
           
-          `INSERT INTO ani_policy_frameworks (title, description, status, implementation_date, key_objectives) 
-          VALUES ('Regulamento de Incentivos Fiscais para I&D', 'Quadro regulatório para benefícios fiscais em atividades de I&D', 'active', '2022-07-01', ARRAY['Estimular o investimento privado em I&D', 'Reduzir a carga fiscal para empresas inovadoras', 'Atrair centros de R&D internacionais'])`,
+          `INSERT INTO ani_innovation_policies (policy_name, implementation_year, policy_type, description, target_sectors, status, issuing_authority) 
+          VALUES ('Incentivos Fiscais para I&D (SIFIDE II)', 2014, 'Incentivo Fiscal', 'Sistema de incentivos fiscais para atividades de I&D empresarial, permitindo deduções fiscais de até 82,5% das despesas em investigação', ARRAY['Todos os setores empresariais'], 'active', 'Ministério da Economia')`,
           
-          `INSERT INTO ani_policy_frameworks (title, description, status, implementation_date, key_objectives) 
-          VALUES ('Plano de Ação para Digitalização', 'Estratégia nacional para a transformação digital da economia', 'active', '2023-04-10', ARRAY['Digitalizar PMEs', 'Desenvolver competências digitais', 'Modernizar a administração pública'])`,
+          `INSERT INTO ani_innovation_policies (policy_name, implementation_year, policy_type, description, target_sectors, status, issuing_authority) 
+          VALUES ('Portugal 2020 - Sistema de Incentivos à Inovação', 2014, 'Programa de Financiamento', 'Programa de apoio financeiro para projetos de inovação empresarial, com foco em novos produtos, processos e expansão internacional', ARRAY['Indústria', 'Serviços', 'Comércio'], 'completed', 'Agência para o Desenvolvimento e Inovação')`,
           
-          `INSERT INTO ani_policy_frameworks (title, description, status, implementation_date, key_objectives) 
-          VALUES ('Política de Dados Abertos', 'Regulamentação sobre o acesso e utilização de dados públicos', 'active', '2022-09-20', ARRAY['Promover a transparência', 'Estimular a inovação baseada em dados', 'Melhorar a eficiência dos serviços públicos'])`,
-          
-          `INSERT INTO ani_policy_frameworks (title, description, status, implementation_date, key_objectives) 
-          VALUES ('Estratégia para a Economia Circular', 'Plano para transição para um modelo econômico circular', 'active', '2023-03-05', ARRAY['Reduzir o desperdício', 'Promover a reutilização de recursos', 'Criar novos modelos de negócio sustentáveis'])`
+          `INSERT INTO ani_innovation_policies (policy_name, implementation_year, policy_type, description, target_sectors, status, issuing_authority) 
+          VALUES ('Programa Startup Portugal', 2016, 'Programa de Apoio', 'Estratégia nacional para o empreendedorismo, incluindo medidas de financiamento, mentoria e simplificação administrativa para startups', ARRAY['Startups', 'Tecnologia'], 'active', 'Ministério da Economia')`
         ],
-        expectedResults: "5 frameworks de políticas relacionadas à inovação, incluindo objetivos, datas de implementação e status."
+        expectedResults: "4 políticas de inovação em Portugal, incluindo tipo, setores-alvo e status."
       };
     }
     // 10. Colaborações internacionais
@@ -309,247 +448,82 @@ export const PopulateDataButton: React.FC<PopulateDataButtonProps> = ({
         expectedResults: "6 métricas relacionadas a investimentos em I&D, incluindo valores nacionais e regionais."
       };
     }
-    // 12. Emprego e inovação
-    else if (queryLower.includes("emprego") || queryLower.includes("trabalho") || queryLower.includes("job") || queryLower.includes("employment")) {
+    // 12. Adoção de tecnologia
+    else if (queryLower.includes("adoção") || queryLower.includes("tecnologia") || queryLower.includes("technology adoption")) {
       return {
-        analysis: "Esta consulta está relacionada a emprego e inovação. Preparei dados de amostra para métricas de emprego que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
+        analysis: "Esta consulta está relacionada à adoção de tecnologia. Preparei dados de amostra para taxas de adoção de tecnologia que podem ser adicionados à sua base de dados.",
+        tables: ["ani_tech_adoption"],
         insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empregos em Setores de Alta Tecnologia', 'emprego', 127500, 'Nacional', '2023-12-31', 'Número de empregos em setores de alta tecnologia', 'quantidade')`,
+          `INSERT INTO ani_tech_adoption (technology_name, sector, adoption_rate, measurement_year, region, benefits, challenges) 
+          VALUES ('Inteligência Artificial', 'Saúde', 36.7, 2023, 'Nacional', ARRAY['Diagnóstico mais preciso', 'Redução de custos', 'Personalização de tratamentos'], ARRAY['Regulamentação', 'Privacidade de dados', 'Custos de implementação'])`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empregos em I&D', 'emprego', 58400, 'Nacional', '2023-12-31', 'Número de empregos dedicados a I&D', 'quantidade')`,
+          `INSERT INTO ani_tech_adoption (technology_name, sector, adoption_rate, measurement_year, region, benefits, challenges) 
+          VALUES ('Cloud Computing', 'Serviços Financeiros', 78.3, 2023, 'Nacional', ARRAY['Escalabilidade', 'Redução de custos de TI', 'Acesso remoto'], ARRAY['Segurança', 'Compliance', 'Migração de sistemas legados'])`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Pesquisadores por 1000 Habitantes', 'emprego', 9.7, 'Nacional', '2023-12-31', 'Número de pesquisadores por 1000 habitantes', 'taxa')`,
+          `INSERT INTO ani_tech_adoption (technology_name, sector, adoption_rate, measurement_year, region, benefits, challenges) 
+          VALUES ('Internet das Coisas', 'Manufatura', 52.1, 2023, 'Nacional', ARRAY['Monitoramento em tempo real', 'Manutenção preventiva', 'Otimização de processos'], ARRAY['Cibersegurança', 'Integração com sistemas existentes', 'Complexidade da implementação'])`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empregos Criados por Startups', 'emprego', 12800, 'Nacional', '2023-12-31', 'Número de empregos criados por startups', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Crescimento do Emprego em Tecnologia', 'emprego', 5.8, 'Nacional', '2023-12-31', 'Taxa de crescimento anual do emprego em tecnologia', 'percent')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empregos em Setores de Alta Tecnologia', 'emprego', 68200, 'Lisboa', '2023-12-31', 'Número de empregos em setores de alta tecnologia na região de Lisboa', 'quantidade')`
+          `INSERT INTO ani_tech_adoption (technology_name, sector, adoption_rate, measurement_year, region, benefits, challenges) 
+          VALUES ('Blockchain', 'Serviços Financeiros', 23.4, 2023, 'Nacional', ARRAY['Segurança de transações', 'Transparência', 'Redução de fraudes'], ARRAY['Escalabilidade', 'Regulamentação', 'Consumo de energia'])`
         ],
-        expectedResults: "6 métricas relacionadas a emprego e inovação, incluindo dados sobre empregos em alta tecnologia e I&D."
+        expectedResults: "4 registros sobre taxas de adoção de diferentes tecnologias em vários setores, incluindo benefícios e desafios."
       };
     }
-    // 13. Exportações tecnológicas
-    else if (queryLower.includes("exportação") || queryLower.includes("exportações") || queryLower.includes("export")) {
+    // 13. Redes de inovação
+    else if (queryLower.includes("rede") || queryLower.includes("parceria") || queryLower.includes("ecossistema") || queryLower.includes("network")) {
       return {
-        analysis: "Esta consulta está relacionada a exportações tecnológicas. Preparei dados de amostra para métricas de exportação que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
+        analysis: "Esta consulta está relacionada a redes de inovação e ecossistemas. Preparei dados de amostra para redes de inovação que podem ser adicionados à sua base de dados.",
+        tables: ["ani_innovation_networks"],
         insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Exportações de Alta Tecnologia', 'economia', 3850000000, 'Nacional', '2023-12-31', 'Valor total de exportações de produtos de alta tecnologia', 'EUR')`,
+          `INSERT INTO ani_innovation_networks (network_name, founding_year, member_count, focus_areas, geographic_scope, key_partners, achievements) 
+          VALUES ('Hub de Inovação de Lisboa', 2016, 124, ARRAY['Smart Cities', 'Mobilidade', 'Energia'], 'Regional - Lisboa', ARRAY['Câmara Municipal de Lisboa', 'Universidade de Lisboa', 'EDP Inovação'], 'Lançamento de 35 startups, 12 patentes registadas, €25M em financiamento angariado')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Percentual de Exportações Tecnológicas', 'economia', 7.3, 'Nacional', '2023-12-31', 'Percentual das exportações totais representado por produtos de alta tecnologia', 'percent')`,
+          `INSERT INTO ani_innovation_networks (network_name, founding_year, member_count, focus_areas, geographic_scope, key_partners, achievements) 
+          VALUES ('Rede Nacional de Inovação em Saúde', 2018, 87, ARRAY['Dispositivos Médicos', 'Telemedicina', 'Biotecnologia'], 'Nacional', ARRAY['Ministério da Saúde', 'Universidade do Porto', 'Hospitais Centrais'], 'Desenvolvimento de 8 dispositivos médicos inovadores, 5 ensaios clínicos, €15M em financiamento de I&D')`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Crescimento das Exportações Tecnológicas', 'economia', 8.5, 'Nacional', '2023-12-31', 'Taxa de crescimento anual das exportações tecnológicas', 'percent')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Exportações de Software', 'economia', 1420000000, 'Nacional', '2023-12-31', 'Valor das exportações de software e serviços de TI', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Exportações Farmacêuticas', 'economia', 875000000, 'Nacional', '2023-12-31', 'Valor das exportações de produtos farmacêuticos', 'EUR')`
+          `INSERT INTO ani_innovation_networks (network_name, founding_year, member_count, focus_areas, geographic_scope, key_partners, achievements) 
+          VALUES ('Portugal Blue Economy', 2019, 56, ARRAY['Economia do Mar', 'Aquacultura', 'Portos Inteligentes'], 'Nacional', ARRAY['IPMA', 'Universidade dos Açores', 'Administração dos Portos'], 'Implementação de 3 projetos-piloto de aquacultura sustentável, €7M em investimento internacional')`
         ],
-        expectedResults: "5 métricas relacionadas a exportações tecnológicas, incluindo valores totais e por setor."
+        expectedResults: "3 registros sobre redes de inovação em Portugal, incluindo foco, parceiros e realizações."
       };
     }
-    // 14. Formação e competências
-    else if (queryLower.includes("formação") || queryLower.includes("competência") || queryLower.includes("educação") || queryLower.includes("education") || queryLower.includes("skill")) {
+    // 14. Publicações de pesquisa
+    else if (queryLower.includes("publicação") || queryLower.includes("pesquisa") || queryLower.includes("artigo") || queryLower.includes("publication") || queryLower.includes("research")) {
       return {
-        analysis: "Esta consulta está relacionada a formação e competências. Preparei dados de amostra para métricas de educação que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
+        analysis: "Esta consulta está relacionada a publicações acadêmicas e pesquisa. Preparei dados de amostra para publicações de pesquisa que podem ser adicionados à sua base de dados.",
+        tables: ["ani_research_publications"],
         insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Graduados em STEM', 'educação', 18700, 'Nacional', '2023-12-31', 'Número de graduados em áreas STEM (Ciências, Tecnologia, Engenharia e Matemática)', 'quantidade')`,
+          `INSERT INTO ani_research_publications (title, authors, publication_date, journal, institution, research_area, citation_count, impact_factor, is_open_access) 
+          VALUES ('Advances in Portuguese Natural Language Processing using Transformer Models', ARRAY['Silva, Maria', 'Santos, João', 'Ferreira, Ana'], '2023-03-15', 'Computational Linguistics Journal', 'Universidade de Lisboa', 'Inteligência Artificial', 48, 3.8, true)`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Doutoramentos Concluídos', 'educação', 2450, 'Nacional', '2023-12-31', 'Número de doutoramentos concluídos', 'quantidade')`,
+          `INSERT INTO ani_research_publications (title, authors, publication_date, journal, institution, research_area, citation_count, impact_factor, is_open_access) 
+          VALUES ('Novel Materials for Hydrogen Storage: A Portuguese Research Initiative', ARRAY['Oliveira, António', 'Costa, Sofia', 'Rodrigues, Pedro'], '2022-09-22', 'Advanced Materials Science', 'Universidade do Porto', 'Materiais Avançados', 76, 4.2, false)`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Formação Contínua em Tecnologia', 'educação', 84500, 'Nacional', '2023-12-31', 'Número de profissionais que participaram em formação contínua em tecnologia', 'quantidade')`,
+          `INSERT INTO ani_research_publications (title, authors, publication_date, journal, institution, research_area, citation_count, impact_factor, is_open_access) 
+          VALUES ('Marine Biodiversity Assessment of the Portuguese Atlantic Coast', ARRAY['Martins, Carlos', 'Silva, Teresa', 'Almeida, Ricardo'], '2023-01-10', 'Marine Biology International', 'Universidade dos Açores', 'Biologia Marinha', 34, 3.5, true)`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Percentual da População com Competências Digitais', 'educação', 62.5, 'Nacional', '2023-12-31', 'Percentual da população com competências digitais básicas ou acima', 'percent')`,
+          `INSERT INTO ani_research_publications (title, authors, publication_date, journal, institution, research_area, citation_count, impact_factor, is_open_access) 
+          VALUES ('Blockchain Applications in Supply Chain Management: A Case Study from Portuguese Industry', ARRAY['Fernandes, José', 'Correia, Luísa'], '2022-11-05', 'Journal of Business Technology', 'Instituto Superior Técnico', 'Tecnologia de Negócios', 52, 3.1, false)`,
           
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Investimento em Formação Tecnológica', 'educação', 225000000, 'Nacional', '2023-12-31', 'Investimento total em programas de formação tecnológica', 'EUR')`
+          `INSERT INTO ani_research_publications (title, authors, publication_date, journal, institution, research_area, citation_count, impact_factor, is_open_access) 
+          VALUES ('Development of a Novel Machine Learning Algorithm for Cancer Detection', ARRAY['Pereira, Manuel', 'Santos, Catarina', 'Vieira, Francisco'], '2023-04-02', 'Medical AI Research', 'Universidade de Coimbra', 'Medicina/IA', 87, 4.9, true)`
         ],
-        expectedResults: "5 métricas relacionadas a formação e competências, incluindo dados sobre graduados STEM e competências digitais."
+        expectedResults: "5 registros sobre publicações acadêmicas de pesquisadores portugueses em diversas áreas de pesquisa."
       };
     }
-    // 15. Indústria 4.0
-    else if (queryLower.includes("indústria 4.0") || queryLower.includes("industria 4.0") || queryLower.includes("industry 4.0") || queryLower.includes("digitalização") || queryLower.includes("digitalization")) {
-      return {
-        analysis: "Esta consulta está relacionada à Indústria 4.0. Preparei dados de amostra para métricas de Indústria 4.0 que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
-        insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Adoção de Tecnologias 4.0', 'digitalização', 37.5, 'Nacional', '2023-12-31', 'Percentual de empresas que adotaram tecnologias da Indústria 4.0', 'percent')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Investimento em Automação', 'digitalização', 345000000, 'Nacional', '2023-12-31', 'Investimento total em automação e robótica', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('PMEs Digitalizadas', 'digitalização', 42.8, 'Nacional', '2023-12-31', 'Percentual de PMEs com alto nível de integração digital', 'percent')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empresas Utilizando IA', 'digitalização', 18.4, 'Nacional', '2023-12-31', 'Percentual de empresas utilizando inteligência artificial', 'percent')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Produtividade em Manufatura Avançada', 'digitalização', 12.5, 'Nacional', '2023-12-31', 'Aumento de produtividade em empresas com manufatura avançada', 'percent')`
-        ],
-        expectedResults: "5 métricas relacionadas à Indústria 4.0, incluindo taxas de adoção e investimentos em tecnologias avançadas."
-      };
-    }
-    // 16. Centros de inovação
-    else if (queryLower.includes("centro de inovação") || queryLower.includes("centros de inovação") || queryLower.includes("innovation center")) {
-      return {
-        analysis: "Esta consulta está relacionada a centros de inovação. Preparei dados de amostra para instituições de inovação que podem ser adicionados à sua base de dados.",
-        tables: ["ani_institutions"],
-        insertStatements: [
-          `INSERT INTO ani_institutions (institution_name, type, region, founding_date, specialization_areas) 
-          VALUES ('Hub de Inovação de Lisboa', 'Centro de Inovação', 'Lisboa', '2018-05-10', ARRAY['Inteligência Artificial', 'Fintech', 'E-commerce', 'Smart Cities'])`,
-          
-          `INSERT INTO ani_institutions (institution_name, type, region, founding_date, specialization_areas) 
-          VALUES ('Porto Innovation Hub', 'Centro de Inovação', 'Porto', '2016-11-15', ARRAY['Manufatura Avançada', 'Saúde Digital', 'Tecnologias Marítimas', 'Energia'])`,
-          
-          `INSERT INTO ani_institutions (institution_name, type, region, founding_date, specialization_areas) 
-          VALUES ('Centro de Inovação de Braga', 'Centro de Inovação', 'Braga', '2019-03-22', ARRAY['Software', 'Eletrónica', 'Tecnologias de Informação', 'IoT'])`,
-          
-          `INSERT INTO ani_institutions (institution_name, type, region, founding_date, specialization_areas) 
-          VALUES ('Algarve Tech Hub', 'Centro de Inovação', 'Algarve', '2020-07-01', ARRAY['Turismo Digital', 'Tecnologias Sustentáveis', 'Economia Azul', 'Agritech'])`,
-          
-          `INSERT INTO ani_institutions (institution_name, type, region, founding_date, specialization_areas) 
-          VALUES ('Coimbra iHub', 'Centro de Inovação', 'Coimbra', '2017-09-05', ARRAY['Biotecnologia', 'Tecnologias Médicas', 'Digital Health', 'Farmacêutica'])`
-        ],
-        expectedResults: "5 centros de inovação em diferentes regiões de Portugal, incluindo suas áreas de especialização."
-      };
-    }
-    // 17. IA e machine learning
-    else if (queryLower.includes("inteligência artificial") || queryLower.includes("ia") || queryLower.includes("ai") || queryLower.includes("artificial intelligence") || queryLower.includes("machine learning")) {
-      return {
-        analysis: "Esta consulta está relacionada a inteligência artificial e machine learning. Preparei dados de amostra para projetos e métricas de IA que podem ser adicionados à sua base de dados.",
-        tables: ["ani_projects", "ani_metrics"],
-        insertStatements: [
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('AI Portugal 2030', 'Desenvolvimento de um ecossistema nacional de pesquisa em IA', 7800000, 'Active', 'Inteligência Artificial', 'Nacional', 'Fundação para a Ciência e Tecnologia')`,
-          
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Centro de Excelência em ML', 'Estabelecimento de um centro de excelência em machine learning', 4500000, 'Active', 'Inteligência Artificial', 'Lisboa', 'Instituto Superior Técnico')`,
-          
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('IA para Saúde Pública', 'Aplicação de IA para melhorar os sistemas de saúde pública', 3200000, 'Active', 'Saúde', 'Porto', 'Universidade do Porto')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Investimento em IA', 'tecnologia', 145000000, 'Nacional', '2023-12-31', 'Investimento total em inteligência artificial', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Patentes em IA', 'tecnologia', 78, 'Nacional', '2023-12-31', 'Número de patentes registradas em IA', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empresas Utilizando IA', 'tecnologia', 18.4, 'Nacional', '2023-12-31', 'Percentual de empresas utilizando inteligência artificial', 'percent')`
-        ],
-        expectedResults: "3 projetos de pesquisa em IA e 3 métricas relacionadas à adoção e desenvolvimento de inteligência artificial."
-      };
-    }
-    // 18. Sustentabilidade e inovação verde
-    else if (queryLower.includes("sustentabilidade") || queryLower.includes("verde") || queryLower.includes("sustainability") || queryLower.includes("green") || queryLower.includes("ambiental")) {
-      return {
-        analysis: "Esta consulta está relacionada a sustentabilidade e inovação verde. Preparei dados de amostra para projetos e métricas de sustentabilidade que podem ser adicionados à sua base de dados.",
-        tables: ["ani_projects", "ani_metrics"],
-        insertStatements: [
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Portugal Circular 2030', 'Implementação de estratégias de economia circular em indústrias portuguesas', 5400000, 'Active', 'Sustentabilidade', 'Nacional', 'Agência Portuguesa do Ambiente')`,
-          
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Smart Green Cities', 'Desenvolvimento de tecnologias para cidades mais sustentáveis', 6200000, 'Active', 'Sustentabilidade', 'Lisboa', 'Centro de Estudos Ambientais')`,
-          
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Inovação em Materiais Sustentáveis', 'Pesquisa e desenvolvimento de novos materiais biodegradáveis', 3800000, 'Active', 'Materiais', 'Aveiro', 'Universidade de Aveiro')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Investimento em Tecnologias Verdes', 'sustentabilidade', 278000000, 'Nacional', '2023-12-31', 'Investimento total em tecnologias verdes', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Redução de Emissões por Inovação', 'sustentabilidade', 8.7, 'Nacional', '2023-12-31', 'Percentual de redução de emissões devido a inovações tecnológicas', 'percent')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Patentes em Tecnologias Verdes', 'sustentabilidade', 112, 'Nacional', '2023-12-31', 'Número de patentes em tecnologias verdes', 'quantidade')`
-        ],
-        expectedResults: "3 projetos relacionados à sustentabilidade e 3 métricas sobre investimento e inovação em tecnologias verdes."
-      };
-    }
-    // 19. Transferência de tecnologia
-    else if (queryLower.includes("transferência") || queryLower.includes("transferencia") || queryLower.includes("transfer") || queryLower.includes("valorização") || queryLower.includes("valorizacao")) {
-      return {
-        analysis: "Esta consulta está relacionada a transferência de tecnologia. Preparei dados de amostra para métricas de transferência de tecnologia que podem ser adicionados à sua base de dados.",
-        tables: ["ani_metrics"],
-        insertStatements: [
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Acordos de Transferência de Tecnologia', 'transferência', 245, 'Nacional', '2023-12-31', 'Número de acordos formais de transferência de tecnologia', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Spin-offs Acadêmicas', 'transferência', 78, 'Nacional', '2023-12-31', 'Número de spin-offs criadas a partir de instituições acadêmicas', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Receita de Licenciamento', 'transferência', 34500000, 'Nacional', '2023-12-31', 'Receita gerada por licenciamento de tecnologias', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Parcerias Universidade-Empresa', 'transferência', 312, 'Nacional', '2023-12-31', 'Número de parcerias formais entre universidades e empresas', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Projetos de Prova de Conceito', 'transferência', 187, 'Nacional', '2023-12-31', 'Número de projetos de prova de conceito financiados', 'quantidade')`
-        ],
-        expectedResults: "5 métricas relacionadas à transferência de tecnologia, incluindo dados sobre spin-offs e parcerias academia-indústria."
-      };
-    }
-    // 20. Inovação social
-    else if (queryLower.includes("inovação social") || queryLower.includes("social") || queryLower.includes("social innovation") || queryLower.includes("impacto social")) {
-      return {
-        analysis: "Esta consulta está relacionada a inovação social. Preparei dados de amostra para projetos e métricas de inovação social que podem ser adicionados à sua base de dados.",
-        tables: ["ani_projects", "ani_metrics"],
-        insertStatements: [
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Portugal Inovação Social', 'Programa para apoiar iniciativas de inovação com impacto social', 8500000, 'Active', 'Inovação Social', 'Nacional', 'Ministério do Trabalho, Solidariedade e Segurança Social')`,
-          
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Tecnologia para Inclusão', 'Desenvolvimento de soluções tecnológicas para inclusão de pessoas com deficiência', 3700000, 'Active', 'Inovação Social', 'Lisboa', 'Fundação para a Inclusão Digital')`,
-          
-          `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Redes de Inovação Comunitária', 'Criação de redes de inovação centradas na comunidade para resolver desafios locais', 2900000, 'Active', 'Inovação Social', 'Porto', 'Associação de Desenvolvimento Regional')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Investimento em Inovação Social', 'social', 112000000, 'Nacional', '2023-12-31', 'Investimento total em iniciativas de inovação social', 'EUR')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Empresas Sociais Criadas', 'social', 145, 'Nacional', '2023-12-31', 'Número de empresas sociais criadas', 'quantidade')`,
-          
-          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
-          VALUES ('Beneficiários de Projetos de Inovação Social', 'social', 378000, 'Nacional', '2023-12-31', 'Número de pessoas beneficiadas por projetos de inovação social', 'quantidade')`
-        ],
-        expectedResults: "3 projetos de inovação social e 3 métricas sobre investimento e impacto de iniciativas de inovação social."
-      };
-    }
-    // Default response for other queries
+    // Default case for other types of queries
     else {
       return {
         analysis: "Analisei sua consulta e preparei alguns dados de amostra genéricos que podem ser úteis para testar sua base de dados.",
-        tables: ["ani_funding_programs", "ani_projects"],
+        tables: ["ani_metrics", "ani_projects"],
         insertStatements: [
-          `INSERT INTO ani_funding_programs (name, description, total_budget, application_deadline, end_date, sector_focus, funding_type) 
-          VALUES ('Programa de Inovação Geral', 'Financiamento para projetos inovadores em diversas áreas', 5000000, '2025-06-30', '2026-12-31', ARRAY['tecnologia', 'inovação'], 'subsídio')`,
+          `INSERT INTO ani_metrics (name, category, value, region, measurement_date, description, unit) 
+          VALUES ('Investimento em I&D', 'financiamento', 1500000000, 'Nacional', '2023-12-31', 'Total de investimento em I&D em Portugal', 'EUR')`,
           
           `INSERT INTO ani_projects (title, description, funding_amount, status, sector, region, organization) 
-          VALUES ('Projeto de Demonstração', 'Um projeto de exemplo para demonstrar funcionalidades', 500000, 'Active', 'Geral', 'Nacional', 'Organização Exemplo')`
+          VALUES ('Projeto Demonstrativo', 'Um projeto de exemplo para demonstrar funcionalidades', 500000, 'Active', 'Geral', 'Nacional', 'Organização Exemplo')`
         ],
-        expectedResults: "Dados de amostra com um programa de financiamento e um projeto."
+        expectedResults: "Dados de amostra para fins de demonstração."
       };
     }
   };

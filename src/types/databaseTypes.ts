@@ -46,3 +46,74 @@ export interface DocumentoExtraido {
   fileUrl?: string;
   status?: 'pendente' | 'analisado' | 'erro';
 }
+
+export interface AniStartup {
+  id: string;
+  name: string;
+  founding_year: number;
+  sector: string;
+  funding_raised: number;
+  employees_count: number;
+  region: string;
+  description: string;
+  success_metrics?: Record<string, any>;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AniTechAdoption {
+  id: string;
+  technology_name: string;
+  sector: string;
+  adoption_rate: number;
+  measurement_year: number;
+  region: string;
+  benefits: string[];
+  challenges: string[];
+  source?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AniInnovationNetwork {
+  id: string;
+  network_name: string;
+  founding_year: number;
+  member_count: number;
+  focus_areas: string[];
+  geographic_scope: string;
+  key_partners: string[];
+  achievements?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AniInnovationPolicy {
+  id: string;
+  policy_name: string;
+  implementation_year: number;
+  policy_type: string;
+  description?: string;
+  target_sectors: string[];
+  impact_metrics?: Record<string, any>;
+  status: string;
+  issuing_authority?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AniResearchPublication {
+  id: string;
+  title: string;
+  authors: string[];
+  publication_date: string;
+  journal?: string;
+  institution?: string;
+  research_area: string;
+  citation_count: number;
+  impact_factor?: number;
+  is_open_access: boolean;
+  created_at: string;
+  updated_at: string;
+}

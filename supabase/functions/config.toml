@@ -1,0 +1,8 @@
+
+project_id = "ncnewevucbkebrqjtufl"
+
+[functions.gemini-chat]
+verify_jwt = false
+
+[functions.analyze-query]
+verify_jwt = false

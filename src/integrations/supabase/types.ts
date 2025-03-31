@@ -228,6 +228,87 @@ export type Database = {
         }
         Relationships: []
       }
+      ani_innovation_networks: {
+        Row: {
+          achievements: string | null
+          created_at: string
+          focus_areas: string[] | null
+          founding_year: number | null
+          geographic_scope: string | null
+          id: string
+          key_partners: string[] | null
+          member_count: number | null
+          network_name: string
+          updated_at: string
+        }
+        Insert: {
+          achievements?: string | null
+          created_at?: string
+          focus_areas?: string[] | null
+          founding_year?: number | null
+          geographic_scope?: string | null
+          id?: string
+          key_partners?: string[] | null
+          member_count?: number | null
+          network_name: string
+          updated_at?: string
+        }
+        Update: {
+          achievements?: string | null
+          created_at?: string
+          focus_areas?: string[] | null
+          founding_year?: number | null
+          geographic_scope?: string | null
+          id?: string
+          key_partners?: string[] | null
+          member_count?: number | null
+          network_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ani_innovation_policies: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          impact_metrics: Json | null
+          implementation_year: number
+          issuing_authority: string | null
+          policy_name: string
+          policy_type: string
+          status: string | null
+          target_sectors: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_metrics?: Json | null
+          implementation_year: number
+          issuing_authority?: string | null
+          policy_name: string
+          policy_type: string
+          status?: string | null
+          target_sectors?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_metrics?: Json | null
+          implementation_year?: number
+          issuing_authority?: string | null
+          policy_name?: string
+          policy_type?: string
+          status?: string | null
+          target_sectors?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ani_institutions: {
         Row: {
           collaboration_count: number | null
@@ -532,6 +613,51 @@ export type Database = {
           },
         ]
       }
+      ani_research_publications: {
+        Row: {
+          authors: string[] | null
+          citation_count: number | null
+          created_at: string
+          id: string
+          impact_factor: number | null
+          institution: string | null
+          is_open_access: boolean | null
+          journal: string | null
+          publication_date: string | null
+          research_area: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          authors?: string[] | null
+          citation_count?: number | null
+          created_at?: string
+          id?: string
+          impact_factor?: number | null
+          institution?: string | null
+          is_open_access?: boolean | null
+          journal?: string | null
+          publication_date?: string | null
+          research_area: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          authors?: string[] | null
+          citation_count?: number | null
+          created_at?: string
+          id?: string
+          impact_factor?: number | null
+          institution?: string | null
+          is_open_access?: boolean | null
+          journal?: string | null
+          publication_date?: string | null
+          research_area?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ani_researchers: {
         Row: {
           created_at: string
@@ -578,6 +704,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ani_startups: {
+        Row: {
+          created_at: string
+          description: string | null
+          employees_count: number | null
+          founding_year: number
+          funding_raised: number | null
+          id: string
+          name: string
+          region: string | null
+          sector: string
+          status: string | null
+          success_metrics: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          employees_count?: number | null
+          founding_year: number
+          funding_raised?: number | null
+          id?: string
+          name: string
+          region?: string | null
+          sector: string
+          status?: string | null
+          success_metrics?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          employees_count?: number | null
+          founding_year?: number
+          funding_raised?: number | null
+          id?: string
+          name?: string
+          region?: string | null
+          sector?: string
+          status?: string | null
+          success_metrics?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ani_tech_adoption: {
+        Row: {
+          adoption_rate: number | null
+          benefits: string[] | null
+          challenges: string[] | null
+          created_at: string
+          id: string
+          measurement_year: number
+          region: string | null
+          sector: string
+          source: string | null
+          technology_name: string
+          updated_at: string
+        }
+        Insert: {
+          adoption_rate?: number | null
+          benefits?: string[] | null
+          challenges?: string[] | null
+          created_at?: string
+          id?: string
+          measurement_year: number
+          region?: string | null
+          sector: string
+          source?: string | null
+          technology_name: string
+          updated_at?: string
+        }
+        Update: {
+          adoption_rate?: number | null
+          benefits?: string[] | null
+          challenges?: string[] | null
+          created_at?: string
+          id?: string
+          measurement_year?: number
+          region?: string | null
+          sector?: string
+          source?: string | null
+          technology_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       campaign_events: {
         Row: {
