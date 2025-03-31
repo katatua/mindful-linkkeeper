@@ -72,7 +72,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
         const loadedCount = newStatuses.filter(s => s.loaded).length;
         const totalCount = newStatuses.length;
         console.log(`After refresh: ${loadedCount}/${totalCount} data tables loaded`);
-      }, 1000); // Increased from 500ms to 1000ms
+      }, 2000); // Increased from 1000ms to 2000ms for more reliable loading
     } catch (error) {
       setIsRefreshing(false);
       console.error("Error refreshing data:", error);
@@ -162,7 +162,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
         <AccordionItem value="data-details">
           <AccordionTrigger className="text-sm">Ver detalhes</AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
               {statuses.map((status) => (
                 <div key={status.key} className="flex items-center justify-between text-sm">
                   <div className="flex flex-col">
