@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -145,17 +144,12 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     if (error) {
       console.error("Error calling gemini-chat function:", error);
       
-      // Special case for development environment - Gemini API not configured
-      if (error.message && error.message.includes("403 Forbidden")) {
-        return {
-          message: "O serviço de IA está em modo de desenvolvimento. A API do Google Gemini não está configurada. Por favor, adicione uma chave de API válida nas configurações do projeto.",
-          sqlQuery: "",
-          results: null,
-          error: true
-        };
-      }
-      
-      throw new Error(`Failed to call AI service: ${error.message}`);
+      return {
+        message: "Ocorreu um erro ao processar sua consulta. Por favor, tente novamente em alguns instantes.",
+        sqlQuery: "",
+        results: null,
+        error: true
+      };
     }
     
     console.log("Response from edge function:", data);

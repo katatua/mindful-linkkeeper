@@ -1,7 +1,9 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
+// These values will still be defined but not used for now
 const googleApiKey = Deno.env.get('GEMINI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -15,7 +17,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Mock responses when API key is not available
+// Mock responses for development and testing
 const mockResponses = {
   "Quais são as fontes de dados mais recentes?": {
     sqlQuery: "SELECT * FROM fontes_dados ORDER BY data_importacao DESC LIMIT 10",
@@ -97,70 +99,59 @@ async function processUserQuery(userQuery: string): Promise<{
   try {
     console.log("Processing user query:", userQuery);
     
-    // Use mock response if no API key is set
-    if (!googleApiKey) {
-      console.log("No Gemini API key found, using mock response");
-      
-      // Generate mock query ID
-      const queryId = crypto.randomUUID();
-      
-      // Log query to history
-      try {
-        await supabase
-          .from('query_history')
-          .insert([
-            { 
-              query_text: userQuery,
-              was_successful: true,
-              language: 'pt',
-              id: queryId
-            }
-          ]);
-        console.log("Mock query logged to history");
-      } catch (err) {
-        console.error("Error logging mock query:", err);
-      }
-      
-      // Find exact match in mock responses
-      if (mockResponses[userQuery]) {
-        const mockData = mockResponses[userQuery];
-        return {
-          message: mockData.explanation,
-          sqlQuery: mockData.sqlQuery,
-          results: mockData.results,
-          queryId
-        };
-      }
-      
-      // Find fuzzy match in mock responses
-      for (const [key, value] of Object.entries(mockResponses)) {
-        if (userQuery.toLowerCase().includes(key.toLowerCase().split(" ")[0])) {
-          return {
-            message: `Resposta aproximada baseada em: "${key}"\n\n${value.explanation}`,
-            sqlQuery: value.sqlQuery,
-            results: value.results,
-            queryId
-          };
-        }
-      }
-      
-      // No match found
+    // Generate mock query ID
+    const queryId = crypto.randomUUID();
+    
+    // Log query to history
+    try {
+      await supabase
+        .from('query_history')
+        .insert([
+          { 
+            query_text: userQuery,
+            was_successful: true,
+            language: 'pt',
+            id: queryId
+          }
+        ]);
+      console.log("Query logged to history");
+    } catch (err) {
+      console.error("Error logging query:", err);
+    }
+    
+    // Find exact match in mock responses
+    if (mockResponses[userQuery]) {
+      const mockData = mockResponses[userQuery];
+      console.log("Found exact mock response match");
       return {
-        message: "Não encontrei dados que respondam a essa consulta. Durante o desenvolvimento, estou utilizando respostas pré-definidas até que a API do Gemini seja configurada.",
-        sqlQuery: "SELECT 'mock data only' as info",
-        results: [],
-        noResults: true,
+        message: mockData.explanation,
+        sqlQuery: mockData.sqlQuery,
+        results: mockData.results,
         queryId
       };
     }
     
-    // Actual Gemini API call logic would go here
-    // For now, we'll keep the placeholder
+    // Find fuzzy match in mock responses
+    for (const [key, value] of Object.entries(mockResponses)) {
+      if (userQuery.toLowerCase().includes(key.toLowerCase().split(" ")[0])) {
+        console.log("Found fuzzy mock response match with:", key);
+        return {
+          message: `Resposta aproximada baseada em: "${key}"\n\n${value.explanation}`,
+          sqlQuery: value.sqlQuery,
+          results: value.results,
+          queryId
+        };
+      }
+    }
+    
+    // No match found
+    console.log("No mock response match found");
     return {
-      message: "A API do Gemini não está configurada completamente. Por favor, configure a chave da API nas configurações do projeto.",
-      sqlQuery: "",
-      results: null,
-      error: true
+      message: "Não encontrei dados que respondam a essa consulta. Por favor, tente reformular a pergunta ou escolha uma das sugestões fornecidas.",
+      sqlQuery: "SELECT 'mock data only' as info",
+      results: [],
+      noResults: true,
+      queryId
     };
   } catch (error) {
     console.error("Error processing user query:", error);
