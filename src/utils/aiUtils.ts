@@ -15,7 +15,7 @@ export interface QueryResponseType {
 // Generate a unique ID
 export const genId = () => uuidv4();
 
-// Suggested queries for the user to try - now with 20+ Portuguese examples
+// Suggested queries for the user to try - now with added numerical questions
 export const suggestedDatabaseQueries = [
   // Original queries
   "Quais são as fontes de dados mais recentes?",
@@ -55,20 +55,27 @@ export const suggestedDatabaseQueries = [
   "Em quais áreas de pesquisa Portugal tem mais publicações de acesso aberto?",
   "Qual instituição portuguesa tem o maior fator de impacto médio em suas publicações?",
   
-  // Innovation Metrics
-  "Qual foi o investimento total em I&D em Portugal no último ano?",
-  "Como se compara o investimento em inovação entre Lisboa e Porto?",
-  "Qual é a tendência de crescimento das exportações de alta tecnologia?",
-  
-  // Funding Programs
-  "Quais programas de financiamento têm os maiores orçamentos disponíveis?",
-  "Quais áreas são prioritárias nos programas de financiamento atuais?",
-  "Qual é a taxa de sucesso média das candidaturas a financiamento para inovação?",
-  
-  // Collaborations
-  "Quais são os principais parceiros internacionais em projetos de inovação com Portugal?",
-  "Quais colaborações internacionais têm o maior orçamento na área de energia renovável?",
-  "Como evoluíram as parcerias internacionais de Portugal na última década?"
+  // New Numerical Questions
+  "Qual é o número total de patentes registradas no setor de tecnologia em 2022?",
+  "Quantas startups foram fundadas em Lisboa nos últimos 3 anos?",
+  "Qual é o valor médio de financiamento por projeto na área de saúde?",
+  "Quantos pesquisadores têm um h-index superior a 15 nas instituições portuguesas?",
+  "Qual é o orçamento total alocado para políticas de inovação em 2023?",
+  "Quantas publicações de acesso aberto foram produzidas por universidades portuguesas em 2022?",
+  "Qual é a taxa média de sucesso das candidaturas a financiamento no setor de energia renovável?",
+  "Quantas redes de inovação têm mais de 50 membros ativos?",
+  "Qual foi o crescimento percentual no número de startups de tecnologia entre 2020 e 2023?",
+  "Quantos projetos de colaboração internacional foram iniciados em 2022?",
+  "Qual é o valor total de investimento em I&D como percentagem do PIB em Portugal?",
+  "Quantas instituições têm mais de 10 colaborações internacionais ativas?",
+  "Qual é a média de citações por publicação em pesquisas de inteligência artificial?",
+  "Quantos programas de financiamento têm um orçamento superior a 5 milhões de euros?",
+  "Qual é a densidade de startups por 100.000 habitantes nas diferentes regiões de Portugal?",
+  "Quantas patentes na área de tecnologia verde foram registradas nos últimos 5 anos?",
+  "Qual é o tempo médio de processamento (em dias) para aprovação de candidaturas a financiamento?",
+  "Qual é a quantidade de políticas de inovação especificamente direcionadas ao setor de saúde?",
+  "Qual é o montante médio de financiamento aprovado vs solicitado nas candidaturas bem-sucedidas?",
+  "Quantas startups conseguiram investimento superior a 1 milhão de euros em sua fase inicial?"
 ];
 
 // Format database values for display
@@ -132,38 +139,105 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   return String(value);
 };
 
+// Call the BAI API directly for suggested queries
+const callBaiApi = async (query: string): Promise<any> => {
+  try {
+    console.log("Calling BAI API with query:", query);
+    
+    const response = await fetch("https://bai.chat4b.ai/api/request", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ki3ZfrxYn6G2JocE4A95sNRvwSd17hulamLPXDFbTWqeHjVBUgIy8CMzpK0OQtAuRHk5weX4fclx0KUt8rCgJO3EF1vsNGzPQWYb"
+      },
+      body: JSON.stringify({
+        "request": query,
+        "assistant_key": "1R5ZBwLgGOMlVSj4p6Ar0H8DX9NKhcfseU2v3CtYJ7PqaIbWkzEoyuximTQdnFSfNaIsoJczCYkjLM3He9pU42EvxVg57Aw60uBd",
+        "id_chat": "",
+        "report": "No"
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API call failed with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log("BAI API response:", data);
+    
+    return data;
+  } catch (error) {
+    console.error("Error calling BAI API:", error);
+    throw error;
+  }
+};
+
 // Generate AI response to user query
 export const generateResponse = async (query: string): Promise<QueryResponseType> => {
   try {
     console.log("Generating response for query:", query);
     
-    // Call the edge function to process the query
-    const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { query }
-    });
+    let response;
     
-    if (error) {
-      console.error("Error calling gemini-chat function:", error);
+    // Check if it's a suggested query - use BAI API directly for these
+    if (suggestedDatabaseQueries.includes(query)) {
+      try {
+        console.log("Using BAI API for suggested query");
+        const baiResponse = await callBaiApi(query);
+        
+        // Format the BAI API response into our expected format
+        response = {
+          message: baiResponse.answer || "Sem resposta do assistente BAI.",
+          sqlQuery: "", // BAI API doesn't provide SQL queries
+          results: [],  // We don't have structured results from the BAI API
+          isAIResponse: true
+        };
+        
+        // Try to get the mock data results for this query for demo purposes
+        try {
+          const { data: mockData, error } = await supabase.functions.invoke('gemini-chat', {
+            body: { query }
+          });
+          
+          if (!error && mockData && mockData.results) {
+            response.results = mockData.results;
+            response.sqlQuery = mockData.sqlQuery || "";
+          }
+        } catch (mockError) {
+          console.log("Could not get mock results, using BAI response only:", mockError);
+        }
+        
+      } catch (baiError) {
+        console.error("Error with BAI API, falling back to edge function:", baiError);
+        // Fall back to the edge function
+        const { data, error } = await supabase.functions.invoke('gemini-chat', {
+          body: { query }
+        });
+        
+        if (error) throw error;
+        response = data;
+      }
+    } else {
+      // For non-suggested queries, use the existing edge function
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { query }
+      });
       
-      return {
-        message: "Ocorreu um erro ao processar sua consulta. Por favor, tente novamente em alguns instantes.",
-        sqlQuery: "",
-        results: null,
-        error: true
-      };
+      if (error) throw error;
+      response = data;
     }
     
-    console.log("Response from edge function:", data);
+    console.log("Response from chosen method:", response);
     
     return {
-      message: data.message || "Sem resposta do assistente.",
-      sqlQuery: data.sqlQuery || "",
-      results: data.results || null,
-      error: data.error || false,
-      noResults: data.noResults || false,
-      queryId: data.queryId,
-      analysis: data.analysis,
-      isAIResponse: data.isAIResponse || false
+      message: response.message || "Sem resposta do assistente.",
+      sqlQuery: response.sqlQuery || "",
+      results: response.results || null,
+      error: response.error || false,
+      noResults: response.noResults || false,
+      queryId: response.queryId,
+      analysis: response.analysis,
+      isAIResponse: response.isAIResponse || false
     };
   } catch (error) {
     console.error("Error in generateResponse:", error);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, MessageCircle, PlusCircle } from 'lucide-react';
@@ -56,27 +55,20 @@ export const AIChat: React.FC = () => {
       /\b(qual|como|onde|quem|porque|quais|quando)\b/i.test(q)
     );
     
-    const originalSuggestions = allPortugueseSuggestions.slice(0, 6);
+    const maxSuggestions = 30;
     
-    const recentSuggestions = allPortugueseSuggestions.slice(-20);
+    const numericalQuestions = allPortugueseSuggestions.filter(q => 
+      q.startsWith("Quantos") || 
+      q.startsWith("Qual") && /\bnúmero|\btotal|\bvalor|\bmédia|\bpercentual|\btaxa/.test(q)
+    );
     
-    const randomRecentSuggestions = [];
-    const maxAdditional = Math.min(12, recentSuggestions.length);
+    const otherQuestions = allPortugueseSuggestions.filter(q => 
+      !numericalQuestions.includes(q)
+    );
     
-    const availableSuggestions = [...recentSuggestions];
+    const combinedSuggestions = [...numericalQuestions, ...otherQuestions];
     
-    for (let i = 0; i < maxAdditional && availableSuggestions.length > 0; i++) {
-      const randomIndex = Math.floor(Math.random() * availableSuggestions.length);
-      const suggestion = availableSuggestions.splice(randomIndex, 1)[0];
-      
-      if (!originalSuggestions.includes(suggestion) && 
-          !randomRecentSuggestions.includes(suggestion)) {
-        randomRecentSuggestions.push(suggestion);
-      }
-    }
-    
-    const selectedSuggestions = [...originalSuggestions, ...randomRecentSuggestions];
-    return selectedSuggestions.slice(0, 12);
+    return combinedSuggestions.slice(0, maxSuggestions);
   };
   
   const portugueseSuggestions = getPortugueseSuggestions();
@@ -338,7 +330,7 @@ export const AIChat: React.FC = () => {
                 ) : (
                   <div className="space-y-3">
                     <ChatMessage
-                      content={activeResponse.content.split('\n')[0]}
+                      content={activeResponse.isAIResponse ? activeResponse.content : activeResponse.content.split('\n')[0]}
                       role="assistant"
                       isAIResponse={activeResponse.isAIResponse}
                     />
