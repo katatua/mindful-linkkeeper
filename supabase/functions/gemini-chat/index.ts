@@ -1,9 +1,9 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const googleApiKey = Deno.env.get('GEMINI_API_KEY');
 
 // Define CORS headers
 const corsHeaders = {
@@ -13,6 +13,20 @@ const corsHeaders = {
 
 // Create a Supabase client with the service role key
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+async function getAIModel(): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc('get_database_setting', {
+      setting_key: 'ai_model'
+    });
+    
+    if (error) throw error;
+    return data || 'gemini-1.5-pro';
+  } catch (error) {
+    console.error('Error fetching AI model:', error);
+    return 'gemini-1.5-pro';
+  }
+}
 
 // Mock query responses for different query types
 const mockResponses: Record<string, any> = {
@@ -133,7 +147,6 @@ const mockResponses: Record<string, any> = {
       { name: "Linha BEI PT 2020", total_budget: 750000000, start_date: "2018-01-01", end_date: "2023-12-31", sector_focus: ["PMEs", "Mid Caps", "Entidades Públicas"], funding_type: "Empréstimo" }
     ]
   },
-  // Default response for any other query type
   default: {
     sqlQuery: "SELECT name, category, value, region FROM ani_metrics ORDER BY measurement_date DESC LIMIT 5",
     message: "Analisei os dados mais recentes disponíveis no sistema. Os indicadores mostram que Portugal investiu 1,5 bilhões de euros em I&D, com um índice de inovação de 52,7 pontos, representando um crescimento de 5,4% em relação ao período anterior. Lisboa e Porto concentram a maior parte dos investimentos, com 320 milhões e 210 milhões de euros respectivamente. O setor de exportações de alta tecnologia representa 16,5% do total das exportações nacionais.",
@@ -147,13 +160,16 @@ const mockResponses: Record<string, any> = {
   }
 };
 
-function getQueryCategory(query: string): string {
+function getQueryCategory(query: string): string | null {
   query = query.toLowerCase();
+  
+  const HIGH_CONFIDENCE = 0.8;
+  const MEDIUM_CONFIDENCE = 0.5;
   
   if (query.includes("patente") || query.includes("propriedade intelectual") || query.includes("inpi")) {
     return "patents";
   }
-  if (query.includes("startup") || query.includes("empreend") || query.includes("empresa") && query.includes("inova")) {
+  if (query.includes("startup") || query.includes("empreend") || (query.includes("empresa") && query.includes("inova"))) {
     return "startups";
   }
   if (query.includes("tecnologia") || query.includes("adoção") || query.includes("digital")) {
@@ -175,24 +191,33 @@ function getQueryCategory(query: string): string {
     return "funding";
   }
   
-  return "default";
+  return null;
 }
 
-// Mock function that simply returns mock data based on query classification
 async function generateSQL(query: string): Promise<any> {
   try {
     console.log("Processing query:", query);
     
-    // Determine which category of mock data to use
     const category = getQueryCategory(query);
-    const mockResponse = mockResponses[category] || mockResponses.default;
+    
+    if (category === null) {
+      console.log("No predefined category matched, will use AI for response");
+      return {
+        useAI: true,
+        sqlQuery: "",
+        mockCategory: null
+      };
+    }
     
     console.log("Using mock data for category:", category);
+    const mockResponse = mockResponses[category] || mockResponses.default;
     
     return {
       message: "SQL generated successfully",
       sqlQuery: mockResponse.sqlQuery,
-      mockCategory: category
+      usedMockData: true,
+      mockCategory: category,
+      useAI: false
     };
   } catch (error) {
     console.error("Error in generateSQL:", error);
@@ -200,13 +225,13 @@ async function generateSQL(query: string): Promise<any> {
     return {
       message: "SQL generated successfully",
       sqlQuery: mockResponses.default.sqlQuery,
-      mockCategory: "default"
+      mockCategory: "default",
+      useAI: false
     };
   }
 }
 
-// Mock function that returns the pre-defined results for the query type
-async function executeSQL(sql: string, mockCategory = "default"): Promise<any> {
+async function executeSQL(sql: string, usedMockData = false, mockCategory = "default"): Promise<any> {
   try {
     console.log("Using mock results for category:", mockCategory);
     const mockResponse = mockResponses[mockCategory] || mockResponses.default;
@@ -227,33 +252,114 @@ async function executeSQL(sql: string, mockCategory = "default"): Promise<any> {
   }
 }
 
-// Mock function that returns pre-written responses
-async function generateResponse(query: string, sqlQuery: string, results: any[], mockCategory = "default"): Promise<string> {
+async function generateAIResponse(query: string): Promise<any> {
   try {
-    console.log("Using mock response for category:", mockCategory);
-    const mockResponse = mockResponses[mockCategory] || mockResponses.default;
-    return mockResponse.message;
+    console.log("Generating AI response for query:", query);
+    
+    const modelName = await getAIModel();
+    
+    if (!googleApiKey) {
+      console.error("GEMINI_API_KEY is not set");
+      throw new Error("API key not available");
+    }
+    
+    const promptTemplate = `
+      Você é um assistente especializado em dados e estatísticas sobre inovação, pesquisa e desenvolvimento em Portugal.
+      
+      Você tem acesso a várias fontes de informação sobre instituições de pesquisa, patentes, startups,
+      políticas de inovação, colaborações internacionais, métricas de inovação, e outros dados relacionados.
+      
+      Por favor, responda à seguinte pergunta em português de forma clara, concisa e informativa:
+      
+      "${query}"
+      
+      Forneça detalhes específicos e dados concretos sempre que possível.
+      Se não tiver informações sobre algum aspecto da pergunta, informe isso honestamente.
+      Limite sua resposta a aproximadamente 150-200 palavras.
+    `;
+    
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${googleApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: promptTemplate }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 800,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("Error from Gemini API:", errorData);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    const generatedResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!generatedResponse) {
+      throw new Error("Empty response from Gemini API");
+    }
+    
+    console.log("Generated AI response:", generatedResponse);
+    
+    return {
+      message: generatedResponse,
+      isAIResponse: true,
+      results: null,
+      sqlQuery: null
+    };
   } catch (error) {
-    console.error("Error in generateResponse:", error);
-    return mockResponses.default.message;
+    console.error("Error generating AI response:", error);
+    throw error;
   }
 }
 
-// Log the query being received to the database for analytics
-async function logQueryHistory(query: string): Promise<void> {
+async function logQueryHistory(query: string, response: any): Promise<void> {
   try {
     console.log("Logging query to history:", query);
-    const category = getQueryCategory(query);
     
     await supabase
       .from('query_history')
       .insert([
         { 
           query_text: query,
-          was_successful: true,
+          was_successful: !response.error && !response.noResults,
           language: 'pt',
-          error_message: null,
-          is_mock_response: true
+          error_message: response.error ? response.message : null,
+          analysis_result: response.analysis || null,
+          is_ai_response: response.isAIResponse || false
         }
       ]);
       
@@ -263,9 +369,7 @@ async function logQueryHistory(query: string): Promise<void> {
   }
 }
 
-// Main handler function for the edge function
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: corsHeaders,
@@ -294,27 +398,53 @@ serve(async (req) => {
     console.log("Received query:", query);
     const queryId = crypto.randomUUID();
     
-    // Log the query for analytics purposes
-    await logQueryHistory(query);
+    await logQueryHistory(query, { was_successful: true });
     
-    // Generate mock SQL based on query classification
     const sqlResult = await generateSQL(query);
-    const mockCategory = sqlResult.mockCategory || "default";
     
-    // Get mock results for the query type
-    const executionResult = await executeSQL(sqlResult.sqlQuery, mockCategory);
+    let response;
     
-    // Generate a natural language response from mock data
-    const responseMessage = await generateResponse(query, sqlResult.sqlQuery, executionResult.results, mockCategory);
+    if (sqlResult.useAI) {
+      try {
+        response = await generateAIResponse(query);
+      } catch (error) {
+        console.error("AI response failed, falling back to default mock data:", error);
+        
+        const mockCategory = "default";
+        const mockResponse = mockResponses[mockCategory];
+        
+        const executionResult = await executeSQL("", true, mockCategory);
+        
+        response = {
+          message: mockResponse.message,
+          sqlQuery: mockResponse.sqlQuery,
+          results: executionResult.results,
+          noResults: false,
+          usedMockData: true
+        };
+      }
+    } else {
+      const executionResult = await executeSQL(
+        sqlResult.sqlQuery, 
+        sqlResult.usedMockData || false, 
+        sqlResult.mockCategory || "default"
+      );
+      
+      const mockResponse = mockResponses[sqlResult.mockCategory] || mockResponses.default;
+      
+      response = {
+        message: mockResponse.message,
+        sqlQuery: sqlResult.sqlQuery,
+        results: executionResult.results,
+        noResults: executionResult.noResults,
+        usedMockData: true
+      };
+    }
     
     return new Response(
       JSON.stringify({
-        message: responseMessage,
-        sqlQuery: sqlResult.sqlQuery,
-        results: executionResult.results,
-        noResults: false,
-        queryId,
-        usedMockData: true
+        ...response,
+        queryId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -323,7 +453,6 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error processing request:", error);
     
-    // Even in case of an error, return mock data
     const defaultMockResponse = mockResponses.default;
     
     return new Response(
