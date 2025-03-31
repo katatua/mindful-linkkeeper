@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -65,7 +64,6 @@ export const AIAssistant: React.FC = () => {
     loadDummyData();
   }, []);
 
-  // Esta função verifica se todos os dados estão carregados
   const checkAllDataLoaded = () => {
     const keys = Object.values(STORAGE_KEYS);
     let allDataLoaded = true;
@@ -90,7 +88,6 @@ export const AIAssistant: React.FC = () => {
       console.log("Iniciando carregamento de dados de amostra...");
       await initializeDummyDataIfNeeded();
       
-      // Verificar se todos os dados foram realmente carregados
       const allLoaded = checkAllDataLoaded();
       
       setDataLoadStatus({ 
@@ -137,6 +134,7 @@ export const AIAssistant: React.FC = () => {
 
   const logQueryHistory = async (question: string, response: QueryResponseType) => {
     try {
+      console.log("Logging query to history:", question);
       const { data, error } = await supabase
         .from('query_history')
         .insert([
@@ -151,6 +149,8 @@ export const AIAssistant: React.FC = () => {
 
       if (error) {
         console.error('Erro ao salvar histórico de consulta:', error);
+      } else {
+        console.log('Query history saved successfully:', data);
       }
     } catch (err) {
       console.error('Falha ao salvar histórico de consulta:', err);
@@ -181,7 +181,6 @@ export const AIAssistant: React.FC = () => {
       const response = await generateResponse(queryText);
       console.log("Response received:", response);
       
-      // Registrar consulta no histórico
       await logQueryHistory(queryText, response);
       
       const assistantMessage: Message = {
@@ -211,6 +210,13 @@ export const AIAssistant: React.FC = () => {
       };
       
       setActiveResponse(errorMessage);
+      
+      await logQueryHistory(queryText, {
+        message: errorMessage.content,
+        sqlQuery: "",
+        results: null,
+        error: true
+      });
       
       toast({
         title: "Erro",
@@ -286,7 +292,6 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
-  // Calculamos o estado de "carregando" com base nas duas condições
   const actuallyLoading = isInitializing || dataLoadStatus.loading;
   const actuallyReady = !actuallyLoading && dataLoadStatus.allLoaded;
 

@@ -35,14 +35,19 @@ export const QueryHistory: React.FC = () => {
   const fetchQueryHistory = async () => {
     setLoading(true);
     try {
+      console.log("Fetching query history...");
       const { data, error } = await supabase
         .from('query_history')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(50);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching query history:', error);
+        throw error;
+      }
       
+      console.log("Query history fetched:", data);
       setHistory(data || []);
     } catch (err) {
       console.error('Error fetching query history:', err);
@@ -58,6 +63,23 @@ export const QueryHistory: React.FC = () => {
 
   useEffect(() => {
     fetchQueryHistory();
+    
+    // Configurar um listener para novas inserções de consultas
+    const channel = supabase
+      .channel('query_history_changes')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'query_history'
+      }, (payload) => {
+        console.log('New query added to history:', payload);
+        fetchQueryHistory();
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const clearHistory = async () => {

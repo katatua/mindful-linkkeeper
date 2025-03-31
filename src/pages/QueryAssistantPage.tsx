@@ -1,14 +1,35 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { AIAssistant } from '@/components/AIAssistant';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QueryHistory } from '@/components/database/QueryHistory';
 import { Database, History } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const QueryAssistantPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('assistente');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Pegar a aba ativa da URL, se disponível
+  const getTabFromUrl = () => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('tab') || 'assistente';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getTabFromUrl());
+  
+  // Atualizar a URL quando a aba mudar
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/query-assistant?tab=${value}`, { replace: true });
+  };
+  
+  // Sincronizar o estado com a URL se a URL mudar por outros meios
+  useEffect(() => {
+    setActiveTab(getTabFromUrl());
+  }, [location.search]);
 
   return (
     <Layout>
@@ -18,7 +39,7 @@ export const QueryAssistantPage: React.FC = () => {
           Faça as suas perguntas sobre a base de dados em português.
         </p>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList className="mb-4">
             <TabsTrigger value="assistente" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
