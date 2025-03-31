@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +10,7 @@ import {
   formatDatabaseValue,
   QueryResponseType 
 } from '@/utils/aiUtils';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Table, 
@@ -43,28 +44,16 @@ interface Message {
   isPredefined?: boolean;
 }
 
-interface FundingProgram {
-  name: string;
-  description: string;
-  total_budget: number;
-  start_date: string;
-  end_date: string;
-  application_deadline: string;
-  next_call_date: string;
-  funding_type: string;
-  sector_focus: string[];
-  eligibility_criteria: string;
-  application_process: string;
-  review_time_days: number;
-  success_rate: number;
-}
-
 export const AIAssistant: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState<Message | null>(null);
   const [activeResponse, setActiveResponse] = useState<Message | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [dataLoadStatus, setDataLoadStatus] = useState({
+    allLoaded: false,
+    loading: true
+  });
   const { toast } = useToast();
   
   const portugueseSuggestions = suggestedDatabaseQueries.filter(q => 
@@ -74,20 +63,54 @@ export const AIAssistant: React.FC = () => {
   
   useEffect(() => {
     loadDummyData();
-  }, [toast]);
+  }, []);
+
+  // Esta função verifica se todos os dados estão carregados
+  const checkAllDataLoaded = () => {
+    const keys = Object.values(STORAGE_KEYS);
+    let allDataLoaded = true;
+    
+    for (const key of keys) {
+      const data = loadFromLocalStorage(key, []);
+      if (!Array.isArray(data) || data.length === 0) {
+        allDataLoaded = false;
+        break;
+      }
+    }
+    
+    return allDataLoaded;
+  };
   
   const loadDummyData = async () => {
     setIsInitializing(true);
+    setDataLoadStatus({ allLoaded: false, loading: true });
+    
     try {
       console.log("Iniciando carregamento de dados de amostra...");
       await initializeDummyDataIfNeeded();
-      console.log('Todos os dados de amostra foram carregados com sucesso');
+      
+      // Verificar se todos os dados foram realmente carregados
+      const allLoaded = checkAllDataLoaded();
+      
+      setDataLoadStatus({ 
+        allLoaded: allLoaded,
+        loading: false
+      });
+      
+      console.log('Verificação de carregamento de dados:', allLoaded ? 'Todos carregados' : 'Carregamento incompleto');
       toast({
-        title: "Dados Carregados",
-        description: "Todos os dados de amostra foram carregados com sucesso.",
+        title: allLoaded ? "Dados Carregados" : "Atenção",
+        description: allLoaded 
+          ? "Todos os dados de amostra foram carregados com sucesso."
+          : "Alguns dados podem não ter sido carregados corretamente. Tente recarregar.",
+        variant: allLoaded ? "default" : "destructive",
       });
     } catch (error) {
       console.error('Erro ao inicializar dados de amostra:', error);
+      setDataLoadStatus({ 
+        allLoaded: false,
+        loading: false
+      });
       toast({
         title: "Erro",
         description: "Falha ao carregar dados de amostra. Por favor, tente novamente.",
@@ -237,9 +260,15 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
+  // Calculamos o estado de "carregando" com base nas duas condições
+  const actuallyLoading = isInitializing || dataLoadStatus.loading;
+  const actuallyReady = !actuallyLoading && dataLoadStatus.allLoaded;
+
   return (
     <div className="w-full">
-      <LoadingStatusDisplay onRefresh={loadDummyData} />
+      <LoadingStatusDisplay 
+        onRefresh={loadDummyData} 
+      />
       
       <div className="mb-6">
         <h3 className="text-base font-semibold mb-3">Consultas Sugeridas:</h3>
@@ -250,7 +279,7 @@ export const AIAssistant: React.FC = () => {
               variant="outline"
               className="text-left justify-start h-auto py-2 px-3 text-sm"
               onClick={() => handleSuggestionClick(question)}
-              disabled={isLoading || isInitializing}
+              disabled={!actuallyReady || isLoading}
             >
               {question}
             </Button>
@@ -264,18 +293,26 @@ export const AIAssistant: React.FC = () => {
           onChange={e => setInput(e.target.value)}
           placeholder="Faça uma pergunta sobre a base de dados em português..."
           className="resize-none"
-          disabled={isLoading || isInitializing}
+          disabled={!actuallyReady || isLoading}
         />
-        <Button type="submit" size="icon" disabled={isLoading || isInitializing}>
+        <Button type="submit" size="icon" disabled={!actuallyReady || isLoading}>
           <Send className="h-4 w-4" />
         </Button>
       </form>
 
-      {isInitializing ? (
+      {actuallyLoading ? (
         <div className="flex justify-center items-center py-4">
           <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
           <span>Carregando dados de amostra...</span>
         </div>
+      ) : !dataLoadStatus.allLoaded ? (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertTitle>Problemas com os dados</AlertTitle>
+          <AlertDescription>
+            Os dados podem não ter sido carregados corretamente. Clique em "Refresh" acima para tentar novamente.
+          </AlertDescription>
+        </Alert>
       ) : (
         <>
           {activeQuestion && (

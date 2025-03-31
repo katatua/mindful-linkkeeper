@@ -21,7 +21,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
   const checkLoadedData = () => {
     const keys = Object.values(STORAGE_KEYS);
     const statusesResult: DataStatus[] = keys.map(key => {
-      const friendlyName = key.replace('ani_', '').replace('_', ' ');
+      const friendlyName = key.replace('ani_', '').replace(/_/g, ' ');
       const data = loadFromLocalStorage(key, []);
       return {
         key,
@@ -33,12 +33,13 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
     
     setStatuses(statusesResult);
     setLastChecked(new Date());
+    return statusesResult;
   };
 
   useEffect(() => {
     checkLoadedData();
-    // Check again every 5 seconds
-    const interval = setInterval(checkLoadedData, 5000);
+    // Check again every 3 seconds, não 5
+    const interval = setInterval(checkLoadedData, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -46,9 +47,14 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
     setIsRefreshing(true);
     try {
       await onRefresh();
-      checkLoadedData();
-    } finally {
+      // Damos um pequeno delay para garantir que os dados tenham tempo de ser salvos
+      setTimeout(() => {
+        checkLoadedData();
+        setIsRefreshing(false);
+      }, 500);
+    } catch (error) {
       setIsRefreshing(false);
+      console.error("Erro ao atualizar dados:", error);
     }
   };
 
@@ -68,6 +74,7 @@ export const LoadingStatusDisplay: React.FC<{ onRefresh: () => Promise<void> }> 
             size="icon" 
             onClick={handleRefresh} 
             disabled={isRefreshing}
+            title="Recarregar dados"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
