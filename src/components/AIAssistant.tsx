@@ -37,11 +37,28 @@ interface Message {
   isPredefined?: boolean;
 }
 
+interface FundingProgram {
+  name: string;
+  description: string;
+  total_budget: number;
+  start_date: string;
+  end_date: string;
+  application_deadline: string;
+  next_call_date: string;
+  funding_type: string;
+  sector_focus: string[];
+  eligibility_criteria: string;
+  application_process: string;
+  review_time_days: number;
+  success_rate: number;
+}
+
 export const AIAssistant: React.FC = () => {
   const [activeQuestion, setActiveQuestion] = useState<Message | null>(null);
   const [activeResponse, setActiveResponse] = useState<Message | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dummyPrograms, setDummyPrograms] = useState<FundingProgram[]>([]);
   const { toast } = useToast();
   
   const portugueseSuggestions = suggestedDatabaseQueries.filter(q => 
@@ -188,15 +205,15 @@ export const AIAssistant: React.FC = () => {
     );
   };
 
-  const generateFundingProgramsData = async () => {
+  const generateFundingProgramsData = () => {
     setIsLoading(true);
     
     try {
-      // Use only valid funding types from the check constraint
+      // Valid funding types that comply with the database constraint
       const fundingTypes = ['european', 'national', 'private', 'regional', 'international'];
       const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation', 'Biotechnology', 'Quantum Computing', 'Aerospace', 'Marine Sciences', 'Cybersecurity'];
       
-      const programs = [];
+      const programs: FundingProgram[] = [];
       const now = new Date();
       const oneYearFromNow = new Date(now);
       oneYearFromNow.setFullYear(now.getFullYear() + 1);
@@ -213,7 +230,7 @@ export const AIAssistant: React.FC = () => {
         
         // Select 1-3 sectors for focus
         const sectorCount = Math.floor(Math.random() * 3) + 1;
-        const sectorFocus = [];
+        const sectorFocus: string[] = [];
         for (let j = 0; j < sectorCount; j++) {
           const sector = sectors[Math.floor(Math.random() * sectors.length)];
           if (!sectorFocus.includes(sector)) {
@@ -238,22 +255,18 @@ export const AIAssistant: React.FC = () => {
         });
       }
       
-      const { error } = await supabase.from('ani_funding_programs').insert(programs);
-      
-      if (error) {
-        console.error('Error inserting funding programs:', error);
-        throw new Error(`Failed to insert funding programs: ${error.message}`);
-      }
+      setDummyPrograms(programs);
       
       toast({
         title: "Success",
-        description: `Generated and inserted ${programs.length} funding programs into the database.`,
+        description: `Generated ${programs.length} funding programs in memory (not saved to database).`,
       });
       
       const assistantMessage: Message = {
         id: genId(),
-        content: `I've successfully generated and inserted ${programs.length} funding programs into the database. You can now query this data using natural language queries.`,
+        content: `I've generated ${programs.length} dummy funding programs. These are only stored in memory and not saved to the database.`,
         role: 'assistant',
+        results: programs,
         timestamp: new Date()
       };
       
@@ -307,7 +320,7 @@ export const AIAssistant: React.FC = () => {
             disabled={isLoading}
           >
             <Download className="h-4 w-4" />
-            Generate Funding Programs Data
+            Generate Dummy Funding Programs
           </Button>
         </div>
       </div>
