@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -75,14 +76,15 @@ export const AIAssistant: React.FC = () => {
     const loadDummyData = async () => {
       setIsInitializing(true);
       try {
+        console.log("Iniciando carregamento de dados de amostra...");
         await initializeDummyDataIfNeeded();
-        console.log('All dummy data loaded successfully');
+        console.log('Todos os dados de amostra foram carregados com sucesso');
         toast({
           title: "Dados Carregados",
           description: "Todos os dados de amostra foram carregados com sucesso.",
         });
       } catch (error) {
-        console.error('Error initializing dummy data:', error);
+        console.error('Erro ao inicializar dados de amostra:', error);
         toast({
           title: "Erro",
           description: "Falha ao carregar dados de amostra. Por favor, tente novamente.",
@@ -246,6 +248,7 @@ export const AIAssistant: React.FC = () => {
               variant="outline"
               className="text-left justify-start h-auto py-2 px-3 text-sm"
               onClick={() => handleSuggestionClick(question)}
+              disabled={isLoading || isInitializing}
             >
               {question}
             </Button>

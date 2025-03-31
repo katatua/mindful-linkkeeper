@@ -76,31 +76,53 @@ export const STORAGE_KEYS = {
  * @returns A promise that resolves when all data is initialized
  */
 export const initializeDummyDataIfNeeded = async (): Promise<void> => {
-  const { 
-    sampleFundingPrograms, 
-    sampleProjects, 
-    sampleMetrics,
-    sampleResearchers,
-    sampleInstitutions,
-    samplePatentHolders,
-    samplePolicyFrameworks,
-    sampleCollaborations,
-    sampleFundingApplications
-  } = await import('../scripts/sampleData');
+  try {
+    const { 
+      sampleFundingPrograms, 
+      sampleProjects, 
+      sampleMetrics,
+      sampleResearchers,
+      sampleInstitutions,
+      samplePatentHolders,
+      samplePolicyFrameworks,
+      sampleCollaborations,
+      sampleFundingApplications
+    } = await import('../scripts/sampleData');
 
-  // Always initialize data, overriding any existing data
-  console.log('Initializing all dummy data in localStorage');
-  
-  saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, sampleFundingPrograms);
-  saveToLocalStorage(STORAGE_KEYS.PROJECTS, sampleProjects);
-  saveToLocalStorage(STORAGE_KEYS.METRICS, sampleMetrics);
-  saveToLocalStorage(STORAGE_KEYS.RESEARCHERS, sampleResearchers);
-  saveToLocalStorage(STORAGE_KEYS.INSTITUTIONS, sampleInstitutions);
-  saveToLocalStorage(STORAGE_KEYS.PATENT_HOLDERS, samplePatentHolders);
-  saveToLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, samplePolicyFrameworks);
-  saveToLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, sampleCollaborations);
-  saveToLocalStorage(STORAGE_KEYS.FUNDING_APPLICATIONS, sampleFundingApplications);
-  
-  console.log('Local storage initialized with dummy data');
+    // Força a inicialização dos dados, independentemente se já existem ou não
+    console.log('Inicializando todos os dados de amostra no localStorage');
+    
+    // Salvando dados no localStorage um por um para garantir que tudo seja salvo
+    saveToLocalStorage(STORAGE_KEYS.FUNDING_PROGRAMS, sampleFundingPrograms);
+    console.log(`Salvos ${sampleFundingPrograms.length} programas de financiamento`);
+    
+    saveToLocalStorage(STORAGE_KEYS.PROJECTS, sampleProjects);
+    console.log(`Salvos ${sampleProjects.length} projetos`);
+    
+    saveToLocalStorage(STORAGE_KEYS.METRICS, sampleMetrics);
+    console.log(`Salvos ${sampleMetrics.length} métricas`);
+    
+    saveToLocalStorage(STORAGE_KEYS.RESEARCHERS, sampleResearchers);
+    console.log(`Salvos ${sampleResearchers.length} pesquisadores`);
+    
+    saveToLocalStorage(STORAGE_KEYS.INSTITUTIONS, sampleInstitutions);
+    console.log(`Salvos ${sampleInstitutions.length} instituições`);
+    
+    saveToLocalStorage(STORAGE_KEYS.PATENT_HOLDERS, samplePatentHolders);
+    console.log(`Salvos ${samplePatentHolders.length} titulares de patentes`);
+    
+    saveToLocalStorage(STORAGE_KEYS.POLICY_FRAMEWORKS, samplePolicyFrameworks);
+    console.log(`Salvos ${samplePolicyFrameworks.length} estruturas de políticas`);
+    
+    saveToLocalStorage(STORAGE_KEYS.INTERNATIONAL_COLLABORATIONS, sampleCollaborations);
+    console.log(`Salvos ${sampleCollaborations.length} colaborações internacionais`);
+    
+    saveToLocalStorage(STORAGE_KEYS.FUNDING_APPLICATIONS, sampleFundingApplications);
+    console.log(`Salvos ${sampleFundingApplications.length} aplicações de financiamento`);
+    
+    console.log('Local storage inicializado com dados de amostra');
+  } catch (error) {
+    console.error('Erro ao inicializar dados de amostra:', error);
+    throw error;
+  }
 };
-
