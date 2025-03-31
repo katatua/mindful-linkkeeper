@@ -12,50 +12,40 @@ export interface QueryResponseType {
   isAIResponse?: boolean;
 }
 
-// Generate a unique ID
 export const genId = () => uuidv4();
 
-// Suggested queries for the user to try - now with added numerical questions
 export const suggestedDatabaseQueries = [
-  // Original queries
   "Quais são as fontes de dados mais recentes?",
   "Quantos documentos foram extraídos no último mês?",
   "Liste as instituições que trabalham com tecnologia",
   "Mostre as cooperações internacionais ativas",
   "Qual é o volume total de financiamento de projetos em Lisboa?",
   
-  // New additions - Patents
   "Quais universidades têm mais patentes registradas em Portugal?",
   "Qual é o índice médio de inovação dos detentores de patentes no setor de tecnologia?",
   "Compare o número de patentes entre instituições educacionais e empresas privadas",
   
-  // Startups
   "Quais são as startups mais bem financiadas em Portugal?",
   "Qual região de Portugal tem mais startups no setor de tecnologia?",
   "Qual é o financiamento médio das startups portuguesas fundadas após 2015?",
   "Quantas startups em Lisboa têm mais de 100 funcionários?",
   
-  // Technology Adoption
   "Qual tecnologia tem a maior taxa de adoção no setor financeiro?",
   "Quais são os principais desafios na adoção de Inteligência Artificial?",
   "Compare as taxas de adoção de tecnologias emergentes entre diferentes setores",
   
-  // Innovation Networks
   "Quais são as maiores redes de inovação em Portugal por número de membros?",
   "Quais redes de inovação focam em sustentabilidade ou energia renovável?",
   "Que realizações foram alcançadas pela Rede Nacional de Inovação em Saúde?",
   
-  // Innovation Policies
   "Quais políticas de inovação foram implementadas nos últimos 5 anos?",
   "Quais setores são mais beneficiados pelas políticas de inovação atuais?",
   "Quais são os incentivos fiscais disponíveis para atividades de I&D em Portugal?",
   
-  // Research Publications
   "Quais são as publicações acadêmicas mais citadas de pesquisadores portugueses?",
   "Em quais áreas de pesquisa Portugal tem mais publicações de acesso aberto?",
   "Qual instituição portuguesa tem o maior fator de impacto médio em suas publicações?",
   
-  // New Numerical Questions
   "Qual é o número total de patentes registradas no setor de tecnologia em 2022?",
   "Quantas startups foram fundadas em Lisboa nos últimos 3 anos?",
   "Qual é o valor médio de financiamento por projeto na área de saúde?",
@@ -78,16 +68,13 @@ export const suggestedDatabaseQueries = [
   "Quantas startups conseguiram investimento superior a 1 milhão de euros em sua fase inicial?"
 ];
 
-// Format database values for display
 export const formatDatabaseValue = (value: any, columnName: string): string => {
   if (value === null || value === undefined) {
     return 'N/A';
   }
   
-  // Handle date values
   if (columnName.includes('date') || columnName.includes('_at')) {
     if (typeof value === 'string' && value.includes('T')) {
-      // If it's an ISO date string
       try {
         const date = new Date(value);
         return date.toLocaleDateString('pt-PT', { 
@@ -103,21 +90,17 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
     }
   }
   
-  // Handle arrays
   if (Array.isArray(value)) {
     return value.join(', ');
   }
   
-  // Handle objects (like JSON)
   if (typeof value === 'object') {
     return JSON.stringify(value);
   }
   
-  // Handle numbers with appropriate formatting
   if (typeof value === 'number') {
     if (columnName.includes('amount') || columnName.includes('budget') || 
         columnName.includes('value') || columnName.includes('funding')) {
-      // Format currency values
       return new Intl.NumberFormat('pt-PT', { 
         style: 'currency', 
         currency: 'EUR',
@@ -125,21 +108,17 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
       }).format(value);
     } else if (columnName.includes('rate') || columnName.includes('percentage') ||
                columnName.includes('ratio') || columnName.includes('index')) {
-      // Format percentages or indices
       return Number(value).toLocaleString('pt-PT', { 
         maximumFractionDigits: 2 
       });
     }
     
-    // Regular number formatting
     return Number(value).toLocaleString('pt-PT');
   }
   
-  // Default: return as string
   return String(value);
 };
 
-// Call the BAI API directly for suggested queries
 const callBaiApi = async (query: string): Promise<any> => {
   try {
     console.log("Calling BAI API with query:", query);
@@ -159,11 +138,17 @@ const callBaiApi = async (query: string): Promise<any> => {
     });
     
     if (!response.ok) {
-      throw new Error(`API call failed with status: ${response.status}`);
+      const errorText = await response.text();
+      console.error("BAI API error response:", errorText);
+      throw new Error(`API call failed with status: ${response.status}, ${errorText}`);
     }
     
     const data = await response.json();
-    console.log("BAI API response:", data);
+    console.log("BAI API full response:", data);
+    
+    if (!data || !data.response) {
+      throw new Error("No response from BAI API");
+    }
     
     return data;
   } catch (error) {
@@ -172,44 +157,33 @@ const callBaiApi = async (query: string): Promise<any> => {
   }
 };
 
-// Generate AI response to user query
 export const generateResponse = async (query: string): Promise<QueryResponseType> => {
   try {
     console.log("Generating response for query:", query);
     
     let response;
     
-    // Check if it's a suggested query - use BAI API directly for these
     if (suggestedDatabaseQueries.includes(query)) {
       try {
         console.log("Using BAI API for suggested query");
         const baiResponse = await callBaiApi(query);
         
-        // Format the BAI API response into our expected format
+        const { data: mockData, error } = await supabase.functions.invoke('gemini-chat', {
+          body: { query }
+        });
+        
         response = {
-          message: baiResponse.answer || "Sem resposta do assistente BAI.",
-          sqlQuery: "", // BAI API doesn't provide SQL queries
-          results: [],  // We don't have structured results from the BAI API
-          isAIResponse: true
+          message: baiResponse.response || "Sem resposta do assistente BAI.",
+          sqlQuery: mockData?.sqlQuery || "",
+          results: mockData?.results || [],
+          isAIResponse: true,
+          noResults: !mockData?.results || mockData.results.length === 0
         };
         
-        // Try to get the mock data results for this query for demo purposes
-        try {
-          const { data: mockData, error } = await supabase.functions.invoke('gemini-chat', {
-            body: { query }
-          });
-          
-          if (!error && mockData && mockData.results) {
-            response.results = mockData.results;
-            response.sqlQuery = mockData.sqlQuery || "";
-          }
-        } catch (mockError) {
-          console.log("Could not get mock results, using BAI response only:", mockError);
-        }
-        
+        console.log("Final response:", response);
       } catch (baiError) {
         console.error("Error with BAI API, falling back to edge function:", baiError);
-        // Fall back to the edge function
+        
         const { data, error } = await supabase.functions.invoke('gemini-chat', {
           body: { query }
         });
@@ -218,7 +192,6 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
         response = data;
       }
     } else {
-      // For non-suggested queries, use the existing edge function
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { query }
       });
@@ -226,8 +199,6 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       if (error) throw error;
       response = data;
     }
-    
-    console.log("Response from chosen method:", response);
     
     return {
       message: response.message || "Sem resposta do assistente.",
@@ -250,7 +221,6 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
   }
 };
 
-// Document classification function
 export const classifyDocument = async (document: { title: string, summary: string, fileName: string }): Promise<string> => {
   try {
     const { data, error } = await supabase.functions.invoke('classify-document', {
