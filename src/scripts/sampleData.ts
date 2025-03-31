@@ -631,4 +631,4 @@ export const sampleInstitutions = [
   },
   {
     id: "8in90r12-3456-7ins-sab7-8901inst2345",
-    institution_name: "Centro de Inteligência Artificial de Portugal",
+    institution_name: "Centro de Inteligência Artificial
