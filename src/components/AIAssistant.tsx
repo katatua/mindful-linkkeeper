@@ -279,6 +279,164 @@ export const AIAssistant: React.FC = () => {
     }
   };
 
+  const resetConversation = () => {
+    setActiveQuestion(null);
+    setActiveResponse(null);
+    setInput('');
+    
+    const currentUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, currentUrl);
+  };
+  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryToRetry = urlParams.get('queryToRetry');
+    
+    if (queryToRetry) {
+      console.log("Found queryToRetry parameter, processing:", queryToRetry);
+      
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      processQuery(queryToRetry);
+    }
+  }, []);
+
+  const renderResults = (results: any[] | null) => {
+    if (!results || results.length === 0) {
+      return <p className="text-gray-500 italic">Nenhum resultado encontrado</p>;
+    }
+
+    const columns = Object.keys(results[0]);
+
+    return (
+      <div className="overflow-x-auto border rounded-md mt-2">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map(column => (
+                <TableHead key={column}>{column}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {results.slice(0, 10).map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {columns.map(column => (
+                  <TableCell 
+                    key={`${rowIndex}-${column}`}
+                    data-column={column}
+                  >
+                    {formatDatabaseValue(row[column], column)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {results.length > 10 && (
+          <div className="text-xs text-gray-500 p-2 text-center border-t">
+            Mostrando 10 de {results.length} resultados
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const generateFundingProgramsData = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Use only valid funding types from the check constraint
+      const fundingTypes = ['european', 'national', 'private', 'regional', 'international'];
+      const sectors = ['Technology', 'Healthcare', 'Agriculture', 'Education', 'Manufacturing', 'Clean Energy', 'Tourism', 'Digital Transformation', 'Biotechnology', 'Quantum Computing', 'Aerospace', 'Marine Sciences', 'Cybersecurity'];
+      
+      const programs = [];
+      const now = new Date();
+      const oneYearFromNow = new Date(now);
+      oneYearFromNow.setFullYear(now.getFullYear() + 1);
+      
+      for (let i = 0; i < 15; i++) {
+        const applicationDeadline = new Date(now);
+        applicationDeadline.setDate(applicationDeadline.getDate() + Math.floor(Math.random() * 180) + 30);
+        
+        const endDate = new Date(applicationDeadline);
+        endDate.setMonth(applicationDeadline.getMonth() + Math.floor(Math.random() * 24) + 6);
+        
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 30));
+        
+        // Select 1-3 sectors for focus
+        const sectorCount = Math.floor(Math.random() * 3) + 1;
+        const sectorFocus = [];
+        for (let j = 0; j < sectorCount; j++) {
+          const sector = sectors[Math.floor(Math.random() * sectors.length)];
+          if (!sectorFocus.includes(sector)) {
+            sectorFocus.push(sector);
+          }
+        }
+        
+        programs.push({
+          name: `${['Innovation', 'Research', 'Development', 'Technology', 'Horizon', 'Future', 'Next-Gen'][Math.floor(Math.random() * 7)]} Program ${i + 1} - ${sectors[Math.floor(Math.random() * sectors.length)]}`,
+          description: `This funding program aims to support innovative projects in ${sectorFocus.join(' and ')} with an emphasis on sustainable and scalable solutions for the Portuguese market and beyond.`,
+          total_budget: Math.floor(Math.random() * 10000000) + 500000,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          application_deadline: applicationDeadline.toISOString().split('T')[0],
+          next_call_date: new Date(now.getTime() + Math.random() * (applicationDeadline.getTime() - now.getTime())).toISOString().split('T')[0],
+          funding_type: fundingTypes[Math.floor(Math.random() * fundingTypes.length)],
+          sector_focus: sectorFocus,
+          eligibility_criteria: `Organizations must ${['be registered in Portugal', 'have operations in the EU', 'be SMEs with less than 250 employees', 'be research institutions'][Math.floor(Math.random() * 4)]} and have at least ${[1, 2, 3][Math.floor(Math.random() * 3)]} years of operation.`,
+          application_process: 'Online application with required documentation',
+          review_time_days: Math.floor(Math.random() * 60) + 30,
+          success_rate: parseFloat((Math.random() * 0.5 + 0.2).toFixed(2)),
+        });
+      }
+      
+      const { error } = await supabase.from('ani_funding_programs').insert(programs);
+      
+      if (error) {
+        console.error('Error inserting funding programs:', error);
+        throw new Error(`Failed to insert funding programs: ${error.message}`);
+      }
+      
+      toast({
+        title: "Success",
+        description: `Generated and inserted ${programs.length} funding programs into the database.`,
+      });
+      
+      const assistantMessage: Message = {
+        id: genId(),
+        content: `I've successfully generated and inserted ${programs.length} funding programs into the database. You can now query this data using natural language queries.`,
+        role: 'assistant',
+        timestamp: new Date()
+      };
+      
+      setActiveResponse(assistantMessage);
+      
+    } catch (error) {
+      console.error('Error generating funding programs:', error);
+      
+      const errorMessage: Message = {
+        id: genId(),
+        content: `Failed to generate funding programs: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        role: 'assistant',
+        error: true,
+        timestamp: new Date()
+      };
+      
+      setActiveResponse(errorMessage);
+      
+      toast({
+        title: "Error",
+        description: "Failed to generate funding programs. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="mb-6">
