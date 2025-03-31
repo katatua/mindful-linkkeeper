@@ -211,6 +211,58 @@ const isPatentQuery = (query: string): boolean => {
   return patentKeywords.some(keyword => normalizedQuery.includes(keyword));
 }
 
+// Function to check if a query is related to renewable energy
+const isEnergyQuery = (query: string): boolean => {
+  const normalizedQuery = query.toLowerCase();
+  
+  const energyKeywords = [
+    'energia', 'renovável', 'renováveis', 'solar', 'eólica', 
+    'hídrica', 'fotovoltaica', 'sustentável', 'limpa',
+    'hidrogénio', 'hidrogênio', 'energy', 'renewable', 'green energy'
+  ];
+  
+  return energyKeywords.some(keyword => normalizedQuery.includes(keyword));
+}
+
+// Function to check if a query is related to startups
+const isStartupQuery = (query: string): boolean => {
+  const normalizedQuery = query.toLowerCase();
+  
+  const startupKeywords = [
+    'startup', 'startups', 'empreendedorismo', 'empreendedor', 
+    'empresa emergente', 'incubadora', 'aceleradora', 'investidor',
+    'capital de risco', 'seed', 'venture capital', 'business angel'
+  ];
+  
+  return startupKeywords.some(keyword => normalizedQuery.includes(keyword));
+}
+
+// Function to check if a query is related to research institutions
+const isInstitutionQuery = (query: string): boolean => {
+  const normalizedQuery = query.toLowerCase();
+  
+  const institutionKeywords = [
+    'universidade', 'instituto', 'faculdade', 'laboratório', 
+    'centro de investigação', 'centro de pesquisa', 'centro de inovação', 
+    'pólo tecnológico', 'polo tecnológico', 'parque de ciência'
+  ];
+  
+  return institutionKeywords.some(keyword => normalizedQuery.includes(keyword));
+}
+
+// Function to check if query is about researcher data
+const isResearcherQuery = (query: string): boolean => {
+  const normalizedQuery = query.toLowerCase();
+  
+  const researcherKeywords = [
+    'investigador', 'pesquisador', 'cientista', 'académico', 
+    'acadêmico', 'professor', 'doutor', 'researcher', 'h-index',
+    'publicações', 'especialista', 'especialização'
+  ];
+  
+  return researcherKeywords.some(keyword => normalizedQuery.includes(keyword));
+}
+
 // Helper function to check if query is asking about existing data types
 const getDataFromLocalStorage = (query: string): {data: any[] | null, message: string, sqlQuery: string} => {
   const normalizedQuery = query.toLowerCase().trim();
@@ -458,7 +510,7 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     console.error("Exception querying Supabase:", supabaseError);
   }
   
-  // Verificar se a consulta está relacionada com patentes
+  // Check for specific types of queries and suggest appropriate table data
   if (isPatentQuery(query)) {
     return {
       message: "Não encontrei dados sobre patentes. Você gostaria de popular a base de dados com informações sobre patentes em Portugal?",
@@ -469,6 +521,66 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       analysis: {
         recommendation: "Adicionar dados de patentes para Portugal",
         tables: ["ani_patent_holders"],
+        expectedQuery: query
+      }
+    };
+  }
+  
+  if (isEnergyQuery(query)) {
+    return {
+      message: "Não encontrei dados sobre energia renovável. Você gostaria de popular a base de dados com informações sobre programas de energia renovável?",
+      sqlQuery: "SELECT * FROM ani_funding_programs WHERE ARRAY_TO_STRING(sector_focus, ',') ILIKE '%energia renovável%'",
+      results: null,
+      noResults: true,
+      queryId: genId(),
+      analysis: {
+        recommendation: "Adicionar dados sobre energia renovável",
+        tables: ["ani_funding_programs"],
+        expectedQuery: query
+      }
+    };
+  }
+  
+  if (isStartupQuery(query)) {
+    return {
+      message: "Não encontrei dados específicos sobre startups. Você gostaria de popular a base de dados com informações sobre startups e empreendedorismo em Portugal?",
+      sqlQuery: "SELECT * FROM ani_metrics WHERE category = 'empreendedorismo'",
+      results: null,
+      noResults: true,
+      queryId: genId(),
+      analysis: {
+        recommendation: "Adicionar dados sobre startups e empreendedorismo",
+        tables: ["ani_metrics"],
+        expectedQuery: query
+      }
+    };
+  }
+  
+  if (isInstitutionQuery(query)) {
+    return {
+      message: "Não encontrei dados específicos sobre instituições de pesquisa e inovação. Você gostaria de popular a base de dados com informações sobre universidades e centros de inovação em Portugal?",
+      sqlQuery: "SELECT * FROM ani_institutions",
+      results: null,
+      noResults: true,
+      queryId: genId(),
+      analysis: {
+        recommendation: "Adicionar dados sobre instituições de pesquisa e inovação",
+        tables: ["ani_institutions"],
+        expectedQuery: query
+      }
+    };
+  }
+  
+  if (isResearcherQuery(query)) {
+    return {
+      message: "Não encontrei dados específicos sobre pesquisadores. Você gostaria de popular a base de dados com informações sobre pesquisadores em Portugal?",
+      sqlQuery: "SELECT * FROM ani_researchers",
+      results: null,
+      noResults: true,
+      queryId: genId(),
+      analysis: {
+        recommendation: "Adicionar dados sobre pesquisadores e cientistas",
+        tables: ["ani_researchers"],
         expectedQuery: query
       }
     };
