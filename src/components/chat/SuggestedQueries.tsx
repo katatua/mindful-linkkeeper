@@ -24,7 +24,7 @@ export const SuggestedQueries: React.FC<SuggestedQueriesProps> = ({
           <Button 
             key={index} 
             variant="outline"
-            className="text-left justify-start h-auto py-2 px-3 text-sm"
+            className="text-left justify-start h-auto py-2 px-3 text-sm w-full overflow-hidden"
             onClick={() => onSelectQuery(query)}
             disabled={disabled}
           >
