@@ -631,4 +631,175 @@ export const sampleInstitutions = [
   },
   {
     id: "8in90r12-3456-7ins-sab7-8901inst2345",
-    institution_name: "Centro de Inteligência Artificial
+    institution_name: "Centro de Inteligência Artificial de Portugal",
+    type: "Research Center",
+    region: "Porto",
+    founding_date: "2005-06-22",
+    collaboration_count: 31,
+    specialization_areas: ["machine learning", "computer vision", "natural language processing"],
+    project_history: ["AI for Health", "Smart City AI Infrastructure", "AI Ethics Framework"]
+  },
+  {
+    id: "7in89q01-2345-6ins-rab6-7890inst1234",
+    institution_name: "Instituto de Biologia e Tecnologia",
+    type: "Research Institute",
+    region: "Lisbon",
+    founding_date: "2010-01-01",
+    collaboration_count: 18,
+    specialization_areas: ["biotechnology", "genetics", "bioinformatics"],
+    project_history: ["Biotech Research Initiative", "Genetic Engineering Projects", "Bioinformatics Platform"]
+  },
+  {
+    id: "6in78p90-1234-5ins-qab5-6789inst0123",
+    institution_name: "Instituto de Nanotecnologia",
+    type: "Research Institute",
+    region: "Lisbon",
+    founding_date: "2015-05-01",
+    collaboration_count: 22,
+    specialization_areas: ["nanotechnology", "materials science", "nanomaterials"],
+    project_history: ["Nanotechnology Research Program", "Nano-Optics Development", "Nanomaterials Synthesis"]
+  },
+  {
+    id: "5in67o89-0123-4ins-pab4-5678inst9012",
+    institution_name: "Instituto de Energia e Ambiente",
+    type: "Research Institute",
+    region: "Lisbon",
+    founding_date: "2012-03-15",
+    collaboration_count: 15,
+    specialization_areas: ["energy research", "environmental science", "sustainable energy"],
+    project_history: ["Energy Efficiency Projects", "Environmental Impact Studies", "Sustainable Energy Solutions"]
+  },
+  {
+    id: "4in56n78-9012-3ins-oab3-4567inst8901",
+    institution_name: "Instituto de Ciência e Tecnologia",
+    type: "Research Institute",
+    region: "Lisbon",
+    founding_date: "2008-01-01",
+    collaboration_count: 20,
+    specialization_areas: ["science and technology", "innovation", "research"],
+    project_history: ["Innovation Center", "Research Projects", "Technology Transfer"]
+  },
+  {
+    id: "3in45m67-8901-2ins-nab2-3456inst7890",
+    institution_name: "Instituto de Ciência e Tecnologia de Coimbra",
+    type: "Research Institute",
+    region: "Coimbra",
+    founding_date: "2007-05-01",
+    collaboration_count: 17,
+    specialization_areas: ["science and technology", "innovation", "research"],
+    project_history: ["Innovation Hub", "Research Projects", "Technology Transfer"]
+  }
+];
+
+export const samplePatentHolders = [
+  {
+    id: "1rs23t45-6789-0rst-uvw0-1234rstu5678",
+    name: "Instituto de Tecnologias Renováveis",
+    patent_count: 150
+  },
+  {
+    id: "2st34u56-7890-1stu-vwx1-2345stuv6789",
+    name: "Centro de Inteligência Artificial de Portugal",
+    patent_count: 120
+  },
+  {
+    id: "3tu45v67-8901-2tuv-wxy2-3456tuvw7890",
+    name: "Instituto de Biologia e Tecnologia",
+    patent_count: 80
+  },
+  {
+    id: "4uv56w78-9012-3uvw-xyz3-4567uvwx8901",
+    name: "Instituto de Nanotecnologia",
+    patent_count: 100
+  },
+  {
+    id: "5vw67x89-0123-4vwx-yza4-5678vwxy9012",
+    name: "Instituto de Energia e Ambiente",
+    patent_count: 90
+  },
+  {
+    id: "6wx78y90-1234-5wxy-zab5-6789wxyz0123",
+    name: "Instituto de Ciência e Tecnologia",
+    patent_count: 70
+  },
+  {
+    id: "7xy89z01-2345-6xyz-abc6-7890xyza1234",
+    name: "Instituto de Ciência e Tecnologia de Coimbra",
+    patent_count: 60
+  }
+];
+
+export const sampleFundingApplications = [
+  {
+    id: "1ab23c45-6789-0abc-def0-1234abcd5678",
+    program_id: "1ab23c45-6789-0abc-def0-1234abcd5678",
+    program_name: "EcoInnovate Renewable Energy Fund",
+    application_date: "2024-10-01",
+    status: "pending",
+    amount_applied: 500000,
+    organization: "Tech Innovations Inc."
+  },
+  {
+    id: "2bc34d56-7890-1bcd-efa1-2345bcde6789",
+    program_id: "2bc34d56-7890-1bcd-efa1-2345bcde6789",
+    program_name: "Digital Transformation Initiative",
+    application_date: "2024-11-15",
+    status: "approved",
+    amount_applied: 1000000,
+    organization: "GreenTech Solutions"
+  },
+  {
+    id: "3cd45e67-8901-2cde-fab2-3456cdef7890",
+    program_id: "3cd45e67-8901-2cde-fab2-3456cdef7890",
+    program_name: "Biotech Research Advancement Program",
+    application_date: "2024-12-01",
+    status: "rejected",
+    amount_applied: 800000,
+    organization: "BioTech Innovations"
+  },
+  {
+    id: "4de56f78-9012-3def-gab3-4567defg8901",
+    program_id: "4de56f78-9012-3def-gab3-4567defg8901",
+    program_name: "SME Innovation Accelerator",
+    application_date: "2025-01-10",
+    status: "pending",
+    amount_applied: 300000,
+    organization: "SmallTech Innovations"
+  },
+  {
+    id: "5ef67g89-0123-4efg-hab4-5678efgh9012",
+    program_id: "5ef67g89-0123-4efg-hab4-5678efgh9012",
+    program_name: "Green Energy Innovation Fund",
+    application_date: "2025-02-15",
+    status: "approved",
+    amount_applied: 750000,
+    organization: "GreenTech Innovations"
+  },
+  {
+    id: "6fg78h90-1234-5fgh-iab5-6789fghi0123",
+    program_id: "6fg78h90-1234-5fgh-iab5-6789fghi0123",
+    program_name: "Sustainable Agriculture Research Initiative",
+    application_date: "2025-03-01",
+    status: "pending",
+    amount_applied: 450000,
+    organization: "AgricultureTech Innovations"
+  },
+  {
+    id: "7gh89i01-2345-6ghi-jab6-7890ghij1234",
+    program_id: "7gh89i01-2345-6ghi-jab6-7890ghij1234",
+    program_name: "SME Digital Transformation Support",
+    application_date: "2025-04-05",
+    status: "approved",
+    amount_applied: 280000,
+    organization: "SmallTech Innovations"
+  },
+  {
+    id: "8hi90j12-3456-7hij-kab7-8901hijk2345",
+    program_id: "8hi90j12-3456-7hij-kab7-8901hijk2345",
+    program_name: "Advanced Materials Research Grant",
+    application_date: "2025-05-10",
+    status: "rejected",
+    amount_applied: 600000,
+    organization: "NanoTech Innovations"
+  }
+];
