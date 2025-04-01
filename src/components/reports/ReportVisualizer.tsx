@@ -1,6 +1,11 @@
 
 import React, { useMemo } from 'react';
 import { Visualization } from '@/utils/reportService';
+import { 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent 
+} from "@/components/ui/chart";
 import { BarChart, LineChart, PieChart, ResponsiveContainer, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Pie, Cell } from 'recharts';
 
 interface ReportVisualizerProps {
@@ -30,7 +35,7 @@ export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualizatio
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
+              <Tooltip content={<ChartTooltipContent />} />
               <Legend />
               {Object.keys(data[0]).filter(key => key !== 'name').map((key, index) => (
                 <Bar 
@@ -51,7 +56,7 @@ export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualizatio
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
+              <Tooltip content={<ChartTooltipContent />} />
               <Legend />
               {Object.keys(data[0]).filter(key => key !== 'name').map((key, index) => (
                 <Line 
@@ -85,7 +90,7 @@ export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualizatio
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip content={<ChartTooltipContent />} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -104,7 +109,14 @@ export const ReportVisualizer: React.FC<ReportVisualizerProps> = ({ visualizatio
     <div className="flex flex-col space-y-2">
       <h3 className="font-medium text-lg text-gray-800">{title}</h3>
       <p className="text-sm text-gray-500 mb-2">{description}</p>
-      {memoizedChart}
+      <ChartContainer
+        config={{
+          value: { label: 'Value' },
+          name: { label: 'Name' },
+        }}
+      >
+        {memoizedChart}
+      </ChartContainer>
     </div>
   );
 };

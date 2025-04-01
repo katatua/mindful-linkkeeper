@@ -1,11 +1,22 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from "recharts";
 import { Download, RefreshCw, Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -15,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart";
 
 export const FundingSuccessModel = () => {
   const { t } = useLanguage();
@@ -59,7 +75,6 @@ export const FundingSuccessModel = () => {
   const handleCalculate = () => {
     setIsCalculating(true);
     setTimeout(() => {
-      // Simulate ML calculation
       const base = 
         (nationalPriority[0] * 0.25) + 
         (sectoralCollaboration[0] * 0.18) + 
@@ -68,7 +83,6 @@ export const FundingSuccessModel = () => {
         (projectHistory[0] * 0.15) + 
         (financial[0] * 0.08);
       
-      // Add some randomness but ensure it stays relatively close to input quality
       const randomFactor = Math.random() * 10 - 5;
       const calculatedProb = Math.min(Math.max(Math.round(base * 0.9 + randomFactor), 40), 95);
       const calculatedConf = Math.min(Math.max(Math.round(calculatedProb - 5 + Math.random() * 15), 60), 95);
@@ -82,7 +96,6 @@ export const FundingSuccessModel = () => {
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
     
-    // Set sliders based on template
     switch(templateId) {
       case "tech":
         setNationalPriority([85]);
@@ -126,12 +139,11 @@ export const FundingSuccessModel = () => {
         break;
     }
     
-    // Simulate calculation
     handleCalculate();
   };
   
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Modelo de Previsão de Sucesso de Financiamento</CardTitle>
         <CardDescription>
@@ -144,7 +156,7 @@ export const FundingSuccessModel = () => {
             <div className="mb-6">
               <h3 className="text-sm font-medium mb-2">Modelos de Projeto</h3>
               <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione um modelo de projeto" />
                 </SelectTrigger>
                 <SelectContent>
@@ -343,20 +355,27 @@ export const FundingSuccessModel = () => {
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={similarProjectsData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="success" name="Aprovados" stackId="a" fill="#82ca9d" />
-                  <Bar dataKey="failure" name="Rejeitados" stackId="a" fill="#ff8042" />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChartContainer
+                config={{
+                  success: { label: 'Aprovados' },
+                  failure: { label: 'Rejeitados' },
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={similarProjectsData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="success" name="Aprovados" stackId="a" fill="#82ca9d" />
+                    <Bar dataKey="failure" name="Rejeitados" stackId="a" fill="#ff8042" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </div>
           </CardContent>
         </Card>
