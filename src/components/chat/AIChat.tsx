@@ -293,22 +293,19 @@ export const AIChat: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col">
-      <div className="mb-4 flex gap-2 items-start">
-        <div className="flex-1">
-          <ChatInput 
-            onSendMessage={processQuery}
-            isLoading={isLoading}
-            disabled={!actuallyReady}
-            placeholder="Faça uma pergunta sobre a base de dados em português..."
-          />
-        </div>
-        <div className="w-64">
-          <SuggestedQueries 
-            queries={portugueseSuggestions}
-            onSelectQuery={handleSuggestionClick}
-            disabled={!actuallyReady || isLoading}
-          />
-        </div>
+      <SuggestedQueries 
+        queries={portugueseSuggestions}
+        onSelectQuery={handleSuggestionClick}
+        disabled={!actuallyReady || isLoading}
+      />
+      
+      <div className="mb-4">
+        <ChatInput 
+          onSendMessage={processQuery}
+          isLoading={isLoading}
+          disabled={!actuallyReady}
+          placeholder="Faça uma pergunta sobre a base de dados em português..."
+        />
       </div>
       
       <div className="flex-1 mb-6 space-y-4">

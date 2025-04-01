@@ -31,7 +31,7 @@ export const SuggestedQueries: React.FC<SuggestedQueriesProps> = ({
   );
   
   return (
-    <div className="w-full">
+    <div className="w-full mb-4">
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button 
@@ -43,13 +43,13 @@ export const SuggestedQueries: React.FC<SuggestedQueriesProps> = ({
             <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-full max-w-[64rem] max-h-[24rem] overflow-y-auto" align="start">
+        <DropdownMenuContent className="w-full max-w-[100%] max-h-[24rem] overflow-y-auto" align="start">
           {queryGroups.map((group, groupIndex) => (
             <DropdownMenuGroup key={groupIndex}>
               {group.map((query, index) => (
                 <DropdownMenuItem 
                   key={index}
-                  className="cursor-pointer"
+                  className="cursor-pointer whitespace-normal"
                   onClick={() => {
                     onSelectQuery(query);
                     setOpen(false);
