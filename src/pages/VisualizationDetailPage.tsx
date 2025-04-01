@@ -263,9 +263,7 @@ const VisualizationDetailPage = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value, name) => {
-                  return [`${value}`, t('visualization.value')];
-                }} />
+                <Tooltip formatter={(value) => [`${value}`, t('visualization.value')]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
