@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -124,6 +125,7 @@ const callBaiApi = async (query: string): Promise<string> => {
   try {
     console.log("Calling BAI API with query:", query);
     
+    // Make sure we're using the correct endpoint and parameters
     const response = await fetch("https://bai.chat4b.ai/api/request", {
       method: "POST",
       headers: {
@@ -133,14 +135,14 @@ const callBaiApi = async (query: string): Promise<string> => {
       body: JSON.stringify({
         "request": query,
         "assistant_key": "1R5ZBwLgGOMlVSj4p6Ar0H8DX9NKhcfseU2v3CtYJ7PqaIbWkzEoyuximTQdnFSfNaIsoJczCYkjLM3He9pU42EvxVg57Aw60uBd",
-        "id_chat": "",
+        "id_chat": genId(), // Use a unique ID for each chat session
         "report": "No"
       })
     });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("BAI API error response:", errorText);
+      console.error("BAI API error response:", errorText, "Status:", response.status);
       throw new Error(`API call failed with status: ${response.status}, ${errorText}`);
     }
     
@@ -172,15 +174,14 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     }
     
     let baiResponse = null;
-    if (suggestedDatabaseQueries.includes(query)) {
-      try {
-        console.log("Query is in suggested list, calling BAI API");
-        baiResponse = await callBaiApi(query);
-        console.log("BAI API response:", baiResponse);
-      } catch (baiError) {
-        console.error("Error when calling BAI API:", baiError);
-        baiResponse = `Não foi possível obter resposta do assistente BAI: ${baiError.message}`;
-      }
+    // Try to get BAI response for all queries, not just suggested ones
+    try {
+      console.log("Calling BAI API for query:", query);
+      baiResponse = await callBaiApi(query);
+      console.log("BAI API response received:", baiResponse);
+    } catch (baiError) {
+      console.error("Error when calling BAI API:", baiError);
+      baiResponse = `Não foi possível obter resposta do assistente BAI: ${baiError.message}`;
     }
     
     return {
