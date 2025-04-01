@@ -81,7 +81,6 @@ export const FundingSuccessModel = () => {
   
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
-    const template = projectTemplates.find(t => t.id === templateId);
     
     // Set sliders based on template
     switch(templateId) {
@@ -322,6 +321,7 @@ export const FundingSuccessModel = () => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
+                      <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
