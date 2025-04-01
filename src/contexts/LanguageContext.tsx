@@ -609,4 +609,212 @@ const translations: Record<Language, Record<string, string>> = {
     'framework.period': 'Período: ',
     'framework.download': 'Baixar',
     'framework.share': 'Compartilhar',
-    'framework.downloaded': 'Documento de estrutura baix
+    'framework.downloaded': 'Documento de estrutura baixado',
+    'framework.downloaded.success': 'foi baixado com sucesso.',
+    'framework.funding': 'Financiamento Total',
+    'framework.coverage': 'Cobertura',
+    'framework.tab.overview': 'Visão Geral',
+    'framework.tab.funding': 'Financiamento',
+    'framework.tab.governance': 'Governança',
+    'framework.tab.performance': 'Desempenho',
+    'framework.description': 'Descrição da Estrutura',
+    'framework.areas': 'Áreas de Foco Principais',
+    'framework.objectives': 'Objetivos Estratégicos',
+    'framework.allocation': 'Alocação de Financiamento',
+    'framework.distribution': 'Distribuição de financiamento entre diferentes mecanismos',
+    'framework.eligibility': 'Elegibilidade para Financiamento',
+    'framework.research': 'Instituições de Pesquisa',
+    'framework.research.description': 'Universidades, centros de pesquisa e institutos de tecnologia envolvidos em pesquisa fundamental ou aplicada.',
+    'framework.companies': 'Empresas Privadas',
+    'framework.companies.description': 'PMEs e grandes empresas com projetos focados em inovação e atividades de P&D.',
+    'framework.consortia': 'Consórcios Público-Privados',
+    'framework.consortia.description': 'Projetos colaborativos envolvendo entidades públicas e privadas.',
+    'framework.nonprofit': 'Organizações Sem Fins Lucrativos',
+    'framework.nonprofit.description': 'ONGs e fundações trabalhando em inovação nos setores social e ambiental.',
+    'framework.governance': 'Estrutura de Governança',
+    'framework.implementation': 'Processo de Implementação',
+    'framework.process.strategy': 'Definição de Estratégia',
+    'framework.process.strategy.description': 'Estabelecer prioridades e objetivos com base em estratégias nacionais e europeias de inovação.',
+    'framework.process.call': 'Chamada de Propostas',
+    'framework.process.call.description': 'Publicação de oportunidades de financiamento com requisitos detalhados.',
+    'framework.process.evaluation': 'Avaliação e Seleção',
+    'framework.process.evaluation.description': 'Avaliação de propostas por painéis técnicos e comitês de especialistas.',
+    'framework.process.monitoring': 'Implementação e Monitoramento',
+    'framework.process.monitoring.description': 'Execução do projeto com monitoramento regular de progresso e relatórios.',
+    'framework.process.impact': 'Avaliação de Impacto',
+    'framework.process.impact.description': 'Avaliação dos resultados em relação aos objetivos e KPIs estabelecidos.',
+    'framework.kpi': 'Indicadores de Desempenho Chave',
+    'framework.kpi.target': 'Meta: ',
+    'framework.kpi.baseline': 'Linha de Base: ',
+    'framework.outcomes': 'Resultados Esperados',
+    'framework.impact.economic': 'Impacto Econômico',
+    'framework.impact.innovation': 'Capacidade de Inovação',
+    'framework.impact.societal': 'Benefícios Sociais',
+    'framework.impact.economic1': 'Contribuição para o crescimento do PIB de 1,5-2%',
+    'framework.impact.economic2': 'Criação de mais de 50.000 empregos altamente qualificados',
+    'framework.impact.economic3': 'Aumento da competitividade nas exportações',
+    'framework.impact.innovation1': 'Infraestrutura de P&D expandida',
+    'framework.impact.innovation2': 'Transferência de tecnologia aprimorada',
+    'framework.impact.innovation3': 'Crescimento em pedidos de patentes',
+    'framework.impact.societal1': 'Melhorias na inclusão digital',
+    'framework.impact.societal2': 'Ganhos em sustentabilidade ambiental',
+    'framework.impact.societal3': 'Prestação aprimorada de serviços públicos',
+    'framework.monitoring': 'Estrutura de Monitoramento',
+    'framework.annual': 'Relatórios Anuais de Progresso',
+    'framework.annual.description': 'Avaliação anual abrangente em relação a métricas e metas principais.',
+    'framework.midterm': 'Revisão Intermediária (2025)',
+    'framework.midterm.description': 'Análise profunda do progresso de implementação e potenciais ajustes de estratégia.',
+    'framework.final': 'Avaliação Final de Impacto (2030)',
+    'framework.final.description': 'Avaliação abrangente de resultados, impactos e lições aprendidas.',
+    
+    // Reports
+    'reports.scheduled': 'Visão Geral de Financiamento Mensal',
+    'reports.scheduled.description': 'Relatório mensal automatizado sobre alocação e utilização de financiamento',
+    'reports.frequency': 'Frequência:',
+    'reports.next': 'Próxima geração:',
+    'reports.generated': 'Gerado em',
+    'reports.recipients': 'Destinatários:',
+    'reports.preview': 'Visualizar',
+    'reports.pause': 'Pausar',
+    'reports.resume': 'Retomar',
+    'reports.delete': 'Excluir',
+    'reports.confirm': 'Confirmar',
+    'reports.cancel': 'Cancelar',
+    
+    // Dashboard
+    'dashboard.title': 'Painel de Inovação ANI',
+    'dashboard.search': 'Pesquisar métricas...',
+    'dashboard.filter': 'Filtrar',
+    'dashboard.export': 'Exportar',
+    'dashboard.refresh': 'Atualizar',
+    'dashboard.export.started': 'Preparando exportação em PDF...',
+    'dashboard.export.success': 'Exportação bem-sucedida',
+    'dashboard.export.success.desc': 'Seu painel foi exportado como PDF.',
+    'dashboard.export.fail': 'Falha na exportação',
+    'dashboard.export.fail.desc': 'Houve um erro ao gerar o PDF. Por favor, tente novamente.',
+    'dashboard.tab.overview': 'Visão Geral',
+    'dashboard.tab.funding': 'Financiamento',
+    'dashboard.tab.sectors': 'Setores',
+    'dashboard.tab.performance': 'Desempenho',
+    'dashboard.tab.regional': 'Regional',
+    'dashboard.metrics.active': 'Projetos Ativos',
+    'dashboard.metrics.investment': 'Investimento em P&D',
+    'dashboard.metrics.patents': 'Pedidos de Patentes',
+    'dashboard.metrics.startups': 'Startups Incubadas',
+    'dashboard.metrics.collaborations': 'Colaborações Internacionais',
+    'dashboard.metrics.ai': 'Índice de Inovação em IA',
+    'dashboard.charts.project': 'Tendências de Crescimento de Projetos (2023)',
+    'dashboard.charts.investment': 'Investimento em Inovação vs Projetos',
+    'dashboard.charts.sectors': 'Distribuição dos Setores de Inovação',
+    'dashboard.charts.funding': 'Crescimento do Financiamento de Inovação',
+    'dashboard.metrics.updated': 'Atualizado hoje',
+    'dashboard.metrics.q2': 'Q2 2023',
+    'dashboard.metrics.last12': 'Últimos 12 meses',
+    'dashboard.metrics.ytd': '2023 acumulado',
+    'dashboard.metrics.quarter': 'Este trimestre',
+    
+    // Project Metrics
+    'project.metrics.total': 'Total de Projetos',
+    'project.metrics.active': 'Projetos Ativos',
+    'project.metrics.completion': 'Taxa de Conclusão',
+    'project.metrics.budget': 'Orçamento Total',
+    'project.metrics.all': 'Todos os Projetos',
+    'project.metrics.progress': 'Em Andamento',
+    'project.metrics.last12': 'Últimos 12 Meses',
+    'project.metrics.funding': 'Financiamento Alocado',
+    
+    // Project List
+    'project.list.progress': 'Progresso',
+    'project.list.noMatch': 'Nenhum projeto encontrado que corresponda aos seus critérios.',
+    'project.list.category': 'Categoria',
+    'project.list.id': 'ID',
+    
+    // AI Assistant
+    'ai.title': 'Assistente IA',
+    'ai.placeholder': 'Pergunte-me qualquer coisa sobre dados de inovação da ANI...',
+    'ai.start': 'Inicie uma nova conversa com o assistente IA',
+    'ai.loading': 'IA está pensando...',
+    'ai.suggestions': 'Perguntas Sugeridas',
+    'ai.suggestion1': 'Quais programas de financiamento estão disponíveis?',
+    'ai.suggestion2': 'Mostre-me tendências recentes de inovação',
+    'ai.suggestion3': 'Explique a estrutura de inovação da ANI',
+    'ai.suggestion4': 'Como posso solicitar financiamento?',
+    'ai.suggestion5': 'Quais são as métricas de sucesso para projetos?',
+    'ai.send': 'Enviar',
+    'ai.results': 'Resultados',
+    'ai.help': 'Como posso ajudá-lo hoje?',
+    
+    // Data Card
+    'datacard.trend.up': 'Aumento',
+    'datacard.trend.down': 'Diminuição',
+    
+    // App Sidebar
+    'sidebar.menu': 'Menu',
+    'sidebar.database': 'Base de Dados',
+    'sidebar.explorer': 'Explorador de Base de Dados',
+    'sidebar.query': 'Assistente de Consulta',
+    'sidebar.admin': 'Administração',
+    'sidebar.settings': 'Configurações',
+    'sidebar.description': 'Explore a aplicação.',
+    'query.title': 'Assistente de Consulta',
+    'query.subtitle': 'Obtenha ajuda com consultas à base de dados',
+    'query.placeholder': 'Descreva quais dados você precisa...',
+    'query.send': 'Enviar',
+    'query.history': 'Histórico',
+    'query.results': 'Resultados',
+    'query.suggestions': 'Consultas Sugeridas',
+    'query.suggestion1': 'Mostrar todos os projetos ativos com orçamento acima de €1M',
+    'query.suggestion2': 'Listar financiamento por região para o último trimestre',
+    'query.suggestion3': 'Encontrar patentes registradas nos últimos 6 meses',
+    'query.empty': 'Nenhum resultado ainda. Tente fazer uma pergunta!',
+    'query.loading': 'Analisando sua consulta...',
+    'query.error': 'Erro ao processar consulta',
+    'query.copy': 'Copiar SQL',
+    'query.visualization': 'Visualização',
+    'query.table': 'Visualização em Tabela',
+    'query.chart': 'Visualização em Gráfico'
+  }
+};
+
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Initialize with browser language if available, or default to English
+  const getBrowserLanguage = (): Language => {
+    const browserLang = navigator.language.split('-')[0];
+    return browserLang === 'pt' ? 'pt' : 'en';
+  };
+
+  const [language, setLanguage] = useState<Language>(() => {
+    // Try to get from localStorage first
+    const savedLanguage = localStorage.getItem('language');
+    if (savedLanguage === 'pt' || savedLanguage === 'en') {
+      return savedLanguage;
+    }
+    // Otherwise use browser language
+    return getBrowserLanguage();
+  });
+
+  // Save language preference to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
+  const t = (key: string): string => {
+    return translations[language][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+};
+
+export default LanguageProvider;
