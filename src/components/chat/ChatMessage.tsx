@@ -71,7 +71,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="mt-4 border-t pt-3">
             <div className="flex items-center gap-1 mb-2">
               <BookOpen className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Resposta do Assistente ANI:</span>
+              <span className="text-sm font-semibold">Resposta do Assistente ANI</span>
             </div>
             <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
               {baiResponse}
@@ -79,8 +79,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           </div>
         )}
         
-        {/* Display BAI Error if available */}
-        {baiError && (
+        {/* Only display BAI Error if there is an error and no valid response */}
+        {baiError && !baiResponse && (
           <div className="mt-4">
             <Alert variant="destructive" className="bg-red-50 border-red-200">
               <AlertCircle className="h-4 w-4 text-red-600" />
