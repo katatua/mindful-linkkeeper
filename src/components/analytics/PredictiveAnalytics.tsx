@@ -10,9 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Info, TrendingUp, BarChart4, PieChart, Share2, Compass, BrainCircuit } from "lucide-react";
 import { FundingSuccessModel } from "@/components/predictive/FundingSuccessModel";
-import { SectorGrowthModel } from "@/components/predictive/SectorGrowthModel";
-import { PerformanceMetricsModel } from "@/components/predictive/PerformanceMetricsModel";
-import { RegionalAnalysisModel } from "@/components/predictive/RegionalAnalysisModel";
+import { Link } from "react-router-dom";
 
 export const PredictiveAnalytics = () => {
   const { t } = useLanguage();
@@ -39,7 +37,7 @@ export const PredictiveAnalytics = () => {
             
             <TabsContent value="overview" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
+                <Card className="cursor-pointer hover:shadow-md transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base font-medium">{t('analytics.predictive.funding')}</CardTitle>
                   </CardHeader>
@@ -60,7 +58,7 @@ export const PredictiveAnalytics = () => {
                   </CardContent>
                 </Card>
                 
-                <Card>
+                <Card className="cursor-pointer hover:shadow-md transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base font-medium">{t('analytics.predictive.trends')}</CardTitle>
                   </CardHeader>
@@ -173,15 +171,63 @@ export const PredictiveAnalytics = () => {
             </TabsContent>
             
             <TabsContent value="sector-growth">
-              <SectorGrowthModel />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Modelo de Crescimento Setorial</CardTitle>
+                  <CardDescription>
+                    Análise preditiva de crescimento por setor econômico baseada em dados históricos e tendências
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-10">
+                  <div className="p-8 border rounded-lg">
+                    <h3 className="text-lg mb-4">Modelo em Desenvolvimento</h3>
+                    <p className="text-gray-600 mb-6">
+                      Esta funcionalidade estará disponível em breve com análises detalhadas por setor.
+                    </p>
+                    <Button>Receber Notificação</Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="market-impact">
-              <PerformanceMetricsModel />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Modelo de Impacto no Mercado</CardTitle>
+                  <CardDescription>
+                    Previsão de impacto econômico e mercadológico de inovações
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-10">
+                  <div className="p-8 border rounded-lg">
+                    <h3 className="text-lg mb-4">Modelo em Desenvolvimento</h3>
+                    <p className="text-gray-600 mb-6">
+                      Esta funcionalidade estará disponível em breve com análises de potencial de mercado.
+                    </p>
+                    <Button>Receber Notificação</Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="policy-effects">
-              <RegionalAnalysisModel />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Modelo de Efeitos de Políticas</CardTitle>
+                  <CardDescription>
+                    Simulação do impacto de políticas de inovação em diferentes indicadores
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-10">
+                  <div className="p-8 border rounded-lg">
+                    <h3 className="text-lg mb-4">Modelo em Desenvolvimento</h3>
+                    <p className="text-gray-600 mb-6">
+                      Esta funcionalidade estará disponível em breve com simulações de políticas.
+                    </p>
+                    <Button>Receber Notificação</Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </CardContent>

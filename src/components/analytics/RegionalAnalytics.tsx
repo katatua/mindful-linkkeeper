@@ -83,7 +83,7 @@ export const RegionalAnalytics = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value, name, props) => [`${value} ${t('chart.projects')}`, name]} />
+                  <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -101,7 +101,7 @@ export const RegionalAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="region" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.investment')]} />
+                  <Tooltip />
                   <Legend />
                   <Bar dataKey="value" name={t('chart.total_investment')} fill="#8884d8" />
                 </BarChart>
@@ -123,7 +123,7 @@ export const RegionalAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.investment')]} />
+                  <Tooltip />
                   <Legend />
                   <Line type="monotone" dataKey="north" name={t('region.north')} stroke="#8884d8" />
                   <Line type="monotone" dataKey="central" name={t('region.central')} stroke="#82ca9d" />
@@ -146,7 +146,7 @@ export const RegionalAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="region" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`${value} ${t('chart.projects')}`, t('chart.count')]} />
+                  <Tooltip />
                   <Legend />
                   <Bar dataKey="digital" name={t('sector.digital')} fill="#8884d8" />
                   <Bar dataKey="health" name={t('sector.healthcare')} fill="#82ca9d" />
