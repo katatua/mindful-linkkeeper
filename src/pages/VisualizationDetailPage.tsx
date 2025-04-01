@@ -41,7 +41,7 @@ interface VisualizationParamsType {
 
 // Create a custom tooltip component that accepts any props
 const CustomTooltip = (props: any) => {
-  return <Tooltip formatter={(value) => `${value}`} {...props} />;
+  return <Tooltip {...props} />;
 };
 
 const VisualizationDetailPage = () => {

@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FundingSuccessModel } from '@/components/predictive/FundingSuccessModel';
 import { FundingSuccessModelV2 } from '@/components/predictive/FundingSuccessModelV2';
 import { InnovationTrendsModel } from '@/components/predictive/InnovationTrendsModel';
+import { InnovationImpactModel } from '@/components/predictive/InnovationImpactModel';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const PredictiveModelsPage = () => {
@@ -43,6 +44,15 @@ const PredictiveModelsPage = () => {
           </CardHeader>
           <CardContent>
             <InnovationTrendsModel />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Simulação de Impacto de Inovação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InnovationImpactModel />
           </CardContent>
         </Card>
         {/* Add more predictive models here in the future */}
