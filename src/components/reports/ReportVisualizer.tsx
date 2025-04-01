@@ -6,7 +6,21 @@ import {
   ChartTooltip, 
   ChartTooltipContent 
 } from "@/components/ui/chart";
-import { BarChart, LineChart, PieChart, ResponsiveContainer, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Pie, Cell } from 'recharts';
+import { 
+  BarChart, 
+  LineChart, 
+  PieChart, 
+  ResponsiveContainer, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  Line, 
+  Pie, 
+  Cell 
+} from 'recharts';
 
 interface ReportVisualizerProps {
   visualization: Visualization;

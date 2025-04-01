@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -318,24 +319,30 @@ export const FundingSuccessModel = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={featureImportanceData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={60}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {featureImportanceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      value: { label: 'Valor' },
+                    }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={featureImportanceData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={60}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {featureImportanceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<ChartTooltipContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </div>
               </CardContent>
             </Card>
@@ -354,7 +361,7 @@ export const FundingSuccessModel = () => {
             <CardTitle className="text-sm">Taxa de Sucesso em Projetos Similares</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-72"> {/* Aumentando a altura para melhor espaçamento */}
               <ChartContainer
                 config={{
                   success: { label: 'Aprovados' },
@@ -364,13 +371,13 @@ export const FundingSuccessModel = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={similarProjectsData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 40 }} {/* Aumentando a margem inferior */}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
+                    <XAxis dataKey="name" tick={{ dy: 10 }} /> {/* Aumentando o espaçamento vertical dos rótulos */}
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <Legend wrapperStyle={{ paddingTop: 20 }} /> {/* Adicionando espaço acima da legenda */}
                     <Bar dataKey="success" name="Aprovados" stackId="a" fill="#82ca9d" />
                     <Bar dataKey="failure" name="Rejeitados" stackId="a" fill="#ff8042" />
                   </BarChart>
