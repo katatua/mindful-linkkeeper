@@ -44,6 +44,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
                   <TableCell 
                     key={`${rowIndex}-${column}`}
                     data-column={column}
+                    data-category={row.category || ''}
                   >
                     {formatDatabaseValue(row[column], column)}
                   </TableCell>

@@ -96,6 +96,22 @@ const COUNT_COLUMNS = [
   'companies', 'users', 'submissions'
 ];
 
+// Define columns and categories that should be displayed as percentages
+const PERCENTAGE_COLUMNS = [
+  'rate', 'percentage', 'percent', 'ratio', 'share', 'proportion',
+  'adoption_rate', 'success_rate', 'growth', 'change', 'increment'
+];
+
+const PERCENTAGE_CATEGORIES = [
+  'exportações', 'economia', 'crescimento', 'taxa'
+];
+
+// Define columns/categories for indices and scores
+const INDEX_COLUMNS = [
+  'index', 'score', 'rating', 'rank', 'position', 'indicator', 'índice',
+  'performance', 'efficiency', 'effectiveness'
+];
+
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement> & { 
@@ -143,6 +159,19 @@ const TableCell = React.forwardRef<
       if (!isNaN(value)) {
         // Determine column name if available from DOM context
         const columnName = (props as any)['data-column']?.toLowerCase() || '';
+        const categoryName = (props as any)['data-category']?.toLowerCase() || '';
+        
+        // Check if this column should be treated as a percentage
+        const isPercentage = percentage || 
+          valueStr.includes('%') || 
+          PERCENTAGE_COLUMNS.some(term => columnName.includes(term)) ||
+          PERCENTAGE_CATEGORIES.some(term => categoryName.includes(term)) ||
+          (unit && (unit === 'percent' || unit === '%' || unit === 'percent YoY' || unit === 'percent of GDP'));
+        
+        // Check if this column should be treated as an index or score
+        const isIndex = INDEX_COLUMNS.some(term => columnName.includes(term)) ||
+          (columnName === 'name' && categoryName === 'performance') ||
+          (unit && (unit === 'points' || unit === 'score' || unit.toLowerCase().includes('index')));
         
         // Check if this column should be treated as currency
         const isCurrency = currency || 
@@ -157,9 +186,23 @@ const TableCell = React.forwardRef<
           (unit && COUNT_COLUMNS.some(term => unit.toLowerCase().includes(term)));
         
         // Handle percentage values
-        if (percentage || valueStr.includes('%') || (unit && (unit === 'percent' || unit === '%' || unit === 'percent YoY' || unit === 'percent of GDP'))) {
+        if (isPercentage) {
           content = `${value.toFixed(1)}%`;
         } 
+        // Handle index or score values
+        else if (isIndex) {
+          content = value.toLocaleString('pt-PT', {
+            style: 'decimal',
+            maximumFractionDigits: 1
+          });
+          
+          // Add the unit if provided and not N/A
+          if (unit && unit !== 'N/A') {
+            content = `${content} ${unit}`;
+          } else {
+            content = `${content} pontos`;
+          }
+        }
         // Handle currency values with EUR symbol
         else if (isCurrency) {
           content = new Intl.NumberFormat('pt-PT', { 
