@@ -9,7 +9,6 @@ import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
 import { SectorAnalytics } from "@/components/analytics/SectorAnalytics";
 import { PerformanceAnalytics } from "@/components/analytics/PerformanceAnalytics";
 import { RegionalAnalytics } from "@/components/analytics/RegionalAnalytics";
-import { PredictiveAnalytics } from "@/components/analytics/PredictiveAnalytics";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -30,11 +29,6 @@ const AnalyticsPage = () => {
       title: t('analytics.export.started'),
       description: t('analytics.export.description'),
     });
-  };
-
-  const navigateToPredictiveModels = () => {
-    // Navigate to predictive models page
-    navigate("/predictive-models");
   };
 
   return (
@@ -63,9 +57,6 @@ const AnalyticsPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={navigateToPredictiveModels}>
-                Modelos Preditivos
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" /> {t('analytics.export')}
               </DropdownMenuItem>

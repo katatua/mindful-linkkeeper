@@ -1,10 +1,10 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PredictiveAnalytics } from "@/components/analytics/PredictiveAnalytics";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PredictiveModelsPage = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const PredictiveModelsPage = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate("/analytics")}
+            onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
           </Button>
@@ -25,7 +25,17 @@ const PredictiveModelsPage = () => {
         </div>
       </div>
 
-      <PredictiveAnalytics />
+      <Card>
+        <CardHeader>
+          <CardTitle>Modelos Preditivos e Análise Avançada</CardTitle>
+          <CardDescription>
+            Ferramentas para previsão, simulação e análise de cenários futuros baseados em dados históricos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PredictiveAnalytics />
+        </CardContent>
+      </Card>
     </div>
   );
 };
