@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -283,8 +284,12 @@ const VisualizationDetailPage = () => {
                 {Object.keys(chartData[0])
                   .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
                   .map((key, index) => (
-                    <Bar key={key} dataKey={key} fill={COLORS[index % COLORS.length]} 
-                         name={t(`chart.label.${key}`, { defaultValue: key })} />
+                    <Bar 
+                      key={key} 
+                      dataKey={key} 
+                      fill={COLORS[index % COLORS.length]} 
+                      name={t(`chart.label.${key}`, { defaultValue: key })} 
+                    />
                   ))}
               </BarChart>
             </ResponsiveContainer>

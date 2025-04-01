@@ -10,12 +10,18 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Info, TrendingUp, BarChart4, PieChart, Share2, Compass, BrainCircuit } from "lucide-react";
 import { FundingSuccessModel } from "@/components/predictive/FundingSuccessModel";
-import { Link } from "react-router-dom";
+import { RegionalAnalysisModel } from "@/components/predictive/RegionalAnalysisModel";
+import { Link, useNavigate } from "react-router-dom";
 
 export const PredictiveAnalytics = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
   
+  const handleChartClick = (chartId, chartType) => {
+    navigate(`/visualization/predictive/${chartType}/${chartId}`);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -37,7 +43,7 @@ export const PredictiveAnalytics = () => {
             
             <TabsContent value="overview" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="cursor-pointer hover:shadow-md transition-all">
+                <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-prediction', 'model')}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base font-medium">{t('analytics.predictive.funding')}</CardTitle>
                   </CardHeader>
@@ -58,7 +64,7 @@ export const PredictiveAnalytics = () => {
                   </CardContent>
                 </Card>
                 
-                <Card className="cursor-pointer hover:shadow-md transition-all">
+                <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('growth-trends', 'model')}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base font-medium">{t('analytics.predictive.trends')}</CardTitle>
                   </CardHeader>
@@ -211,23 +217,7 @@ export const PredictiveAnalytics = () => {
             </TabsContent>
             
             <TabsContent value="policy-effects">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Modelo de Efeitos de Políticas</CardTitle>
-                  <CardDescription>
-                    Simulação do impacto de políticas de inovação em diferentes indicadores
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center py-10">
-                  <div className="p-8 border rounded-lg">
-                    <h3 className="text-lg mb-4">Modelo em Desenvolvimento</h3>
-                    <p className="text-gray-600 mb-6">
-                      Esta funcionalidade estará disponível em breve com simulações de políticas.
-                    </p>
-                    <Button>Receber Notificação</Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <RegionalAnalysisModel />
             </TabsContent>
           </Tabs>
         </CardContent>
