@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,14 +34,20 @@ import {
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F', '#FFBB28'];
 
-interface VisualizationParams {
+// Fix the interface to make it compatible with useParams
+interface VisualizationParamsType {
   chartId?: string;
   chartType?: string;
   category?: string;
 }
 
 const VisualizationDetailPage = () => {
-  const { chartId, chartType, category } = useParams<VisualizationParams>();
+  // Use string type for params to satisfy TS constraints
+  const params = useParams<string>();
+  const chartId = params.chartId;
+  const chartType = params.chartType;
+  const category = params.category;
+  
   const navigate = useNavigate();
   const [chartData, setChartData] = useState<any[] | null>(null);
   const [chartTitle, setChartTitle] = useState("");
