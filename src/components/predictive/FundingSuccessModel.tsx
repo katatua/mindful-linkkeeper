@@ -361,7 +361,7 @@ export const FundingSuccessModel = () => {
             <CardTitle className="text-sm">Taxa de Sucesso em Projetos Similares</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-72"> {/* Aumentando a altura para melhor espaçamento */}
+            <div className="h-72">
               <ChartContainer
                 config={{
                   success: { label: 'Aprovados' },
@@ -371,13 +371,13 @@ export const FundingSuccessModel = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={similarProjectsData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 40 }} {/* Aumentando a margem inferior */}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ dy: 10 }} /> {/* Aumentando o espaçamento vertical dos rótulos */}
+                    <XAxis dataKey="name" tick={{ dy: 10 }} />
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend wrapperStyle={{ paddingTop: 20 }} /> {/* Adicionando espaço acima da legenda */}
+                    <Legend wrapperStyle={{ paddingTop: 20 }} />
                     <Bar dataKey="success" name="Aprovados" stackId="a" fill="#82ca9d" />
                     <Bar dataKey="failure" name="Rejeitados" stackId="a" fill="#ff8042" />
                   </BarChart>
