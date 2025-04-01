@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MessageCircle } from 'lucide-react';
 
 const Index = () => {
   const { t, language } = useLanguage();
@@ -23,7 +24,10 @@ const Index = () => {
               <Button className="w-full">{t('index.view.dashboard')}</Button>
             </Link>
             <Link to="/assistant">
-              <Button className="w-full" variant="outline">{t('index.ai.assistant')}</Button>
+              <Button className="w-full" variant="outline">
+                <MessageCircle className="mr-2 h-4 w-4" />
+                {t('index.ai.assistant')}
+              </Button>
             </Link>
           </div>
         </CardContent>

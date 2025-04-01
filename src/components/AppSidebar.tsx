@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Menu, MoonIcon, SunIcon } from "lucide-react";
+import { Menu, MoonIcon, SunIcon, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { DatabaseIcon, Search } from 'lucide-react';
 
@@ -42,6 +43,17 @@ export function AppSidebar() {
             >
               <Link to="/">
                 Dashboard
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+              data-active={pathname === '/assistant'}
+            >
+              <Link to="/assistant">
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Chat
               </Link>
             </Button>
           </div>
@@ -123,6 +135,17 @@ export function AppSidebar() {
                 >
                   <Link to="/">
                     Dashboard
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  asChild
+                  data-active={pathname === '/assistant'}
+                >
+                  <Link to="/assistant">
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Chat
                   </Link>
                 </Button>
               </div>

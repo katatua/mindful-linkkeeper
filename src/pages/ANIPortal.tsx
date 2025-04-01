@@ -13,6 +13,7 @@ import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AIAssistant } from "@/components/AIAssistant";
 
 const ANIPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,6 +47,7 @@ const ANIPortal = () => {
               <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>
               <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
               <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
+              <TabsTrigger value="chat">Chat</TabsTrigger>
             </TabsList>
           </div>
           
@@ -71,6 +73,10 @@ const ANIPortal = () => {
           
           <TabsContent value="policies" className="h-full">
             <PoliciesPage />
+          </TabsContent>
+          
+          <TabsContent value="chat" className="h-full">
+            <AIAssistant />
           </TabsContent>
         </Tabs>
       </main>
