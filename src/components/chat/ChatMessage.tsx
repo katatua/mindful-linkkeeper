@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Database, User, AlertCircle } from 'lucide-react';
@@ -30,24 +29,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   baiError,
   className,
 }) => {
-  // Function to format BAI response
   const formatBaiResponse = (response: string) => {
     if (!response) return "";
     
     try {
-      // Check if response is a JSON string
       const parsed = JSON.parse(response);
       
       if (typeof parsed === 'object') {
-        // If it's a structured response object with specific fields
         if (parsed.text || parsed.content || parsed.message) {
           return parsed.text || parsed.content || parsed.message;
         }
         
-        // For other JSON objects, format them nicely
         return Object.entries(parsed)
           .map(([key, value]) => {
-            // Format each key-value pair
             const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
             return `**${formattedKey}**: ${value}`;
           })
@@ -56,7 +50,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       
       return response;
     } catch (e) {
-      // If it's not valid JSON, return as-is
       return response;
     }
   };
@@ -89,7 +82,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 space-y-2">
-        <div className="text-sm font-semibold">
+        <div className="text-xl font-bold">
           {role === 'user' ? 'Você' : 'Assistente'}
           {isAIResponse && (
             <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
@@ -103,11 +96,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="mt-4 border-t pt-3">
             <div className="flex items-center gap-1 mb-2">
               <BookOpen className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Chat4Business - Resposta do Assistente ANI</span>
+              <span className="text-xl font-bold">Chat4Business - Resposta do Assistente ANI</span>
             </div>
             <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
               {formattedBaiResponse.split('\n').map((paragraph, index) => {
-                // Check if this is a heading (starts with # or **)
                 if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
                   return (
                     <h3 key={index} className="font-bold text-base mt-2 mb-1">
@@ -116,7 +108,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   );
                 }
                 
-                // Check if this is a subheading (starts with **) 
                 if (paragraph.startsWith('**')) {
                   const parts = paragraph.split('**');
                   return (
@@ -127,7 +118,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   );
                 }
                 
-                // Regular paragraph with spacing
                 return paragraph ? (
                   <p key={index} className="mb-2">
                     {paragraph}
