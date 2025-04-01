@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Download, Filter, Search } from "lucide-react";
+import { Download, Filter, Search, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
@@ -11,17 +11,30 @@ import { PerformanceAnalytics } from "@/components/analytics/PerformanceAnalytic
 import { RegionalAnalytics } from "@/components/analytics/RegionalAnalytics";
 import { PredictiveAnalytics } from "@/components/analytics/PredictiveAnalytics";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const AnalyticsPage = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const handleExport = () => {
     toast({
       title: t('analytics.export.started'),
       description: t('analytics.export.description'),
     });
+  };
+
+  const navigateToPredictiveModels = () => {
+    // Navigate to predictive models page
+    navigate("/predictive-models");
   };
 
   return (
@@ -43,9 +56,21 @@ const AnalyticsPage = () => {
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-1" /> {t('analytics.filter')}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-1" /> {t('analytics.export')}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Ferramentas <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={navigateToPredictiveModels}>
+                Modelos Preditivos
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" /> {t('analytics.export')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -55,7 +80,6 @@ const AnalyticsPage = () => {
           <TabsTrigger value="sectors">{t('analytics.tab.sectors')}</TabsTrigger>
           <TabsTrigger value="performance">{t('analytics.tab.performance')}</TabsTrigger>
           <TabsTrigger value="regional">{t('analytics.tab.regional')}</TabsTrigger>
-          <TabsTrigger value="predictive">{t('analytics.tab.predictive')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="funding">
@@ -72,10 +96,6 @@ const AnalyticsPage = () => {
         
         <TabsContent value="regional">
           <RegionalAnalytics />
-        </TabsContent>
-        
-        <TabsContent value="predictive">
-          <PredictiveAnalytics />
         </TabsContent>
       </Tabs>
     </div>

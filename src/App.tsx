@@ -25,6 +25,7 @@ const PoliciesPage = lazy(() => import('@/pages/PoliciesPage'));
 const AIAssistant = lazy(() => import('@/components/AIAssistant').then(module => ({ default: module.AIAssistant })));
 const ReportDetailPage = lazy(() => import('@/pages/ReportDetailPage'));
 const DatabasePage = lazy(() => import('@/pages/DatabasePage'));
+const PredictiveModelsPage = lazy(() => import('@/pages/PredictiveModelsPage'));
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
                 <Route path="/funding" element={<FundingPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/predictive-models" element={<PredictiveModelsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/ai-report/:id" element={<AIReportDetail />} />
                 <Route path="/reports/ai/:id" element={<AIReportDetail />} />
