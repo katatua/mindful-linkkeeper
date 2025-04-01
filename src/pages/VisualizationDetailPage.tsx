@@ -39,8 +39,8 @@ interface VisualizationParamsType {
   category?: string;
 }
 
-const CustomTooltip = (props: any) => {
-  return <RechartsTooltip {...props} />;
+const CustomTooltip = ({ active, payload, label, ...rest }: any) => {
+  return <RechartsTooltip active={active} payload={payload} label={label} />;
 };
 
 const VisualizationDetailPage = () => {
