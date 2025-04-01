@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -12,6 +11,7 @@ export interface QueryResponseType {
   analysis?: any;
   isAIResponse?: boolean;
   baiResponse?: string;
+  baiError?: string;
 }
 
 export const genId = () => uuidv4();
@@ -121,42 +121,60 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   return String(value);
 };
 
-const callBaiApi = async (query: string): Promise<string> => {
+const callBaiApi = async (query: string): Promise<{ response?: string; error?: string }> => {
   try {
     console.log("Calling BAI API with query:", query);
     
-    // Make sure we're using the correct endpoint and parameters
+    const chatId = genId();
+    console.log("Using chat ID:", chatId);
+    
+    const requestBody = {
+      "request": query,
+      "assistant_key": "1R5ZBwLgGOMlVSj4p6Ar0H8DX9NKhcfseU2v3CtYJ7PqaIbWkzEoyuximTQdnFSfNaIsoJczCYkjLM3He9pU42EvxVg57Aw60uBd",
+      "id_chat": chatId,
+      "report": "No"
+    };
+    
+    console.log("Sending request to BAI API:", JSON.stringify(requestBody));
+    
     const response = await fetch("https://bai.chat4b.ai/api/request", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ki3ZfrxYn6G2JocE4A95sNRvwSd17hulamLPXDFbTWqeHjVBUgIy8CMzpK0OQtAuRHk5weX4fclx0KUt8rCgJO3EF1vsNGzPQWYb"
       },
-      body: JSON.stringify({
-        "request": query,
-        "assistant_key": "1R5ZBwLgGOMlVSj4p6Ar0H8DX9NKhcfseU2v3CtYJ7PqaIbWkzEoyuximTQdnFSfNaIsoJczCYkjLM3He9pU42EvxVg57Aw60uBd",
-        "id_chat": genId(), // Use a unique ID for each chat session
-        "report": "No"
-      })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) {
       const errorText = await response.text();
       console.error("BAI API error response:", errorText, "Status:", response.status);
-      throw new Error(`API call failed with status: ${response.status}, ${errorText}`);
+      return { error: `API call failed with status: ${response.status}, ${errorText}` };
     }
     
-    const data = await response.json();
-    console.log("BAI API full response:", data);
+    const responseText = await response.text();
+    console.log("BAI API raw response:", responseText);
     
-    if (!data || !data.response) {
-      throw new Error("No response from BAI API");
+    try {
+      const data = JSON.parse(responseText);
+      console.log("BAI API parsed response:", data);
+      
+      if (!data || typeof data !== 'object') {
+        return { error: "Invalid response format: not a JSON object" };
+      }
+      
+      if (!data.response) {
+        return { error: "Missing 'response' field in BAI API response", response: JSON.stringify(data) };
+      }
+      
+      return { response: data.response };
+    } catch (parseError) {
+      console.error("Error parsing BAI API response:", parseError);
+      return { error: `Failed to parse API response: ${parseError.message}`, response: responseText };
     }
-    
-    return data.response;
   } catch (error) {
     console.error("Error calling BAI API:", error);
-    throw error;
+    return { error: `Network or API error: ${error.message}` };
   }
 };
 
@@ -174,14 +192,27 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     }
     
     let baiResponse = null;
-    // Try to get BAI response for all queries, not just suggested ones
+    let baiError = null;
+    
     try {
       console.log("Calling BAI API for query:", query);
-      baiResponse = await callBaiApi(query);
-      console.log("BAI API response received:", baiResponse);
+      const baiResult = await callBaiApi(query);
+      
+      if (baiResult.error) {
+        console.error("BAI API error:", baiResult.error);
+        baiError = baiResult.error;
+        if (baiResult.response) {
+          baiResponse = baiResult.response;
+        }
+      } else if (baiResult.response) {
+        baiResponse = baiResult.response;
+        console.log("BAI API response received:", baiResponse);
+      } else {
+        baiError = "Resposta vazia do assistente BAI";
+      }
     } catch (baiError) {
-      console.error("Error when calling BAI API:", baiError);
-      baiResponse = `Não foi possível obter resposta do assistente BAI: ${baiError.message}`;
+      console.error("Exception when calling BAI API:", baiError);
+      baiError = `Erro ao comunicar com o assistente BAI: ${baiError.message}`;
     }
     
     return {
@@ -193,7 +224,8 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       queryId: dbData.queryId,
       analysis: dbData.analysis,
       isAIResponse: dbData.isAIResponse || false,
-      baiResponse: baiResponse
+      baiResponse: baiResponse,
+      baiError: baiError
     };
   } catch (error) {
     console.error("Error in generateResponse:", error);

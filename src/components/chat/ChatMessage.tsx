@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookOpen, Database, User } from 'lucide-react';
+import { BookOpen, Database, User, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ChatMessageProps {
   content: string;
@@ -12,7 +13,8 @@ interface ChatMessageProps {
   results?: any[] | null;
   sqlQuery?: string;
   isAIResponse?: boolean;
-  baiResponse?: string; // Added to accept BAI response
+  baiResponse?: string;
+  baiError?: string;
   className?: string;
 }
 
@@ -25,6 +27,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   sqlQuery,
   isAIResponse,
   baiResponse,
+  baiError,
   className,
 }) => {
   return (
@@ -73,6 +76,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
               {baiResponse}
             </div>
+          </div>
+        )}
+        
+        {/* Display BAI Error if available */}
+        {baiError && (
+          <div className="mt-4">
+            <Alert variant="destructive" className="bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-sm text-red-600">
+                <span className="font-semibold">Erro Assistente ANI:</span> {baiError}
+              </AlertDescription>
+            </Alert>
           </div>
         )}
       </div>
