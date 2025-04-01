@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Database, User, AlertCircle } from 'lucide-react';
@@ -29,14 +30,31 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   baiError,
   className,
 }) => {
-  // Function to format BAI response if it's JSON
+  // Function to format BAI response
   const formatBaiResponse = (response: string) => {
     if (!response) return "";
     
     try {
       // Check if response is a JSON string
       const parsed = JSON.parse(response);
-      return typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : response;
+      
+      if (typeof parsed === 'object') {
+        // If it's a structured response object with specific fields
+        if (parsed.text || parsed.content || parsed.message) {
+          return parsed.text || parsed.content || parsed.message;
+        }
+        
+        // For other JSON objects, format them nicely
+        return Object.entries(parsed)
+          .map(([key, value]) => {
+            // Format each key-value pair
+            const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+            return `**${formattedKey}**: ${value}`;
+          })
+          .join('\n\n');
+      }
+      
+      return response;
     } catch (e) {
       // If it's not valid JSON, return as-is
       return response;
@@ -88,7 +106,36 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <span className="text-sm font-semibold">Chat4Business - Resposta do Assistente ANI</span>
             </div>
             <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
-              {formattedBaiResponse}
+              {formattedBaiResponse.split('\n').map((paragraph, index) => {
+                // Check if this is a heading (starts with # or **)
+                if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
+                  return (
+                    <h3 key={index} className="font-bold text-base mt-2 mb-1">
+                      {paragraph.replace(/\*\*/g, '')}
+                    </h3>
+                  );
+                }
+                
+                // Check if this is a subheading (starts with **) 
+                if (paragraph.startsWith('**')) {
+                  const parts = paragraph.split('**');
+                  return (
+                    <div key={index} className="mb-2">
+                      <span className="font-semibold">{parts[1]}</span>
+                      {parts[2] || ''}
+                    </div>
+                  );
+                }
+                
+                // Regular paragraph with spacing
+                return paragraph ? (
+                  <p key={index} className="mb-2">
+                    {paragraph}
+                  </p>
+                ) : (
+                  <br key={index} />
+                );
+              })}
             </div>
           </div>
         )}
