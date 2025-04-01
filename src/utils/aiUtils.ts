@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -125,8 +126,9 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
   try {
     console.log("Calling BAI API with query:", query);
     
-    const chatId = genId();
-    console.log("Using chat ID:", chatId);
+    // Use a fixed chat ID instead of generating a new one
+    const chatId = "IEJ3zQRUjuPpcMZeKqsV4Y8H5Orxi1wvthXfBk6D2CWT70oNbGmLaygF9AdnSlW4DUhCBcVlxHvOTSgyr31ELaJue9NdM0GFijI2";
+    console.log("Using fixed chat ID:", chatId);
     
     const requestBody = {
       "request": query,
