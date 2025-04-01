@@ -79,7 +79,7 @@ export const FundingSuccessModel = () => {
     }, 1500);
   };
   
-  const handleTemplateSelect = (templateId) => {
+  const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
     const template = projectTemplates.find(t => t.id === templateId);
     
@@ -316,14 +316,15 @@ export const FundingSuccessModel = () => {
                         outerRadius={60}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${percent.toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
                         {featureImportanceData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                    </ResponsiveContainer>
-                  </div>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
