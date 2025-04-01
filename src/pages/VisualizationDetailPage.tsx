@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +41,7 @@ interface VisualizationParamsType {
 
 // Create a custom tooltip component that accepts any props
 const CustomTooltip = (props: any) => {
-  return <Tooltip {...props} />;
+  return <Tooltip formatter={(value) => `${value}`} {...props} />;
 };
 
 const VisualizationDetailPage = () => {
