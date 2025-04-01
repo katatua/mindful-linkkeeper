@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +15,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip as RechartsTooltip,
+  Tooltip,
   Legend,
   ResponsiveContainer,
   AreaChart,
@@ -39,6 +38,10 @@ interface VisualizationParamsType {
   chartType?: string;
   category?: string;
 }
+
+const CustomTooltip = (props: any) => {
+  return <Tooltip {...props} />;
+};
 
 const VisualizationDetailPage = () => {
   const params = useParams<string>();
@@ -304,7 +307,7 @@ const VisualizationDetailPage = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <RechartsTooltip />
+                <CustomTooltip />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -322,7 +325,7 @@ const VisualizationDetailPage = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <RechartsTooltip />
+                <CustomTooltip />
                 <Legend />
                 {Object.keys(chartData[0])
                   .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
@@ -347,7 +350,7 @@ const VisualizationDetailPage = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey={Object.keys(chartData[0])[0]} />
                 <YAxis />
-                <RechartsTooltip />
+                <CustomTooltip />
                 <Legend />
                 {Object.keys(chartData[0])
                   .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
@@ -373,7 +376,7 @@ const VisualizationDetailPage = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey={Object.keys(chartData[0])[0]} />
                 <YAxis />
-                <RechartsTooltip />
+                <CustomTooltip />
                 <Legend />
                 {Object.keys(chartData[0])
                   .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
@@ -401,7 +404,7 @@ const VisualizationDetailPage = () => {
                 <XAxis type="number" dataKey="x" name="Funding (€M)" />
                 <YAxis type="number" dataKey="y" name="Success Rate (%)" />
                 <ZAxis type="number" dataKey="z" range={[60, 400]} name="Projects" />
-                <RechartsTooltip />
+                <CustomTooltip />
                 <Legend />
                 <Scatter name="Sectors" data={chartData} fill="#8884d8" />
               </ScatterChart>
@@ -430,7 +433,7 @@ const VisualizationDetailPage = () => {
                     />
                   ))}
                 <Legend />
-                <RechartsTooltip />
+                <CustomTooltip />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -444,7 +447,7 @@ const VisualizationDetailPage = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey={Object.keys(chartData[0])[0]} />
                 <YAxis />
-                <RechartsTooltip />
+                <CustomTooltip />
                 <Legend />
                 <Area type="monotone" dataKey="onTime" name="On Time" fill="#82ca9d" stroke="#82ca9d" />
                 <Bar dataKey="delayed" name="Delayed" fill="#ff8042" />
@@ -472,7 +475,7 @@ const VisualizationDetailPage = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip />
+                  <CustomTooltip />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -486,7 +489,7 @@ const VisualizationDetailPage = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
-                  <RechartsTooltip />
+                  <CustomTooltip />
                   <Legend />
                   <Line type="monotone" dataKey="quantumComputing" name="Quantum Computing" stroke="#8884d8" />
                   <Line type="monotone" dataKey="biotech" name="Biotecnologia Avançada" stroke="#82ca9d" />
