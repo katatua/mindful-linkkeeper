@@ -57,7 +57,7 @@ function App() {
           </Suspense>
         </Router>
       </SidebarProvider>
-    </LanguageContext>
+    </LanguageProvider>
   );
 }
 
