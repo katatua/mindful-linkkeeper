@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MessageCircle } from 'lucide-react';
 
 const Index = () => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">

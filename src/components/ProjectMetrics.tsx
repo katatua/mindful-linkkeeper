@@ -1,48 +1,51 @@
 
 import { DataCard } from "@/components/DataCard";
 import { ProjectMetricsData } from "@/types/projectTypes";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProjectMetricsProps {
   metrics: ProjectMetricsData;
 }
 
 export const ProjectMetrics = ({ metrics }: ProjectMetricsProps) => {
+  const { t } = useLanguage();
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <DataCard
-        title="Total Projects"
+        title={t('project.metrics.total')}
         value={metrics.totalProjects}
         trend="up"
         percentChange={metrics.totalProjectsChange}
-        category="All Projects"
+        category={t('project.metrics.all')}
         isGrid={true}
         icon="chart"
       />
       <DataCard
-        title="Active Projects"
+        title={t('project.metrics.active')}
         value={metrics.activeProjects}
         trend="up"
         percentChange={metrics.activeProjectsChange}
-        category="In Progress"
+        category={t('project.metrics.progress')}
         chartData={metrics.activeProjectsTrend}
         isGrid={true}
         icon="activity"
       />
       <DataCard
-        title="Completion Rate"
+        title={t('project.metrics.completion')}
         value={`${metrics.completionRate}%`}
         trend={metrics.completionRateChange > 0 ? "up" : "down"}
         percentChange={Math.abs(metrics.completionRateChange)}
-        category="Last 12 Months"
+        category={t('project.metrics.last12')}
         isGrid={true}
         icon="chart"
       />
       <DataCard
-        title="Total Budget"
+        title={t('project.metrics.budget')}
         value={`€${metrics.totalBudget}M`}
         trend="up"
         percentChange={metrics.totalBudgetChange}
-        category="Allocated Funding"
+        category={t('project.metrics.funding')}
         chartData={metrics.totalBudgetTrend}
         isGrid={true}
         icon="activity"

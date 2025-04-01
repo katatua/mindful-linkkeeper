@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ProjectData } from "@/types/projectTypes";
 import { Calendar, Users, EuroIcon } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProjectListProps {
   projects: ProjectData[];
@@ -11,6 +12,8 @@ interface ProjectListProps {
 }
 
 export const ProjectList = ({ projects, isLoading }: ProjectListProps) => {
+  const { t } = useLanguage();
+  
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -33,7 +36,7 @@ export const ProjectList = ({ projects, isLoading }: ProjectListProps) => {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-gray-500">No projects found matching your criteria.</p>
+          <p className="text-gray-500">{t('project.list.noMatch')}</p>
         </CardContent>
       </Card>
     );
@@ -60,7 +63,7 @@ export const ProjectList = ({ projects, isLoading }: ProjectListProps) => {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span>Progress</span>
+                  <span>{t('project.list.progress')}</span>
                   <span>{project.progress}%</span>
                 </div>
                 <Progress value={project.progress} className="h-2" />
@@ -84,8 +87,8 @@ export const ProjectList = ({ projects, isLoading }: ProjectListProps) => {
           </CardContent>
           <CardFooter className="border-t pt-4 text-xs text-gray-500">
             <div className="flex justify-between w-full">
-              <span>Category: {project.category}</span>
-              <span>ID: {project.id}</span>
+              <span>{t('project.list.category')}: {project.category}</span>
+              <span>{t('project.list.id')}: {project.id}</span>
             </div>
           </CardFooter>
         </Card>

@@ -42,7 +42,7 @@ const ANIPortal = () => {
           <div className="container mx-auto py-4">
             <TabsList>
               <TabsTrigger value="dashboard">{t('dashboard.tab')}</TabsTrigger>
-              <TabsTrigger value="assistente">Assistente</TabsTrigger>
+              <TabsTrigger value="assistente">{t('assistant')}</TabsTrigger>
               <TabsTrigger value="funding">{t('funding.tab')}</TabsTrigger>
               <TabsTrigger value="projects">{t('projects.tab')}</TabsTrigger>
               <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>

@@ -1,6 +1,7 @@
 
 import { Calendar, BarChart2, FileText, Activity, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DataCardProps {
   title: string;
@@ -29,6 +30,8 @@ export const DataCard = ({
   description,
   footer
 }: DataCardProps) => {
+  const { t } = useLanguage();
+  
   const getTrendColor = (trend?: 'up' | 'down' | 'neutral') => {
     switch(trend) {
       case 'up': return 'text-green-600';

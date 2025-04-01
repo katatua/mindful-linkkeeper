@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataCard } from "@/components/DataCard";
@@ -31,71 +32,73 @@ import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
 import { SectorAnalytics } from "@/components/analytics/SectorAnalytics";
 import { PerformanceAnalytics } from "@/components/analytics/PerformanceAnalytics";
 import { RegionalAnalytics } from "@/components/analytics/RegionalAnalytics";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const Dashboard = () => {
   const [isGridView, setIsGridView] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   const innovationMetrics = [
     {
-      title: "Active Projects",
+      title: t('dashboard.metrics.active'),
       value: 134,
       trend: 'up' as const,
       percentChange: 12,
       category: "Project Monitoring",
-      date: "Updated today",
+      date: t('dashboard.metrics.updated'),
       chartData: [30, 40, 45, 60, 80, 95, 110, 120, 134],
       icon: "chart"
     },
     {
-      title: "R&D Investment",
+      title: t('dashboard.metrics.investment'),
       value: "€24.7M",
       trend: 'up' as const,
       percentChange: 8,
       category: "Financial",
-      date: "Q2 2023",
+      date: t('dashboard.metrics.q2'),
       chartData: [10, 12, 15, 18, 20, 22, 24, 24.7],
       icon: "activity"
     },
     {
-      title: "Patent Applications",
+      title: t('dashboard.metrics.patents'),
       value: 87,
       trend: 'down' as const,
       percentChange: 3,
       category: "Intellectual Property",
-      date: "Last 12 months",
+      date: t('dashboard.metrics.last12'),
       chartData: [95, 92, 90, 88, 85, 84, 86, 87],
       icon: "file"
     },
     {
-      title: "Startups Incubated",
+      title: t('dashboard.metrics.startups'),
       value: 56,
       trend: 'up' as const,
       percentChange: 15,
       category: "Entrepreneurship",
-      date: "2023 YTD",
+      date: t('dashboard.metrics.ytd'),
       chartData: [32, 38, 42, 45, 48, 52, 56],
       icon: "chart"
     },
     {
-      title: "International Collaborations",
+      title: t('dashboard.metrics.collaborations'),
       value: 28,
       trend: 'up' as const,
       percentChange: 4,
       category: "International Relations",
-      date: "This quarter",
+      date: t('dashboard.metrics.quarter'),
       chartData: [22, 23, 25, 26, 27, 28],
       icon: "calendar"
     },
     {
-      title: "AI Innovation Index",
+      title: t('dashboard.metrics.ai'),
       value: 72.3,
       trend: 'up' as const,
       percentChange: 6.5,
       category: "AI & Technology",
-      date: "Q2 2023",
+      date: t('dashboard.metrics.q2'),
       chartData: [65, 66, 68, 69, 70, 72.3],
       icon: "activity"
     }
@@ -161,7 +164,7 @@ export const Dashboard = () => {
 
   const exportToPdf = async () => {
     toast({
-      title: "Preparing PDF export...",
+      title: t('dashboard.export.started'),
       description: "This may take a few seconds.",
     });
 
@@ -171,8 +174,8 @@ export const Dashboard = () => {
       const dashboardElement = document.getElementById('dashboard-content');
       if (!dashboardElement) {
         toast({
-          title: "Export failed",
-          description: "Could not find dashboard content to export.",
+          title: t('dashboard.export.fail'),
+          description: t('dashboard.export.fail.desc'),
           variant: "destructive",
         });
         return;
@@ -193,10 +196,10 @@ export const Dashboard = () => {
       });
       
       pdf.setFontSize(16);
-      pdf.text('ANI Innovation Analytics Dashboard Report', 20, 15);
+      pdf.text(t('app.title'), 20, 15);
       
       pdf.setFontSize(10);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 22);
+      pdf.text(`${t('dashboard.metrics.updated')}: ${new Date().toLocaleDateString()}`, 20, 22);
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -210,14 +213,14 @@ export const Dashboard = () => {
       pdf.save('ANI_Innovation_Dashboard.pdf');
       
       toast({
-        title: "Export successful",
-        description: "Your dashboard has been exported as a PDF.",
+        title: t('dashboard.export.success'),
+        description: t('dashboard.export.success.desc'),
       });
     } catch (error) {
       console.error('PDF export error:', error);
       toast({
-        title: "Export failed",
-        description: "There was an error generating the PDF. Please try again.",
+        title: t('dashboard.export.fail'),
+        description: t('dashboard.export.fail.desc'),
         variant: "destructive",
       });
     }
@@ -226,27 +229,27 @@ export const Dashboard = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">ANI Innovation Dashboard</h1>
+        <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
         
         <div className="flex items-center gap-2">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <Input
               type="search"
-              placeholder="Search metrics..."
+              placeholder={t('dashboard.search')}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-1" /> Filter
+            <Filter className="h-4 w-4 mr-1" /> {t('dashboard.filter')}
           </Button>
           <Button variant="outline" size="sm" onClick={exportToPdf}>
-            <Download className="h-4 w-4 mr-1" /> Export
+            <Download className="h-4 w-4 mr-1" /> {t('dashboard.export')}
           </Button>
           <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+            <RefreshCw className="h-4 w-4 mr-1" /> {t('dashboard.refresh')}
           </Button>
           <ViewToggle isGrid={isGridView} onToggle={() => setIsGridView(!isGridView)} />
         </div>
@@ -254,11 +257,11 @@ export const Dashboard = () => {
       
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="funding">Funding</TabsTrigger>
-          <TabsTrigger value="sectors">Sectors</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="regional">Regional</TabsTrigger>
+          <TabsTrigger value="overview">{t('dashboard.tab.overview')}</TabsTrigger>
+          <TabsTrigger value="funding">{t('dashboard.tab.funding')}</TabsTrigger>
+          <TabsTrigger value="sectors">{t('dashboard.tab.sectors')}</TabsTrigger>
+          <TabsTrigger value="performance">{t('dashboard.tab.performance')}</TabsTrigger>
+          <TabsTrigger value="regional">{t('dashboard.tab.regional')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
@@ -291,7 +294,7 @@ export const Dashboard = () => {
                 onClick={() => handleChartClick('project-growth', 'bar')}
               >
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Project Growth Trends (2023)</CardTitle>
+                  <CardTitle className="text-base font-medium">{t('dashboard.charts.project')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
@@ -314,7 +317,7 @@ export const Dashboard = () => {
                 onClick={() => handleChartClick('innovation-investments', 'line')}
               >
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Innovation Investment vs Projects</CardTitle>
+                  <CardTitle className="text-base font-medium">{t('dashboard.charts.investment')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
@@ -341,7 +344,7 @@ export const Dashboard = () => {
                 onClick={() => handleChartClick('sector-distribution', 'pie')}
               >
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Innovation Sectors Distribution</CardTitle>
+                  <CardTitle className="text-base font-medium">{t('dashboard.charts.sectors')}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-center">
                   <div className="h-80 w-full">
@@ -375,7 +378,7 @@ export const Dashboard = () => {
                 onClick={() => handleChartClick('funding-growth', 'area')}
               >
                 <CardHeader>
-                  <CardTitle className="text-base font-medium">Innovation Funding Growth</CardTitle>
+                  <CardTitle className="text-base font-medium">{t('dashboard.charts.funding')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">

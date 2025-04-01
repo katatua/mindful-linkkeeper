@@ -13,6 +13,7 @@ import {
 import { Menu, MoonIcon, SunIcon, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { DatabaseIcon, Search } from 'lucide-react';
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Use next-themes for theme management
 import { useTheme } from "next-themes"
@@ -20,6 +21,7 @@ import { useTheme } from "next-themes"
 export function AppSidebar() {
   const { pathname } = useLocation();
   const { setTheme, resolvedTheme } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <div className="border-r flex-col bg-background md:flex hidden">
@@ -32,7 +34,7 @@ export function AppSidebar() {
       <div className="space-y-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            Menu
+            {t('sidebar.menu')}
           </h2>
           <div className="space-y-1">
             <Button
@@ -53,7 +55,7 @@ export function AppSidebar() {
             >
               <Link to="/assistant">
                 <MessageCircle className="mr-2 h-4 w-4" />
-                Chat
+                {t('assistant')}
               </Link>
             </Button>
           </div>
@@ -61,7 +63,7 @@ export function AppSidebar() {
 
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            Database
+            {t('sidebar.database')}
           </h2>
           <div className="space-y-1">
             <Button
@@ -72,7 +74,7 @@ export function AppSidebar() {
             >
               <Link to="/database">
                 <DatabaseIcon className="mr-2 h-4 w-4" />
-                Database Explorer
+                {t('sidebar.explorer')}
               </Link>
             </Button>
             <Button
@@ -83,7 +85,7 @@ export function AppSidebar() {
             >
               <Link to="/query-assistant">
                 <Search className="mr-2 h-4 w-4" />
-                Query Assistant
+                {t('sidebar.query')}
               </Link>
             </Button>
           </div>
@@ -91,7 +93,7 @@ export function AppSidebar() {
 
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            Admin
+            {t('sidebar.admin')}
           </h2>
           <div className="space-y-1">
             <Button
@@ -101,7 +103,7 @@ export function AppSidebar() {
               data-active={pathname === '/admin/settings'}
             >
               <Link to="/admin/settings">
-                Settings
+                {t('sidebar.settings')}
               </Link>
             </Button>
           </div>
@@ -116,15 +118,15 @@ export function AppSidebar() {
         </SheetTrigger>
         <SheetContent side="left" className="sm:w-64">
           <SheetHeader>
-            <SheetTitle>Menu</SheetTitle>
+            <SheetTitle>{t('sidebar.menu')}</SheetTitle>
             <SheetDescription>
-              Explore the application.
+              {t('sidebar.description')}
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="px-3 py-2">
               <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-                Menu
+                {t('sidebar.menu')}
               </h2>
               <div className="space-y-1">
                 <Button
@@ -145,7 +147,7 @@ export function AppSidebar() {
                 >
                   <Link to="/assistant">
                     <MessageCircle className="mr-2 h-4 w-4" />
-                    Chat
+                    {t('assistant')}
                   </Link>
                 </Button>
               </div>
@@ -153,7 +155,7 @@ export function AppSidebar() {
 
             <div className="px-3 py-2">
               <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-                Database
+                {t('sidebar.database')}
               </h2>
               <div className="space-y-1">
                 <Button
@@ -163,7 +165,7 @@ export function AppSidebar() {
                   data-active={pathname === '/database'}
                 >
                   <Link to="/database">
-                    Database Explorer
+                    {t('sidebar.explorer')}
                   </Link>
                 </Button>
                 <Button
@@ -173,7 +175,7 @@ export function AppSidebar() {
                   data-active={pathname === '/query-assistant'}
                 >
                   <Link to="/query-assistant">
-                    Query Assistant
+                    {t('sidebar.query')}
                   </Link>
                 </Button>
               </div>
@@ -181,7 +183,7 @@ export function AppSidebar() {
 
             <div className="px-3 py-2">
               <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-                Admin
+                {t('sidebar.admin')}
               </h2>
               <div className="space-y-1">
                 <Button
@@ -191,7 +193,7 @@ export function AppSidebar() {
                   data-active={pathname === '/admin/settings'}
                 >
                   <Link to="/admin/settings">
-                    Settings
+                    {t('sidebar.settings')}
                   </Link>
                 </Button>
               </div>
