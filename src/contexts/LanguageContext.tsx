@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'pt';
@@ -39,6 +38,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home': 'Home',
     'database': 'Database',
     'synthetic_data': 'Synthetic Data',
+    'assistant': 'Assistant',
     
     // Policies
     'policy.search.placeholder': 'Search policies...',
@@ -326,6 +326,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home': 'Início',
     'database': 'Base de Dados',
     'synthetic_data': 'Dados Sintéticos',
+    'assistant': 'Assistente',
     
     // Policies
     'policy.search.placeholder': 'Pesquisar políticas...',
