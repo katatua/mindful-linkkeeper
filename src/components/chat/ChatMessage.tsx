@@ -30,6 +30,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   baiError,
   className,
 }) => {
+  // Function to format BAI response if it's JSON
+  const formatBaiResponse = (response: string) => {
+    if (!response) return "";
+    
+    try {
+      // Check if response is a JSON string
+      const parsed = JSON.parse(response);
+      return typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : response;
+    } catch (e) {
+      // If it's not valid JSON, return as-is
+      return response;
+    }
+  };
+
+  const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";
+
   return (
     <div 
       className={cn(
@@ -71,10 +87,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="mt-4 border-t pt-3">
             <div className="flex items-center gap-1 mb-2">
               <BookOpen className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Resposta do Assistente ANI</span>
+              <span className="text-sm font-semibold">BAI - Resposta do Assistente ANI</span>
             </div>
             <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
-              {baiResponse}
+              {formattedBaiResponse}
             </div>
           </div>
         )}

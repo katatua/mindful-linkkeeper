@@ -126,7 +126,7 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
   try {
     console.log("Calling BAI API with query:", query);
     
-    // Use a fixed chat ID instead of generating a new one
+    // Use a fixed chat ID as provided
     const chatId = "IEJ3zQRUjuPpcMZeKqsV4Y8H5Orxi1wvthXfBk6D2CWT70oNbGmLaygF9AdnSlW4DUhCBcVlxHvOTSgyr31ELaJue9NdM0GFijI2";
     console.log("Using fixed chat ID:", chatId);
     
@@ -165,13 +165,21 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
         return { error: "Invalid response format: not a JSON object" };
       }
       
-      if (!data.response) {
+      // Extract the text from the JSON response
+      const textResponse = data.response || null;
+      
+      if (!textResponse) {
         return { error: "Missing 'response' field in BAI API response", response: JSON.stringify(data) };
       }
       
-      return { response: data.response };
+      // Return plain text response instead of JSON
+      return { response: textResponse };
     } catch (parseError) {
       console.error("Error parsing BAI API response:", parseError);
+      // If the response is not valid JSON, but might be plain text, return it as-is
+      if (responseText && responseText.trim()) {
+        return { response: responseText };
+      }
       return { error: `Failed to parse API response: ${parseError.message}`, response: responseText };
     }
   } catch (error) {
