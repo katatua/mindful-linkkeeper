@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,9 +40,12 @@ interface VisualizationParamsType {
   category?: string;
 }
 
-const CustomTooltip = (props: any) => {
+// Custom wrapper for Tooltip to ignore the second argument
+// Using any for the props to handle the unexpected additional parameter
+function CustomTooltip(props: any) {
+  // Extract just the standard Tooltip props, ignoring any extra ones
   return <Tooltip {...props} />;
-};
+}
 
 const VisualizationDetailPage = () => {
   const params = useParams<string>();
