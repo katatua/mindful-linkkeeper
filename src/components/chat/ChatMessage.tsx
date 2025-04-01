@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Database, User, AlertCircle } from 'lucide-react';
@@ -91,6 +92,60 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           )}
         </div>
         <div className="whitespace-pre-wrap text-sm">{content}</div>
+        
+        {results && results.length > 0 && (
+          <div className="mt-4 border-t pt-3">
+            <div className="flex items-center gap-1 mb-2">
+              <Database className="h-4 w-4 text-primary" />
+              <span className="text-xl font-bold">Base de dados</span>
+            </div>
+            <div className="overflow-x-auto border rounded-md">
+              {/* Renderização dos resultados da base de dados */}
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {results[0] && Object.keys(results[0]).map((column) => (
+                      <th 
+                        key={column}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {column}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {results.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {Object.entries(row).map(([column, value]) => (
+                        <td 
+                          key={`${rowIndex}-${column}`}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                          {value === null ? 'null' : 
+                           typeof value === 'object' ? JSON.stringify(value) : 
+                           String(value)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {sqlQuery && (
+              <div className="pt-2">
+                <div className="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                  <Database className="h-4 w-4" />
+                  <span>Consulta SQL:</span>
+                </div>
+                <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-sm overflow-x-auto">
+                  {sqlQuery}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
         
         {baiResponse && (
           <div className="mt-4 border-t pt-3">
