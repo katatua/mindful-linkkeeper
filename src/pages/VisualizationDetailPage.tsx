@@ -33,7 +33,6 @@ import {
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F', '#FFBB28'];
 
-// Fix the interface to make it compatible with useParams
 interface VisualizationParamsType {
   chartId?: string;
   chartType?: string;
@@ -41,7 +40,6 @@ interface VisualizationParamsType {
 }
 
 const VisualizationDetailPage = () => {
-  // Use string type for params to satisfy TS constraints
   const params = useParams<string>();
   const chartId = params.chartId;
   const chartType = params.chartType;
