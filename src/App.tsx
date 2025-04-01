@@ -13,7 +13,6 @@ import ANIPortal from '@/pages/ANIPortal';
 import AIReportDetail from '@/pages/AIReportDetail';
 import QueryAssistantPage from './pages/QueryAssistantPage';
 import VisualizationDetailPage from './pages/VisualizationDetailPage';
-import PredictiveModelsPage from './pages/PredictiveModelsPage';
 
 // Lazy-loaded pages
 const Auth = lazy(() => import('@/pages/Auth'));
@@ -42,7 +41,6 @@ function App() {
                 <Route path="/funding" element={<FundingPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/predictive-models" element={<PredictiveModelsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/ai-report/:id" element={<AIReportDetail />} />
                 <Route path="/reports/ai/:id" element={<AIReportDetail />} />

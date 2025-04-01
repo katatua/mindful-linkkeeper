@@ -9,20 +9,13 @@ import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
 import { SectorAnalytics } from "@/components/analytics/SectorAnalytics";
 import { PerformanceAnalytics } from "@/components/analytics/PerformanceAnalytics";
 import { RegionalAnalytics } from "@/components/analytics/RegionalAnalytics";
+import { PredictiveAnalytics } from "@/components/analytics/PredictiveAnalytics";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useNavigate } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const AnalyticsPage = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useLanguage();
-  const navigate = useNavigate();
 
   const handleExport = () => {
     toast({
@@ -62,6 +55,7 @@ const AnalyticsPage = () => {
           <TabsTrigger value="sectors">{t('analytics.tab.sectors')}</TabsTrigger>
           <TabsTrigger value="performance">{t('analytics.tab.performance')}</TabsTrigger>
           <TabsTrigger value="regional">{t('analytics.tab.regional')}</TabsTrigger>
+          <TabsTrigger value="predictive">{t('analytics.tab.predictive')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="funding">
@@ -78,6 +72,10 @@ const AnalyticsPage = () => {
         
         <TabsContent value="regional">
           <RegionalAnalytics />
+        </TabsContent>
+        
+        <TabsContent value="predictive">
+          <PredictiveAnalytics />
         </TabsContent>
       </Tabs>
     </div>

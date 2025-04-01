@@ -1,47 +1,27 @@
 
-import React from "react";
-import { Header } from "./Header";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { Header } from './Header';
+import { useSidebar } from '@/contexts/SidebarContext';
+import { AppSidebar } from './AppSidebar';
+import { ChatBubble } from './chat/ChatBubble';
 
-export const Layout = ({ children }: { children: React.ReactNode }) => {
-  const navigate = useNavigate();
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export function Layout({ children }: LayoutProps) {
+  const { isOpen } = useSidebar();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
-      <div className="flex flex-1">
-        <main className="flex-1 p-6">
-          <div className="flex justify-end mb-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Ferramentas <ChevronDown className="h-4 w-4 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate("/predictive-models")}>
-                  Modelos Preditivos
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/analytics")}>
-                  Painel de Análises
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/reports")}>
-                  Relatórios
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+      <div className="flex flex-1 overflow-hidden">
+        {isOpen && <AppSidebar />}
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>
+      <ChatBubble title="Assistente ANI" />
     </div>
   );
-};
+}
