@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Info, TrendingUp, BarChart4, PieChart, Share2, Compass, BrainCircuit } from "lucide-react";
 import { FundingSuccessModel } from "@/components/predictive/FundingSuccessModel";
 import { RegionalAnalysisModel } from "@/components/predictive/RegionalAnalysisModel";
+import { InnovationImpactModel } from "@/components/predictive/InnovationImpactModel";
 import { Link, useNavigate } from "react-router-dom";
 
 export const PredictiveAnalytics = () => {
@@ -33,9 +34,10 @@ export const PredictiveAnalytics = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 md:grid-cols-5 mb-4">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="funding-success">Sucesso de Financiamento</TabsTrigger>
+              <TabsTrigger value="innovation-impact">Impacto de Inovação</TabsTrigger>
               <TabsTrigger value="sector-growth">Crescimento Setorial</TabsTrigger>
               <TabsTrigger value="market-impact">Impacto no Mercado</TabsTrigger>
               <TabsTrigger value="policy-effects">Efeitos de Políticas</TabsTrigger>
@@ -174,6 +176,10 @@ export const PredictiveAnalytics = () => {
             
             <TabsContent value="funding-success">
               <FundingSuccessModel />
+            </TabsContent>
+            
+            <TabsContent value="innovation-impact">
+              <InnovationImpactModel />
             </TabsContent>
             
             <TabsContent value="sector-growth">

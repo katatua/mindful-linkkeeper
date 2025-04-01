@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -274,10 +273,13 @@ const VisualizationDetailPage = () => {
       case 'bar':
         return (
           <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+            <ResponsiveContainer width="100%" height={500}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={Object.keys(chartData[0])[0]} />
+                <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
