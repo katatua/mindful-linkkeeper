@@ -1,11 +1,11 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { 
   Menu, LogOut, LogIn, User, HelpCircle, Languages, 
   FileUp, Link as LinkIcon, FolderPlus, Database, 
-  BarChart2, Home, Folder, BarChart, FileText, BookOpen
+  BarChart2, Home, Folder, BarChart, FileText, BookOpen,
+  MessageCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,12 +20,10 @@ export const HamburgerMenu = () => {
   const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
-    // Check initial auth state
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
     });
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
     });
@@ -60,10 +58,7 @@ export const HamburgerMenu = () => {
   };
 
   const toggleLanguage = () => {
-    // Pass the new language value explicitly
     setLanguage(language === 'en' ? 'pt' : 'en');
-    
-    // Show a toast to confirm language change
     toast({
       title: language === 'en' ? 'Idioma alterado para Português' : 'Language changed to English',
       description: language === 'en' ? 'Todas as páginas serão exibidas em Português' : 'All pages will be displayed in English',
@@ -72,6 +67,7 @@ export const HamburgerMenu = () => {
 
   const mainMenuItems = [
     { title: t('home'), icon: Home, url: "/" },
+    { title: t('assistant'), icon: MessageCircle, url: "/assistant" },
     { title: t('funding'), icon: BarChart, url: "/funding" },
     { title: t('projects'), icon: Folder, url: "/projects" },
     { title: t('analytics'), icon: BarChart2, url: "/analytics" },
