@@ -16,7 +16,6 @@ import {
   STORAGE_KEYS, 
   initializeDummyDataIfNeeded 
 } from '@/utils/storageUtils';
-import { LoadingStatusDisplay } from '@/components/database/LoadingStatusDisplay';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { SuggestedQueries } from '@/components/chat/SuggestedQueries';
@@ -294,16 +293,22 @@ export const AIChat: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col">
-      <LoadingStatusDisplay 
-        onRefresh={loadDummyData} 
-      />
-      
-      <div className="mb-6">
-        <SuggestedQueries 
-          queries={portugueseSuggestions}
-          onSelectQuery={handleSuggestionClick}
-          disabled={!actuallyReady || isLoading}
-        />
+      <div className="mb-4 flex gap-2 items-start">
+        <div className="flex-1">
+          <ChatInput 
+            onSendMessage={processQuery}
+            isLoading={isLoading}
+            disabled={!actuallyReady}
+            placeholder="Faça uma pergunta sobre a base de dados em português..."
+          />
+        </div>
+        <div className="w-64">
+          <SuggestedQueries 
+            queries={portugueseSuggestions}
+            onSelectQuery={handleSuggestionClick}
+            disabled={!actuallyReady || isLoading}
+          />
+        </div>
       </div>
       
       <div className="flex-1 mb-6 space-y-4">
@@ -317,8 +322,19 @@ export const AIChat: React.FC = () => {
             <AlertCircle className="h-4 w-4 mr-2" />
             <AlertTitle>Problemas com os dados</AlertTitle>
             <AlertDescription>
-              Os dados podem não ter sido carregados corretamente. Clique em "Refresh" acima para tentar novamente.
+              Os dados podem não ter sido carregados corretamente. Clique em "Atualizar" para tentar novamente.
             </AlertDescription>
+            <div className="mt-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={loadDummyData}
+                className="flex items-center gap-1"
+              >
+                <Loader2 className="h-4 w-4 mr-1" />
+                Atualizar Dados
+              </Button>
+            </div>
           </Alert>
         ) : (
           <>
@@ -387,14 +403,6 @@ export const AIChat: React.FC = () => {
             )}
           </>
         )}
-      </div>
-      
-      <div className="mt-auto">
-        <ChatInput 
-          onSendMessage={processQuery}
-          isLoading={isLoading}
-          disabled={!actuallyReady}
-        />
       </div>
     </div>
   );

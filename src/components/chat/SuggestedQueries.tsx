@@ -1,6 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 interface SuggestedQueriesProps {
   queries: string[];
@@ -13,25 +21,47 @@ export const SuggestedQueries: React.FC<SuggestedQueriesProps> = ({
   onSelectQuery,
   disabled = false
 }) => {
+  const [open, setOpen] = useState(false);
+  
+  // We'll split queries into groups of maximum 8 for better usability
+  const groupSize = 8;
+  const queryGroups = Array.from(
+    { length: Math.ceil(queries.length / groupSize) },
+    (_, i) => queries.slice(i * groupSize, (i + 1) * groupSize)
+  );
+  
   return (
-    <div className="space-y-3">
-      <div>
-        <h3 className="text-base font-semibold">Consultas Sugeridas:</h3>
-        <p className="text-sm text-gray-500 mb-2">Estas consultas são especificamente para explorar dados e estatísticas da base de dados.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {queries.map((query, index) => (
+    <div className="w-full">
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
           <Button 
-            key={index} 
-            variant="outline"
-            className="text-left justify-start h-auto py-2 px-3 text-sm w-full overflow-hidden"
-            onClick={() => onSelectQuery(query)}
+            variant="outline" 
+            className="w-full justify-between"
             disabled={disabled}
           >
-            {query}
+            <span>Consultas Sugeridas</span>
+            <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
           </Button>
-        ))}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-full max-w-[64rem] max-h-[24rem] overflow-y-auto" align="start">
+          {queryGroups.map((group, groupIndex) => (
+            <DropdownMenuGroup key={groupIndex}>
+              {group.map((query, index) => (
+                <DropdownMenuItem 
+                  key={index}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    onSelectQuery(query);
+                    setOpen(false);
+                  }}
+                >
+                  {query}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
