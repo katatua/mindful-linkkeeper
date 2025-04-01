@@ -1,6 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   BarChart,
   Bar,
@@ -27,37 +28,38 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F'
 
 export const SectorAnalytics = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
-  // Sample data for sector analytics
+  // Sample data for sector analytics with translated names
   const sectorDistribution = [
-    { name: 'Digital Tech', projects: 42, value: 32 },
-    { name: 'Healthcare', projects: 38, value: 24 },
-    { name: 'Energy', projects: 27, value: 18 },
-    { name: 'Manufacturing', projects: 21, value: 14 },
-    { name: 'Agriculture', projects: 18, value: 12 },
+    { name: t('sector.digital'), projects: 42, value: 32 },
+    { name: t('sector.healthcare'), projects: 38, value: 24 },
+    { name: t('sector.energy'), projects: 27, value: 18 },
+    { name: t('sector.manufacturing'), projects: 21, value: 14 },
+    { name: t('sector.agriculture'), projects: 18, value: 12 },
   ];
   
   const sectorPerformance = [
-    { sector: 'Digital Tech', success: 88, patents: 42, publications: 78 },
-    { sector: 'Healthcare', success: 92, patents: 56, publications: 94 },
-    { sector: 'Energy', success: 84, patents: 38, publications: 62 },
-    { sector: 'Manufacturing', success: 78, patents: 32, publications: 45 },
-    { sector: 'Agriculture', success: 82, patents: 28, publications: 52 },
+    { sector: t('sector.digital'), success: 88, patents: 42, publications: 78 },
+    { sector: t('sector.healthcare'), success: 92, patents: 56, publications: 94 },
+    { sector: t('sector.energy'), success: 84, patents: 38, publications: 62 },
+    { sector: t('sector.manufacturing'), success: 78, patents: 32, publications: 45 },
+    { sector: t('sector.agriculture'), success: 82, patents: 28, publications: 52 },
   ];
   
   const sectorFundingVsOutput = [
-    { x: 8.2, y: 92, z: 38, name: 'Healthcare' },
-    { x: 7.8, y: 88, z: 42, name: 'Digital Tech' },
-    { x: 6.4, y: 84, z: 27, name: 'Energy' },
-    { x: 4.2, y: 78, z: 21, name: 'Manufacturing' },
-    { x: 1.9, y: 82, z: 18, name: 'Agriculture' },
+    { x: 8.2, y: 92, z: 38, name: t('sector.healthcare') },
+    { x: 7.8, y: 88, z: 42, name: t('sector.digital') },
+    { x: 6.4, y: 84, z: 27, name: t('sector.energy') },
+    { x: 4.2, y: 78, z: 21, name: t('sector.manufacturing') },
+    { x: 1.9, y: 82, z: 18, name: t('sector.agriculture') },
   ];
   
   const growthByRegion = [
-    { region: 'North', digital: 24, health: 18, energy: 12, manufacturing: 8, agriculture: 6 },
-    { region: 'Central', digital: 28, health: 24, energy: 14, manufacturing: 12, agriculture: 8 },
-    { region: 'South', digital: 18, health: 22, energy: 26, manufacturing: 10, agriculture: 14 },
-    { region: 'Islands', digital: 14, health: 12, energy: 18, manufacturing: 6, agriculture: 10 },
+    { region: t('region.north'), digital: 24, health: 18, energy: 12, manufacturing: 8, agriculture: 6 },
+    { region: t('region.central'), digital: 28, health: 24, energy: 14, manufacturing: 12, agriculture: 8 },
+    { region: t('region.south'), digital: 18, health: 22, energy: 26, manufacturing: 10, agriculture: 14 },
+    { region: t('region.islands'), digital: 14, health: 12, energy: 18, manufacturing: 6, agriculture: 10 },
   ];
 
   const handleChartClick = (chartId, chartType) => {
@@ -69,7 +71,7 @@ export const SectorAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-distribution', 'pie')}>
           <CardHeader>
-            <CardTitle className="text-lg">Sector Distribution</CardTitle>
+            <CardTitle className="text-lg">{t('sector.distribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -90,7 +92,7 @@ export const SectorAnalytics = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                  <Tooltip formatter={(value) => [`${value}%`, t('chart.percentage')]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -99,7 +101,7 @@ export const SectorAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-performance', 'radar')}>
           <CardHeader>
-            <CardTitle className="text-lg">Sector Performance Metrics</CardTitle>
+            <CardTitle className="text-lg">{t('sector.performance_metrics')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -108,9 +110,9 @@ export const SectorAnalytics = () => {
                   <PolarGrid />
                   <PolarAngleAxis dataKey="sector" />
                   <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                  <Radar name="Success Rate (%)" dataKey="success" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                  <Radar name="Patents" dataKey="patents" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
-                  <Radar name="Publications" dataKey="publications" stroke="#ffc658" fill="#ffc658" fillOpacity={0.6} />
+                  <Radar name={t('performance.success_rate')} dataKey="success" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                  <Radar name={t('performance.patents')} dataKey="patents" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
+                  <Radar name={t('performance.publications')} dataKey="publications" stroke="#ffc658" fill="#ffc658" fillOpacity={0.6} />
                   <Legend />
                   <Tooltip />
                 </RadarChart>
@@ -123,24 +125,24 @@ export const SectorAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-vs-success', 'scatter')}>
           <CardHeader>
-            <CardTitle className="text-lg">Funding vs Success Rate</CardTitle>
+            <CardTitle className="text-lg">{t('sector.funding_vs_success')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart>
                   <CartesianGrid />
-                  <XAxis type="number" dataKey="x" name="Funding (€M)" />
-                  <YAxis type="number" dataKey="y" name="Success Rate (%)" />
-                  <ZAxis type="number" dataKey="z" range={[60, 400]} name="Projects" />
+                  <XAxis type="number" dataKey="x" name={t('chart.funding_eur')} />
+                  <YAxis type="number" dataKey="y" name={t('chart.success_rate')} />
+                  <ZAxis type="number" dataKey="z" range={[60, 400]} name={t('chart.projects')} />
                   <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(value, name) => {
-                    if (name === 'x') return [`€${value}M`, 'Funding'];
-                    if (name === 'y') return [`${value}%`, 'Success Rate'];
-                    if (name === 'z') return [value, 'Projects'];
+                    if (name === 'x') return [`€${value}M`, t('chart.funding')];
+                    if (name === 'y') return [`${value}%`, t('chart.success_rate')];
+                    if (name === 'z') return [value, t('chart.projects')];
                     return [value, name];
                   }} />
                   <Legend />
-                  <Scatter name="Sectors" data={sectorFundingVsOutput} fill="#8884d8" />
+                  <Scatter name={t('chart.sectors')} data={sectorFundingVsOutput} fill="#8884d8" />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
@@ -149,7 +151,7 @@ export const SectorAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('growth-by-region', 'bar')}>
           <CardHeader>
-            <CardTitle className="text-lg">Growth by Region & Sector (%)</CardTitle>
+            <CardTitle className="text-lg">{t('sector.growth_by_region')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -158,13 +160,13 @@ export const SectorAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="region" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Growth']} />
+                  <Tooltip formatter={(value) => [`${value}%`, t('chart.growth')]} />
                   <Legend />
-                  <Bar dataKey="digital" name="Digital Tech" fill="#8884d8" />
-                  <Bar dataKey="health" name="Healthcare" fill="#82ca9d" />
-                  <Bar dataKey="energy" name="Energy" fill="#ffc658" />
-                  <Bar dataKey="manufacturing" name="Manufacturing" fill="#ff8042" />
-                  <Bar dataKey="agriculture" name="Agriculture" fill="#0088fe" />
+                  <Bar dataKey="digital" name={t('sector.digital')} fill="#8884d8" />
+                  <Bar dataKey="health" name={t('sector.healthcare')} fill="#82ca9d" />
+                  <Bar dataKey="energy" name={t('sector.energy')} fill="#ffc658" />
+                  <Bar dataKey="manufacturing" name={t('sector.manufacturing')} fill="#ff8042" />
+                  <Bar dataKey="agriculture" name={t('sector.agriculture')} fill="#0088fe" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

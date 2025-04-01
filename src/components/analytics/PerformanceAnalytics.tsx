@@ -1,6 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   LineChart,
   Line,
@@ -18,6 +19,7 @@ import {
 
 export const PerformanceAnalytics = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // Sample data for performance analytics
   const performanceTrends = [
@@ -48,12 +50,12 @@ export const PerformanceAnalytics = () => {
   ];
   
   const kpiPerformance = [
-    { kpi: 'Project Success Rate', value: 92, target: 85 },
-    { kpi: 'Patent Applications', value: 62, target: 50 },
-    { kpi: 'Publications', value: 78, target: 70 },
-    { kpi: 'Commercialization', value: 38, target: 30 },
-    { kpi: 'Budget Adherence', value: 95, target: 90 },
-    { kpi: 'On-time Completion', value: 85, target: 80 },
+    { kpi: t('performance.kpi.success_rate'), value: 92, target: 85 },
+    { kpi: t('performance.kpi.patents'), value: 62, target: 50 },
+    { kpi: t('performance.kpi.publications'), value: 78, target: 70 },
+    { kpi: t('performance.kpi.commercialization'), value: 38, target: 30 },
+    { kpi: t('performance.kpi.budget'), value: 95, target: 90 },
+    { kpi: t('performance.kpi.completion'), value: 85, target: 80 },
   ];
 
   const handleChartClick = (chartId, chartType) => {
@@ -65,7 +67,7 @@ export const PerformanceAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('performance-trends', 'line')}>
           <CardHeader>
-            <CardTitle className="text-lg">Performance Trends</CardTitle>
+            <CardTitle className="text-lg">{t('performance.trends')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -76,10 +78,10 @@ export const PerformanceAnalytics = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="success" name="Success Rate (%)" stroke="#8884d8" />
-                  <Line type="monotone" dataKey="patents" name="Patents" stroke="#82ca9d" />
-                  <Line type="monotone" dataKey="publications" name="Publications" stroke="#ffc658" />
-                  <Line type="monotone" dataKey="commercialization" name="Commercialization" stroke="#ff8042" />
+                  <Line type="monotone" dataKey="success" name={t('performance.success_rate')} stroke="#8884d8" />
+                  <Line type="monotone" dataKey="patents" name={t('performance.patents')} stroke="#82ca9d" />
+                  <Line type="monotone" dataKey="publications" name={t('performance.publications')} stroke="#ffc658" />
+                  <Line type="monotone" dataKey="commercialization" name={t('performance.commercialization')} stroke="#ff8042" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -88,7 +90,7 @@ export const PerformanceAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('project-completion', 'composed')}>
           <CardHeader>
-            <CardTitle className="text-lg">Project Completion Rates (%)</CardTitle>
+            <CardTitle className="text-lg">{t('performance.completion_rates')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -97,10 +99,10 @@ export const PerformanceAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="quarter" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                  <Tooltip formatter={(value) => [`${value}%`, t('chart.percentage')]} />
                   <Legend />
-                  <Area type="monotone" dataKey="onTime" name="On Time" fill="#82ca9d" stroke="#82ca9d" />
-                  <Bar dataKey="delayed" name="Delayed" fill="#ff8042" />
+                  <Area type="monotone" dataKey="onTime" name={t('performance.on_time')} fill="#82ca9d" stroke="#82ca9d" />
+                  <Bar dataKey="delayed" name={t('performance.delayed')} fill="#ff8042" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -111,7 +113,7 @@ export const PerformanceAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('budget-adherence', 'bar')}>
           <CardHeader>
-            <CardTitle className="text-lg">Budget Adherence (%)</CardTitle>
+            <CardTitle className="text-lg">{t('performance.budget_adherence')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -120,11 +122,11 @@ export const PerformanceAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                  <Tooltip formatter={(value) => [`${value}%`, t('chart.percentage')]} />
                   <Legend />
-                  <Bar dataKey="underBudget" name="Under Budget" stackId="a" fill="#82ca9d" />
-                  <Bar dataKey="withinBudget" name="Within Budget" stackId="a" fill="#8884d8" />
-                  <Bar dataKey="overBudget" name="Over Budget" stackId="a" fill="#ff8042" />
+                  <Bar dataKey="underBudget" name={t('performance.under_budget')} stackId="a" fill="#82ca9d" />
+                  <Bar dataKey="withinBudget" name={t('performance.within_budget')} stackId="a" fill="#8884d8" />
+                  <Bar dataKey="overBudget" name={t('performance.over_budget')} stackId="a" fill="#ff8042" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -133,7 +135,7 @@ export const PerformanceAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('kpi-performance', 'bar')}>
           <CardHeader>
-            <CardTitle className="text-lg">KPI Performance vs Target</CardTitle>
+            <CardTitle className="text-lg">{t('performance.kpi_vs_target')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -142,10 +144,10 @@ export const PerformanceAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} />
                   <YAxis type="category" dataKey="kpi" />
-                  <Tooltip formatter={(value) => [`${value}`, 'Value']} />
+                  <Tooltip formatter={(value) => [`${value}`, t('chart.value')]} />
                   <Legend />
-                  <Bar dataKey="value" name="Current" fill="#8884d8" />
-                  <Bar dataKey="target" name="Target" fill="#82ca9d" />
+                  <Bar dataKey="value" name={t('performance.current')} fill="#8884d8" />
+                  <Bar dataKey="target" name={t('performance.target')} fill="#82ca9d" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

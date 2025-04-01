@@ -1,6 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   BarChart,
   Bar,
@@ -21,20 +22,21 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
 
 export const RegionalAnalytics = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
-  // Sample data for regional analytics
+  // Sample data for regional analytics with translated names
   const projectsByRegion = [
-    { name: 'North', value: 42 },
-    { name: 'Central', value: 58 },
-    { name: 'South', value: 38 },
-    { name: 'Islands', value: 18 },
+    { name: t('region.north'), value: 42 },
+    { name: t('region.central'), value: 58 },
+    { name: t('region.south'), value: 38 },
+    { name: t('region.islands'), value: 18 },
   ];
   
   const investmentByRegion = [
-    { region: 'North', value: 8.2 },
-    { region: 'Central', value: 12.5 },
-    { region: 'South', value: 5.4 },
-    { region: 'Islands', value: 2.4 },
+    { region: t('region.north'), value: 8.2 },
+    { region: t('region.central'), value: 12.5 },
+    { region: t('region.south'), value: 5.4 },
+    { region: t('region.islands'), value: 2.4 },
   ];
   
   const regionalGrowth = [
@@ -47,10 +49,10 @@ export const RegionalAnalytics = () => {
   ];
   
   const regionalSectors = [
-    { region: 'North', digital: 18, health: 12, energy: 6, manufacturing: 4, agriculture: 2 },
-    { region: 'Central', digital: 22, health: 16, energy: 10, manufacturing: 6, agriculture: 4 },
-    { region: 'South', digital: 12, health: 14, energy: 8, manufacturing: 3, agriculture: 1 },
-    { region: 'Islands', digital: 6, health: 4, energy: 6, manufacturing: 1, agriculture: 1 },
+    { region: t('region.north'), digital: 18, health: 12, energy: 6, manufacturing: 4, agriculture: 2 },
+    { region: t('region.central'), digital: 22, health: 16, energy: 10, manufacturing: 6, agriculture: 4 },
+    { region: t('region.south'), digital: 12, health: 14, energy: 8, manufacturing: 3, agriculture: 1 },
+    { region: t('region.islands'), digital: 6, health: 4, energy: 6, manufacturing: 1, agriculture: 1 },
   ];
 
   const handleChartClick = (chartId, chartType) => {
@@ -62,7 +64,7 @@ export const RegionalAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('projects-by-region', 'pie')}>
           <CardHeader>
-            <CardTitle className="text-lg">Projects by Region</CardTitle>
+            <CardTitle className="text-lg">{t('regional.projects_by_region')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -81,7 +83,7 @@ export const RegionalAnalytics = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value, name, props) => [`${value} Projects`, name]} />
+                  <Tooltip formatter={(value, name, props) => [`${value} ${t('chart.projects')}`, name]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -90,7 +92,7 @@ export const RegionalAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('investment-by-region', 'bar')}>
           <CardHeader>
-            <CardTitle className="text-lg">Investment by Region (€M)</CardTitle>
+            <CardTitle className="text-lg">{t('regional.investment_by_region')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -99,9 +101,9 @@ export const RegionalAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="region" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, 'Investment']} />
+                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.investment')]} />
                   <Legend />
-                  <Bar dataKey="value" name="Total Investment" fill="#8884d8" />
+                  <Bar dataKey="value" name={t('chart.total_investment')} fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -112,7 +114,7 @@ export const RegionalAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('regional-growth', 'line')}>
           <CardHeader>
-            <CardTitle className="text-lg">Regional Growth Trends (€M)</CardTitle>
+            <CardTitle className="text-lg">{t('regional.growth_trends')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -121,12 +123,12 @@ export const RegionalAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, 'Investment']} />
+                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.investment')]} />
                   <Legend />
-                  <Line type="monotone" dataKey="north" name="North" stroke="#8884d8" />
-                  <Line type="monotone" dataKey="central" name="Central" stroke="#82ca9d" />
-                  <Line type="monotone" dataKey="south" name="South" stroke="#ffc658" />
-                  <Line type="monotone" dataKey="islands" name="Islands" stroke="#ff8042" />
+                  <Line type="monotone" dataKey="north" name={t('region.north')} stroke="#8884d8" />
+                  <Line type="monotone" dataKey="central" name={t('region.central')} stroke="#82ca9d" />
+                  <Line type="monotone" dataKey="south" name={t('region.south')} stroke="#ffc658" />
+                  <Line type="monotone" dataKey="islands" name={t('region.islands')} stroke="#ff8042" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -135,7 +137,7 @@ export const RegionalAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('regional-sectors', 'bar')}>
           <CardHeader>
-            <CardTitle className="text-lg">Regional Sector Distribution</CardTitle>
+            <CardTitle className="text-lg">{t('regional.sector_distribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -144,13 +146,13 @@ export const RegionalAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="region" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`${value} Projects`, 'Count']} />
+                  <Tooltip formatter={(value) => [`${value} ${t('chart.projects')}`, t('chart.count')]} />
                   <Legend />
-                  <Bar dataKey="digital" name="Digital Tech" fill="#8884d8" />
-                  <Bar dataKey="health" name="Healthcare" fill="#82ca9d" />
-                  <Bar dataKey="energy" name="Energy" fill="#ffc658" />
-                  <Bar dataKey="manufacturing" name="Manufacturing" fill="#ff8042" />
-                  <Bar dataKey="agriculture" name="Agriculture" fill="#0088fe" />
+                  <Bar dataKey="digital" name={t('sector.digital')} fill="#8884d8" />
+                  <Bar dataKey="health" name={t('sector.healthcare')} fill="#82ca9d" />
+                  <Bar dataKey="energy" name={t('sector.energy')} fill="#ffc658" />
+                  <Bar dataKey="manufacturing" name={t('sector.manufacturing')} fill="#ff8042" />
+                  <Bar dataKey="agriculture" name={t('sector.agriculture')} fill="#0088fe" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

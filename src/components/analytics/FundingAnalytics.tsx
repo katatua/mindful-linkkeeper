@@ -1,6 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   BarChart,
   Bar,
@@ -23,13 +24,14 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
 
 export const FundingAnalytics = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
-  // Sample data for funding analytics
+  // Sample data for funding analytics with translated names
   const fundingBySource = [
-    { name: 'EU Horizon Europe', value: 42 },
-    { name: 'National Funds', value: 28 },
-    { name: 'Private Investment', value: 18 },
-    { name: 'Regional Programs', value: 12 },
+    { name: t('funding.source.eu'), value: 42 },
+    { name: t('funding.source.national'), value: 28 },
+    { name: t('funding.source.private'), value: 18 },
+    { name: t('funding.source.regional'), value: 12 },
   ];
   
   const fundingTrends = [
@@ -42,11 +44,11 @@ export const FundingAnalytics = () => {
   ];
   
   const sectorFunding = [
-    { name: 'Healthcare', total: 8.2, growth: 18 },
-    { name: 'Energy', total: 6.4, growth: 12 },
-    { name: 'Digital Tech', total: 7.8, growth: 22 },
-    { name: 'Manufacturing', total: 4.2, growth: 7 },
-    { name: 'Agriculture', total: 1.9, growth: 5 },
+    { name: t('sector.healthcare'), total: 8.2, growth: 18 },
+    { name: t('sector.energy'), total: 6.4, growth: 12 },
+    { name: t('sector.digital'), total: 7.8, growth: 22 },
+    { name: t('sector.manufacturing'), total: 4.2, growth: 7 },
+    { name: t('sector.agriculture'), total: 1.9, growth: 5 },
   ];
   
   const quarterlyFunding = [
@@ -67,7 +69,7 @@ export const FundingAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-sources', 'pie')}>
           <CardHeader>
-            <CardTitle className="text-lg">Funding Sources (2023)</CardTitle>
+            <CardTitle className="text-lg">{t('funding.sources.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -86,7 +88,7 @@ export const FundingAnalytics = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                  <Tooltip formatter={(value) => [`${value}%`, t('chart.percentage')]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -95,7 +97,7 @@ export const FundingAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('funding-growth', 'area')}>
           <CardHeader>
-            <CardTitle className="text-lg">Funding Growth (€M)</CardTitle>
+            <CardTitle className="text-lg">{t('funding.growth.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -104,8 +106,8 @@ export const FundingAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, 'Funding']} />
-                  <Area type="monotone" dataKey="amount" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.funding')]} />
+                  <Area type="monotone" dataKey="amount" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} name={t('chart.amount')} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -116,7 +118,7 @@ export const FundingAnalytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('sector-funding', 'bar')}>
           <CardHeader>
-            <CardTitle className="text-lg">Sector Funding Allocation (€M)</CardTitle>
+            <CardTitle className="text-lg">{t('funding.sector.allocation')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -125,9 +127,9 @@ export const FundingAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, 'Funding']} />
+                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.funding')]} />
                   <Legend />
-                  <Bar dataKey="total" fill="#8884d8" name="Total Funding (€M)" />
+                  <Bar dataKey="total" fill="#8884d8" name={t('chart.total_funding')} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -136,7 +138,7 @@ export const FundingAnalytics = () => {
 
         <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => handleChartClick('quarterly-funding', 'line')}>
           <CardHeader>
-            <CardTitle className="text-lg">Public vs Private Funding (€M)</CardTitle>
+            <CardTitle className="text-lg">{t('funding.public_private')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -145,10 +147,10 @@ export const FundingAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="quarter" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}M`, 'Funding']} />
+                  <Tooltip formatter={(value) => [`€${value}M`, t('chart.funding')]} />
                   <Legend />
-                  <Line type="monotone" dataKey="public" stroke="#8884d8" name="Public Funding" />
-                  <Line type="monotone" dataKey="private" stroke="#82ca9d" name="Private Funding" />
+                  <Line type="monotone" dataKey="public" stroke="#8884d8" name={t('chart.public_funding')} />
+                  <Line type="monotone" dataKey="private" stroke="#82ca9d" name={t('chart.private_funding')} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
