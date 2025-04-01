@@ -13,6 +13,7 @@ import ANIPortal from '@/pages/ANIPortal';
 import AIReportDetail from '@/pages/AIReportDetail';
 import QueryAssistantPage from './pages/QueryAssistantPage';
 import VisualizationDetailPage from './pages/VisualizationDetailPage';
+import PredictiveModelsPage from './pages/PredictiveModelsPage';
 
 // Lazy-loaded pages
 const Auth = lazy(() => import('@/pages/Auth'));
@@ -25,7 +26,6 @@ const PoliciesPage = lazy(() => import('@/pages/PoliciesPage'));
 const AIAssistant = lazy(() => import('@/components/AIAssistant').then(module => ({ default: module.AIAssistant })));
 const ReportDetailPage = lazy(() => import('@/pages/ReportDetailPage'));
 const DatabasePage = lazy(() => import('@/pages/DatabasePage'));
-const PredictiveModelsPage = lazy(() => import('@/pages/PredictiveModelsPage'));
 
 function App() {
   return (

@@ -1,30 +1,23 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Header } from "./Header";
-import { AppSidebar } from "./AppSidebar";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <div className="flex flex-1">
-        <AppSidebar />
         <main className="flex-1 p-6">
           <div className="flex justify-end mb-4">
             <DropdownMenu>
