@@ -8,8 +8,11 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Info, TrendingUp, BarChart4, PieChart } from "lucide-react";
+import { Info, TrendingUp, BarChart4, PieChart, Share2, Compass, BrainCircuit } from "lucide-react";
 import { FundingSuccessModel } from "@/components/predictive/FundingSuccessModel";
+import { SectorGrowthModel } from "@/components/predictive/SectorGrowthModel";
+import { PerformanceMetricsModel } from "@/components/predictive/PerformanceMetricsModel";
+import { RegionalAnalysisModel } from "@/components/predictive/RegionalAnalysisModel";
 
 export const PredictiveAnalytics = () => {
   const { t } = useLanguage();
@@ -170,51 +173,15 @@ export const PredictiveAnalytics = () => {
             </TabsContent>
             
             <TabsContent value="sector-growth">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Previsão de Crescimento por Setor</CardTitle>
-                  <CardDescription>
-                    Projeções de crescimento para diferentes setores baseadas em análise de tendências históricas e indicadores atuais.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center p-12">
-                    <p className="text-muted-foreground">Modelo em desenvolvimento</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <SectorGrowthModel />
             </TabsContent>
             
             <TabsContent value="market-impact">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Impacto de Mercado de Projetos</CardTitle>
-                  <CardDescription>
-                    Previsão do potencial impacto econômico e de mercado para projetos de inovação.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center p-12">
-                    <p className="text-muted-foreground">Modelo em desenvolvimento</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <PerformanceMetricsModel />
             </TabsContent>
             
             <TabsContent value="policy-effects">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Simulação de Efeitos de Políticas</CardTitle>
-                  <CardDescription>
-                    Análise preditiva dos efeitos de diferentes políticas de inovação na economia.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center p-12">
-                    <p className="text-muted-foreground">Modelo em desenvolvimento</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <RegionalAnalysisModel />
             </TabsContent>
           </Tabs>
         </CardContent>

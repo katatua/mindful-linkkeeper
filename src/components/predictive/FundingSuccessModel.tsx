@@ -1,400 +1,463 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Download, RefreshCw, Info } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { 
-  TrendingUp, 
-  BarChart,
-  AlertCircle,
-  Info,
-  CheckCircle2,
-  XCircle
-} from "lucide-react";
-
-// Mock data for the model
-const modelFeatures = {
-  name: "Previsão de Sucesso de Financiamento",
-  type: "Regressão Logística / Random Forest",
-  accuracy: 0.86,
-  precision: 0.83,
-  recall: 0.79,
-  f1Score: 0.81,
-  lastUpdated: "2023-11-15",
-  featuresImportance: [
-    { name: "Alinhamento com prioridades nacionais", importance: 0.28 },
-    { name: "Colaboração intersetorial", importance: 0.22 },
-    { name: "Via de comercialização", importance: 0.17 },
-    { name: "Parcerias internacionais", importance: 0.13 },
-    { name: "Histórico de projetos", importance: 0.11 },
-    { name: "Métricas financeiras", importance: 0.09 }
-  ]
-};
-
-// Sample project templates
-const projectTemplates = [
-  { 
-    id: 1,
-    name: "Projeto de Tecnologia Verde",
-    description: "Pesquisa em tecnologias sustentáveis para redução de carbono", 
-    values: {
-      nationalPriorities: 87,
-      sectorialCollaboration: 72,
-      commercialization: 65,
-      internationalPartnerships: 60,
-      previousProjects: 78,
-      financialMetrics: 69
-    },
-    successProbability: 0.83
-  },
-  {
-    id: 2,
-    name: "Iniciativa de IA na Saúde",
-    description: "Aplicação de inteligência artificial para diagnósticos médicos",
-    values: {
-      nationalPriorities: 92,
-      sectorialCollaboration: 85,
-      commercialization: 78,
-      internationalPartnerships: 65,
-      previousProjects: 50,
-      financialMetrics: 72
-    },
-    successProbability: 0.88
-  },
-  {
-    id: 3,
-    name: "Transformação Digital Industrial",
-    description: "Implementação de tecnologias 4.0 em manufatura",
-    values: {
-      nationalPriorities: 75,
-      sectorialCollaboration: 80,
-      commercialization: 83,
-      internationalPartnerships: 45,
-      previousProjects: 60,
-      financialMetrics: 65
-    },
-    successProbability: 0.71
-  }
-];
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const FundingSuccessModel = () => {
-  // State for project input values
-  const [inputValues, setInputValues] = useState({
-    nationalPriorities: 50,
-    sectorialCollaboration: 50,
-    commercialization: 50,
-    internationalPartnerships: 50,
-    previousProjects: 50,
-    financialMetrics: 50
-  });
+  const { t } = useLanguage();
+  const [nationalPriority, setNationalPriority] = useState<number[]>([70]);
+  const [sectoralCollaboration, setSectoralCollaboration] = useState<number[]>([60]);
+  const [commercializationPlan, setCommercializationPlan] = useState<number[]>([80]);
+  const [internationalPartnership, setInternationalPartnership] = useState<number[]>([50]);
+  const [projectHistory, setProjectHistory] = useState<number[]>([75]);
+  const [financial, setFinancial] = useState<number[]>([65]);
+  const [successProbability, setSuccessProbability] = useState(82);
+  const [confidenceLevel, setConfidenceLevel] = useState(88);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("tech");
   
-  // State for the model output
-  const [successProbability, setSuccessProbability] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const featureImportanceData = [
+    { name: "Alinhamento com Prioridades", value: 25 },
+    { name: "Colaboração Intersetorial", value: 18 },
+    { name: "Plano de Comercialização", value: 22 },
+    { name: "Parcerias Internacionais", value: 12 },
+    { name: "Histórico de Projetos", value: 15 },
+    { name: "Métricas Financeiras", value: 8 }
+  ];
   
-  // Update slider values
-  const handleSliderChange = (name: string, value: number[]) => {
-    setInputValues({
-      ...inputValues,
-      [name]: value[0]
-    });
-  };
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   
-  // Load a template project
-  const handleTemplateChange = (value: string) => {
-    setSelectedTemplate(value);
-    
-    if (value) {
-      const templateIndex = parseInt(value) - 1;
-      if (templateIndex >= 0 && templateIndex < projectTemplates.length) {
-        const template = projectTemplates[templateIndex];
-        setInputValues(template.values);
-        setSuccessProbability(null); // Reset prediction
-      }
-    }
-  };
+  const similarProjectsData = [
+    { name: "Alta Tecnologia", success: 32, failure: 8 },
+    { name: "Saúde", success: 28, failure: 6 },
+    { name: "Energia", success: 24, failure: 12 },
+    { name: "Manufatura", success: 18, failure: 14 },
+    { name: "Agrotech", success: 14, failure: 10 }
+  ];
   
-  // Run the prediction model
-  const runPrediction = () => {
-    setIsLoading(true);
-    
-    // Simulate model processing time
+  const projectTemplates = [
+    { id: "tech", name: "Startup Tecnológica", success: 78 },
+    { id: "health", name: "Inovação em Saúde", success: 82 },
+    { id: "energy", name: "Energia Renovável", success: 76 },
+    { id: "manufacturing", name: "Manufatura 4.0", success: 72 },
+    { id: "agro", name: "Agricultura Inteligente", success: 68 }
+  ];
+  
+  const handleCalculate = () => {
+    setIsCalculating(true);
     setTimeout(() => {
-      // Simple weighted average for demo purposes
-      const weights = modelFeatures.featuresImportance.map(f => f.importance);
-      const values = [
-        inputValues.nationalPriorities / 100,
-        inputValues.sectorialCollaboration / 100,
-        inputValues.commercialization / 100,
-        inputValues.internationalPartnerships / 100,
-        inputValues.previousProjects / 100,
-        inputValues.financialMetrics / 100
-      ];
+      // Simulate ML calculation
+      const base = 
+        (nationalPriority[0] * 0.25) + 
+        (sectoralCollaboration[0] * 0.18) + 
+        (commercializationPlan[0] * 0.22) + 
+        (internationalPartnership[0] * 0.12) + 
+        (projectHistory[0] * 0.15) + 
+        (financial[0] * 0.08);
       
-      // Calculate weighted probability
-      let probability = 0;
-      for (let i = 0; i < weights.length; i++) {
-        probability += weights[i] * values[i];
-      }
+      // Add some randomness but ensure it stays relatively close to input quality
+      const randomFactor = Math.random() * 10 - 5;
+      const calculatedProb = Math.min(Math.max(Math.round(base * 0.9 + randomFactor), 40), 95);
+      const calculatedConf = Math.min(Math.max(Math.round(calculatedProb - 5 + Math.random() * 15), 60), 95);
       
-      // Add some randomness for demo
-      probability = Math.min(1, Math.max(0, probability + (Math.random() * 0.1 - 0.05)));
-      
-      setSuccessProbability(probability);
-      setIsLoading(false);
+      setSuccessProbability(calculatedProb);
+      setConfidenceLevel(calculatedConf);
+      setIsCalculating(false);
     }, 1500);
   };
   
-  // Get status based on probability
-  const getStatusBadge = (probability: number) => {
-    if (probability >= 0.75) {
-      return <Badge className="bg-green-500"><CheckCircle2 className="h-3 w-3 mr-1" /> Alta Probabilidade</Badge>;
-    } else if (probability >= 0.5) {
-      return <Badge className="bg-yellow-500"><Info className="h-3 w-3 mr-1" /> Probabilidade Média</Badge>;
-    } else {
-      return <Badge className="bg-red-500"><XCircle className="h-3 w-3 mr-1" /> Baixa Probabilidade</Badge>;
+  const handleTemplateSelect = (templateId) => {
+    setSelectedTemplate(templateId);
+    const template = projectTemplates.find(t => t.id === templateId);
+    
+    // Set sliders based on template
+    switch(templateId) {
+      case "tech":
+        setNationalPriority([85]);
+        setSectoralCollaboration([60]);
+        setCommercializationPlan([90]);
+        setInternationalPartnership([70]);
+        setProjectHistory([65]);
+        setFinancial([75]);
+        break;
+      case "health":
+        setNationalPriority([90]);
+        setSectoralCollaboration([80]);
+        setCommercializationPlan([70]);
+        setInternationalPartnership([65]);
+        setProjectHistory([75]);
+        setFinancial([70]);
+        break;
+      case "energy":
+        setNationalPriority([80]);
+        setSectoralCollaboration([65]);
+        setCommercializationPlan([75]);
+        setInternationalPartnership([60]);
+        setProjectHistory([70]);
+        setFinancial([80]);
+        break;
+      case "manufacturing":
+        setNationalPriority([75]);
+        setSectoralCollaboration([70]);
+        setCommercializationPlan([65]);
+        setInternationalPartnership([50]);
+        setProjectHistory([65]);
+        setFinancial([85]);
+        break;
+      case "agro":
+        setNationalPriority([70]);
+        setSectoralCollaboration([55]);
+        setCommercializationPlan([60]);
+        setInternationalPartnership([45]);
+        setProjectHistory([60]);
+        setFinancial([70]);
+        break;
     }
+    
+    // Simulate calculation
+    handleCalculate();
   };
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle>{modelFeatures.name}</CardTitle>
-              <CardDescription>
-                Avalie a probabilidade de uma proposta receber financiamento baseado em diversos fatores chave
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" /> {modelFeatures.type}
-            </Badge>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-            <div className="w-full md:w-2/3">
-              <Label htmlFor="template">Escolha um modelo de projeto ou personalize manualmente:</Label>
-              <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
-                <SelectTrigger id="template" className="mt-1">
+    <Card>
+      <CardHeader>
+        <CardTitle>Modelo de Previsão de Sucesso de Financiamento</CardTitle>
+        <CardDescription>
+          Utilize este modelo preditivo para estimar a probabilidade de sucesso de financiamento para projetos de inovação
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="mb-6">
+              <h3 className="text-sm font-medium mb-2">Modelos de Projeto</h3>
+              <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                <SelectTrigger>
                   <SelectValue placeholder="Selecione um modelo de projeto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Personalizado</SelectItem>
                   {projectTemplates.map(template => (
-                    <SelectItem key={template.id} value={template.id.toString()}>
-                      {template.name}
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} - {template.success}% taxa de sucesso
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
-              {selectedTemplate && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {projectTemplates[parseInt(selectedTemplate) - 1]?.description}
-                </p>
-              )}
             </div>
             
-            <div className="w-full md:w-1/3 flex flex-col items-center justify-center border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium mb-1">Precisão do Modelo</p>
-              <div className="text-2xl font-bold">{(modelFeatures.accuracy * 100).toFixed(1)}%</div>
-              <div className="w-full mt-2">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>F1-Score</span>
-                  <span>{modelFeatures.f1Score.toFixed(2)}</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-medium">Alinhamento com Prioridades Nacionais</h3>
+                  <span className="text-sm">{nationalPriority[0]}/100</span>
                 </div>
-                <Progress value={modelFeatures.f1Score * 100} className="h-1" />
+                <Slider 
+                  value={nationalPriority} 
+                  min={0} 
+                  max={100} 
+                  step={5} 
+                  onValueChange={setNationalPriority} 
+                />
               </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-medium">Colaboração Intersetorial</h3>
+                  <span className="text-sm">{sectoralCollaboration[0]}/100</span>
+                </div>
+                <Slider 
+                  value={sectoralCollaboration} 
+                  min={0} 
+                  max={100} 
+                  step={5} 
+                  onValueChange={setSectoralCollaboration} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-medium">Via de Comercialização</h3>
+                  <span className="text-sm">{commercializationPlan[0]}/100</span>
+                </div>
+                <Slider 
+                  value={commercializationPlan} 
+                  min={0} 
+                  max={100} 
+                  step={5} 
+                  onValueChange={setCommercializationPlan} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-medium">Parceria Internacional</h3>
+                  <span className="text-sm">{internationalPartnership[0]}/100</span>
+                </div>
+                <Slider 
+                  value={internationalPartnership} 
+                  min={0} 
+                  max={100} 
+                  step={5} 
+                  onValueChange={setInternationalPartnership} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-medium">Histórico de Projetos</h3>
+                  <span className="text-sm">{projectHistory[0]}/100</span>
+                </div>
+                <Slider 
+                  value={projectHistory} 
+                  min={0} 
+                  max={100} 
+                  step={5} 
+                  onValueChange={setProjectHistory} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-medium">Métricas Financeiras</h3>
+                  <span className="text-sm">{financial[0]}/100</span>
+                </div>
+                <Slider 
+                  value={financial} 
+                  min={0} 
+                  max={100} 
+                  step={5} 
+                  onValueChange={setFinancial} 
+                />
+              </div>
+              
+              <Button 
+                className="w-full mt-4" 
+                onClick={handleCalculate}
+                disabled={isCalculating}
+              >
+                {isCalculating ? 
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> 
+                    Calculando...
+                  </> : 
+                  'Calcular Probabilidade'
+                }
+              </Button>
             </div>
           </div>
           
-          <Separator />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Input Parameters */}
-            <div className="space-y-6">
-              {/* National Priorities Alignment */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="national-priorities">Alinhamento com prioridades nacionais</Label>
-                  <span className="text-sm font-medium">{inputValues.nationalPriorities}%</span>
+          <div className="space-y-4">
+            <Card className="border-2 border-blue-100 bg-blue-50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Resultado da Previsão</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-xs font-medium mb-1 flex items-center">
+                      Probabilidade de Sucesso 
+                      <Info className="h-3 w-3 ml-1 text-gray-400" />
+                    </h4>
+                    <div className="flex items-center space-x-3">
+                      <Progress value={successProbability} className="h-4" />
+                      <span className="font-bold text-lg">{successProbability}%</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-xs font-medium mb-1 flex items-center">
+                      Nível de Confiança 
+                      <Info className="h-3 w-3 ml-1 text-gray-400" />
+                    </h4>
+                    <div className="flex items-center space-x-3">
+                      <Progress value={confidenceLevel} className="h-4" />
+                      <span className="font-bold text-lg">{confidenceLevel}%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <Badge className={successProbability >= 75 ? "bg-green-100 text-green-800 hover:bg-green-100" : 
+                                      successProbability >= 50 ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" : 
+                                      "bg-red-100 text-red-800 hover:bg-red-100"}>
+                      {successProbability >= 75 ? "Alta Probabilidade" : 
+                       successProbability >= 50 ? "Média Probabilidade" : 
+                       "Baixa Probabilidade"}
+                    </Badge>
+                  </div>
                 </div>
-                <Slider 
-                  id="national-priorities"
-                  min={0} 
-                  max={100} 
-                  step={1} 
-                  value={[inputValues.nationalPriorities]} 
-                  onValueChange={(value) => handleSliderChange('nationalPriorities', value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Quão bem o projeto se alinha com as prioridades estratégicas nacionais
-                </p>
-              </div>
-              
-              {/* Sectorial Collaboration */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="sectorial-collaboration">Colaboração intersetorial</Label>
-                  <span className="text-sm font-medium">{inputValues.sectorialCollaboration}%</span>
-                </div>
-                <Slider 
-                  id="sectorial-collaboration"
-                  min={0} 
-                  max={100} 
-                  step={1} 
-                  value={[inputValues.sectorialCollaboration]} 
-                  onValueChange={(value) => handleSliderChange('sectorialCollaboration', value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nível de colaboração entre diferentes setores (universidades, empresas, governo)
-                </p>
-              </div>
-              
-              {/* Commercialization Path */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="commercialization">Via de comercialização</Label>
-                  <span className="text-sm font-medium">{inputValues.commercialization}%</span>
-                </div>
-                <Slider 
-                  id="commercialization"
-                  min={0} 
-                  max={100} 
-                  step={1} 
-                  value={[inputValues.commercialization]} 
-                  onValueChange={(value) => handleSliderChange('commercialization', value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Clareza do plano de comercialização e tempo estimado para chegar ao mercado
-                </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
             
-            <div className="space-y-6">
-              {/* International Partnerships */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="international-partnerships">Parcerias internacionais</Label>
-                  <span className="text-sm font-medium">{inputValues.internationalPartnerships}%</span>
-                </div>
-                <Slider 
-                  id="international-partnerships"
-                  min={0} 
-                  max={100} 
-                  step={1} 
-                  value={[inputValues.internationalPartnerships]} 
-                  onValueChange={(value) => handleSliderChange('internationalPartnerships', value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Presença de parceiros estrangeiros e acordos internacionais
-                </p>
-              </div>
-              
-              {/* Previous Projects */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="previous-projects">Histórico de projetos</Label>
-                  <span className="text-sm font-medium">{inputValues.previousProjects}%</span>
-                </div>
-                <Slider 
-                  id="previous-projects"
-                  min={0} 
-                  max={100} 
-                  step={1} 
-                  value={[inputValues.previousProjects]} 
-                  onValueChange={(value) => handleSliderChange('previousProjects', value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Histórico de sucesso em projetos anteriores e resultados gerados
-                </p>
-              </div>
-              
-              {/* Financial Metrics */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="financial-metrics">Métricas financeiras</Label>
-                  <span className="text-sm font-medium">{inputValues.financialMetrics}%</span>
-                </div>
-                <Slider 
-                  id="financial-metrics"
-                  min={0} 
-                  max={100} 
-                  step={1} 
-                  value={[inputValues.financialMetrics]} 
-                  onValueChange={(value) => handleSliderChange('financialMetrics', value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Indicadores como ROI esperado, contrapartida financeira e fluxo de caixa projetado
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <Button 
-            className="w-full md:w-auto" 
-            onClick={runPrediction}
-            disabled={isLoading}
-          >
-            {isLoading ? "Processando..." : "Executar Previsão"}
-          </Button>
-          
-          {successProbability !== null && (
-            <div className="flex flex-col md:flex-row items-center gap-2">
-              <div className="text-sm font-medium">Probabilidade de sucesso:</div>
-              <div className="flex items-center gap-2">
-                <div className="text-xl font-bold">
-                  {(successProbability * 100).toFixed(1)}%
-                </div>
-                {getStatusBadge(successProbability)}
-              </div>
-            </div>
-          )}
-        </CardFooter>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Importância dos Fatores</CardTitle>
-          <CardDescription>
-            Influência relativa de cada fator no modelo de previsão
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {modelFeatures.featuresImportance.map(feature => (
-              <div key={feature.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>{feature.name}</span>
-                  <span className="font-medium">{(feature.importance * 100).toFixed(1)}%</span>
-                </div>
-                <Progress value={feature.importance * 100} className="h-2" />
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-700">
-              <p className="font-medium">Nota sobre o modelo</p>
-              <p className="mt-1">
-                Este modelo é baseado em dados históricos de propostas anteriores. A importância dos fatores pode variar conforme a linha de financiamento específica e o período de avaliação.
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Importância dos Fatores</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={featureImportanceData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${percent.toFixed(0)}%`}
+                      >
+                        {featureImportanceData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </ResponsiveContainer>
+                  </div>
+              </CardContent>
+            </Card>
+            
+            <div className="text-xs text-gray-600">
+              <p>
+                Este modelo utiliza técnicas de machine learning (Random Forest) para estimar a probabilidade 
+                de sucesso de financiamento, baseado em dados históricos de propostas anteriores.
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Taxa de Sucesso em Projetos Similares</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={similarProjectsData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="success" name="Aprovados" stackId="a" fill="#82ca9d" />
+                  <Bar dataKey="failure" name="Rejeitados" stackId="a" fill="#ff8042" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Pontos Fortes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {nationalPriority[0] > 70 && (
+                  <li>• Forte alinhamento com prioridades nacionais</li>
+                )}
+                {sectoralCollaboration[0] > 70 && (
+                  <li>• Boa colaboração intersetorial</li>
+                )}
+                {commercializationPlan[0] > 70 && (
+                  <li>• Plano de comercialização bem definido</li>
+                )}
+                {internationalPartnership[0] > 70 && (
+                  <li>• Parcerias internacionais estabelecidas</li>
+                )}
+                {projectHistory[0] > 70 && (
+                  <li>• Histórico positivo de projetos anteriores</li>
+                )}
+                {financial[0] > 70 && (
+                  <li>• Boas métricas financeiras</li>
+                )}
+                {[nationalPriority[0], sectoralCollaboration[0], commercializationPlan[0], 
+                  internationalPartnership[0], projectHistory[0], financial[0]].filter(v => v > 70).length === 0 && (
+                  <li>• Nenhum ponto forte identificado</li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Áreas de Melhoria</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {nationalPriority[0] < 60 && (
+                  <li>• Melhorar alinhamento com prioridades nacionais</li>
+                )}
+                {sectoralCollaboration[0] < 60 && (
+                  <li>• Aumentar colaboração intersetorial</li>
+                )}
+                {commercializationPlan[0] < 60 && (
+                  <li>• Desenvolver melhor plano de comercialização</li>
+                )}
+                {internationalPartnership[0] < 60 && (
+                  <li>• Estabelecer parcerias internacionais</li>
+                )}
+                {projectHistory[0] < 60 && (
+                  <li>• Melhorar documentação de projetos anteriores</li>
+                )}
+                {financial[0] < 60 && (
+                  <li>• Reforçar métricas financeiras</li>
+                )}
+                {[nationalPriority[0], sectoralCollaboration[0], commercializationPlan[0], 
+                  internationalPartnership[0], projectHistory[0], financial[0]].filter(v => v < 60).length === 0 && (
+                  <li>• Não há áreas críticas de melhoria</li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Recomendações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {successProbability < 70 && (
+                  <>
+                    <li>• Revisar os fatores com pontuação mais baixa</li>
+                    <li>• Considerar parcerias estratégicas adicionais</li>
+                    <li>• Fortalecer a proposta de valor</li>
+                    <li>• Incluir evidências de sucesso de projetos similares</li>
+                  </>
+                )}
+                {successProbability >= 70 && (
+                  <>
+                    <li>• Manter os pontos fortes identificados</li>
+                    <li>• Incluir detalhamento dos impactos esperados</li>
+                    <li>• Destacar diferenciais competitivos</li>
+                    <li>• Enfatizar a viabilidade de longo prazo</li>
+                  </>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" /> Exportar Análise
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
