@@ -13,6 +13,7 @@ export interface QueryResponseType {
   isAIResponse?: boolean;
   baiResponse?: string;
   baiError?: string;
+  supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
 }
 
 export const genId = () => uuidv4();

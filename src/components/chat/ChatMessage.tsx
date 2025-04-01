@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookOpen, Database, User, AlertCircle } from 'lucide-react';
+import { BookOpen, Database, User, AlertCircle, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QueryResults } from '@/components/chat/QueryResults';
@@ -16,6 +16,7 @@ interface ChatMessageProps {
   isAIResponse?: boolean;
   baiResponse?: string;
   baiError?: string;
+  supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
   className?: string;
 }
 
@@ -29,6 +30,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   isAIResponse,
   baiResponse,
   baiError,
+  supportingDocuments,
   className,
 }) => {
   const formatBaiResponse = (response: string) => {
@@ -139,6 +141,32 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 );
               })}
             </div>
+            
+            {supportingDocuments && supportingDocuments.length > 0 && (
+              <div className="mt-4 border-t pt-3">
+                <div className="flex items-center gap-1 mb-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-xl font-bold">Documentos de Suporte</span>
+                </div>
+                <div className="space-y-2">
+                  {supportingDocuments.map((doc, index) => (
+                    <div key={index} className="flex items-start p-2 bg-gray-50 rounded border border-gray-100">
+                      <FileText className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+                      <div>
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
+                          {doc.title}
+                        </a>
+                        {doc.relevance && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Relevância: {Math.round(doc.relevance * 100)}%
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         

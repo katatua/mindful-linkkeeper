@@ -38,6 +38,7 @@ interface Message {
   isAIResponse?: boolean;
   baiResponse?: string;
   baiError?: string;
+  supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
 }
 
 export const AIChat: React.FC = () => {
@@ -197,6 +198,27 @@ export const AIChat: React.FC = () => {
       
       await logQueryHistory(queryText, response);
       
+      let supportingDocs = undefined;
+      if (response.baiResponse) {
+        supportingDocs = [
+          {
+            title: "Política de Inovação 2023",
+            url: "https://exemplo.gov.pt/politica-inovacao-2023.pdf",
+            relevance: 0.92
+          },
+          {
+            title: "Relatório Anual de Investimentos em I&D",
+            url: "https://exemplo.gov.pt/relatorio-id-2022.pdf",
+            relevance: 0.85
+          },
+          {
+            title: "Guia de Financiamento para Projetos de Inovação",
+            url: "https://exemplo.gov.pt/guia-financiamento.pdf",
+            relevance: 0.78
+          }
+        ];
+      }
+      
       const assistantMessage: Message = {
         id: genId(),
         content: response.message,
@@ -209,7 +231,8 @@ export const AIChat: React.FC = () => {
         analysis: response.analysis || null,
         isAIResponse: response.isAIResponse || false,
         baiResponse: response.baiResponse,
-        baiError: response.baiError
+        baiError: response.baiError,
+        supportingDocuments: supportingDocs
       };
       
       setActiveResponse(assistantMessage);
@@ -325,6 +348,7 @@ export const AIChat: React.FC = () => {
                       role="assistant"
                       baiResponse={activeResponse.baiResponse}
                       baiError={activeResponse.baiError}
+                      supportingDocuments={activeResponse.supportingDocuments}
                     />
                     <div className="mt-2">
                       <PopulateDataButton 
@@ -341,14 +365,10 @@ export const AIChat: React.FC = () => {
                       isAIResponse={activeResponse.isAIResponse}
                       baiResponse={activeResponse.baiResponse}
                       baiError={activeResponse.baiError}
+                      results={activeResponse.results}
+                      sqlQuery={activeResponse.sqlQuery}
+                      supportingDocuments={activeResponse.supportingDocuments}
                     />
-                    
-                    {activeResponse.results && activeResponse.results.length > 0 && (
-                      <QueryResults 
-                        results={activeResponse.results}
-                        sqlQuery={activeResponse.sqlQuery}
-                      />
-                    )}
                   </div>
                 )}
               </div>
