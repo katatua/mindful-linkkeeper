@@ -353,12 +353,7 @@ const VisualizationDetailPage = () => {
                 <XAxis type="number" dataKey="x" name="Funding (€M)" />
                 <YAxis type="number" dataKey="y" name="Success Rate (%)" />
                 <ZAxis type="number" dataKey="z" range={[60, 400]} name="Projects" />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(value, name) => {
-                  if (name === 'x') return [`€${value}M`, 'Funding'];
-                  if (name === 'y') return [`${value}%`, 'Success Rate'];
-                  if (name === 'z') return [value, 'Projects'];
-                  return [value, name];
-                }} />
+                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
                 <Legend />
                 <Scatter name="Sectors" data={chartData} fill="#8884d8" />
               </ScatterChart>
