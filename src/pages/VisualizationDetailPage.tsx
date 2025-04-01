@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip as RechartsTooltip,
+  Tooltip,
   Legend,
   ResponsiveContainer,
   AreaChart,
@@ -39,8 +40,9 @@ interface VisualizationParamsType {
   category?: string;
 }
 
-const CustomTooltip = ({ active, payload, label, ...rest }: any) => {
-  return <RechartsTooltip active={active} payload={payload} label={label} />;
+// Create a custom tooltip component that accepts any props
+const CustomTooltip = (props: any) => {
+  return <Tooltip {...props} />;
 };
 
 const VisualizationDetailPage = () => {
