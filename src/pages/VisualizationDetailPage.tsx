@@ -353,7 +353,7 @@ const VisualizationDetailPage = () => {
                 <XAxis type="number" dataKey="x" name="Funding (€M)" />
                 <YAxis type="number" dataKey="y" name="Success Rate (%)" />
                 <ZAxis type="number" dataKey="z" range={[60, 400]} name="Projects" />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                <Tooltip />
                 <Legend />
                 <Scatter name="Sectors" data={chartData} fill="#8884d8" />
               </ScatterChart>
