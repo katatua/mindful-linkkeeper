@@ -1,6 +1,6 @@
 
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 
@@ -13,6 +13,7 @@ import ANIPortal from '@/pages/ANIPortal';
 import AIReportDetail from '@/pages/AIReportDetail';
 import QueryAssistantPage from './pages/QueryAssistantPage';
 import VisualizationDetailPage from './pages/VisualizationDetailPage';
+import PredictiveModelsPage from './pages/PredictiveModelsPage';  // New import
 
 // Lazy-loaded pages
 const Auth = lazy(() => import('@/pages/Auth'));
@@ -50,12 +51,13 @@ function App() {
                 <Route path="/database" element={<DatabasePage />} />
                 <Route path="/query-assistant" element={<QueryAssistantPage />} />
                 <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
+                <Route path="/predictive-models" element={<PredictiveModelsPage />} />  {/* New route */}
               </Route>
             </Routes>
           </Suspense>
         </Router>
       </SidebarProvider>
-    </LanguageProvider>
+    </LanguageContext>
   );
 }
 
