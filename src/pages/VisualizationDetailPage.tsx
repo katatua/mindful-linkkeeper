@@ -33,8 +33,14 @@ import {
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F', '#FFBB28'];
 
+interface VisualizationParams {
+  chartId?: string;
+  chartType?: string;
+  category?: string;
+}
+
 const VisualizationDetailPage = () => {
-  const { chartId, chartType, category } = useParams();
+  const { chartId, chartType, category } = useParams<VisualizationParams>();
   const navigate = useNavigate();
   const [chartData, setChartData] = useState<any[] | null>(null);
   const [chartTitle, setChartTitle] = useState("");
@@ -51,6 +57,8 @@ const VisualizationDetailPage = () => {
         getPerformanceData();
       } else if (category === "regional") {
         getRegionalData();
+      } else if (category === "predictive") {
+        getPredictiveData();
       } else {
         setChartData([]);
         setChartTitle(t('visualization.unknown'));
@@ -60,6 +68,34 @@ const VisualizationDetailPage = () => {
 
     fetchVisualizationData();
   }, [chartId, chartType, category, t]);
+
+  const getPredictiveData = () => {
+    if (chartId === "funding-prediction") {
+      setChartData([
+        { name: "Recursos e financiamento", value: 85 },
+        { name: "Equipe qualificada", value: 78 },
+        { name: "Redes de colaboração", value: 68 },
+        { name: "Infraestrutura", value: 63 },
+        { name: "Propriedade intelectual", value: 55 },
+      ]);
+      setChartTitle("Fatores de Sucesso em Projetos de Inovação");
+      setChartDescription("Análise dos principais fatores que influenciam o sucesso de projetos de inovação");
+    } else if (chartId === "growth-trends") {
+      setChartData([
+        { year: '2024', quantumComputing: 92, biotech: 87, greenHydrogen: 83 },
+        { year: '2025', quantumComputing: 94, biotech: 90, greenHydrogen: 87 },
+        { year: '2026', quantumComputing: 95, biotech: 92, greenHydrogen: 90 },
+        { year: '2027', quantumComputing: 97, biotech: 94, greenHydrogen: 92 },
+        { year: '2028', quantumComputing: 98, biotech: 96, greenHydrogen: 94 },
+      ]);
+      setChartTitle("Tendências de Crescimento por Setor");
+      setChartDescription("Projeção de crescimento para setores emergentes de alta tecnologia");
+    } else {
+      setChartData([]);
+      setChartTitle("Dados Não Disponíveis");
+      setChartDescription("Não foram encontrados dados para este modelo preditivo");
+    }
+  };
 
   const getFundingData = () => {
     if (chartId === "funding-sources") {
@@ -410,6 +446,53 @@ const VisualizationDetailPage = () => {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+        );
+
+      case 'model':
+        if (chartId === 'funding-prediction') {
+          return (
+            <div className="h-[500px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={200}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        } else if (chartId === 'growth-trends') {
+          return (
+            <div className="h-[500px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="quantumComputing" name="Quantum Computing" stroke="#8884d8" />
+                  <Line type="monotone" dataKey="biotech" name="Biotecnologia Avançada" stroke="#82ca9d" />
+                  <Line type="monotone" dataKey="greenHydrogen" name="Hidrogênio Verde" stroke="#ffc658" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        }
+        return (
+          <div className="h-80 flex items-center justify-center">Modelo não disponível</div>
         );
 
       default:

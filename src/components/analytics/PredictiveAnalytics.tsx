@@ -34,13 +34,14 @@ export const PredictiveAnalytics = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4">
-              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="funding-success">Sucesso de Financiamento</TabsTrigger>
-              <TabsTrigger value="innovation-impact">Impacto de Inovação</TabsTrigger>
-              <TabsTrigger value="sector-growth">Crescimento Setorial</TabsTrigger>
-              <TabsTrigger value="market-impact">Impacto no Mercado</TabsTrigger>
-              <TabsTrigger value="policy-effects">Efeitos de Políticas</TabsTrigger>
+            {/* Increase horizontal spacing between tab triggers and make them larger for better clickability */}
+            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 mb-4">
+              <TabsTrigger value="overview" className="px-3 py-2">Visão Geral</TabsTrigger>
+              <TabsTrigger value="funding-success" className="px-3 py-2">Sucesso de Financiamento</TabsTrigger>
+              <TabsTrigger value="innovation-impact" className="px-3 py-2">Impacto de Inovação</TabsTrigger>
+              <TabsTrigger value="sector-growth" className="px-3 py-2">Crescimento Setorial</TabsTrigger>
+              <TabsTrigger value="market-impact" className="px-3 py-2">Impacto no Mercado</TabsTrigger>
+              <TabsTrigger value="policy-effects" className="px-3 py-2">Efeitos de Políticas</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview" className="space-y-4">
