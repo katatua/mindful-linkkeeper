@@ -7,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QueryHistory } from '@/components/database/QueryHistory';
 import { Database, History } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export const QueryAssistantPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // Get the active tab from URL, if available
   const getTabFromUrl = () => {
@@ -34,20 +36,20 @@ export const QueryAssistantPage: React.FC = () => {
   return (
     <Layout>
       <div className="container mx-auto py-6">
-        <h1 className="text-2xl font-bold mb-2">Assistente ANI</h1>
+        <h1 className="text-2xl font-bold mb-2">{t('query.title')}</h1>
         <p className="text-gray-500 mb-6">
-          Faça as suas perguntas sobre a base de dados em português.
+          {t('query.subtitle')}
         </p>
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList className="mb-4">
             <TabsTrigger value="assistente" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
-              Assistente
+              {t('sidebar.query')}
             </TabsTrigger>
             <TabsTrigger value="historia" className="flex items-center gap-2">
               <History className="h-4 w-4" />
-              História
+              {t('query.history')}
             </TabsTrigger>
           </TabsList>
           
