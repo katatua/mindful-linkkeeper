@@ -375,6 +375,23 @@ const translations: Record<Language, Record<string, string>> = {
     'sidebar.admin': 'Admin',
     'sidebar.settings': 'Settings',
     'sidebar.description': 'Explore the application.',
+    'query.title': 'Query Assistant',
+    'query.subtitle': 'Get help with database queries',
+    'query.placeholder': 'Describe what data you need...',
+    'query.send': 'Send',
+    'query.history': 'History',
+    'query.results': 'Results',
+    'query.suggestions': 'Suggested Queries',
+    'query.suggestion1': 'Show all active projects with budget over €1M',
+    'query.suggestion2': 'List funding by region for last quarter',
+    'query.suggestion3': 'Find patents registered in the last 6 months',
+    'query.empty': 'No results yet. Try asking a question!',
+    'query.loading': 'Analyzing your query...',
+    'query.error': 'Error processing query',
+    'query.copy': 'Copy SQL',
+    'query.visualization': 'Visualization',
+    'query.table': 'Table View',
+    'query.chart': 'Chart View'
   },
   pt: {
     // Header
@@ -592,143 +609,4 @@ const translations: Record<Language, Record<string, string>> = {
     'framework.period': 'Período: ',
     'framework.download': 'Baixar',
     'framework.share': 'Compartilhar',
-    'framework.downloaded': 'Documento de estrutura baixado',
-    'framework.downloaded.success': 'foi baixado com sucesso.',
-    'framework.funding': 'Financiamento Total',
-    'framework.coverage': 'Cobertura',
-    'framework.tab.overview': 'Visão Geral',
-    'framework.tab.funding': 'Financiamento',
-    'framework.tab.governance': 'Governança',
-    'framework.tab.performance': 'Desempenho',
-    'framework.description': 'Descrição da Estrutura',
-    'framework.areas': 'Áreas de Foco Principais',
-    'framework.objectives': 'Objetivos Estratégicos',
-    'framework.allocation': 'Alocação de Financiamento',
-    'framework.distribution': 'Distribuição de financiamento através de diferentes mecanismos',
-    'framework.eligibility': 'Elegibilidade para Financiamento',
-    'framework.research': 'Instituições de Pesquisa',
-    'framework.research.description': 'Universidades, centros de pesquisa e institutos tecnológicos envolvidos em pesquisa fundamental ou aplicada.',
-    'framework.companies': 'Empresas Privadas',
-    'framework.companies.description': 'PMEs e grandes empresas com projetos focados em inovação e atividades de P&D.',
-    'framework.consortia': 'Consórcios Público-Privados',
-    'framework.consortia.description': 'Projetos colaborativos envolvendo entidades públicas e privadas.',
-    'framework.nonprofit': 'Organizações Sem Fins Lucrativos',
-    'framework.nonprofit.description': 'ONGs e fundações trabalhando em inovação nos setores social e ambiental.',
-    'framework.governance': 'Estrutura de Governança',
-    'framework.implementation': 'Processo de Implementação',
-    'framework.process.strategy': 'Definição de Estratégia',
-    'framework.process.strategy.description': 'Estabelecimento de prioridades e objetivos com base em estratégias nacionais e europeias de inovação.',
-    'framework.process.call': 'Chamada de Propostas',
-    'framework.process.call.description': 'Publicação de oportunidades de financiamento com requisitos detalhados.',
-    'framework.process.evaluation': 'Avaliação e Seleção',
-    'framework.process.evaluation.description': 'Avaliação de propostas por painéis técnicos e comitês especializados.',
-    'framework.process.monitoring': 'Implementação e Monitoramento',
-    'framework.process.monitoring.description': 'Execução do projeto com monitoramento e relatórios regulares de progresso.',
-    'framework.process.impact': 'Avaliação de Impacto',
-    'framework.process.impact.description': 'Avaliação de resultados em relação a objetivos e KPIs estabelecidos.',
-    'framework.kpi': 'Indicadores-Chave de Desempenho',
-    'framework.kpi.target': 'Meta: ',
-    'framework.kpi.baseline': 'Linha de Base: ',
-    'framework.outcomes': 'Resultados Esperados',
-    'framework.impact.economic': 'Impacto Econômico',
-    'framework.impact.innovation': 'Capacidade de Inovação',
-    'framework.impact.societal': 'Benefícios Sociais',
-    'framework.impact.economic1': 'Contribuição para o crescimento do PIB de 1,5-2%',
-    'framework.impact.economic2': 'Criação de mais de 50.000 empregos altamente qualificados',
-    'framework.impact.economic3': 'Aumento da competitividade nas exportações',
-    'framework.impact.innovation1': 'Infraestrutura de P&D expandida',
-    'framework.impact.innovation2': 'Transferência de tecnologia aprimorada',
-    'framework.impact.innovation3': 'Crescimento em pedidos de patentes',
-    'framework.impact.societal1': 'Melhorias na inclusão digital',
-    'framework.impact.societal2': 'Ganhos em sustentabilidade ambiental',
-    'framework.impact.societal3': 'Entrega aprimorada de serviços públicos',
-    'framework.monitoring': 'Estrutura de Monitoramento',
-    'framework.annual': 'Relatórios Anuais de Progresso',
-    'framework.annual.description': 'Avaliação anual abrangente em relação a métricas e metas-chave.',
-    'framework.midterm': 'Revisão de Meio-Termo (2025)',
-    'framework.midterm.description': 'Análise profunda do progresso de implementação e potenciais ajustes de estratégia.',
-    'framework.final': 'Avaliação Final de Impacto (2030)',
-    'framework.final.description': 'Avaliação abrangente de resultados, impactos e lições aprendidas.',
-    
-    // Reports
-    'reports.scheduled': 'Visão Geral Mensal de Financiamento',
-    'reports.scheduled.description': 'Relatório mensal automatizado sobre alocação e utilização de financiamento',
-    'reports.frequency': 'Frequência:',
-    'reports.next': 'Próxima geração:',
-    'reports.generated': 'Gerado às',
-    'reports.recipients': 'Destinatários:',
-    'reports.preview': 'Visualizar',
-    'reports.pause': 'Pausar',
-    'reports.resume': 'Retomar',
-    'reports.delete': 'Excluir',
-    'reports.confirm': 'Confirmar',
-    'reports.cancel': 'Cancelar',
-    
-    // Dashboard
-    'dashboard.title': 'Painel de Inovação ANI',
-    'dashboard.search': 'Pesquisar métricas...',
-    'dashboard.filter': 'Filtrar',
-    'dashboard.export': 'Exportar',
-    'dashboard.refresh': 'Atualizar',
-    'dashboard.export.started': 'A preparar exportação PDF...',
-    'dashboard.export.success': 'Exportação bem-sucedida',
-    'dashboard.export.success.desc': 'O seu painel foi exportado como PDF.',
-    'dashboard.export.fail': 'Falha na exportação',
-    'dashboard.export.fail.desc': 'Ocorreu um erro ao gerar o PDF. Por favor tente novamente.',
-    'dashboard.tab.overview': 'Visão Geral',
-    'dashboard.tab.funding': 'Financiamento',
-    'dashboard.tab.sectors': 'Setores',
-    'dashboard.tab.performance': 'Desempenho',
-    'dashboard.tab.regional': 'Regional',
-    'dashboard.metrics.active': 'Projetos Ativos',
-    'dashboard.metrics.investment': 'Investimento em I&D',
-    'dashboard.metrics.patents': 'Pedidos de Patentes',
-    'dashboard.metrics.startups': 'Startups Incubadas',
-    'dashboard.metrics.collaborations': 'Colaborações Internacionais',
-    'dashboard.metrics.ai': 'Índice de Inovação em IA',
-    'dashboard.charts.project': 'Tendências de Crescimento de Projetos (2023)',
-    'dashboard.charts.investment': 'Investimento em Inovação vs Projetos',
-    'dashboard.charts.sectors': 'Distribuição de Setores de Inovação',
-    'dashboard.charts.funding': 'Crescimento do Financiamento de Inovação',
-    'dashboard.metrics.updated': 'Atualizado hoje',
-    'dashboard.metrics.q2': 'Q2 2023',
-    'dashboard.metrics.last12': 'Últimos 12 meses',
-    'dashboard.metrics.ytd': '2023 YTD',
-    'dashboard.metrics.quarter': 'Este trimestre',
-  }
-};
-
-export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('en');
-  
-  // Initialize language from localStorage if available
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pt')) {
-      setLanguage(savedLanguage);
-    }
-  }, []);
-  
-  // Save language to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('language', language);
-  }, [language]);
-  
-  const t = (key: string): string => {
-    return translations[language][key] || key;
-  };
-  
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-};
-
-export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
-}
+    'framework.downloaded': 'Documento de estrutura baix
