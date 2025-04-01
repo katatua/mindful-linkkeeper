@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Download, Filter, Search, ChevronDown } from "lucide-react";
+import { Download, Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { FundingAnalytics } from "@/components/analytics/FundingAnalytics";
@@ -50,18 +50,9 @@ const AnalyticsPage = () => {
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-1" /> {t('analytics.filter')}
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Ferramentas <ChevronDown className="h-4 w-4 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" /> {t('analytics.export')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-1" /> {t('analytics.export')}
+          </Button>
         </div>
       </div>
 
