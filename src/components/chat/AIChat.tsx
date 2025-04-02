@@ -38,6 +38,7 @@ interface Message {
   baiResponse?: string;
   baiError?: string;
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
+  baiChatId?: string;
 }
 
 export const AIChat: React.FC = () => {
@@ -50,6 +51,7 @@ export const AIChat: React.FC = () => {
     loading: true
   });
   const { toast } = useToast();
+  const [currentBaiChatId, setCurrentBaiChatId] = useState<string | undefined>(undefined);
   
   const getPortugueseSuggestions = () => {
     const allPortugueseSuggestions = suggestedDatabaseQueries.filter(q => 
@@ -192,30 +194,13 @@ export const AIChat: React.FC = () => {
       });
       
       console.log("Sending query to generateResponse:", queryText);
-      const response = await generateResponse(queryText);
+      const response = await generateResponse(queryText, currentBaiChatId);
       console.log("Response received:", response);
       
       await logQueryHistory(queryText, response);
       
-      let supportingDocs = undefined;
-      if (response.baiResponse) {
-        supportingDocs = [
-          {
-            title: "Política de Inovação 2023",
-            url: "https://exemplo.gov.pt/politica-inovacao-2023.pdf",
-            relevance: 0.92
-          },
-          {
-            title: "Relatório Anual de Investimentos em I&D",
-            url: "https://exemplo.gov.pt/relatorio-id-2022.pdf",
-            relevance: 0.85
-          },
-          {
-            title: "Guia de Financiamento para Projetos de Inovação",
-            url: "https://exemplo.gov.pt/guia-financiamento.pdf",
-            relevance: 0.78
-          }
-        ];
+      if (response.baiChatId) {
+        setCurrentBaiChatId(response.baiChatId);
       }
       
       const assistantMessage: Message = {
@@ -231,7 +216,8 @@ export const AIChat: React.FC = () => {
         isAIResponse: response.isAIResponse || false,
         baiResponse: response.baiResponse,
         baiError: response.baiError,
-        supportingDocuments: supportingDocs
+        supportingDocuments: response.supportingDocuments,
+        baiChatId: response.baiChatId
       };
       
       setActiveResponse(assistantMessage);
@@ -269,6 +255,7 @@ export const AIChat: React.FC = () => {
   const resetConversation = () => {
     setActiveQuestion(null);
     setActiveResponse(null);
+    setCurrentBaiChatId(undefined);
     
     const currentUrl = window.location.pathname;
     window.history.replaceState({}, document.title, currentUrl);

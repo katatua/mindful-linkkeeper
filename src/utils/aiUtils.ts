@@ -188,10 +188,11 @@ export const generateResponse = async (query: string, previousChatId?: string): 
     // Chamada em paralelo para a API BAI
     let baiResponse = null;
     let baiError = null;
+    let baiResult = { response: undefined, error: undefined, chatId: undefined };
     
     try {
       console.log("Chamando API BAI");
-      const baiResult = await callBaiApi(query, previousChatId);
+      baiResult = await callBaiApi(query, previousChatId);
       
       if (baiResult.error) {
         console.error("Erro na API BAI:", baiResult.error);
