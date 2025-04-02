@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { BrainCircuit, Gauge, ArrowUpRight, Eye } from "lucide-react";
+import { BrainCircuit, Gauge, ArrowUpRight, Eye, ChevronDown } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Sample data for model performance
 const modelPerformanceData = [
@@ -28,6 +29,7 @@ export const AutoMLModelSelector = () => {
   const [trainingEpochs, setTrainingEpochs] = useState(20);
   const [isRunning, setIsRunning] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedView, setSelectedView] = useState("default");
   
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
@@ -62,6 +64,10 @@ export const AutoMLModelSelector = () => {
     }, 3000);
   };
   
+  const handleViewChange = (view: string) => {
+    setSelectedView(view);
+  };
+  
   const getModelFullName = () => {
     switch(selectedModel) {
       case 'dense': return 'Redes Densas (DNN)';
@@ -74,10 +80,31 @@ export const AutoMLModelSelector = () => {
   return (
     <Card className="border rounded-lg">
       <CardHeader className="bg-slate-50">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <BrainCircuit className="h-5 w-5 text-purple-600" />
-          {t('predictive.automl.title') || "Seleção Automática de Modelos (AutoML)"}
-        </CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BrainCircuit className="h-5 w-5 text-purple-600" />
+            {t('predictive.automl.title') || "Seleção Automática de Modelos (AutoML)"}
+          </CardTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                Visualização
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40 bg-white">
+              <DropdownMenuItem onClick={() => handleViewChange("default")}>
+                Padrão
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleViewChange("advanced")}>
+                Avançado
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleViewChange("simple")}>
+                Simplificado
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -218,7 +245,6 @@ export const AutoMLModelSelector = () => {
         </div>
       </CardContent>
 
-      {/* Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="sm:max-w-[625px]">
           <DialogHeader>
