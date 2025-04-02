@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface QueryResponseType {
@@ -23,8 +21,7 @@ export const genId = () => uuidv4();
 
 export const suggestedDatabaseQueries = [
   "Quais são as fontes de dados mais recentes?",
-  "Quantos documentos foram extraídos no último mês?",
-  "Liste as instituições que trabalham com tecnologia",
+  "Quantas instituições trabalham com tecnologia",
   "Mostre as cooperações internacionais ativas",
   "Qual é o volume total de financiamento de projetos em Lisboa?",
   
