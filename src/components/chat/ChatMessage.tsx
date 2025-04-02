@@ -139,31 +139,30 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 space-y-2 overflow-hidden">
-        <div className="text-xl font-bold">
-          {role === 'user' ? 'Você' : 'Assistente'}
-          {intentAlias && role === 'user' && (
-            <span className="ml-2 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+        <div className="flex items-center flex-wrap gap-2">
+          <span className="text-xl font-bold">
+            {role === 'user' ? 'Você' : 'Assistente'}
+          </span>
+          
+          {role === 'user' && intentAlias && (
+            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
               intent found: {intentAlias}
             </span>
           )}
-          {isAIResponse && role === 'assistant' && (
+          
+          {role === 'user' || (isAIResponse && role === 'assistant') ? (
             <button 
               onClick={handleAssistantBadgeClick}
-              className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+              className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
             >
               Chat4Business - Resposta do Assistente ANI
             </button>
-          )}
-          {role === 'user' && (
-            <button 
-              onClick={handleAssistantBadgeClick}
-              className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
-            >
-              Chat4Business - Resposta do Assistente ANI
-            </button>
-          )}
+          ) : null}
         </div>
-        <div className="whitespace-pre-wrap text-sm break-words overflow-auto max-w-full">{content}</div>
+        
+        <div className="whitespace-pre-wrap text-sm break-words overflow-auto max-w-full">
+          {content}
+        </div>
         
         {results && results.length > 0 && (
           <div className="mt-4 border-t pt-3">
