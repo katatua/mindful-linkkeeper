@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QueryResults } from '@/components/chat/QueryResults';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { isChartRequest, determineChartType, generateSampleChartData } from '@/utils/baiApiUtils';
+import ChartDisplay from '@/components/charts/ChartDisplay';
 
 interface ChatMessageProps {
   content: string;
@@ -81,6 +83,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   console.log("Extracted links:", embeddedLinks); // Debug log to see extracted links
   
   const hasValidFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url && file.download_url.trim() !== "");
+
+  const messageContent = content || '';
+  const isChart = isChartRequest(messageContent);
+  const chartType = isChart ? determineChartType(messageContent) : null;
+  const chartData = chartType ? generateSampleChartData(chartType) : null;
 
   return (
     <div 
@@ -282,6 +289,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 ))}
               </div>
             </ScrollArea>
+          </div>
+        )}
+        
+        {role === 'assistant' && isChart && chartData && (
+          <div className="mt-4">
+            <ChartDisplay 
+              chartType={chartType!} 
+              chartData={chartData} 
+              title="Gráfico Gerado pela IA" 
+              description="Visualização gerada com base na sua solicitação"
+            />
           </div>
         )}
       </div>

@@ -21,6 +21,7 @@ import { ChatInput } from '@/components/chat/ChatInput';
 import { SuggestedQueries } from '@/components/chat/SuggestedQueries';
 import { QueryResults } from '@/components/chat/QueryResults';
 import { PopulateDataButton } from '@/components/database/PopulateDataButton';
+import { sendBaiRequest, isChartRequest, determineChartType } from '@/utils/baiApiUtils';
 
 interface Message {
   id: string;
@@ -197,6 +198,27 @@ export const AIChat: React.FC = () => {
       console.log("Sending query to generateResponse:", queryText);
       const response = await generateResponse(queryText, currentBaiChatId);
       console.log("Response received:", response);
+      
+      if (isChartRequest(queryText)) {
+        console.log("Chart request detected, sending to BAI API");
+        try {
+          const baiResponse = await sendBaiRequest({ 
+            request: queryText,
+            chatId: currentBaiChatId 
+          });
+          
+          if (baiResponse.id_chat) {
+            setCurrentBaiChatId(baiResponse.id_chat);
+          }
+          
+          if (baiResponse.intent_alias) {
+            console.log(`Chart intent detected: ${baiResponse.intent_alias}`);
+            response.baiResponse = `Gráfico do tipo: ${determineChartType(baiResponse.intent_alias || queryText)}`;
+          }
+        } catch (error) {
+          console.error("Error sending chart request to BAI API:", error);
+        }
+      }
       
       await logQueryHistory(queryText, response);
       
