@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,6 +16,7 @@ export interface QueryResponseType {
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
   baiChatId?: string;
   baiFiles?: Array<{filename: string | null, download_url: string}>;
+  intentAlias?: string;
 }
 
 export const genId = () => uuidv4();
