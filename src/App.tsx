@@ -13,7 +13,8 @@ import ANIPortal from '@/pages/ANIPortal';
 import AIReportDetail from '@/pages/AIReportDetail';
 import QueryAssistantPage from './pages/QueryAssistantPage';
 import VisualizationDetailPage from './pages/VisualizationDetailPage';
-import PredictiveModelsPage from './pages/PredictiveModelsPage';  // New import
+import PredictiveModelsPage from './pages/PredictiveModelsPage';  
+import MetricDetailsPage from './pages/MetricDetailsPage';
 
 // Lazy-loaded pages
 const Auth = lazy(() => import('@/pages/Auth'));
@@ -51,7 +52,8 @@ function App() {
                 <Route path="/database" element={<DatabasePage />} />
                 <Route path="/query-assistant" element={<QueryAssistantPage />} />
                 <Route path="/visualization/:category/:chartType/:chartId" element={<VisualizationDetailPage />} />
-                <Route path="/predictive-models" element={<PredictiveModelsPage />} />  {/* New route */}
+                <Route path="/predictive-models" element={<PredictiveModelsPage />} />
+                <Route path="/metrics/:metricId" element={<MetricDetailsPage />} />
               </Route>
             </Routes>
           </Suspense>

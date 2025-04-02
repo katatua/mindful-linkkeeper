@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataCard } from "@/components/DataCard";
@@ -267,25 +266,29 @@ export const Dashboard = () => {
         <TabsContent value="overview" className="space-y-6">
           <div id="dashboard-content" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredMetrics.map((metric, index) => (
-                <div 
-                  key={index} 
-                  className="cursor-pointer" 
-                  onClick={() => handleMetricDetailClick(metric.title.toLowerCase().replace(/\s+/g, '-'))}
-                >
-                  <DataCard
-                    title={metric.title}
-                    value={metric.value}
-                    trend={metric.trend}
-                    percentChange={metric.percentChange}
-                    category={metric.category}
-                    date={metric.date}
-                    chartData={metric.chartData}
-                    isGrid={isGridView}
-                    icon={metric.icon}
-                  />
-                </div>
-              ))}
+              {filteredMetrics.map((metric, index) => {
+                const metricId = metric.title.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-');
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="cursor-pointer" 
+                    onClick={() => handleMetricDetailClick(metricId)}
+                  >
+                    <DataCard
+                      title={metric.title}
+                      value={metric.value}
+                      trend={metric.trend}
+                      percentChange={metric.percentChange}
+                      category={metric.category}
+                      date={metric.date}
+                      chartData={metric.chartData}
+                      isGrid={isGridView}
+                      icon={metric.icon}
+                    />
+                  </div>
+                );
+              })}
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
