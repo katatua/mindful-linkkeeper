@@ -117,9 +117,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       <div className="flex-1 space-y-2 overflow-hidden">
         <div className="text-xl font-bold">
           {role === 'user' ? 'Você' : 'Assistente'}
-          {isAIResponse && (
+          {isAIResponse && role === 'assistant' && (
             <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-              Conhecimento Geral
+              Chat4Business - Resposta do Assistente ANI
             </span>
           )}
         </div>
@@ -306,3 +306,5 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     </div>
   );
 };
+
+export default ChatMessage;
