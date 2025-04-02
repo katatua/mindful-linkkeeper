@@ -41,6 +41,7 @@ interface Message {
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
   baiChatId?: string;
   baiFiles?: Array<{filename: string | null, download_url: string}>;
+  intentAlias?: string;
 }
 
 export const AIChat: React.FC = () => {
@@ -245,7 +246,8 @@ export const AIChat: React.FC = () => {
         baiError: response.baiError,
         supportingDocuments: response.supportingDocuments,
         baiChatId: response.baiChatId,
-        baiFiles: response.baiFiles
+        baiFiles: response.baiFiles,
+        intentAlias: isChartRequest(queryText) ? 'criar-grafico' : undefined
       };
       
       setActiveResponse(assistantMessage);

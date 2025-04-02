@@ -22,11 +22,13 @@ interface ChatMessageProps {
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
   baiFiles?: Array<{filename: string | null, download_url: string}>;
   className?: string;
+  intentAlias?: string;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
   content,
   role,
+  intentAlias,
   isLoading,
   error,
   results,
@@ -117,6 +119,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       <div className="flex-1 space-y-2 overflow-hidden">
         <div className="text-xl font-bold">
           {role === 'user' ? 'Você' : 'Assistente'}
+          {intentAlias && role === 'user' && (
+            <span className="ml-2 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+              intent found: {intentAlias}
+            </span>
+          )}
           {isAIResponse && role === 'assistant' && (
             <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
               Chat4Business - Resposta do Assistente ANI
