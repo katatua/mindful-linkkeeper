@@ -95,7 +95,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   
   // Determine chart type and generate sample data if it's a chart request
   const chartType = isChart ? determineChartType(messageContent || intentAlias || '') : null;
-  const chartData = chartType ? generateSampleChartData(chartType) : null;
+  const chartData = chartType ? generateSampleChartData(chartType, messageContent) : null;
   
   // Flag to determine if we should hide database results
   const shouldHideResults = isChart || (baiResponse && (!results || results.length === 0));
