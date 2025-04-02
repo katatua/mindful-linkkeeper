@@ -4,8 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface QueryResponseType {
   message: string;
-  sqlQuery: string;
-  results: any[] | null;
+  sqlQuery?: string;
+  results?: any[] | null;
   error?: boolean;
   noResults?: boolean;
   queryId?: string;

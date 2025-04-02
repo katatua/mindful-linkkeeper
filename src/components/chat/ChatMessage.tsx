@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link as LinkIcon } from 'lucide-react';
+import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link as LinkIcon, BarChart, LineChart, PieChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QueryResults } from '@/components/chat/QueryResults';
@@ -88,8 +89,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const hasValidFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url && file.download_url.trim() !== "");
 
   const messageContent = content || '';
+  
+  // Check if this is a chart request either by content analysis or intent alias
   const isChart = isChartRequest(messageContent) || (intentAlias === 'criar-grafico');
-  const chartType = isChart ? determineChartType(messageContent) : null;
+  
+  // Determine chart type and generate sample data if it's a chart request
+  const chartType = isChart ? determineChartType(messageContent || intentAlias || '') : null;
   const chartData = chartType ? generateSampleChartData(chartType) : null;
   
   // Flag to determine if we should hide database results
@@ -114,6 +119,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           baiResponseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
+    }
+  };
+
+  // Chart icon based on chart type
+  const getChartIcon = () => {
+    if (!chartType) return null;
+    
+    switch (chartType) {
+      case 'bar':
+        return <BarChart className="h-4 w-4 text-blue-600" />;
+      case 'line':
+        return <LineChart className="h-4 w-4 text-blue-600" />;
+      case 'pie':
+      case 'doughnut':
+        return <PieChart className="h-4 w-4 text-blue-600" />;
+      default:
+        return <BarChart className="h-4 w-4 text-blue-600" />;
     }
   };
 
@@ -343,12 +365,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           </div>
         )}
         
-        {role === 'assistant' && isChart && chartData && (
-          <div className="mt-4">
+        {/* Always display chart in assistant message when it's a chart request */}
+        {role === 'assistant' && isChart && chartType && chartData && (
+          <div className="mt-6 bg-white rounded-lg shadow-sm border p-1">
+            <div className="flex items-center gap-1 mb-2 px-3 pt-2">
+              {getChartIcon()}
+              <span className="text-lg font-semibold text-blue-700">
+                Visualização do Gráfico
+              </span>
+            </div>
             <ChartDisplay 
-              chartType={chartType!} 
+              chartType={chartType} 
               chartData={chartData} 
-              title="Gráfico Gerado pela IA" 
+              title={`Gráfico de ${chartType === 'bar' ? 'Barras' : 
+                        chartType === 'line' ? 'Linhas' : 
+                        chartType === 'pie' ? 'Pizza' : 
+                        'Visualização'}`} 
               description="Visualização gerada com base na sua solicitação"
             />
           </div>
