@@ -1,5 +1,4 @@
-
-import { ChartData } from '@/types/chartTypes'; // Assuming we'll create this type definition
+import { ChartData } from '@/types/chartTypes';
 
 export function isChartRequest(text: string): boolean {
   const chartKeywords = [
@@ -124,3 +123,34 @@ export function generateSampleChartData(chartType: string): ChartData {
       };
   }
 }
+
+export const sendBaiRequest = async ({ request, chatId }: { 
+  request: string, 
+  chatId?: string 
+}) => {
+  try {
+    const response = await fetch('/api/bai-chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        request,
+        chatId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('BAI API request failed');
+    }
+
+    const data = await response.json();
+    return {
+      id_chat: data.id_chat || chatId,
+      intent_alias: data.intent_alias,
+    };
+  } catch (error) {
+    console.error('Error in BAI API request:', error);
+    throw error;
+  }
+};
