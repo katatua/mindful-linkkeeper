@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -162,14 +163,23 @@ const callBaiApi = async (query: string, previousChatId?: string): Promise<{ res
     const chatId = responseData.id_chat;
     const files = responseData.files || [];
     
+    // Process files to ensure download_url is not empty
+    const processedFiles = files.map(file => {
+      // Make sure download_url is never undefined, set to empty string if not provided
+      return {
+        filename: file.filename || null,
+        download_url: file.download_url || ""
+      };
+    });
+    
     if (!textResponse) {
-      return { error: "Resposta vazia ou sem conteúdo", chatId, files };
+      return { error: "Resposta vazia ou sem conteúdo", chatId, files: processedFiles };
     }
     
     return { 
       response: textResponse, 
       chatId,
-      files
+      files: processedFiles
     };
   } catch (error) {
     console.error("Erro ao chamar a API BAI:", error);
@@ -191,7 +201,12 @@ export const generateResponse = async (query: string, previousChatId?: string): 
     // Chamada em paralelo para a API BAI
     let baiResponse = null;
     let baiError = null;
-    let baiResult: { response?: string; error?: string; chatId?: string; files?: Array<{filename: string | null, download_url: string}> } = {};
+    let baiResult = {
+      response: undefined,
+      error: undefined,
+      chatId: undefined,
+      files: undefined
+    };
     
     try {
       console.log("Chamando API BAI");
@@ -221,12 +236,15 @@ export const generateResponse = async (query: string, previousChatId?: string): 
     if (baiResult.response) {
       supportingDocs = [
         {
-          title: "Documento de Referência BAI",
+          title: "Documento de Referência ANI",
           url: "https://ani.pt/documentos-referencia",
           relevance: 0.95
         }
       ];
     }
+    
+    // Ensure that files is always an array, even if undefined
+    const files = baiResult.files || [];
     
     // Retornar a resposta com todas as informações
     return {
@@ -242,7 +260,7 @@ export const generateResponse = async (query: string, previousChatId?: string): 
       baiError: baiError,
       supportingDocuments: supportingDocs,
       baiChatId: baiResult.chatId,
-      baiFiles: baiResult.files
+      baiFiles: files
     };
   } catch (error) {
     console.error("Erro ao gerar resposta:", error);

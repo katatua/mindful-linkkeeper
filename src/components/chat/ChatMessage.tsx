@@ -66,7 +66,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";
-  const hasFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url);
+  const hasValidFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url && file.download_url.trim() !== "");
 
   return (
     <div 
@@ -151,7 +151,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </div>
             
             {/* Display BAI Files */}
-            {hasFiles && (
+            {hasValidFiles && (
               <div className="mt-4 border-t pt-3">
                 <div className="flex items-center gap-1 mb-2">
                   <FileDown className="h-4 w-4 text-primary" />
@@ -159,11 +159,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 </div>
                 <div className="space-y-2">
                   {baiFiles.map((file, index) => {
-                    // Skip files without download URL
-                    if (!file.download_url) return null;
+                    // Skip files without download URL or with empty URL
+                    if (!file.download_url || file.download_url.trim() === "") return null;
                     
                     const fileName = file.filename || file.download_url.split('/').pop() || `Arquivo ${index + 1}`;
                     const isExternalLink = file.download_url.startsWith('http');
+                    const fileType = file.download_url.toLowerCase().endsWith('.csv') ? 'CSV' : 
+                                     file.download_url.toLowerCase().endsWith('.pdf') ? 'PDF' : 
+                                     file.download_url.toLowerCase().endsWith('.xlsx') ? 'Excel' : 'Documento';
                     
                     return (
                       <div key={index} className="flex items-start p-2 bg-gray-50 rounded border border-gray-100">
@@ -182,7 +185,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                             {fileName}
                           </a>
                           <div className="text-xs text-gray-500 mt-1">
-                            {isExternalLink ? 'Link externo' : 'Arquivo para download'}
+                            {fileType} • {isExternalLink ? 'Link externo' : 'Arquivo para download'}
                           </div>
                         </div>
                         <Button 

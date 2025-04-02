@@ -204,6 +204,10 @@ export const AIChat: React.FC = () => {
         setCurrentBaiChatId(response.baiChatId);
       }
       
+      if (response.baiFiles && response.baiFiles.length > 0) {
+        console.log("Received files:", JSON.stringify(response.baiFiles));
+      }
+      
       const assistantMessage: Message = {
         id: genId(),
         content: response.message,
