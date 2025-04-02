@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Database, Download } from "lucide-react";
+import { TrendingUp, Database, Download, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Sample data for the economic impact models
 const sectorImpactData = [
@@ -50,10 +50,29 @@ export const EconomicImpactModel = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            {t('predictive.economic_impact.title') || "Simulação de Impacto Econômico"}
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              {t('predictive.economic_impact.title') || "Simulação de Impacto Econômico"}
+            </CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  Ações
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white">
+                <DropdownMenuItem onClick={() => console.log("Gerar relatório")}>
+                  Gerar Relatório Detalhado
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => console.log("Exportar dados")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar Dados
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <CardDescription>
             {t('predictive.economic_impact.description') || "Previsão dos impactos econômicos de políticas de inovação na economia portuguesa"}
           </CardDescription>
@@ -191,16 +210,6 @@ export const EconomicImpactModel = () => {
                 </span>
               </li>
             </ul>
-          </div>
-          
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Dados
-            </Button>
-            <Button>
-              Gerar Relatório Detalhado
-            </Button>
           </div>
         </CardContent>
       </Card>
