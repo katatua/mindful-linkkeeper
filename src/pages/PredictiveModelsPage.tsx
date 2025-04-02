@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -17,6 +16,7 @@ import { InnovationImpactModel } from '@/components/predictive/InnovationImpactM
 import { EconomicImpactModel } from '@/components/predictive/EconomicImpactModel';
 import { AutoMLModelSelector } from '@/components/predictive/AutoMLModelSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { toast } from "@/components/ui/sonner";
 
 const PredictiveModelsPage = () => {
   const { t } = useLanguage();
@@ -34,6 +34,21 @@ const PredictiveModelsPage = () => {
 
   // Get the current model name to display in the dropdown button
   const currentModelName = models.find(model => model.id === activeModel)?.name || models[0].name;
+
+  const handleAutoMLAction = (action: string) => {
+    switch(action) {
+      case 'details':
+        toast.info("Detalhes do AutoML", {
+          description: "Exibindo informações detalhadas sobre o modelo de seleção automática."
+        });
+        break;
+      case 'execute':
+        toast.success("Executando AutoML", {
+          description: "Iniciando o processo de seleção e treinamento de modelo automático."
+        });
+        break;
+    }
+  };
 
   // Render the selected model component
   const renderActiveModel = () => {
@@ -62,7 +77,27 @@ const PredictiveModelsPage = () => {
           </Card>
         );
       case "automl":
-        return <AutoMLModelSelector />;
+        return (
+          <div className="flex justify-between items-center mb-4">
+            <AutoMLModelSelector />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-4">
+                  Visualização
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => handleAutoMLAction('details')}>
+                  Ver Detalhes
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleAutoMLAction('execute')}>
+                  Executar AutoML
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
       case "trends":
         return (
           <Card>
