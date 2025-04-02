@@ -101,6 +101,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       if (widgetMaximizeButton && widgetMaximizeButton instanceof HTMLElement) {
         widgetMaximizeButton.click();
       }
+      
+      // If there's a response from the assistant, scroll to it
+      if (baiResponse) {
+        // Find the BAI response section and scroll to it
+        const baiResponseSection = document.querySelector('[data-bai-response]');
+        if (baiResponseSection) {
+          baiResponseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     }
   };
 
@@ -169,7 +178,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         )}
         
         {baiResponse && (
-          <div className="mt-4 border-t pt-3">
+          <div className="mt-4 border-t pt-3" data-bai-response>
             <div className="flex items-center gap-1 mb-2">
               <BookOpen className="h-4 w-4 text-primary" />
               <span className="text-xl font-bold">
