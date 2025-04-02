@@ -36,26 +36,30 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const formatBaiResponse = (response: string) => {
     if (!response) return "";
     
-    try {
-      const parsed = JSON.parse(response);
-      
-      if (typeof parsed === 'object') {
-        if (parsed.text || parsed.content || parsed.message) {
-          return parsed.text || parsed.content || parsed.message;
-        }
+    // Check if response is already JSON format
+    if (response.trim().startsWith('{') && response.trim().endsWith('}')) {
+      try {
+        const parsed = JSON.parse(response);
         
-        return Object.entries(parsed)
-          .map(([key, value]) => {
-            const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-            return `**${formattedKey}**: ${value}`;
-          })
-          .join('\n\n');
+        if (typeof parsed === 'object') {
+          if (parsed.text || parsed.content || parsed.message) {
+            return parsed.text || parsed.content || parsed.message;
+          }
+          
+          return Object.entries(parsed)
+            .map(([key, value]) => {
+              const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+              return `**${formattedKey}**: ${value}`;
+            })
+            .join('\n\n');
+        }
+      } catch (e) {
+        // If parsing fails, just return the original response
       }
-      
-      return response;
-    } catch (e) {
-      return response;
     }
+    
+    // Return the original response
+    return response;
   };
 
   const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";

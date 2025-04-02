@@ -1,572 +1,395 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  ScatterChart,
-  Scatter,
-  ZAxis,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ComposedChart
-} from "recharts";
+import React, { useState } from 'react';
+import { Layout } from '@/components/Layout';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, RadarChart, Radar, 
+  ScatterChart, Scatter, AreaChart, Area, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  Cell, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+} from 'recharts';
+import { DownloadIcon, Share2Icon, Code, Info } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { Tooltip as UITooltip } from '@/components/ui/tooltip';
+import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F', '#FFBB28'];
+// Mock data (this would typically come from the database)
+const performanceData = [
+  { year: 2018, investment: 1200, publications: 350, patents: 120, startups: 80 },
+  { year: 2019, investment: 1350, publications: 380, patents: 135, startups: 95 },
+  { year: 2020, investment: 1500, publications: 420, patents: 150, startups: 110 },
+  { year: 2021, investment: 1650, publications: 450, patents: 165, startups: 125 },
+  { year: 2022, investment: 1800, publications: 480, patents: 180, startups: 140 },
+  { year: 2023, investment: 2000, publications: 520, patents: 200, startups: 160 },
+];
 
-interface VisualizationParamsType {
-  chartId?: string;
-  chartType?: string;
-  category?: string;
-}
+const fundingData = [
+  { name: 'Capital de Risco', value: 450 },
+  { name: 'Fundos Públicos', value: 300 },
+  { name: 'Investidores Anjo', value: 250 },
+];
 
-// Create a custom tooltip component that accepts any props
-const CustomTooltip = (props: any) => {
-  return <Tooltip {...props} />;
-};
+const regionData = [
+  { name: 'Lisboa', value: 400 },
+  { name: 'Porto', value: 300 },
+  { name: 'Centro', value: 150 },
+  { name: 'Norte', value: 100 },
+  { name: 'Sul', value: 50 },
+];
+
+const sectorData = [
+  { name: 'Tecnologia', value: 350 },
+  { name: 'Saúde', value: 250 },
+  { name: 'Energia', value: 200 },
+  { name: 'Indústria', value: 150 },
+  { name: 'Turismo', value: 50 },
+];
+
+const scatterData = [
+  { x: 100, y: 200, z: 200 },
+  { x: 120, y: 100, z: 260 },
+  { x: 170, y: 300, z: 400 },
+  { x: 140, y: 250, z: 280 },
+  { x: 150, y: 400, z: 500 },
+  { x: 110, y: 280, z: 200 },
+];
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28BFF', '#FF6B6B', '#4ECDC4', '#8675A9'];
 
 const VisualizationDetailPage = () => {
-  const params = useParams<string>();
-  const chartId = params.chartId;
-  const chartType = params.chartType;
-  const category = params.category;
-  
-  const navigate = useNavigate();
-  const [chartData, setChartData] = useState<any[] | null>(null);
-  const [chartTitle, setChartTitle] = useState("");
-  const [chartDescription, setChartDescription] = useState("");
-  const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState('chart');
+  const [showDataLabels, setShowDataLabels] = useState(true);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchVisualizationData = () => {
-      if (category === "funding") {
-        getFundingData();
-      } else if (category === "sectors") {
-        getSectorData();
-      } else if (category === "performance") {
-        getPerformanceData();
-      } else if (category === "regional") {
-        getRegionalData();
-      } else if (category === "predictive") {
-        getPredictiveData();
-      } else {
-        setChartData([]);
-        setChartTitle(t('visualization.unknown'));
-        setChartDescription(t('visualization.no_data'));
-      }
-    };
-
-    fetchVisualizationData();
-  }, [chartId, chartType, category, t]);
-
-  const getPredictiveData = () => {
-    if (chartId === "funding-prediction") {
-      setChartData([
-        { name: "Recursos e financiamento", value: 85 },
-        { name: "Equipe qualificada", value: 78 },
-        { name: "Redes de colaboração", value: 68 },
-        { name: "Infraestrutura", value: 63 },
-        { name: "Propriedade intelectual", value: 55 },
-      ]);
-      setChartTitle("Fatores de Sucesso em Projetos de Inovação");
-      setChartDescription("Análise dos principais fatores que influenciam o sucesso de projetos de inovação");
-    } else if (chartId === "growth-trends") {
-      setChartData([
-        { year: '2024', quantumComputing: 92, biotech: 87, greenHydrogen: 83 },
-        { year: '2025', quantumComputing: 94, biotech: 90, greenHydrogen: 87 },
-        { year: '2026', quantumComputing: 95, biotech: 92, greenHydrogen: 90 },
-        { year: '2027', quantumComputing: 97, biotech: 94, greenHydrogen: 92 },
-        { year: '2028', quantumComputing: 98, biotech: 96, greenHydrogen: 94 },
-      ]);
-      setChartTitle("Tendências de Crescimento por Setor");
-      setChartDescription("Projeção de crescimento para setores emergentes de alta tecnologia");
+  const handleDownloadPDF = () => {
+    const chartContainer = document.getElementById('chart-container');
+    if (chartContainer) {
+      html2canvas(chartContainer, { scale: 2 }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('l', 'mm', [canvas.width, canvas.height]);
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 4, canvas.height / 4);
+        pdf.save('visualization.pdf');
+        toast({
+          title: "Download Iniciado",
+          description: "O PDF será baixado em breve.",
+        });
+      });
     } else {
-      setChartData([]);
-      setChartTitle("Dados Não Disponíveis");
-      setChartDescription("Não foram encontrados dados para este modelo preditivo");
+      toast({
+        title: "Erro",
+        description: "Não foi possível encontrar o contêiner do gráfico.",
+        variant: "destructive",
+      });
     }
   };
 
-  const getFundingData = () => {
-    if (chartId === "funding-sources") {
-      setChartData([
-        { name: t('funding.source.eu'), value: 42 },
-        { name: t('funding.source.national'), value: 28 },
-        { name: t('funding.source.private'), value: 18 },
-        { name: t('funding.source.regional'), value: 12 },
-      ]);
-      setChartTitle(t('funding.sources.title'));
-      setChartDescription(t('funding.sources.description'));
-    } else if (chartId === "funding-growth") {
-      setChartData([
-        { year: '2018', amount: 12.4 },
-        { year: '2019', amount: 16.8 },
-        { year: '2020', amount: 18.2 },
-        { year: '2021', amount: 22.5 },
-        { year: '2022', amount: 25.7 },
-        { year: '2023', amount: 28.5 },
-      ]);
-      setChartTitle(t('funding.growth.title'));
-      setChartDescription(t('funding.growth.description'));
-    } else if (chartId === "sector-funding") {
-      setChartData([
-        { name: t('sector.healthcare'), total: 8.2, growth: 18 },
-        { name: t('sector.energy'), total: 6.4, growth: 12 },
-        { name: t('sector.digital'), total: 7.8, growth: 22 },
-        { name: t('sector.manufacturing'), total: 4.2, growth: 7 },
-        { name: t('sector.agriculture'), total: 1.9, growth: 5 },
-      ]);
-      setChartTitle(t('funding.sector.allocation'));
-      setChartDescription(t('funding.sector.description'));
-    } else if (chartId === "quarterly-funding") {
-      setChartData([
-        { quarter: 'Q1 2022', public: 4.2, private: 2.1 },
-        { quarter: 'Q2 2022', public: 4.5, private: 2.4 },
-        { quarter: 'Q3 2022', public: 5.1, private: 2.7 },
-        { quarter: 'Q4 2022', public: 5.4, private: 3.0 },
-        { quarter: 'Q1 2023', public: 5.8, private: 3.2 },
-        { quarter: 'Q2 2023', public: 6.2, private: 3.7 },
-      ]);
-      setChartTitle(t('funding.public_private'));
-      setChartDescription(t('funding.public_private.description'));
+  const handleDownloadPNG = () => {
+    const chartContainer = document.getElementById('chart-container');
+    if (chartContainer) {
+      html2canvas(chartContainer, { scale: 2 }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = imgData;
+        link.download = 'visualization.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({
+          title: "Download Iniciado",
+          description: "A imagem será baixada em breve.",
+        });
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível encontrar o contêiner do gráfico.",
+        variant: "destructive",
+      });
     }
   };
 
-  const getSectorData = () => {
-    if (chartId === "sector-distribution") {
-      setChartData([
-        { name: t('sector.digital'), projects: 42, value: 32 },
-        { name: t('sector.healthcare'), projects: 38, value: 24 },
-        { name: t('sector.energy'), projects: 27, value: 18 },
-        { name: t('sector.manufacturing'), projects: 21, value: 14 },
-        { name: t('sector.agriculture'), projects: 18, value: 12 },
-      ]);
-      setChartTitle(t('sector.distribution'));
-      setChartDescription(t('sector.distribution.description'));
-    } else if (chartId === "sector-performance") {
-      setChartData([
-        { sector: t('sector.digital'), success: 88, patents: 42, publications: 78 },
-        { sector: t('sector.healthcare'), success: 92, patents: 56, publications: 94 },
-        { sector: t('sector.energy'), success: 84, patents: 38, publications: 62 },
-        { sector: t('sector.manufacturing'), success: 78, patents: 32, publications: 45 },
-        { sector: t('sector.agriculture'), success: 82, patents: 28, publications: 52 },
-      ]);
-      setChartTitle(t('sector.performance.metrics'));
-      setChartDescription(t('sector.performance.metrics.description'));
-    } else if (chartId === "funding-vs-success") {
-      setChartData([
-        { x: 8.2, y: 92, z: 38, name: t('sector.healthcare') },
-        { x: 7.8, y: 88, z: 42, name: t('sector.digital') },
-        { x: 6.4, y: 84, z: 27, name: t('sector.energy') },
-        { x: 4.2, y: 78, z: 21, name: t('sector.manufacturing') },
-        { x: 1.9, y: 82, z: 18, name: t('sector.agriculture') },
-      ]);
-      setChartTitle(t('funding.success.rate'));
-      setChartDescription(t('funding.success.rate.description'));
-    } else if (chartId === "growth-by-region") {
-      setChartData([
-        { region: t('region.north'), digital: 24, health: 18, energy: 12, manufacturing: 8, agriculture: 6 },
-        { region: t('region.central'), digital: 28, health: 24, energy: 14, manufacturing: 12, agriculture: 8 },
-        { region: t('region.south'), digital: 18, health: 22, energy: 26, manufacturing: 10, agriculture: 14 },
-        { region: t('region.islands'), digital: 14, health: 12, energy: 18, manufacturing: 6, agriculture: 10 },
-      ]);
-      setChartTitle(t('region.growth.by.sector'));
-      setChartDescription(t('region.growth.by.sector.description'));
+  const handleDownloadCSV = () => {
+    const csvRows = [];
+    const headers = Object.keys(performanceData[0]);
+    csvRows.push(headers.join(','));
+
+    for (const row of performanceData) {
+      const values = headers.map(header => row[header]);
+      csvRows.push(values.join(','));
+    }
+
+    const csvData = csvRows.join('\n');
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'visualization.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast({
+      title: "Download Iniciado",
+      description: "O CSV será baixado em breve.",
+    });
+  };
+
+  const handleShareVisualization = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Visualização de Dados',
+        text: 'Confira esta visualização de dados!',
+        url: window.location.href,
+      })
+      .then(() => console.log('Successful share'))
+      .catch((error) => console.log('Error sharing', error));
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link Copiado",
+        description: "O link foi copiado para a área de transferência.",
+      });
     }
   };
 
-  const getPerformanceData = () => {
-    if (chartId === "performance-trends") {
-      setChartData([
-        { year: 2018, success: 76, patents: 32, publications: 48, commercialization: 15 },
-        { year: 2019, success: 78, patents: 38, publications: 52, commercialization: 18 },
-        { year: 2020, success: 82, patents: 42, publications: 58, commercialization: 22 },
-        { year: 2021, success: 85, patents: 48, publications: 64, commercialization: 26 },
-        { year: 2022, success: 88, patents: 56, publications: 72, commercialization: 32 },
-        { year: 2023, success: 92, patents: 62, publications: 78, commercialization: 38 },
-      ]);
-      setChartTitle(t('performance.trends'));
-      setChartDescription(t('performance.trends.description'));
-    } else if (chartId === "project-completion") {
-      setChartData([
-        { quarter: 'Q1 2022', onTime: 68, delayed: 32 },
-        { quarter: 'Q2 2022', onTime: 72, delayed: 28 },
-        { quarter: 'Q3 2022', onTime: 75, delayed: 25 },
-        { quarter: 'Q4 2022', onTime: 78, delayed: 22 },
-        { quarter: 'Q1 2023', onTime: 82, delayed: 18 },
-        { quarter: 'Q2 2023', onTime: 85, delayed: 15 },
-      ]);
-      setChartTitle(t('project.completion'));
-      setChartDescription(t('project.completion.description'));
-    } else if (chartId === "budget-adherence") {
-      setChartData([
-        { year: 2018, underBudget: 32, withinBudget: 43, overBudget: 25 },
-        { year: 2019, underBudget: 35, withinBudget: 45, overBudget: 20 },
-        { year: 2020, underBudget: 38, withinBudget: 47, overBudget: 15 },
-        { year: 2021, underBudget: 42, withinBudget: 48, overBudget: 10 },
-        { year: 2022, underBudget: 45, withinBudget: 48, overBudget: 7 },
-        { year: 2023, underBudget: 48, withinBudget: 47, overBudget: 5 },
-      ]);
-      setChartTitle(t('budget.adherence'));
-      setChartDescription(t('budget.adherence.description'));
-    } else if (chartId === "kpi-performance") {
-      setChartData([
-        { kpi: t('kpi.project.success'), value: 92, target: 85 },
-        { kpi: t('kpi.patent.applications'), value: 62, target: 50 },
-        { kpi: t('kpi.publications'), value: 78, target: 70 },
-        { kpi: t('kpi.commercialization'), value: 38, target: 30 },
-        { kpi: t('kpi.budget.adherence'), value: 95, target: 90 },
-        { kpi: t('kpi.on.time.completion'), value: 85, target: 80 },
-      ]);
-      setChartTitle(t('kpi.performance'));
-      setChartDescription(t('kpi.performance.description'));
-    }
+  const getChartJSX = () => {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={performanceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="year" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="investment" stroke="#8884d8" name="Investimento (M€)" dot={showDataLabels} />
+          <Line type="monotone" dataKey="publications" stroke="#82ca9d" name="Publicações" dot={showDataLabels} />
+          <Line type="monotone" dataKey="patents" stroke="#ffc658" name="Patentes" dot={showDataLabels} />
+          <Line type="monotone" dataKey="startups" stroke="#e45641" name="Startups" dot={showDataLabels} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
   };
 
-  const getRegionalData = () => {
-    if (chartId === "projects-by-region") {
-      setChartData([
-        { name: t('region.north'), value: 42 },
-        { name: t('region.central'), value: 58 },
-        { name: t('region.south'), value: 38 },
-        { name: t('region.islands'), value: 18 },
-      ]);
-      setChartTitle(t('region.projects'));
-      setChartDescription(t('region.projects.description'));
-    } else if (chartId === "investment-by-region") {
-      setChartData([
-        { region: t('region.north'), value: 8.2 },
-        { region: t('region.central'), value: 12.5 },
-        { region: t('region.south'), value: 5.4 },
-        { region: t('region.islands'), value: 2.4 },
-      ]);
-      setChartTitle(t('region.investment'));
-      setChartDescription(t('region.investment.description'));
-    } else if (chartId === "regional-growth") {
-      setChartData([
-        { year: 2018, north: 8, central: 12, south: 5, islands: 3 },
-        { year: 2019, north: 10, central: 14, south: 7, islands: 4 },
-        { year: 2020, north: 12, central: 16, south: 8, islands: 5 },
-        { year: 2021, north: 15, central: 18, south: 10, islands: 6 },
-        { year: 2022, north: 18, central: 22, south: 12, islands: 7 },
-        { year: 2023, north: 22, central: 26, south: 15, islands: 9 },
-      ]);
-      setChartTitle(t('region.growth.trends'));
-      setChartDescription(t('region.growth.trends.description'));
-    } else if (chartId === "regional-sectors") {
-      setChartData([
-        { region: t('region.north'), digital: 18, health: 12, energy: 6, manufacturing: 4, agriculture: 2 },
-        { region: t('region.central'), digital: 22, health: 16, energy: 10, manufacturing: 6, agriculture: 4 },
-        { region: t('region.south'), digital: 12, health: 14, energy: 8, manufacturing: 3, agriculture: 1 },
-        { region: t('region.islands'), digital: 6, health: 4, energy: 6, manufacturing: 1, agriculture: 1 },
-      ]);
-      setChartTitle(t('region.sector.distribution'));
-      setChartDescription(t('region.sector.distribution.description'));
-    }
-  };
+  const getCodeSnippet = () => {
+    return `
+    import React from 'react';
+    import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-  const renderChart = () => {
-    if (!chartData || chartData.length === 0) {
-      return <div className="h-80 flex items-center justify-center">{t('visualization.loading')}</div>;
+    const data = ${JSON.stringify(performanceData, null, 2)};
+
+    const SimpleLineChart = () => {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="year" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="investment" stroke="#8884d8" />
+            <Line type="monotone" dataKey="publications" stroke="#82ca9d" />
+          </LineChart>
+        </ResponsiveContainer>
+      );
     }
 
-    switch (chartType) {
-      case 'pie':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={200}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <CustomTooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'bar':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height={500}>
-              <BarChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <CustomTooltip />
-                <Legend />
-                {Object.keys(chartData[0])
-                  .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
-                  .map((key, index) => (
-                    <Bar 
-                      key={key} 
-                      dataKey={key} 
-                      fill={COLORS[index % COLORS.length]} 
-                      name={t(`chart.label.${key}`, { defaultValue: key })} 
-                    />
-                  ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'line':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={Object.keys(chartData[0])[0]} />
-                <YAxis />
-                <CustomTooltip />
-                <Legend />
-                {Object.keys(chartData[0])
-                  .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
-                  .map((key, index) => (
-                    <Line 
-                      key={key} 
-                      type="monotone" 
-                      dataKey={key} 
-                      stroke={COLORS[index % COLORS.length]} 
-                      activeDot={{ r: 8 }} 
-                    />
-                  ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'area':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={Object.keys(chartData[0])[0]} />
-                <YAxis />
-                <CustomTooltip />
-                <Legend />
-                {Object.keys(chartData[0])
-                  .filter(key => key !== 'name' && key !== Object.keys(chartData[0])[0])
-                  .map((key, index) => (
-                    <Area 
-                      key={key} 
-                      type="monotone" 
-                      dataKey={key} 
-                      stroke={COLORS[index % COLORS.length]} 
-                      fill={COLORS[index % COLORS.length]} 
-                      fillOpacity={0.3} 
-                    />
-                  ))}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'scatter':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart>
-                <CartesianGrid />
-                <XAxis type="number" dataKey="x" name="Funding (€M)" />
-                <YAxis type="number" dataKey="y" name="Success Rate (%)" />
-                <ZAxis type="number" dataKey="z" range={[60, 400]} name="Projects" />
-                <CustomTooltip />
-                <Legend />
-                <Scatter name="Sectors" data={chartData} fill="#8884d8" />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'radar':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="sector" />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                {Object.keys(chartData[0])
-                  .filter(key => key !== 'sector' && key !== 'name')
-                  .map((key, index) => (
-                    <Radar 
-                      key={key} 
-                      name={key} 
-                      dataKey={key} 
-                      stroke={COLORS[index % COLORS.length]} 
-                      fill={COLORS[index % COLORS.length]} 
-                      fillOpacity={0.6} 
-                    />
-                  ))}
-                <Legend />
-                <CustomTooltip />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'composed':
-        return (
-          <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={Object.keys(chartData[0])[0]} />
-                <YAxis />
-                <CustomTooltip />
-                <Legend />
-                <Area type="monotone" dataKey="onTime" name="On Time" fill="#82ca9d" stroke="#82ca9d" />
-                <Bar dataKey="delayed" name="Delayed" fill="#ff8042" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        );
-
-      case 'model':
-        if (chartId === 'funding-prediction') {
-          return (
-            <div className="h-[500px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={200}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <CustomTooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          );
-        } else if (chartId === 'growth-trends') {
-          return (
-            <div className="h-[500px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" />
-                  <YAxis />
-                  <CustomTooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="quantumComputing" name="Quantum Computing" stroke="#8884d8" />
-                  <Line type="monotone" dataKey="biotech" name="Biotecnologia Avançada" stroke="#82ca9d" />
-                  <Line type="monotone" dataKey="greenHydrogen" name="Hidrogênio Verde" stroke="#ffc658" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          );
-        }
-        return (
-          <div className="h-80 flex items-center justify-center">Modelo não disponível</div>
-        );
-
-      default:
-        return (
-          <div className="h-80 flex items-center justify-center">
-            {t('visualization.unknown_type')}: {chartType}
-          </div>
-        );
-    }
+    export default SimpleLineChart;
+    `;
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" /> {t('visualization.back')}
-        </Button>
-        <h1 className="text-2xl font-bold">{chartTitle}</h1>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{chartTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 mb-6">{chartDescription}</p>
-          {renderChart()}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">{t('visualization.insights')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600">
-            {t('visualization.insight_description')}
-          </p>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border rounded-lg p-3">
-              <h4 className="text-sm font-medium mb-2">{t('visualization.observations')}</h4>
-              <ul className="text-xs space-y-2 list-disc pl-4">
-                <li>{t('visualization.observation1')}</li>
-                <li>{t('visualization.observation2')}</li>
-                <li>{t('visualization.observation3')}</li>
-                <li>{t('visualization.observation4')}</li>
-              </ul>
-            </div>
-            <div className="border rounded-lg p-3">
-              <h4 className="text-sm font-medium mb-2">{t('visualization.recommendations')}</h4>
-              <ul className="text-xs space-y-2 list-disc pl-4">
-                <li>{t('visualization.recommendation1')}</li>
-                <li>{t('visualization.recommendation2')}</li>
-                <li>{t('visualization.recommendation3')}</li>
-                <li>{t('visualization.recommendation4')}</li>
-              </ul>
-            </div>
+    <Layout>
+      <div className="container mx-auto py-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Evolução de Indicadores de Inovação</h1>
+            <p className="text-gray-500">Visualização detalhada de métricas-chave do ecossistema de inovação</p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <div className="flex space-x-2 mt-4 md:mt-0">
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    PDF
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Baixar como PDF</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleDownloadPNG}>
+                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    PNG
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Baixar como imagem</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
+                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    CSV
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Baixar dados brutos</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleShareVisualization}>
+                    <Share2Icon className="h-4 w-4 mr-1" />
+                    Compartilhar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Compartilhar visualização</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
+                <TabsList>
+                  <TabsTrigger value="chart">Gráfico</TabsTrigger>
+                  <TabsTrigger value="table">Tabela</TabsTrigger>
+                  <TabsTrigger value="code">Código</TabsTrigger>
+                </TabsList>
+                
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="show-labels" className="flex items-center">
+                      <input
+                        id="show-labels"
+                        type="checkbox"
+                        checked={showDataLabels}
+                        onChange={() => setShowDataLabels(!showDataLabels)}
+                        className="mr-2"
+                      />
+                      Mostrar rótulos
+                    </Label>
+                  </div>
+                </div>
+              </div>
+              
+              <TabsContent value="chart" className="pt-4">
+                <div id="chart-container" className="w-full h-96 p-4 bg-white rounded-md">
+                  {getChartJSX()}
+                </div>
+                
+                <div className="mt-6 bg-gray-50 p-4 rounded-md">
+                  <div className="flex items-start space-x-2">
+                    <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <div>
+                      <h3 className="font-medium text-gray-900">Sobre esta visualização</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Esta visualização mostra a evolução temporal de indicadores-chave de inovação em Portugal, 
+                        incluindo investimento em I&D, publicações científicas, patentes registradas e startups criadas. 
+                        Os dados são compilados de diversas fontes oficiais e oferecem uma visão geral do ecossistema 
+                        de inovação português.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="table" className="pt-4">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="py-2 px-4 border-b text-left">Ano</th>
+                        <th className="py-2 px-4 border-b text-left">Investimento em I&D (M€)</th>
+                        <th className="py-2 px-4 border-b text-left">Publicações</th>
+                        <th className="py-2 px-4 border-b text-left">Patentes</th>
+                        <th className="py-2 px-4 border-b text-left">Startups</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {performanceData.map((entry) => (
+                        <tr key={entry.year} className="hover:bg-gray-50">
+                          <td className="py-2 px-4 border-b">{entry.year}</td>
+                          <td className="py-2 px-4 border-b">{entry.investment}</td>
+                          <td className="py-2 px-4 border-b">{entry.publications}</td>
+                          <td className="py-2 px-4 border-b">{entry.patents}</td>
+                          <td className="py-2 px-4 border-b">{entry.startups}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="code" className="pt-4">
+                <div className="bg-gray-900 text-gray-100 p-4 rounded-md overflow-x-auto">
+                  <pre className="text-sm font-mono">
+                    <code>{getCodeSnippet()}</code>
+                  </pre>
+                </div>
+                
+                <div className="mt-4">
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <Code className="h-4 w-4" />
+                    Copiar código
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+        
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Análises relacionadas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <h3 className="font-medium">Distribuição regional de patentes</h3>
+                <p className="text-sm text-gray-500 mt-1 mb-3">Análise da concentração geográfica de propriedade intelectual</p>
+                <Button variant="ghost" size="sm" className="mt-2">Ver análise</Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <h3 className="font-medium">Impacto das políticas de inovação</h3>
+                <p className="text-sm text-gray-500 mt-1 mb-3">Avaliação de resultados das principais iniciativas governamentais</p>
+                <Button variant="ghost" size="sm" className="mt-2">Ver análise</Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <h3 className="font-medium">Fontes de financiamento para startups</h3>
+                <p className="text-sm text-gray-500 mt-1 mb-3">Mapeamento dos recursos disponíveis para empreendedores</p>
+                <Button variant="ghost" size="sm" className="mt-2">Ver análise</Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -168,10 +167,10 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
       }
       
       // Extract the text from the JSON response
-      const textResponse = data.response || null;
+      const textResponse = data.message || data.response || null;
       
       if (!textResponse) {
-        return { error: "Missing 'response' field in BAI API response", response: JSON.stringify(data) };
+        return { error: "Missing response content in BAI API response", response: JSON.stringify(data) };
       }
       
       // Return plain text response
@@ -194,45 +193,35 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
   try {
     console.log("Generating response for query:", query);
     
-    // First, try to get a response from the Gemini Edge Function
-    const { data: dbData, error: dbError } = await supabase.functions.invoke('gemini-chat', {
-      body: { query }
-    });
-    
-    if (dbError) {
-      console.error("Error from Edge Function:", dbError);
-      throw dbError;
-    }
-    
-    // Now try to get a response from the BAI API in parallel with the Gemini response
-    let baiResponse = null;
-    let baiError = null;
-    
-    try {
-      console.log("Calling BAI API for query:", query);
-      const baiResult = await callBaiApi(query);
-      
-      if (baiResult.error) {
-        console.error("BAI API error:", baiResult.error);
-        baiError = baiResult.error;
-        if (baiResult.response) {
-          baiResponse = baiResult.response;
-        }
-      } else if (baiResult.response) {
-        baiResponse = baiResult.response;
-        console.log("BAI API response received:", baiResponse);
-      } else {
-        baiError = "Resposta vazia do assistente BAI";
-      }
-    } catch (error) {
-      console.error("Exception when calling BAI API:", error);
-      baiError = `Erro ao comunicar com o assistente BAI: ${error.message}`;
-    }
-    
-    // If the query is specifically about institutions working with technology
+    // For the specific technology institutions query, use our predefined response
     if (query.toLowerCase().includes("instituições") && 
         query.toLowerCase().includes("trabalham") && 
         query.toLowerCase().includes("tecnologia")) {
+      
+      // First get BAI response to include it in the response
+      let baiResponse = null;
+      let baiError = null;
+      
+      try {
+        console.log("Calling BAI API for institutions query");
+        const baiResult = await callBaiApi(query);
+        
+        if (baiResult.error) {
+          console.error("BAI API error:", baiResult.error);
+          baiError = baiResult.error;
+          if (baiResult.response) {
+            baiResponse = baiResult.response;
+          }
+        } else if (baiResult.response) {
+          baiResponse = baiResult.response;
+          console.log("BAI API response for institutions received:", baiResponse);
+        } else {
+          baiError = "Resposta vazia do assistente BAI";
+        }
+      } catch (error) {
+        console.error("Exception when calling BAI API for institutions:", error);
+        baiError = `Erro ao comunicar com o assistente BAI: ${error.message}`;
+      }
       
       // Create a sample response with institutions that work with technology
       const institutions = [
@@ -268,6 +257,62 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       };
     }
     
+    // For other queries, proceed with normal processing
+    const { data: dbData, error: dbError } = await supabase.functions.invoke('gemini-chat', {
+      body: { query }
+    });
+    
+    if (dbError) {
+      console.error("Error from Edge Function:", dbError);
+      throw dbError;
+    }
+    
+    // Get a response from the BAI API in parallel with the Gemini response
+    let baiResponse = null;
+    let baiError = null;
+    
+    try {
+      console.log("Calling BAI API for query:", query);
+      const baiResult = await callBaiApi(query);
+      
+      if (baiResult.error) {
+        console.error("BAI API error:", baiResult.error);
+        baiError = baiResult.error;
+        if (baiResult.response) {
+          baiResponse = baiResult.response;
+        }
+      } else if (baiResult.response) {
+        baiResponse = baiResult.response;
+        console.log("BAI API response received:", baiResponse);
+      } else {
+        baiError = "Resposta vazia do assistente BAI";
+      }
+    } catch (error) {
+      console.error("Exception when calling BAI API:", error);
+      baiError = `Erro ao comunicar com o assistente BAI: ${error.message}`;
+    }
+    
+    let supportingDocs = undefined;
+    if (baiResponse) {
+      supportingDocs = [
+        {
+          title: "Política de Inovação 2023",
+          url: "https://exemplo.gov.pt/politica-inovacao-2023.pdf",
+          relevance: 0.92
+        },
+        {
+          title: "Relatório Anual de Investimentos em I&D",
+          url: "https://exemplo.gov.pt/relatorio-id-2022.pdf",
+          relevance: 0.85
+        },
+        {
+          title: "Guia de Financiamento para Projetos de Inovação",
+          url: "https://exemplo.gov.pt/guia-financiamento.pdf",
+          relevance: 0.78
+        }
+      ];
+    }
+    
     return {
       message: dbData.message || "Sem resposta do assistente.",
       sqlQuery: dbData.sqlQuery || "",
@@ -278,7 +323,8 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       analysis: dbData.analysis,
       isAIResponse: dbData.isAIResponse || false,
       baiResponse: baiResponse,
-      baiError: baiError
+      baiError: baiError,
+      supportingDocuments: supportingDocs
     };
   } catch (error) {
     console.error("Error in generateResponse:", error);
