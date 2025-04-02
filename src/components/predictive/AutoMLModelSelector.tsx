@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,20 +46,16 @@ export const AutoMLModelSelector = () => {
   const handleRunAutoML = () => {
     setIsRunning(true);
     // Show a loading toast
-    toast({
-      title: "AutoML em execução",
-      description: `Executando ${selectedModel} com complexidade ${complexity} e ${trainingEpochs} épocas...`,
-      variant: "default", // This needs to be "default" instead of "success"
+    toast.info("AutoML em execução", {
+      description: `Executando ${selectedModel} com complexidade ${complexity} e ${trainingEpochs} épocas...`
     });
     
     // Simulate a process running
     setTimeout(() => {
       setIsRunning(false);
       // Show a success toast when done
-      toast({
-        title: "AutoML concluído",
-        description: "Processo de treinamento finalizado com sucesso!",
-        variant: "default", // This needs to be "default" instead of "success"
+      toast.success("AutoML concluído", {
+        description: "Processo de treinamento finalizado com sucesso!"
       });
     }, 3000);
   };
