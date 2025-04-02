@@ -16,7 +16,7 @@ import { InnovationImpactModel } from '@/components/predictive/InnovationImpactM
 import { EconomicImpactModel } from '@/components/predictive/EconomicImpactModel';
 import { AutoMLModelSelector } from '@/components/predictive/AutoMLModelSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 
 const PredictiveModelsPage = () => {
   const { t } = useLanguage();
