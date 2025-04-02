@@ -13,6 +13,7 @@ export interface QueryResponseType {
   baiResponse?: string;
   baiError?: string;
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
+  baiChatId?: string;
 }
 
 export const genId = () => uuidv4();
@@ -122,18 +123,14 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   return String(value);
 };
 
-const callBaiApi = async (query: string): Promise<{ response?: string; error?: string }> => {
+const callBaiApi = async (query: string, previousChatId?: string): Promise<{ response?: string; error?: string; chatId?: string }> => {
   try {
     console.log("Calling BAI API with query:", query);
-    
-    // Gerar um ID de chat dinâmico baseado no hash da consulta
-    const chatId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    console.log("Using dynamic chat ID:", chatId);
     
     const requestBody = {
       "request": query,
       "assistant_key": "1R5ZBwLgGOMlVSj4p6Ar0H8DX9NKhcfseU2v3CtYJ7PqaIbWkzEoyuximTQdnFSfNaIsoJczCYkjLM3He9pU42EvxVg57Aw60uBd",
-      "id_chat": chatId,
+      "id_chat": previousChatId || "", // Use previous chat ID if provided, otherwise empty string
       "report": "No"
     };
     
@@ -154,37 +151,32 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
       return { error: `API call failed with status: ${response.status}, ${errorText}` };
     }
     
-    const responseText = await response.text();
-    console.log("BAI API raw response:", responseText);
+    const responseData = await response.json();
     
-    try {
-      // Primeiro, tenta analisar como JSON
-      const data = JSON.parse(responseText);
-      console.log("BAI API parsed response:", data);
-      
-      // Extrair a mensagem de diferentes possíveis formatos
-      const textResponse = 
-        data.message || 
-        data.response || 
-        (typeof data === 'string' ? data : JSON.stringify(data));
-      
-      if (!textResponse) {
-        return { error: "Resposta vazia ou sem conteúdo" };
-      }
-      
-      return { response: textResponse };
-    } catch (parseError) {
-      // Se não for JSON, retorna o texto bruto
-      console.warn("Não foi possível analisar como JSON, retornando texto bruto");
-      return { response: responseText };
+    // Log the full response for debugging
+    console.log("Full BAI API response:", JSON.stringify(responseData, null, 2));
+    
+    // Extract response and chat ID
+    const textResponse = responseData.message || responseData.response;
+    const chatId = responseData.id_chat;
+    
+    if (!textResponse) {
+      return { error: "Resposta vazia ou sem conteúdo", chatId };
     }
+    
+    return { 
+      response: textResponse, 
+      chatId 
+    };
   } catch (error) {
     console.error("Erro ao chamar a API BAI:", error);
-    return { error: `Erro de rede ou de API: ${error instanceof Error ? error.message : 'Erro desconhecido'}` };
+    return { 
+      error: `Erro de rede ou de API: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
+    };
   }
 };
 
-export const generateResponse = async (query: string): Promise<QueryResponseType> => {
+export const generateResponse = async (query: string, previousChatId?: string): Promise<QueryResponseType> => {
   try {
     console.log("Gerando resposta para consulta:", query);
     
@@ -199,7 +191,7 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     
     try {
       console.log("Chamando API BAI");
-      const baiResult = await callBaiApi(query);
+      const baiResult = await callBaiApi(query, previousChatId);
       
       if (baiResult.error) {
         console.error("Erro na API BAI:", baiResult.error);
@@ -222,17 +214,12 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
     
     // Preparar documentos de suporte se houver resposta BAI
     let supportingDocs = undefined;
-    if (baiResponse) {
+    if (baiResult.response) {
       supportingDocs = [
         {
-          title: "Política de Inovação 2023",
-          url: "https://exemplo.gov.pt/politica-inovacao-2023.pdf",
-          relevance: 0.92
-        },
-        {
-          title: "Relatório Anual de Investimentos em I&D",
-          url: "https://exemplo.gov.pt/relatorio-id-2022.pdf",
-          relevance: 0.85
+          title: "Documento de Referência BAI",
+          url: "https://ani.pt/documentos-referencia",
+          relevance: 0.95
         }
       ];
     }
@@ -249,7 +236,8 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
       isAIResponse: dbData?.isAIResponse || false,
       baiResponse: baiResponse,
       baiError: baiError,
-      supportingDocuments: supportingDocs
+      supportingDocuments: supportingDocs,
+      baiChatId: baiResult.chatId // Add this to store the chat context ID
     };
   } catch (error) {
     console.error("Erro ao gerar resposta:", error);
