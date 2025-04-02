@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link } from 'lucide-react';
+import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QueryResults } from '@/components/chat/QueryResults';
@@ -39,7 +38,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const formatBaiResponse = (response: string) => {
     if (!response) return "";
     
-    // Check if response is already JSON format
     if (response.trim().startsWith('{') && response.trim().endsWith('}')) {
       try {
         const parsed = JSON.parse(response);
@@ -57,15 +55,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             .join('\n\n');
         }
       } catch (e) {
-        // If parsing fails, just return the original response
       }
     }
     
-    // Return the original response
     return response;
   };
 
   const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";
+  
+  const extractLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return (text.match(urlRegex) || []).filter(link => link.trim() !== '');
+  };
+  
+  const embeddedLinks = formattedBaiResponse ? extractLinks(formattedBaiResponse) : [];
   const hasValidFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url && file.download_url.trim() !== "");
 
   return (
@@ -150,7 +153,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               })}
             </div>
             
-            {/* Display BAI Files */}
             {hasValidFiles && (
               <div className="mt-4 border-t pt-3">
                 <div className="flex items-center gap-1 mb-2">
@@ -159,7 +161,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 </div>
                 <div className="space-y-2">
                   {baiFiles.map((file, index) => {
-                    // Skip files without download URL or with empty URL
                     if (!file.download_url || file.download_url.trim() === "") return null;
                     
                     const fileName = file.filename || file.download_url.split('/').pop() || `Arquivo ${index + 1}`;
@@ -171,7 +172,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     return (
                       <div key={index} className="flex items-start p-2 bg-gray-50 rounded border border-gray-100">
                         {isExternalLink ? (
-                          <Link className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+                          <LinkIcon className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
                         ) : (
                           <FileDown className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
                         )}
@@ -239,6 +240,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 <span className="font-semibold">Erro Assistente ANI:</span> {baiError}
               </AlertDescription>
             </Alert>
+          </div>
+        )}
+        
+        {embeddedLinks.length > 0 && (
+          <div className="mt-4 border-t pt-3">
+            <div className="flex items-center gap-1 mb-2">
+              <LinkIcon className="h-4 w-4 text-blue-600" />
+              <span className="text-xl font-bold text-blue-600">Links Referenciados</span>
+            </div>
+            <div className="space-y-2">
+              {embeddedLinks.map((link, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center p-2 bg-blue-50 rounded border border-blue-100 hover:bg-blue-100 transition-colors"
+                >
+                  <LinkIcon className="h-5 w-5 text-blue-600 mr-2" />
+                  <a 
+                    href={link} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-blue-700 hover:underline truncate max-w-full"
+                  >
+                    {link}
+                  </a>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
