@@ -11,6 +11,7 @@ import ProjectsPage from "./ProjectsPage";
 import AnalyticsPage from "./AnalyticsPage";
 import ReportsPage from "./ReportsPage";
 import PoliciesPage from "./PoliciesPage";
+import PredictiveModelsPage from "./PredictiveModelsPage";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AIAssistant } from "@/components/AIAssistant";
@@ -48,6 +49,7 @@ const ANIPortal = () => {
               <TabsTrigger value="analytics">{t('analytics.tab')}</TabsTrigger>
               <TabsTrigger value="reports">{t('reports.tab')}</TabsTrigger>
               <TabsTrigger value="policies">{t('policies.tab')}</TabsTrigger>
+              <TabsTrigger value="predictive">{t('predictive_models.tab') || "Predictive Models"}</TabsTrigger>
             </TabsList>
           </div>
           
@@ -77,6 +79,10 @@ const ANIPortal = () => {
           
           <TabsContent value="policies" className="h-full">
             <PoliciesPage />
+          </TabsContent>
+          
+          <TabsContent value="predictive" className="h-full">
+            <PredictiveModelsPage />
           </TabsContent>
         </Tabs>
       </main>

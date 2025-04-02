@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Menu, MoonIcon, SunIcon, MessageCircle } from "lucide-react";
+import { Menu, MoonIcon, SunIcon, MessageCircle, BarChart2, LineChart } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { DatabaseIcon, Search } from 'lucide-react';
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -56,6 +56,17 @@ export function AppSidebar() {
               <Link to="/assistant">
                 <MessageCircle className="mr-2 h-4 w-4" />
                 {t('assistant')}
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+              data-active={pathname === '/predictive-models'}
+            >
+              <Link to="/predictive-models">
+                <LineChart className="mr-2 h-4 w-4" />
+                {t('predictive_models') || "Predictive Models"}
               </Link>
             </Button>
           </div>

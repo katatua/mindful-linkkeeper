@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import {
   Menu, LogOut, LogIn, User, HelpCircle, Languages, 
   FileUp, Link as LinkIcon, FolderPlus, Database, 
   BarChart2, Home, Folder, BarChart, FileText, BookOpen,
-  MessageCircle
+  MessageCircle, LineChart
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +73,7 @@ export const HamburgerMenu = () => {
     { title: t('analytics'), icon: BarChart2, url: "/analytics" },
     { title: t('reports'), icon: FileText, url: "/reports" },
     { title: t('policies'), icon: BookOpen, url: "/policies" },
+    { title: t('predictive_models') || "Predictive Models", icon: LineChart, url: "/predictive-models" },
   ];
 
   const utilityMenuItems = [
