@@ -6,6 +6,8 @@ import { FundingSuccessModel } from '@/components/predictive/FundingSuccessModel
 import { FundingSuccessModelV2 } from '@/components/predictive/FundingSuccessModelV2';
 import { InnovationTrendsModel } from '@/components/predictive/InnovationTrendsModel';
 import { InnovationImpactModel } from '@/components/predictive/InnovationImpactModel';
+import { EconomicImpactModel } from '@/components/predictive/EconomicImpactModel';
+import { AutoMLModelSelector } from '@/components/predictive/AutoMLModelSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const PredictiveModelsPage = () => {
@@ -38,6 +40,8 @@ const PredictiveModelsPage = () => {
           </CardContent>
         </Card>
 
+        <AutoMLModelSelector />
+
         <Card>
           <CardHeader>
             <CardTitle>{t('predictive_models.innovation_trends.title') || "Previsão de Tendências de Inovação"}</CardTitle>
@@ -55,7 +59,8 @@ const PredictiveModelsPage = () => {
             <InnovationImpactModel />
           </CardContent>
         </Card>
-        {/* Add more predictive models here in the future */}
+
+        <EconomicImpactModel />
       </div>
     </div>
   );
