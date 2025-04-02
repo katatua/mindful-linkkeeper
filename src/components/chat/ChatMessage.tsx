@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QueryResults } from '@/components/chat/QueryResults';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChatMessageProps {
   content: string;
@@ -106,7 +107,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           {role === 'user' ? 'U' : 'AI'}
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-2 overflow-hidden">
         <div className="text-xl font-bold">
           {role === 'user' ? 'Você' : 'Assistente'}
           {isAIResponse && (
@@ -115,7 +116,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </span>
           )}
         </div>
-        <div className="whitespace-pre-wrap text-sm">{content}</div>
+        <div className="whitespace-pre-wrap text-sm break-words overflow-auto max-w-full">{content}</div>
         
         {results && results.length > 0 && (
           <div className="mt-4 border-t pt-3">
@@ -123,7 +124,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <Database className="h-4 w-4 text-primary" />
               <span className="text-xl font-bold">Base de dados</span>
             </div>
-            <QueryResults results={results} sqlQuery={sqlQuery} />
+            <ScrollArea className="max-h-[400px]">
+              <QueryResults results={results} sqlQuery={sqlQuery} />
+            </ScrollArea>
           </div>
         )}
         
@@ -133,7 +136,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <BookOpen className="h-4 w-4 text-primary" />
               <span className="text-xl font-bold">Chat4Business - Resposta do Assistente ANI</span>
             </div>
-            <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded">
+            <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded break-words overflow-auto">
               {formattedBaiResponse.split('\n').map((paragraph, index) => {
                 if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
                   return (
@@ -182,16 +185,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     return (
                       <div key={index} className="flex items-start p-2 bg-gray-50 rounded border border-gray-100">
                         {isExternalLink ? (
-                          <LinkIcon className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+                          <LinkIcon className="h-5 w-5 text-blue-600 mr-2 mt-0.5 shrink-0" />
                         ) : (
-                          <FileDown className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+                          <FileDown className="h-5 w-5 text-blue-600 mr-2 mt-0.5 shrink-0" />
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <a 
                             href={file.download_url} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="text-blue-600 hover:underline font-medium"
+                            className="text-blue-600 hover:underline font-medium break-all"
                           >
                             {fileName}
                           </a>
@@ -203,7 +206,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                           size="sm" 
                           variant="outline" 
                           onClick={() => window.open(file.download_url, '_blank')}
-                          className="ml-2"
+                          className="ml-2 shrink-0"
                         >
                           {isExternalLink ? 'Abrir' : 'Download'}
                         </Button>
@@ -223,9 +226,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className="space-y-2">
                   {supportingDocuments.map((doc, index) => (
                     <div key={index} className="flex items-start p-2 bg-gray-50 rounded border border-gray-100">
-                      <FileText className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
-                      <div>
-                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
+                      <FileText className="h-5 w-5 text-blue-600 mr-2 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium break-all">
                           {doc.title}
                         </a>
                         {doc.relevance && (
@@ -246,7 +249,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="mt-4">
             <Alert variant="destructive" className="bg-red-50 border-red-200">
               <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-sm text-red-600">
+              <AlertDescription className="text-sm text-red-600 break-words">
                 <span className="font-semibold">Erro Assistente ANI:</span> {baiError}
               </AlertDescription>
             </Alert>
@@ -259,24 +262,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <LinkIcon className="h-4 w-4 text-blue-600" />
               <span className="text-xl font-bold text-blue-600">Links Referenciados</span>
             </div>
-            <div className="space-y-2">
-              {embeddedLinks.map((link, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center p-2 bg-blue-50 rounded border border-blue-100 hover:bg-blue-100 transition-colors"
-                >
-                  <LinkIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <a 
-                    href={link} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-blue-700 hover:underline truncate max-w-full"
+            <ScrollArea className="max-h-[200px]">
+              <div className="space-y-2">
+                {embeddedLinks.map((link, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center p-2 bg-blue-50 rounded border border-blue-100 hover:bg-blue-100 transition-colors"
                   >
-                    {link}
-                  </a>
-                </div>
-              ))}
-            </div>
+                    <LinkIcon className="h-5 w-5 text-blue-600 mr-2 shrink-0" />
+                    <a 
+                      href={link} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-700 hover:underline break-all max-w-full overflow-hidden"
+                    >
+                      {link}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
       </div>
