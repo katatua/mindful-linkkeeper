@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { BrainCircuit, Gauge, ArrowUpRight, Eye, ChevronDown } from "lucide-react";
+import { BrainCircuit, Gauge, ArrowUpRight, Eye, ChevronDown, Play } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
@@ -230,18 +231,24 @@ export const AutoMLModelSelector = () => {
         </div>
         
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => setIsDetailsOpen(true)}>
-            <Eye className="h-4 w-4 mr-2" />
-            Ver Detalhes
-          </Button>
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700" 
-            onClick={handleRunAutoML}
-            disabled={isRunning}
-          >
-            <ArrowUpRight className="h-4 w-4 mr-2" />
-            {isRunning ? "Executando..." : "Executar AutoML"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-1">
+                Ações
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white">
+              <DropdownMenuItem onClick={() => setIsDetailsOpen(true)}>
+                <Eye className="h-4 w-4 mr-2" />
+                Ver Detalhes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleRunAutoML} disabled={isRunning}>
+                <Play className="h-4 w-4 mr-2" />
+                Executar AutoML
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardContent>
 
