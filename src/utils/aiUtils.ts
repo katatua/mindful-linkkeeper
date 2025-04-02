@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -188,7 +189,7 @@ export const generateResponse = async (query: string, previousChatId?: string): 
     // Chamada em paralelo para a API BAI
     let baiResponse = null;
     let baiError = null;
-    let baiResult = { response: undefined, error: undefined, chatId: undefined };
+    let baiResult: { response?: string; error?: string; chatId?: string } = {};
     
     try {
       console.log("Chamando API BAI");
