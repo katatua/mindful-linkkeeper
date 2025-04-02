@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { BrainCircuit, Gauge, ArrowUpRight } from "lucide-react";
+import { BrainCircuit, Gauge, ArrowUpRight, Eye } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // Sample data for model performance
 const modelPerformanceData = [
@@ -25,6 +27,8 @@ export const AutoMLModelSelector = () => {
   const [selectedModel, setSelectedModel] = useState("transformer");
   const [complexity, setComplexity] = useState(50);
   const [trainingEpochs, setTrainingEpochs] = useState(20);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
@@ -37,7 +41,36 @@ export const AutoMLModelSelector = () => {
   const handleEpochsChange = (value: number[]) => {
     setTrainingEpochs(value[0]);
   };
+
+  const handleRunAutoML = () => {
+    setIsRunning(true);
+    // Show a loading toast
+    toast({
+      title: "AutoML em execução",
+      description: `Executando ${selectedModel} com complexidade ${complexity} e ${trainingEpochs} épocas...`,
+    });
+    
+    // Simulate a process running
+    setTimeout(() => {
+      setIsRunning(false);
+      // Show a success toast when done
+      toast({
+        title: "AutoML concluído",
+        description: "Processo de treinamento finalizado com sucesso!",
+        variant: "success",
+      });
+    }, 3000);
+  };
   
+  const getModelFullName = () => {
+    switch(selectedModel) {
+      case 'dense': return 'Redes Densas (DNN)';
+      case 'lstm': return 'LSTM (Long Short-Term Memory)';
+      case 'transformer': return 'Transformer';
+      default: return selectedModel;
+    }
+  };
+
   return (
     <Card className="border rounded-lg">
       <CardHeader className="bg-slate-50">
@@ -170,15 +203,102 @@ export const AutoMLModelSelector = () => {
         </div>
         
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsDetailsOpen(true)}>
+            <Eye className="h-4 w-4 mr-2" />
             Ver Detalhes
           </Button>
-          <Button className="bg-purple-600 hover:bg-purple-700">
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700" 
+            onClick={handleRunAutoML}
+            disabled={isRunning}
+          >
             <ArrowUpRight className="h-4 w-4 mr-2" />
-            Executar AutoML
+            {isRunning ? "Executando..." : "Executar AutoML"}
           </Button>
         </div>
       </CardContent>
+
+      {/* Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Detalhes do Modelo: {getModelFullName()}</DialogTitle>
+            <DialogDescription>
+              Configuração e parâmetros detalhados do modelo selecionado
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium text-lg mb-2">Parâmetros do Modelo</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">Tipo:</span>
+                    <p className="text-sm">{getModelFullName()}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">Complexidade:</span>
+                    <p className="text-sm">{complexity}% ({complexity < 30 ? 'Baixa' : complexity < 70 ? 'Média' : 'Alta'})</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">Épocas:</span>
+                    <p className="text-sm">{trainingEpochs}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">Taxa de Aprendizado:</span>
+                    <p className="text-sm">{0.001 - (complexity / 10000)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-lg mb-2">Métricas Estimadas</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">Precisão:</span>
+                    <p className="text-sm">{(90 + (complexity / 10)).toFixed(1)}%</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">Recall:</span>
+                    <p className="text-sm">{(85 + (complexity / 8)).toFixed(1)}%</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-md">
+                    <span className="text-sm font-medium">F1-Score:</span>
+                    <p className="text-sm">{(87 + (complexity / 9)).toFixed(1)}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-lg mb-2">Informações Adicionais</h3>
+                <div className="bg-slate-50 p-3 rounded-md">
+                  <p className="text-sm">
+                    {selectedModel === 'dense' && 'O modelo de Redes Densas utilizará ' + (3 + Math.floor(complexity / 20)) + ' camadas ocultas com função de ativação ReLU.'}
+                    {selectedModel === 'lstm' && 'O modelo LSTM utilizará ' + (2 + Math.floor(complexity / 25)) + ' camadas recorrentes com ' + (64 + complexity) + ' unidades por camada.'}
+                    {selectedModel === 'transformer' && 'O modelo Transformer utilizará ' + (2 + Math.floor(complexity / 25)) + ' camadas de atenção com ' + (4 + Math.floor(complexity / 20)) + ' cabeças de atenção.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+              Fechar
+            </Button>
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={() => {
+                setIsDetailsOpen(false);
+                handleRunAutoML();
+              }}
+            >
+              Executar com estes parâmetros
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
