@@ -48,6 +48,7 @@ export const AutoMLModelSelector = () => {
     toast({
       title: "AutoML em execução",
       description: `Executando ${selectedModel} com complexidade ${complexity} e ${trainingEpochs} épocas...`,
+      variant: "default", // Changed from "success" to "default"
     });
     
     // Simulate a process running
@@ -57,7 +58,7 @@ export const AutoMLModelSelector = () => {
       toast({
         title: "AutoML concluído",
         description: "Processo de treinamento finalizado com sucesso!",
-        variant: "success",
+        variant: "default", // Changed from "success" to "default"
       });
     }, 3000);
   };
