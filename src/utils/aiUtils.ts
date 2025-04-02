@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -125,7 +124,7 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   return String(value);
 };
 
-const callBaiApi = async (query: string, previousChatId?: string): Promise<{ response?: string; error?: string; chatId?: string; files?: Array<{filename: string | null, download_url: string}> }> => {
+const callBaiApi = async (query: string, previousChatId?: string): Promise<{ response: string | undefined; error: string | undefined; chatId: string | undefined; files: Array<{filename: string | null, download_url: string}> | undefined }> => {
   try {
     console.log("Calling BAI API with query:", query);
     
@@ -150,7 +149,12 @@ const callBaiApi = async (query: string, previousChatId?: string): Promise<{ res
     if (!response.ok) {
       const errorText = await response.text();
       console.error("BAI API error response:", errorText, "Status:", response.status);
-      return { error: `API call failed with status: ${response.status}, ${errorText}` };
+      return { 
+        response: undefined, 
+        error: `API call failed with status: ${response.status}, ${errorText}`,
+        chatId: undefined,
+        files: undefined
+      };
     }
     
     const responseData = await response.json();
@@ -173,18 +177,27 @@ const callBaiApi = async (query: string, previousChatId?: string): Promise<{ res
     });
     
     if (!textResponse) {
-      return { error: "Resposta vazia ou sem conteúdo", chatId, files: processedFiles };
+      return { 
+        response: undefined, 
+        error: "Resposta vazia ou sem conteúdo", 
+        chatId,
+        files: processedFiles
+      };
     }
     
     return { 
       response: textResponse, 
+      error: undefined,
       chatId,
       files: processedFiles
     };
   } catch (error) {
     console.error("Erro ao chamar a API BAI:", error);
     return { 
-      error: `Erro de rede ou de API: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
+      response: undefined,
+      error: `Erro de rede ou de API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+      chatId: undefined,
+      files: undefined
     };
   }
 };
@@ -201,34 +214,21 @@ export const generateResponse = async (query: string, previousChatId?: string): 
     // Chamada em paralelo para a API BAI
     let baiResponse = null;
     let baiError = null;
-    let baiResult = {
-      response: undefined,
-      error: undefined,
-      chatId: undefined,
-      files: undefined
-    };
+    let baiResult = await callBaiApi(query, previousChatId);
     
-    try {
-      console.log("Chamando API BAI");
-      baiResult = await callBaiApi(query, previousChatId);
+    if (baiResult.error) {
+      console.error("Erro na API BAI:", baiResult.error);
+      baiError = baiResult.error;
       
-      if (baiResult.error) {
-        console.error("Erro na API BAI:", baiResult.error);
-        baiError = baiResult.error;
-        
-        // Se houver uma resposta mesmo com erro, use-a
-        if (baiResult.response) {
-          baiResponse = baiResult.response;
-        }
-      } else if (baiResult.response) {
+      // Se houver uma resposta mesmo com erro, use-a
+      if (baiResult.response) {
         baiResponse = baiResult.response;
-        console.log("Resposta BAI recebida:", baiResponse);
-      } else {
-        baiError = "Resposta vazia do assistente BAI";
       }
-    } catch (error) {
-      console.error("Exceção ao chamar API BAI:", error);
-      baiError = `Erro ao comunicar com o assistente BAI: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+    } else if (baiResult.response) {
+      baiResponse = baiResult.response;
+      console.log("Resposta BAI recebida:", baiResponse);
+    } else {
+      baiError = "Resposta vazia do assistente BAI";
     }
     
     // Preparar documentos de suporte se houver resposta BAI
