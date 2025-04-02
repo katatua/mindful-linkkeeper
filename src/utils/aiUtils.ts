@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,6 +14,7 @@ export interface QueryResponseType {
   baiError?: string;
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
   baiChatId?: string;
+  baiFiles?: Array<{filename: string | null, download_url: string}>;
 }
 
 export const genId = () => uuidv4();
@@ -124,7 +124,7 @@ export const formatDatabaseValue = (value: any, columnName: string): string => {
   return String(value);
 };
 
-const callBaiApi = async (query: string, previousChatId?: string): Promise<{ response?: string; error?: string; chatId?: string }> => {
+const callBaiApi = async (query: string, previousChatId?: string): Promise<{ response?: string; error?: string; chatId?: string; files?: Array<{filename: string | null, download_url: string}> }> => {
   try {
     console.log("Calling BAI API with query:", query);
     
@@ -157,17 +157,19 @@ const callBaiApi = async (query: string, previousChatId?: string): Promise<{ res
     // Log the full response for debugging
     console.log("Full BAI API response:", JSON.stringify(responseData, null, 2));
     
-    // Extract response and chat ID
+    // Extract response, chat ID and files
     const textResponse = responseData.message || responseData.response;
     const chatId = responseData.id_chat;
+    const files = responseData.files || [];
     
     if (!textResponse) {
-      return { error: "Resposta vazia ou sem conteúdo", chatId };
+      return { error: "Resposta vazia ou sem conteúdo", chatId, files };
     }
     
     return { 
       response: textResponse, 
-      chatId 
+      chatId,
+      files
     };
   } catch (error) {
     console.error("Erro ao chamar a API BAI:", error);
@@ -189,7 +191,7 @@ export const generateResponse = async (query: string, previousChatId?: string): 
     // Chamada em paralelo para a API BAI
     let baiResponse = null;
     let baiError = null;
-    let baiResult: { response?: string; error?: string; chatId?: string } = {};
+    let baiResult: { response?: string; error?: string; chatId?: string; files?: Array<{filename: string | null, download_url: string}> } = {};
     
     try {
       console.log("Chamando API BAI");
@@ -239,7 +241,8 @@ export const generateResponse = async (query: string, previousChatId?: string): 
       baiResponse: baiResponse,
       baiError: baiError,
       supportingDocuments: supportingDocs,
-      baiChatId: baiResult.chatId // Add this to store the chat context ID
+      baiChatId: baiResult.chatId,
+      baiFiles: baiResult.files
     };
   } catch (error) {
     console.error("Erro ao gerar resposta:", error);

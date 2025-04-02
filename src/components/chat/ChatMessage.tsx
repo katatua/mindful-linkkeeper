@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookOpen, Database, User, AlertCircle, FileText } from 'lucide-react';
+import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QueryResults } from '@/components/chat/QueryResults';
+import { Button } from '@/components/ui/button';
 
 interface ChatMessageProps {
   content: string;
@@ -17,6 +18,7 @@ interface ChatMessageProps {
   baiResponse?: string;
   baiError?: string;
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
+  baiFiles?: Array<{filename: string | null, download_url: string}>;
   className?: string;
 }
 
@@ -31,6 +33,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   baiResponse,
   baiError,
   supportingDocuments,
+  baiFiles,
   className,
 }) => {
   const formatBaiResponse = (response: string) => {
@@ -63,6 +66,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";
+  const hasFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url);
 
   return (
     <div 
@@ -145,6 +149,56 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 );
               })}
             </div>
+            
+            {/* Display BAI Files */}
+            {hasFiles && (
+              <div className="mt-4 border-t pt-3">
+                <div className="flex items-center gap-1 mb-2">
+                  <FileDown className="h-4 w-4 text-primary" />
+                  <span className="text-xl font-bold">Arquivos de Referência</span>
+                </div>
+                <div className="space-y-2">
+                  {baiFiles.map((file, index) => {
+                    // Skip files without download URL
+                    if (!file.download_url) return null;
+                    
+                    const fileName = file.filename || file.download_url.split('/').pop() || `Arquivo ${index + 1}`;
+                    const isExternalLink = file.download_url.startsWith('http');
+                    
+                    return (
+                      <div key={index} className="flex items-start p-2 bg-gray-50 rounded border border-gray-100">
+                        {isExternalLink ? (
+                          <Link className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+                        ) : (
+                          <FileDown className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+                        )}
+                        <div className="flex-1">
+                          <a 
+                            href={file.download_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-blue-600 hover:underline font-medium"
+                          >
+                            {fileName}
+                          </a>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {isExternalLink ? 'Link externo' : 'Arquivo para download'}
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => window.open(file.download_url, '_blank')}
+                          className="ml-2"
+                        >
+                          {isExternalLink ? 'Abrir' : 'Download'}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             {supportingDocuments && supportingDocuments.length > 0 && (
               <div className="mt-4 border-t pt-3">

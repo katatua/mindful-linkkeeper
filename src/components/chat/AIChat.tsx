@@ -39,6 +39,7 @@ interface Message {
   baiError?: string;
   supportingDocuments?: Array<{title: string, url: string, relevance?: number}>;
   baiChatId?: string;
+  baiFiles?: Array<{filename: string | null, download_url: string}>;
 }
 
 export const AIChat: React.FC = () => {
@@ -217,7 +218,8 @@ export const AIChat: React.FC = () => {
         baiResponse: response.baiResponse,
         baiError: response.baiError,
         supportingDocuments: response.supportingDocuments,
-        baiChatId: response.baiChatId
+        baiChatId: response.baiChatId,
+        baiFiles: response.baiFiles
       };
       
       setActiveResponse(assistantMessage);
@@ -349,6 +351,7 @@ export const AIChat: React.FC = () => {
                       baiResponse={activeResponse.baiResponse}
                       baiError={activeResponse.baiError}
                       supportingDocuments={activeResponse.supportingDocuments}
+                      baiFiles={activeResponse.baiFiles}
                     />
                     <div className="mt-2">
                       <PopulateDataButton 
@@ -368,6 +371,7 @@ export const AIChat: React.FC = () => {
                       results={activeResponse.results}
                       sqlQuery={activeResponse.sqlQuery}
                       supportingDocuments={activeResponse.supportingDocuments}
+                      baiFiles={activeResponse.baiFiles}
                     />
                   </div>
                 )}
