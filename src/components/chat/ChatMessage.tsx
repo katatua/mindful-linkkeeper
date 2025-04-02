@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link as LinkIcon } from 'lucide-react';
@@ -64,11 +65,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";
   
   const extractLinks = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return (text.match(urlRegex) || []).filter(link => link.trim() !== '');
+    // Improved regex to match URLs more accurately
+    const urlRegex = /(https?:\/\/[^\s"'<>]+)/g;
+    return text.match(urlRegex) || [];
   };
   
   const embeddedLinks = formattedBaiResponse ? extractLinks(formattedBaiResponse) : [];
+  console.log("Extracted links:", embeddedLinks); // Debug log to see extracted links
+  
   const hasValidFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url && file.download_url.trim() !== "");
 
   return (
