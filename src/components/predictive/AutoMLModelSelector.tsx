@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,7 @@ export const AutoMLModelSelector = () => {
     toast({
       title: "AutoML em execução",
       description: `Executando ${selectedModel} com complexidade ${complexity} e ${trainingEpochs} épocas...`,
-      variant: "default", // Changed from "success" to "default"
+      variant: "default", // This needs to be "default" instead of "success"
     });
     
     // Simulate a process running
@@ -58,7 +57,7 @@ export const AutoMLModelSelector = () => {
       toast({
         title: "AutoML concluído",
         description: "Processo de treinamento finalizado com sucesso!",
-        variant: "default", // Changed from "success" to "default"
+        variant: "default", // This needs to be "default" instead of "success"
       });
     }, 3000);
   };
