@@ -122,6 +122,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               Chat4Business - Resposta do Assistente ANI
             </span>
           )}
+          {role === 'user' && (
+            <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              Chat4Business - Resposta do Assistente ANI
+            </span>
+          )}
         </div>
         <div className="whitespace-pre-wrap text-sm break-words overflow-auto max-w-full">{content}</div>
         
