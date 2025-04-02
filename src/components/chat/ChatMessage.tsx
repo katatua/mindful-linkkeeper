@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link as LinkIcon } from 'lucide-react';
@@ -40,6 +41,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   baiFiles,
   className,
 }) => {
+  // Format BAI responses that might be in JSON format
   const formatBaiResponse = (response: string) => {
     if (!response) return "";
     
@@ -68,6 +70,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const formattedBaiResponse = baiResponse ? formatBaiResponse(baiResponse) : "";
   
+  // Extract links from the BAI response
   const extractLinks = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s"'<>]+)/g;
     return text.match(urlRegex) || [];
@@ -90,6 +93,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const isChart = isChartRequest(messageContent);
   const chartType = isChart ? determineChartType(messageContent) : null;
   const chartData = chartType ? generateSampleChartData(chartType) : null;
+  
+  // Flag to determine if we should hide database results
+  const shouldHideResults = isChart || (baiResponse && (!results || results.length === 0));
 
   const handleAssistantBadgeClick = () => {
     // Try to maximize the BAI widget if available
@@ -164,7 +170,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           {content}
         </div>
         
-        {results && results.length > 0 && (
+        {/* Only show database results if we shouldn't hide them */}
+        {results && results.length > 0 && !shouldHideResults && (
           <div className="mt-4 border-t pt-3">
             <div className="flex items-center gap-1 mb-2">
               <Database className="h-4 w-4 text-primary" />
