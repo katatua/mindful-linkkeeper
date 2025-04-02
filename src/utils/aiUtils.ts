@@ -126,7 +126,7 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
   try {
     console.log("Calling BAI API with query:", query);
     
-    // Use a dynamic chat ID based on query hash to ensure fresh conversations
+    // Gerar um ID de chat dinâmico baseado no hash da consulta
     const chatId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
     console.log("Using dynamic chat ID:", chatId);
     
@@ -158,140 +158,69 @@ const callBaiApi = async (query: string): Promise<{ response?: string; error?: s
     console.log("BAI API raw response:", responseText);
     
     try {
-      // First try to parse as JSON
+      // Primeiro, tenta analisar como JSON
       const data = JSON.parse(responseText);
       console.log("BAI API parsed response:", data);
       
-      if (!data || typeof data !== 'object') {
-        return { error: "Invalid response format: not a JSON object" };
-      }
-      
-      // Extract the text from the JSON response
-      const textResponse = data.message || data.response || null;
+      // Extrair a mensagem de diferentes possíveis formatos
+      const textResponse = 
+        data.message || 
+        data.response || 
+        (typeof data === 'string' ? data : JSON.stringify(data));
       
       if (!textResponse) {
-        return { error: "Missing response content in BAI API response", response: JSON.stringify(data) };
+        return { error: "Resposta vazia ou sem conteúdo" };
       }
       
-      // Return plain text response
       return { response: textResponse };
     } catch (parseError) {
-      console.error("Error parsing BAI API response:", parseError);
-      // If the response is not valid JSON, but might be plain text, return it as-is
-      if (responseText && responseText.trim()) {
-        return { response: responseText };
-      }
-      return { error: `Failed to parse API response: ${parseError.message}`, response: responseText };
+      // Se não for JSON, retorna o texto bruto
+      console.warn("Não foi possível analisar como JSON, retornando texto bruto");
+      return { response: responseText };
     }
   } catch (error) {
-    console.error("Error calling BAI API:", error);
-    return { error: `Network or API error: ${error.message}` };
+    console.error("Erro ao chamar a API BAI:", error);
+    return { error: `Erro de rede ou de API: ${error instanceof Error ? error.message : 'Erro desconhecido'}` };
   }
 };
 
 export const generateResponse = async (query: string): Promise<QueryResponseType> => {
   try {
-    console.log("Generating response for query:", query);
+    console.log("Gerando resposta para consulta:", query);
     
-    // For the specific technology institutions query, use our predefined response
-    if (query.toLowerCase().includes("instituições") && 
-        query.toLowerCase().includes("trabalham") && 
-        query.toLowerCase().includes("tecnologia")) {
-      
-      // First get BAI response to include it in the response
-      let baiResponse = null;
-      let baiError = null;
-      
-      try {
-        console.log("Calling BAI API for institutions query");
-        const baiResult = await callBaiApi(query);
-        
-        if (baiResult.error) {
-          console.error("BAI API error:", baiResult.error);
-          baiError = baiResult.error;
-          if (baiResult.response) {
-            baiResponse = baiResult.response;
-          }
-        } else if (baiResult.response) {
-          baiResponse = baiResult.response;
-          console.log("BAI API response for institutions received:", baiResponse);
-        } else {
-          baiError = "Resposta vazia do assistente BAI";
-        }
-      } catch (error) {
-        console.error("Exception when calling BAI API for institutions:", error);
-        baiError = `Erro ao comunicar com o assistente BAI: ${error.message}`;
-      }
-      
-      // Create a sample response with institutions that work with technology
-      const institutions = [
-        "IST - Instituto Superior Técnico",
-        "FEUP - Faculdade de Engenharia da Universidade do Porto",
-        "FCT/UNL - Faculdade de Ciências e Tecnologia da Universidade Nova de Lisboa",
-        "Universidade do Minho",
-        "Universidade de Aveiro",
-        "ISCTE-IUL - Instituto Universitário de Lisboa",
-        "IPB - Instituto Politécnico de Bragança",
-        "INESC TEC - Instituto de Engenharia de Sistemas e Computadores",
-        "INOV INESC Inovação",
-        "IT - Instituto de Telecomunicações",
-        "INIAV - Instituto Nacional de Investigação Agrária e Veterinária",
-        "INL - International Iberian Nanotechnology Laboratory",
-        "INCD - Infraestrutura Nacional de Computação Distribuída"
-      ];
-      
-      const resultsData = institutions.map((name, index) => ({
-        id: index + 1,
-        name: name,
-        sector: "Educação e Pesquisa",
-        technology_focus: "Tecnologias de Informação, Engenharia, Ciências"
-      }));
-      
-      return {
-        message: "Aqui estão instituições portuguesas que trabalham com tecnologia:",
-        sqlQuery: "SELECT name, sector, technology_focus FROM institutions WHERE technology_focus LIKE '%tecnologia%'",
-        results: resultsData,
-        isAIResponse: false,
-        baiResponse: baiResponse,
-        baiError: baiError
-      };
-    }
-    
-    // For other queries, proceed with normal processing
+    // Primeira tentativa: usar a função de borda do Supabase para gerar resposta
     const { data: dbData, error: dbError } = await supabase.functions.invoke('gemini-chat', {
       body: { query }
     });
     
-    if (dbError) {
-      console.error("Error from Edge Function:", dbError);
-      throw dbError;
-    }
-    
-    // Get a response from the BAI API in parallel with the Gemini response
+    // Chamada em paralelo para a API BAI
     let baiResponse = null;
     let baiError = null;
     
     try {
-      console.log("Calling BAI API for query:", query);
+      console.log("Chamando API BAI");
       const baiResult = await callBaiApi(query);
       
       if (baiResult.error) {
-        console.error("BAI API error:", baiResult.error);
+        console.error("Erro na API BAI:", baiResult.error);
         baiError = baiResult.error;
+        
+        // Se houver uma resposta mesmo com erro, use-a
         if (baiResult.response) {
           baiResponse = baiResult.response;
         }
       } else if (baiResult.response) {
         baiResponse = baiResult.response;
-        console.log("BAI API response received:", baiResponse);
+        console.log("Resposta BAI recebida:", baiResponse);
       } else {
         baiError = "Resposta vazia do assistente BAI";
       }
     } catch (error) {
-      console.error("Exception when calling BAI API:", error);
-      baiError = `Erro ao comunicar com o assistente BAI: ${error.message}`;
+      console.error("Exceção ao chamar API BAI:", error);
+      baiError = `Erro ao comunicar com o assistente BAI: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
     }
     
+    // Preparar documentos de suporte se houver resposta BAI
     let supportingDocs = undefined;
     if (baiResponse) {
       supportingDocs = [
@@ -304,30 +233,26 @@ export const generateResponse = async (query: string): Promise<QueryResponseType
           title: "Relatório Anual de Investimentos em I&D",
           url: "https://exemplo.gov.pt/relatorio-id-2022.pdf",
           relevance: 0.85
-        },
-        {
-          title: "Guia de Financiamento para Projetos de Inovação",
-          url: "https://exemplo.gov.pt/guia-financiamento.pdf",
-          relevance: 0.78
         }
       ];
     }
     
+    // Retornar a resposta com todas as informações
     return {
-      message: dbData.message || "Sem resposta do assistente.",
-      sqlQuery: dbData.sqlQuery || "",
-      results: dbData.results || null,
-      error: dbData.error || false,
-      noResults: dbData.noResults || false,
-      queryId: dbData.queryId,
-      analysis: dbData.analysis,
-      isAIResponse: dbData.isAIResponse || false,
+      message: dbData?.message || baiResponse || "Sem resposta do assistente.",
+      sqlQuery: dbData?.sqlQuery || "",
+      results: dbData?.results || null,
+      error: dbData?.error || false,
+      noResults: dbData?.noResults || false,
+      queryId: dbData?.queryId,
+      analysis: dbData?.analysis,
+      isAIResponse: dbData?.isAIResponse || false,
       baiResponse: baiResponse,
       baiError: baiError,
       supportingDocuments: supportingDocs
     };
   } catch (error) {
-    console.error("Error in generateResponse:", error);
+    console.error("Erro ao gerar resposta:", error);
     return {
       message: `Erro ao processar sua consulta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
       sqlQuery: "",
