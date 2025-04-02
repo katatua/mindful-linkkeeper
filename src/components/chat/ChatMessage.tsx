@@ -91,6 +91,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const chartType = isChart ? determineChartType(messageContent) : null;
   const chartData = chartType ? generateSampleChartData(chartType) : null;
 
+  const handleAssistantBadgeClick = () => {
+    // Try to maximize the BAI widget if available
+    if (window.BAI && typeof window.BAI.maximizeWidget === 'function') {
+      window.BAI.maximizeWidget();
+    } else {
+      // Try to find and click the maximize button
+      const widgetMaximizeButton = document.querySelector('.bai-widget-maximize-button');
+      if (widgetMaximizeButton && widgetMaximizeButton instanceof HTMLElement) {
+        widgetMaximizeButton.click();
+      }
+    }
+  };
+
   return (
     <div 
       className={cn(
@@ -125,14 +138,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </span>
           )}
           {isAIResponse && role === 'assistant' && (
-            <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+            <button 
+              onClick={handleAssistantBadgeClick}
+              className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+            >
               Chat4Business - Resposta do Assistente ANI
-            </span>
+            </button>
           )}
           {role === 'user' && (
-            <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+            <button 
+              onClick={handleAssistantBadgeClick}
+              className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+            >
               Chat4Business - Resposta do Assistente ANI
-            </span>
+            </button>
           )}
         </div>
         <div className="whitespace-pre-wrap text-sm break-words overflow-auto max-w-full">{content}</div>
@@ -153,7 +172,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="mt-4 border-t pt-3">
             <div className="flex items-center gap-1 mb-2">
               <BookOpen className="h-4 w-4 text-primary" />
-              <span className="text-xl font-bold">Chat4Business - Resposta do Assistente ANI</span>
+              <span className="text-xl font-bold">
+                <button 
+                  onClick={handleAssistantBadgeClick}
+                  className="hover:text-blue-600 transition-colors cursor-pointer"
+                >
+                  Chat4Business - Resposta do Assistente ANI
+                </button>
+              </span>
             </div>
             <div className="whitespace-pre-wrap text-sm bg-blue-50 p-3 rounded break-words overflow-auto">
               {formattedBaiResponse.split('\n').map((paragraph, index) => {
