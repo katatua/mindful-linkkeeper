@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Database, User, AlertCircle, FileText, FileDown, Link as LinkIcon } from 'lucide-react';
@@ -62,6 +61,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             .join('\n\n');
         }
       } catch (e) {
+        // Silent fail if not valid JSON
       }
     }
     
@@ -84,13 +84,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       : []
     )
   ];
-
-  console.log("Extracted links:", embeddedLinks); // Debug log to see extracted links
   
   const hasValidFiles = baiFiles && baiFiles.length > 0 && baiFiles.some(file => file.download_url && file.download_url.trim() !== "");
 
   const messageContent = content || '';
-  const isChart = isChartRequest(messageContent);
+  const isChart = isChartRequest(messageContent) || (intentAlias === 'criar-grafico');
   const chartType = isChart ? determineChartType(messageContent) : null;
   const chartData = chartType ? generateSampleChartData(chartType) : null;
   
@@ -122,7 +120,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   return (
     <div 
       className={cn(
-        "flex items-start gap-3 p-4 rounded-lg",
+        "flex items-start gap-3 p-4 rounded-lg mb-4",
         role === 'user' ? "bg-blue-50" : "bg-gray-50",
         className
       )}
@@ -156,14 +154,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </span>
           )}
           
-          {role === 'user' || (isAIResponse && role === 'assistant') ? (
+          {role === 'assistant' && (
             <button 
               onClick={handleAssistantBadgeClick}
               className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
             >
               Chat4Business - Resposta do Assistente ANI
             </button>
-          ) : null}
+          )}
         </div>
         
         <div className="whitespace-pre-wrap text-sm break-words overflow-auto max-w-full">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, MessageCircle, PlusCircle } from 'lucide-react';
@@ -180,7 +179,6 @@ export const AIChat: React.FC = () => {
   const processQuery = async (queryText: string) => {
     console.log("Processing query:", queryText);
     
-    // Check if it's a chart request early
     const isChartReq = isChartRequest(queryText);
     
     const userMessage: Message = {
@@ -205,7 +203,6 @@ export const AIChat: React.FC = () => {
       const response = await generateResponse(queryText, currentBaiChatId);
       console.log("Response received:", response);
       
-      // For chart requests, we always want to prioritize BAI response
       if (isChartReq) {
         console.log("Chart request detected, sending to BAI API");
         try {
@@ -223,8 +220,8 @@ export const AIChat: React.FC = () => {
             response.baiResponse = `Gráfico do tipo: ${determineChartType(baiResponse.intent_alias || queryText)}`;
           }
           
-          // Make sure we mark chart requests as AI responses
           response.isAIResponse = true;
+          response.intentAlias = 'criar-grafico';
         } catch (error) {
           console.error("Error sending chart request to BAI API:", error);
         }
@@ -234,10 +231,6 @@ export const AIChat: React.FC = () => {
       
       if (response.baiChatId) {
         setCurrentBaiChatId(response.baiChatId);
-      }
-      
-      if (response.baiFiles && response.baiFiles.length > 0) {
-        console.log("Received files:", JSON.stringify(response.baiFiles));
       }
       
       const assistantMessage: Message = {
@@ -250,7 +243,7 @@ export const AIChat: React.FC = () => {
         timestamp: new Date(),
         queryId: response.queryId || "",
         analysis: response.analysis || null,
-        isAIResponse: response.isAIResponse || isChartReq, // Always mark chart requests as AI responses
+        isAIResponse: response.isAIResponse || isChartReq,
         baiResponse: response.baiResponse,
         baiError: response.baiError,
         supportingDocuments: response.supportingDocuments,
