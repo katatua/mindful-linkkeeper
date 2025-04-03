@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Share2, ChevronDown } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -54,6 +54,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
 }) => {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<any>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!chartRef.current) return;
